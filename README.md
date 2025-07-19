@@ -19,6 +19,12 @@ Welcome to your all-in-one, enterprise-grade ERP system! This project is designe
 
 ---
 
+## 📖 API Documentation
+
+Looking to integrate or automate? Check out the full, beautifully formatted [API Documentation](API_DOCS.md) for all available endpoints, authentication, and usage examples! ✨
+
+---
+
 ## 🏗️ Project Structure
 
 ```text
@@ -58,6 +64,8 @@ All business data is available via RESTful endpoints, secured by token/session a
 **Authentication:**
 - Obtain a token: `POST /api/token-auth/` with username/email and password
 - Use `Authorization: Token <token>` in API requests
+
+👉 **For the full list of endpoints, methods, and usage, see the [API Documentation](API_DOCS.md)!**
 
 ---
 
