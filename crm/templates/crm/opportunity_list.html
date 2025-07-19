@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Opportunities | ERP System{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-emerald-700">Opportunities</h2>
+    <button id="addOpportunityBtn" class="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-4 py-2 rounded-lg shadow hover:from-emerald-700 hover:to-green-800 transition">Add Opportunity</button>
+</div>
+<div class="bg-white rounded-xl shadow p-6">
+    <table class="min-w-full divide-y divide-emerald-200">
+        <thead>
+            <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Name</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Customer</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Value</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Stage</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="opportunityTableBody" class="divide-y divide-emerald-100">
+            <!-- Data will be loaded here by JS -->
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal for Add/Edit Opportunity -->
+<div id="opportunityModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-xl p-8 w-full max-w-lg relative">
+        <button id="closeOpportunityModalBtn" class="absolute top-2 right-2 text-gray-400 hover:text-red-500">&times;</button>
+        <h3 id="opportunityModalTitle" class="text-xl font-bold text-emerald-700 mb-4">Add Opportunity</h3>
+        <form id="opportunityForm" class="space-y-4">
+            <input type="hidden" id="opportunityId" name="id">
+            <div>
+                <label for="opportunity_name" class="block text-gray-700 font-medium mb-1">Name</label>
+                <input type="text" id="opportunity_name" name="name" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div>
+                <label for="opportunity_customer" class="block text-gray-700 font-medium mb-1">Customer</label>
+                <input type="text" id="opportunity_customer" name="customer" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Customer ID">
+            </div>
+            <div>
+                <label for="opportunity_value" class="block text-gray-700 font-medium mb-1">Value</label>
+                <input type="number" id="opportunity_value" name="value" step="0.01" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div>
+                <label for="opportunity_stage" class="block text-gray-700 font-medium mb-1">Stage</label>
+                <input type="text" id="opportunity_stage" name="stage" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div>
+                <label for="opportunity_close_date" class="block text-gray-700 font-medium mb-1">Close Date</label>
+                <input type="date" id="opportunity_close_date" name="close_date" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div class="flex justify-end">
+                <button type="submit" class="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-4 py-2 rounded-lg shadow hover:from-emerald-700 hover:to-green-800 transition">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="{% static 'core/api.js' %}"></script>
+<script>
+const apiBase = '/api/crm/opportunities/';
+const tableBody = document.getElementById('opportunityTableBody');
+const modal = document.getElementById('opportunityModal');
+const addBtn = document.getElementById('addOpportunityBtn');
+const closeModalBtn = document.getElementById('closeOpportunityModalBtn');
+const form = document.getElementById('opportunityForm');
+const modalTitle = document.getElementById('opportunityModalTitle');
+const opportunityIdInput = document.getElementById('opportunityId');
+
+function showModal(edit = false, data = {}) {
+    modal.classList.remove('hidden');
+    modalTitle.textContent = edit ? 'Edit Opportunity' : 'Add Opportunity';
+    form.reset();
+    opportunityIdInput.value = data.id || '';
+    form.name.value = data.name || '';
+    form.customer.value = data.customer || '';
+    form.value.value = data.value || '';
+    form.stage.value = data.stage || '';
+    form.close_date.value = data.close_date || '';
+}
+function hideModal() { modal.classList.add('hidden'); }
+addBtn.onclick = () => showModal();
+closeModalBtn.onclick = hideModal;
+window.onclick = e => { if (e.target === modal) hideModal(); };
+
+async function loadOpportunities() {
+    tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-400">Loading...</td></tr>';
+    try {
+        const data = await apiFetch(apiBase);
+        tableBody.innerHTML = '';
+        for (const o of data) {
+            let customerName = o.customer;
+            // Optionally, fetch customer name by ID if needed
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="px-4 py-2">${o.name}</td>
+                <td class="px-4 py-2">${customerName}</td>
+                <td class="px-4 py-2">${o.value || ''}</td>
+                <td class="px-4 py-2">${o.stage || ''}</td>
+                <td class="px-4 py-2">
+                    <button class="text-emerald-700 hover:underline mr-2" onclick="editOpportunity(${o.id})">Edit</button>
+                    <button class="text-red-600 hover:underline" onclick="deleteOpportunity(${o.id})">Delete</button>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        }
+        if (!data.length) tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-400">No opportunities found.</td></tr>';
+    } catch (err) {
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-red-500">Failed to load opportunities.</td></tr>';
+    }
+}
+window.editOpportunity = async function(id) {
+    try {
+        const data = await apiFetch(apiBase + id + '/');
+        showModal(true, data);
+    } catch (err) { alert('Failed to load opportunity.'); }
+};
+window.deleteOpportunity = async function(id) {
+    if (!confirm('Delete this opportunity?')) return;
+    try {
+        await apiFetch(apiBase + id + '/', { method: 'DELETE' });
+        loadOpportunities();
+    } catch (err) { alert('Failed to delete opportunity.'); }
+};
+form.onsubmit = async function(e) {
+    e.preventDefault();
+    const id = opportunityIdInput.value;
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? apiBase + id + '/' : apiBase;
+    const body = JSON.stringify({
+        name: form.name.value,
+        customer: form.customer.value,
+        value: form.value.value,
+        stage: form.stage.value,
+        close_date: form.close_date.value
+    });
+    try {
+        await apiFetch(url, { method, body });
+        hideModal();
+        loadOpportunities();
+    } catch (err) {
+        alert('Failed to save opportunity.');
+    }
+};
+loadOpportunities();
+</script>
+{% endblock %} 

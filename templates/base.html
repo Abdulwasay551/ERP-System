@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ERP System{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'emerald-custom': '#10b981',
+                        'green-custom': '#059669',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <header class="bg-gradient-to-r from-emerald-600 to-green-700 text-white py-6 mb-8">
+        <div class="max-w-7xl mx-auto px-6 flex justify-between items-center">
+            <h1 class="text-2xl font-bold">ERP System</h1>
+            <nav>
+                <!-- Navigation links placeholder -->
+                {% if user.is_authenticated %}
+                    <a href="/logout/" class="ml-4 text-white hover:underline">Logout</a>
+                {% else %}
+                    <a href="/login/" class="ml-4 text-white hover:underline">Login</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+    <main class="max-w-3xl mx-auto px-6">
+        {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                    <div class="p-3 rounded text-white mb-2 {% if message.tags == 'error' %}bg-red-500{% elif message.tags == 'success' %}bg-emerald-500{% else %}bg-green-500{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html> 

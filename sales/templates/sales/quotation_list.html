@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Quotations | ERP System{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-emerald-700">Quotations</h2>
+    <button id="addQuotationBtn" class="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-4 py-2 rounded-lg shadow hover:from-emerald-700 hover:to-green-800 transition">Add Quotation</button>
+</div>
+<div class="bg-white rounded-xl shadow p-6">
+    <table class="min-w-full divide-y divide-emerald-200">
+        <thead>
+            <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Customer</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Date</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Total</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Status</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="quotationTableBody" class="divide-y divide-emerald-100">
+            <!-- Data will be loaded here by JS -->
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal for Add/Edit Quotation -->
+<div id="quotationModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-xl p-8 w-full max-w-lg relative">
+        <button id="closeQuotationModalBtn" class="absolute top-2 right-2 text-gray-400 hover:text-red-500">&times;</button>
+        <h3 id="quotationModalTitle" class="text-xl font-bold text-emerald-700 mb-4">Add Quotation</h3>
+        <form id="quotationForm" class="space-y-4">
+            <input type="hidden" id="quotationId" name="id">
+            <div>
+                <label for="quotation_customer" class="block text-gray-700 font-medium mb-1">Customer</label>
+                <input type="text" id="quotation_customer" name="customer" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Customer ID">
+            </div>
+            <div>
+                <label for="quotation_date" class="block text-gray-700 font-medium mb-1">Date</label>
+                <input type="date" id="quotation_date" name="date" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div>
+                <label for="quotation_total" class="block text-gray-700 font-medium mb-1">Total</label>
+                <input type="number" id="quotation_total" name="total" step="0.01" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div>
+                <label for="quotation_status" class="block text-gray-700 font-medium mb-1">Status</label>
+                <input type="text" id="quotation_status" name="status" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div class="flex justify-end">
+                <button type="submit" class="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-4 py-2 rounded-lg shadow hover:from-emerald-700 hover:to-green-800 transition">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="{% static 'core/api.js' %}"></script>
+<script>
+const apiBase = '/api/sales/quotations/';
+const tableBody = document.getElementById('quotationTableBody');
+const modal = document.getElementById('quotationModal');
+const addBtn = document.getElementById('addQuotationBtn');
+const closeModalBtn = document.getElementById('closeQuotationModalBtn');
+const form = document.getElementById('quotationForm');
+const modalTitle = document.getElementById('quotationModalTitle');
+const quotationIdInput = document.getElementById('quotationId');
+
+function showModal(edit = false, data = {}) {
+    modal.classList.remove('hidden');
+    modalTitle.textContent = edit ? 'Edit Quotation' : 'Add Quotation';
+    form.reset();
+    quotationIdInput.value = data.id || '';
+    form.customer.value = data.customer || '';
+    form.date.value = data.date || '';
+    form.total.value = data.total || '';
+    form.status.value = data.status || '';
+}
+function hideModal() { modal.classList.add('hidden'); }
+addBtn.onclick = () => showModal();
+closeModalBtn.onclick = hideModal;
+window.onclick = e => { if (e.target === modal) hideModal(); };
+
+async function loadQuotations() {
+    tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-400">Loading...</td></tr>';
+    try {
+        const data = await apiFetch(apiBase);
+        tableBody.innerHTML = '';
+        data.forEach(q => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="px-4 py-2">${q.customer}</td>
+                <td class="px-4 py-2">${q.date || ''}</td>
+                <td class="px-4 py-2">${q.total || ''}</td>
+                <td class="px-4 py-2">${q.status || ''}</td>
+                <td class="px-4 py-2">
+                    <button class="text-emerald-700 hover:underline mr-2" onclick="editQuotation(${q.id})">Edit</button>
+                    <button class="text-red-600 hover:underline" onclick="deleteQuotation(${q.id})">Delete</button>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+        if (!data.length) tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-400">No quotations found.</td></tr>';
+    } catch (err) {
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-red-500">Failed to load quotations.</td></tr>';
+    }
+}
+window.editQuotation = async function(id) {
+    try {
+        const data = await apiFetch(apiBase + id + '/');
+        showModal(true, data);
+    } catch (err) { alert('Failed to load quotation.'); }
+};
+window.deleteQuotation = async function(id) {
+    if (!confirm('Delete this quotation?')) return;
+    try {
+        await apiFetch(apiBase + id + '/', { method: 'DELETE' });
+        loadQuotations();
+    } catch (err) { alert('Failed to delete quotation.'); }
+};
+form.onsubmit = async function(e) {
+    e.preventDefault();
+    const id = quotationIdInput.value;
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? apiBase + id + '/' : apiBase;
+    const body = JSON.stringify({
+        customer: form.customer.value,
+        date: form.date.value,
+        total: form.total.value,
+        status: form.status.value
+    });
+    try {
+        await apiFetch(url, { method, body });
+        hideModal();
+        loadQuotations();
+    } catch (err) {
+        alert('Failed to save quotation.');
+    }
+};
+loadQuotations();
+</script>
+{% endblock %} 

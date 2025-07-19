@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Products | ERP System{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-emerald-700">Products</h2>
+    <button id="addProductBtn" class="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-4 py-2 rounded-lg shadow hover:from-emerald-700 hover:to-green-800 transition">Add Product</button>
+</div>
+<div class="bg-white rounded-xl shadow p-6">
+    <table class="min-w-full divide-y divide-emerald-200">
+        <thead>
+            <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Name</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">SKU</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Price</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Active</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="productTableBody" class="divide-y divide-emerald-100">
+            <!-- Data will be loaded here by JS -->
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal for Add/Edit Product -->
+<div id="productModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-xl p-8 w-full max-w-lg relative">
+        <button id="closeProductModalBtn" class="absolute top-2 right-2 text-gray-400 hover:text-red-500">&times;</button>
+        <h3 id="productModalTitle" class="text-xl font-bold text-emerald-700 mb-4">Add Product</h3>
+        <form id="productForm" class="space-y-4">
+            <input type="hidden" id="productId" name="id">
+            <div>
+                <label for="product_name" class="block text-gray-700 font-medium mb-1">Name</label>
+                <input type="text" id="product_name" name="name" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div>
+                <label for="product_sku" class="block text-gray-700 font-medium mb-1">SKU</label>
+                <input type="text" id="product_sku" name="sku" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div>
+                <label for="product_price" class="block text-gray-700 font-medium mb-1">Price</label>
+                <input type="number" id="product_price" name="price" step="0.01" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div>
+                <label for="product_is_active" class="block text-gray-700 font-medium mb-1">Active</label>
+                <select id="product_is_active" name="is_active" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                </select>
+            </div>
+            <div class="flex justify-end">
+                <button type="submit" class="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-4 py-2 rounded-lg shadow hover:from-emerald-700 hover:to-green-800 transition">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="{% static 'core/api.js' %}"></script>
+<script>
+const apiBase = '/api/sales/products/';
+const tableBody = document.getElementById('productTableBody');
+const modal = document.getElementById('productModal');
+const addBtn = document.getElementById('addProductBtn');
+const closeModalBtn = document.getElementById('closeProductModalBtn');
+const form = document.getElementById('productForm');
+const modalTitle = document.getElementById('productModalTitle');
+const productIdInput = document.getElementById('productId');
+
+function showModal(edit = false, data = {}) {
+    modal.classList.remove('hidden');
+    modalTitle.textContent = edit ? 'Edit Product' : 'Add Product';
+    form.reset();
+    productIdInput.value = data.id || '';
+    form.name.value = data.name || '';
+    form.sku.value = data.sku || '';
+    form.price.value = data.price || '';
+    form.is_active.value = data.is_active ? 'true' : 'false';
+}
+function hideModal() { modal.classList.add('hidden'); }
+addBtn.onclick = () => showModal();
+closeModalBtn.onclick = hideModal;
+window.onclick = e => { if (e.target === modal) hideModal(); };
+
+async function loadProducts() {
+    tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-400">Loading...</td></tr>';
+    try {
+        const data = await apiFetch(apiBase);
+        tableBody.innerHTML = '';
+        data.forEach(p => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="px-4 py-2">${p.name}</td>
+                <td class="px-4 py-2">${p.sku || ''}</td>
+                <td class="px-4 py-2">${p.price || ''}</td>
+                <td class="px-4 py-2">${p.is_active ? 'Yes' : 'No'}</td>
+                <td class="px-4 py-2">
+                    <button class="text-emerald-700 hover:underline mr-2" onclick="editProduct(${p.id})">Edit</button>
+                    <button class="text-red-600 hover:underline" onclick="deleteProduct(${p.id})">Delete</button>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+        if (!data.length) tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-400">No products found.</td></tr>';
+    } catch (err) {
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-red-500">Failed to load products.</td></tr>';
+    }
+}
+window.editProduct = async function(id) {
+    try {
+        const data = await apiFetch(apiBase + id + '/');
+        showModal(true, data);
+    } catch (err) { alert('Failed to load product.'); }
+};
+window.deleteProduct = async function(id) {
+    if (!confirm('Delete this product?')) return;
+    try {
+        await apiFetch(apiBase + id + '/', { method: 'DELETE' });
+        loadProducts();
+    } catch (err) { alert('Failed to delete product.'); }
+};
+form.onsubmit = async function(e) {
+    e.preventDefault();
+    const id = productIdInput.value;
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? apiBase + id + '/' : apiBase;
+    const body = JSON.stringify({
+        name: form.name.value,
+        sku: form.sku.value,
+        price: form.price.value,
+        is_active: form.is_active.value === 'true'
+    });
+    try {
+        await apiFetch(url, { method, body });
+        hideModal();
+        loadProducts();
+    } catch (err) {
+        alert('Failed to save product.');
+    }
+};
+loadProducts();
+</script>
+{% endblock %} 
