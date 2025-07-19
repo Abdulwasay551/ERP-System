@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from django.templatetags.static import static
+from django.urls import reverse_lazy
+from django.utils.translation import gettext_lazy as _
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -148,7 +151,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -176,4 +182,206 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+}
+
+UNFOLD = {
+    "SITE_TITLE": "ERP System",
+    "SITE_HEADER": "ERP System Admin",
+    "SITE_URL": "/",
+    "SITE_ICON": lambda request: static("logo.png"),
+    "SITE_LOGO": {
+        "light": lambda request: static("logo.png"),
+        "dark": lambda request: static("logo.png"),
+    },
+    "SITE_SYMBOL": "dashboard",
+    "SITE_FAVICONS": [
+        {
+            "rel": "icon",
+            "sizes": "32x32",
+            "type": "image/svg+xml",
+            "href": lambda request: static("logo.png"),
+        },
+    ],
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": True,
+    "SHOW_BACK_BUTTON": True,
+    "LOGIN": {
+        "image": lambda request: static("bg.jpg"),
+        "title": "Welcome to ERP System Admin",
+        "description": "Please login to access the system",
+    },
+    "STYLES": [
+        lambda request: static("css/admin.css"),
+    ],
+    "SCRIPTS": [],
+    "COLORS": {
+        "base": {
+            # Light mode
+            "50": "250 253 250",   # bg-gray-50
+            "100": "243 250 246",  # lighter emerald/gray
+            "200": "229 231 235",  # border gray-200
+            "300": "209 213 219",  # subtle text gray-300
+            "400": "107 114 128",  # secondary text gray-500
+            "500": "31 41 55",     # primary text gray-800
+            "600": "16 185 129",   # emerald-500 (main accent)
+            "700": "5 150 105",    # green-600 (secondary accent)
+            # Dark mode
+            "800": "20 20 20",     # dark bg
+            "900": "10 10 10",     # darker bg
+            "950": "0 0 0",        # pure black
+        },
+        "primary": {
+            # Light mode
+            "50": "236 253 245",   # emerald-50
+            "100": "209 250 229",  # emerald-100
+            "200": "167 243 208",  # emerald-200
+            "300": "52 211 153",   # emerald-400
+            "400": "16 185 129",   # emerald-500
+            "500": "5 150 105",    # green-600
+            # Dark mode (emerald/green on black)
+            "600": "16 185 129",   # emerald-500
+            "700": "5 150 105",    # green-600
+            "800": "0 0 0",        # black
+            "900": "0 0 0",        # black
+            "950": "0 0 0",        # black
+        },
+        "font": {
+            "subtle-light": "var(--color-base-400)",
+            "subtle-dark": "var(--color-base-400)",
+            "default-light": "var(--color-base-500)",
+            "default-dark": "var(--color-base-100)",
+            "important-light": "var(--color-base-600)",
+            "important-dark": "var(--color-primary-400)",
+        },
+    },
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": True,
+        "navigation": [
+            {
+                "title": "User & Company",
+                "icon": "people",
+                "collapsible": True,
+                "items": [
+                    {"title": "Users", "icon": "person", "link": reverse_lazy("admin:user_auth_user_changelist")},
+                    {"title": "Companies", "icon": "business", "link": reverse_lazy("admin:user_auth_company_changelist")},
+                    {"title": "Roles", "icon": "security", "link": reverse_lazy("admin:user_auth_role_changelist")},
+                    {"title": "Activity Logs", "icon": "history", "link": reverse_lazy("admin:user_auth_activitylog_changelist")},
+                ],
+            },
+            {
+                "title": "CRM",
+                "icon": "contact_page",
+                "collapsible": True,
+                "items": [
+                    {"title": "Customers", "icon": "person", "link": reverse_lazy("admin:crm_customer_changelist")},
+                    {"title": "Leads", "icon": "emoji_objects", "link": reverse_lazy("admin:crm_lead_changelist")},
+                    {"title": "Opportunities", "icon": "star", "link": reverse_lazy("admin:crm_opportunity_changelist")},
+                    {"title": "Communication Logs", "icon": "chat", "link": reverse_lazy("admin:crm_communicationlog_changelist")},
+                ],
+            },
+            {
+                "title": "Sales",
+                "icon": "shopping_cart",
+                "collapsible": True,
+                "items": [
+                    {"title": "Products", "icon": "inventory", "link": reverse_lazy("admin:sales_product_changelist")},
+                    {"title": "Taxes", "icon": "percent", "link": reverse_lazy("admin:sales_tax_changelist")},
+                    {"title": "Quotations", "icon": "description", "link": reverse_lazy("admin:sales_quotation_changelist")},
+                    {"title": "Sales Orders", "icon": "receipt", "link": reverse_lazy("admin:sales_salesorder_changelist")},
+                    {"title": "Sales Order Items", "icon": "list", "link": reverse_lazy("admin:sales_salesorderitem_changelist")},
+                    {"title": "Invoices", "icon": "request_quote", "link": reverse_lazy("admin:sales_invoice_changelist")},
+                    {"title": "Payments", "icon": "payments", "link": reverse_lazy("admin:sales_payment_changelist")},
+                ],
+            },
+            {
+                "title": "Purchase",
+                "icon": "shopping_bag",
+                "collapsible": True,
+                "items": [
+                    {"title": "Suppliers", "icon": "local_shipping", "link": reverse_lazy("admin:purchase_supplier_changelist")},
+                    {"title": "Purchase Orders", "icon": "assignment", "link": reverse_lazy("admin:purchase_purchaseorder_changelist")},
+                    {"title": "Purchase Order Items", "icon": "list_alt", "link": reverse_lazy("admin:purchase_purchaseorderitem_changelist")},
+                    {"title": "Bills", "icon": "receipt_long", "link": reverse_lazy("admin:purchase_bill_changelist")},
+                    {"title": "Payments", "icon": "payments", "link": reverse_lazy("admin:purchase_purchasepayment_changelist")},
+                ],
+            },
+            {
+                "title": "Inventory",
+                "icon": "warehouse",
+                "collapsible": True,
+                "items": [
+                    {"title": "Product Categories", "icon": "category", "link": reverse_lazy("admin:inventory_productcategory_changelist")},
+                    {"title": "Warehouses", "icon": "store", "link": reverse_lazy("admin:inventory_warehouse_changelist")},
+                    {"title": "Stock Items", "icon": "inventory_2", "link": reverse_lazy("admin:inventory_stockitem_changelist")},
+                    {"title": "Stock Movements", "icon": "swap_horiz", "link": reverse_lazy("admin:inventory_stockmovement_changelist")},
+                    {"title": "Stock Alerts", "icon": "notification_important", "link": reverse_lazy("admin:inventory_stockalert_changelist")},
+                ],
+            },
+            {
+                "title": "Accounting",
+                "icon": "account_balance",
+                "collapsible": True,
+                "items": [
+                    {"title": "Accounts", "icon": "account_tree", "link": reverse_lazy("admin:accounting_account_changelist")},
+                    {"title": "Journals", "icon": "book", "link": reverse_lazy("admin:accounting_journal_changelist")},
+                    {"title": "Journal Entries", "icon": "edit_note", "link": reverse_lazy("admin:accounting_journalentry_changelist")},
+                    {"title": "Journal Items", "icon": "notes", "link": reverse_lazy("admin:accounting_journalitem_changelist")},
+                    {"title": "Payables", "icon": "money_off", "link": reverse_lazy("admin:accounting_accountpayable_changelist")},
+                    {"title": "Receivables", "icon": "attach_money", "link": reverse_lazy("admin:accounting_accountreceivable_changelist")},
+                    {"title": "Bank Accounts", "icon": "account_balance_wallet", "link": reverse_lazy("admin:accounting_bankaccount_changelist")},
+                    {"title": "Bank Reconciliations", "icon": "compare_arrows", "link": reverse_lazy("admin:accounting_bankreconciliation_changelist")},
+                    {"title": "Tax Configs", "icon": "percent", "link": reverse_lazy("admin:accounting_taxconfig_changelist")},
+                    {"title": "Currencies", "icon": "currency_exchange", "link": reverse_lazy("admin:accounting_currency_changelist")},
+                    {"title": "Financial Statements", "icon": "bar_chart", "link": reverse_lazy("admin:accounting_financialstatement_changelist")},
+                    {"title": "Audit Logs", "icon": "history", "link": reverse_lazy("admin:accounting_accountingauditlog_changelist")},
+                    {"title": "Recurring Journals", "icon": "repeat", "link": reverse_lazy("admin:accounting_recurringjournal_changelist")},
+                ],
+            },
+            {
+                "title": "HR",
+                "icon": "badge",
+                "collapsible": True,
+                "items": [
+                    {"title": "Employees", "icon": "person", "link": reverse_lazy("admin:hr_employee_changelist")},
+                    {"title": "Attendance", "icon": "event_available", "link": reverse_lazy("admin:hr_attendance_changelist")},
+                    {"title": "Leaves", "icon": "beach_access", "link": reverse_lazy("admin:hr_leave_changelist")},
+                    {"title": "Payrolls", "icon": "payments", "link": reverse_lazy("admin:hr_payroll_changelist")},
+                    {"title": "Payslips", "icon": "receipt", "link": reverse_lazy("admin:hr_payslip_changelist")},
+                    {"title": "HR Reports", "icon": "bar_chart", "link": reverse_lazy("admin:hr_hrreport_changelist")},
+                ],
+            },
+            {
+                "title": "Project Management",
+                "icon": "assignment",
+                "collapsible": True,
+                "items": [
+                    {"title": "Projects", "icon": "work", "link": reverse_lazy("admin:project_mgmt_project_changelist")},
+                    {"title": "Tasks", "icon": "task", "link": reverse_lazy("admin:project_mgmt_task_changelist")},
+                    {"title": "Time Entries", "icon": "timer", "link": reverse_lazy("admin:project_mgmt_timeentry_changelist")},
+                    {"title": "Project Reports", "icon": "bar_chart", "link": reverse_lazy("admin:project_mgmt_projectreport_changelist")},
+                ],
+            },
+            {
+                "title": "Manufacturing",
+                "icon": "precision_manufacturing",
+                "collapsible": True,
+                "items": [
+                    {"title": "Bill of Materials", "icon": "layers", "link": reverse_lazy("admin:manufacturing_billofmaterials_changelist")},
+                    {"title": "BOM Items", "icon": "list", "link": reverse_lazy("admin:manufacturing_billofmaterialsitem_changelist")},
+                    {"title": "Work Orders", "icon": "build", "link": reverse_lazy("admin:manufacturing_workorder_changelist")},
+                    {"title": "Production Plans", "icon": "event_note", "link": reverse_lazy("admin:manufacturing_productionplan_changelist")},
+                ],
+            },
+        ],
+    },
+    "EXTENSIONS": {
+        "modeltranslation": {
+            "flags": {
+                "en": "🇬🇧",
+                "fr": "🇫🇷",
+                "nl": "🇧🇪",
+            },
+        },
+    },
 }
