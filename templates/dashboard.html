@@ -1,8 +1,42 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% block title %}Dashboard | ERP System{% endblock %}
 {% block content %}
-<div class="bg-white rounded-2xl shadow-xl p-8 border-t-4 border-emerald-500 mt-8">
-    <h2 class="text-2xl font-bold text-emerald-700 mb-4">Welcome to the ERP Dashboard</h2>
-    <p class="text-gray-700">This is your central overview. Module summaries and navigation will appear here.</p>
+<div class="mb-8">
+    <h1 class="text-4xl font-bold text-blue-900 mb-2">Welcome to Your ERP Dashboard</h1>
+    <p class="text-lg text-gray-600">All your business at a glance. Navigate using the menu above.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+    <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center">
+        <div class="text-3xl font-bold text-blue-700">{{ stat_customers }}</div>
+        <div class="text-gray-700 mt-2">Customers</div>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center">
+        <div class="text-3xl font-bold text-green-700">{{ stat_sales }}</div>
+        <div class="text-gray-700 mt-2">Sales Orders</div>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center">
+        <div class="text-3xl font-bold text-yellow-600">{{ stat_inventory }}</div>
+        <div class="text-gray-700 mt-2">Stock Items</div>
+    </div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4 text-blue-800">Quick Links</h2>
+        <ul class="space-y-2">
+            <li><a href="/crm/customers-ui/" class="text-blue-700 hover:underline">Manage Customers</a></li>
+            <li><a href="/sales/products-ui/" class="text-blue-700 hover:underline">View Products</a></li>
+            <li><a href="/inventory/stockitems-ui/" class="text-blue-700 hover:underline">Check Inventory</a></li>
+            <li><a href="/accounting/accounts-ui/" class="text-blue-700 hover:underline">Chart of Accounts</a></li>
+            <li><a href="/hr/employees-ui/" class="text-blue-700 hover:underline">Employee Directory</a></li>
+        </ul>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4 text-blue-800">ERP News & Tips</h2>
+        <ul class="list-disc ml-6 text-gray-700">
+            <li>Use the navigation bar to access all modules.</li>
+            <li>All data is live and updated in real-time.</li>
+            <li>Click on any stat to view details.</li>
+        </ul>
+    </div>
 </div>
 {% endblock %} 

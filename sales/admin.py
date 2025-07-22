@@ -22,9 +22,9 @@ class QuotationAdmin(ModelAdmin):
 
 @admin.register(SalesOrder)
 class SalesOrderAdmin(ModelAdmin):
-    list_display = ('id', 'company', 'customer', 'order_date', 'delivery_date', 'total', 'status', 'created_by')
-    search_fields = ('id', 'customer__name', 'status')
-    list_filter = ('company', 'status')
+    list_display = ('id', 'company', 'customer', 'order_date', 'delivery_date', 'total', 'status', 'created_by', 'account')
+    search_fields = ('id', 'customer__name', 'status', 'account__code', 'account__name')
+    list_filter = ('company', 'status', 'account')
 
 @admin.register(SalesOrderItem)
 class SalesOrderItemAdmin(ModelAdmin):
@@ -34,12 +34,12 @@ class SalesOrderItemAdmin(ModelAdmin):
 
 @admin.register(Invoice)
 class InvoiceAdmin(ModelAdmin):
-    list_display = ('id', 'company', 'customer', 'invoice_date', 'due_date', 'total', 'status', 'created_by')
-    search_fields = ('id', 'customer__name', 'status')
-    list_filter = ('company', 'status')
+    list_display = ('id', 'company', 'customer', 'invoice_date', 'due_date', 'total', 'status', 'created_by', 'account')
+    search_fields = ('id', 'customer__name', 'status', 'account__code', 'account__name')
+    list_filter = ('company', 'status', 'account')
 
 @admin.register(Payment)
 class PaymentAdmin(ModelAdmin):
-    list_display = ('id', 'company', 'invoice', 'amount', 'payment_date', 'method', 'received_by')
-    search_fields = ('id', 'invoice__id', 'method', 'reference')
-    list_filter = ('company', 'method')
+    list_display = ('id', 'company', 'invoice', 'amount', 'payment_date', 'method', 'received_by', 'account')
+    search_fields = ('id', 'invoice__id', 'method', 'reference', 'account__code', 'account__name')
+    list_filter = ('company', 'method', 'account')

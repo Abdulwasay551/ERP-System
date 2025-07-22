@@ -1,28 +1,93 @@
+# ---
+# Multi-level Chart of Accounts (COA) implementation as per coa_implementation_plan.md
+# Includes AccountCategory, AccountGroup, and Account models for normalized, hierarchical COA
+# ---
 from django.db import models
 from user_auth.models import Company, User
-from crm.models import Customer
-from purchase.models import Supplier
+from purchase.models import Supplier  
+
+# --- Chart of Accounts (COA) Hierarchy ---
+# Top-level: AccountCategory (e.g., Asset, Liability)
+# Mid-level: AccountGroup (e.g., Current Assets, Non-Current Assets)
+# Leaf: Account (actual ledger, e.g., Cash, Inventory)
+
+class AccountCategory(models.Model):
+    """
+    Top-level COA category (e.g., Asset, Liability, Equity, Income, Expense, Contra-accounts)
+    """
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='account_categories')
+    code = models.CharField(max_length=10)
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('company', 'code')  # Enforce unique codes per company
+        verbose_name_plural = 'Account Categories'
+
+    def __str__(self):
+        return f"{self.code} - {self.name}"
+
+class AccountGroup(models.Model):
+    """
+    Mid-level COA group (e.g., Current Assets, Long-term Liabilities)
+    Can be nested (parent-child) for up to 5 levels.
+    """
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='account_groups')
+    category = models.ForeignKey(AccountCategory, on_delete=models.CASCADE, related_name='groups')
+    code = models.CharField(max_length=20)
+    name = models.CharField(max_length=100)
+    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='children')
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('company', 'code')  # Enforce unique group codes per company
+        verbose_name_plural = 'Account Groups'
+
+    def __str__(self):
+        return f"{self.code} - {self.name}"
 
 class Account(models.Model):
+    """
+    Leaf-level COA account (actual ledger). Supports up to 5-level hierarchy via group/parent.
+    """
     ACCOUNT_TYPES = [
         ('asset', 'Asset'),
         ('liability', 'Liability'),
         ('equity', 'Equity'),
         ('income', 'Income'),
         ('expense', 'Expense'),
+        ('contra', 'Contra-Account'),
+    ]
+    BALANCE_SIDES = [
+        ('debit', 'Debit'),
+        ('credit', 'Credit'),
     ]
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='accounts')
+    group = models.ForeignKey(AccountGroup, on_delete=models.CASCADE, related_name='accounts')  
     code = models.CharField(max_length=20)
     name = models.CharField(max_length=255)
-    type = models.CharField(max_length=20, choices=ACCOUNT_TYPES)
-    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='children')
-    is_group = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    description = models.TextField(blank=True)  # Account metadata/details
+    type = models.CharField(max_length=20, choices=ACCOUNT_TYPES)  # Main account type (Asset, Liability, etc.)
+    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='children')  # For sub-ledger relationships (e.g., customer/vendor sub-accounts)
+    is_group = models.BooleanField(default=False, help_text="If true, this is a grouping node, not a posting account.")  # Mark as grouping node (non-posting)
+    is_default = models.BooleanField(default=False, help_text="System default account for mapping.")  # For system-wide default account mapping
+    is_active = models.BooleanField(default=True)  # Enable/disable account
+    balance_side = models.CharField(max_length=10, choices=BALANCE_SIDES, default='debit')  # Normal balance side (debit/credit)
+    account_type = models.CharField(max_length=50, blank=True, help_text="Sub-classification, e.g., COGS, Admin Expense, Bank, Receivable, etc.")  # For COA sub-categories
+    created_at = models.DateTimeField(auto_now_add=True)  # Audit/history tracking
+    updated_at = models.DateTimeField(auto_now=True)  # Audit/history tracking
+
+    class Meta:
+        unique_together = ('company', 'code')  # Enforce unique account codes per company
+        verbose_name_plural = 'Accounts'
 
     def __str__(self):
         return f"{self.code} - {self.name}"
+
+# AccountCategory, AccountGroup, and Account form the hierarchical COA structure (category > group > account)
+
 
 class Journal(models.Model):
     JOURNAL_TYPES = [
@@ -66,7 +131,7 @@ class JournalItem(models.Model):
 
 class AccountPayable(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='payables')
-    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='payables')
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='payables',null=True,blank=True)  
     invoice = models.CharField(max_length=100)
     amount = models.DecimalField(max_digits=14, decimal_places=2)
     due_date = models.DateField()
@@ -79,7 +144,7 @@ class AccountPayable(models.Model):
 
 class AccountReceivable(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='receivables')
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='receivables')
+    customer = models.ForeignKey('crm.Customer', on_delete=models.CASCADE, related_name='receivables',null=True,blank=True) 
     invoice = models.CharField(max_length=100)
     amount = models.DecimalField(max_digits=14, decimal_places=2)
     due_date = models.DateField()

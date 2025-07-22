@@ -1,6 +1,7 @@
 from django.db import models
 from user_auth.models import Company, User
 from hr.models import Employee
+from accounting.models import Account
 
 # Create your models here.
 
@@ -14,6 +15,7 @@ class Project(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_projects')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    account = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True, related_name='projects')
 
     def __str__(self):
         return self.name

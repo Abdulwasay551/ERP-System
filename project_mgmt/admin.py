@@ -4,9 +4,9 @@ from .models import Project, Task, TimeEntry, ProjectReport
 
 @admin.register(Project)
 class ProjectAdmin(ModelAdmin):
-    list_display = ('name', 'company', 'start_date', 'end_date', 'status', 'created_by')
-    search_fields = ('name', 'description')
-    list_filter = ('company', 'status')
+    list_display = ('name', 'company', 'account', 'start_date', 'end_date', 'status', 'created_by', 'created_at')
+    search_fields = ('name', 'account__code', 'account__name')
+    list_filter = ('company', 'status', 'account')
 
 @admin.register(Task)
 class TaskAdmin(ModelAdmin):
@@ -18,7 +18,7 @@ class TaskAdmin(ModelAdmin):
 class TimeEntryAdmin(ModelAdmin):
     list_display = ('task', 'employee', 'date', 'hours')
     search_fields = ('task__name', 'employee__first_name', 'employee__last_name')
-    list_filter = ('employee', 'date')
+    list_filter = ('task', 'employee')
 
 @admin.register(ProjectReport)
 class ProjectReportAdmin(ModelAdmin):

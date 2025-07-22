@@ -22,14 +22,15 @@ class LeaveAdmin(ModelAdmin):
 
 @admin.register(Payroll)
 class PayrollAdmin(ModelAdmin):
-    list_display = ('employee', 'period_start', 'period_end', 'basic_salary', 'deductions', 'bonuses', 'net_salary', 'status')
-    search_fields = ('employee__first_name', 'employee__last_name', 'status')
-    list_filter = ('status',)
+    list_display = ('employee', 'period_start', 'period_end', 'basic_salary', 'deductions', 'bonuses', 'net_salary', 'status', 'salary_account', 'benefits_account', 'liability_account')
+    search_fields = ('employee__first_name', 'employee__last_name', 'status', 'salary_account__code', 'benefits_account__code', 'liability_account__code')
+    list_filter = ('status', 'salary_account', 'benefits_account', 'liability_account')
 
 @admin.register(Payslip)
 class PayslipAdmin(ModelAdmin):
-    list_display = ('payroll', 'pdf_file', 'generated_at')
-    search_fields = ('payroll__employee__first_name', 'payroll__employee__last_name')
+    list_display = ('payroll', 'pdf_file', 'generated_at', 'account')
+    search_fields = ('payroll__employee__first_name', 'payroll__employee__last_name', 'account__code', 'account__name')
+    list_filter = ('account',)
 
 @admin.register(HRReport)
 class HRReportAdmin(ModelAdmin):

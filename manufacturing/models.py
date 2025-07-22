@@ -1,6 +1,7 @@
 from django.db import models
 from user_auth.models import Company, User
 from sales.models import Product
+from accounting.models import Account
 
 class BillOfMaterials(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='boms')
@@ -10,6 +11,10 @@ class BillOfMaterials(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_boms')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    raw_material_account = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True, related_name='boms_raw_material')
+    wip_account = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True, related_name='boms_wip')
+    finished_goods_account = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True, related_name='boms_finished_goods')
+    overhead_account = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True, related_name='boms_overhead')
 
     def __str__(self):
         return f"{self.product.name} BOM {self.version}"
@@ -37,6 +42,7 @@ class WorkOrder(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     notes = models.TextField(blank=True)
+    account = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True, related_name='work_orders')
 
     def __str__(self):
         return f"WO #{self.id} - {self.product.name}"

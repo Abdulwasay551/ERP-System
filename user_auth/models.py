@@ -14,6 +14,9 @@ class Company(models.Model):
 class Role(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
+    department = models.CharField(max_length=100, blank=True)
+    level = models.IntegerField(default=1)
+    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='children')
     is_active = models.BooleanField(default=True)
 
     def __str__(self):

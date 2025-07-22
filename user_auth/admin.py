@@ -29,16 +29,19 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
 
 @admin.register(Company)
 class CompanyAdmin(ModelAdmin):
-    list_display = ('name', 'is_active', 'created_at', 'updated_at')
+    list_display = ('name', 'is_active', 'created_at')
     search_fields = ('name',)
+    list_filter = ('is_active',)
 
-@admin.register(Role)
-class RoleAdmin(ModelAdmin):
-    list_display = ('name', 'description', 'is_active')
-    search_fields = ('name',)
 
 @admin.register(ActivityLog)
 class ActivityLogAdmin(ModelAdmin):
     list_display = ('user', 'action', 'ip_address', 'created_at')
-    search_fields = ('user__email', 'action', 'details', 'ip_address')
-    list_filter = ('action', 'created_at')
+    search_fields = ('user__email', 'action', 'details')
+    list_filter = ('action',)
+
+@admin.register(Role)
+class RoleAdmin(ModelAdmin):
+    list_display = ('name', 'department', 'level', 'parent', 'is_active')
+    search_fields = ('name', 'department')
+    list_filter = ('department', 'level', 'is_active')

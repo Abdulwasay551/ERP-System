@@ -1,11 +1,13 @@
 from rest_framework import viewsets, permissions
 from .models import Customer, Lead, Opportunity, CommunicationLog
 from .serializers import CustomerSerializer, LeadSerializer, OpportunitySerializer, CommunicationLogSerializer
+from user_auth.permissions import DepartmentLevelPermission
 
 class CustomerViewSet(viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
+    permission_classes = [permissions.IsAuthenticated, DepartmentLevelPermission]
+    required_department = 'Sales'
+    min_level = 2
     def get_queryset(self):
         return Customer.objects.filter(company=self.request.user.company)
 

@@ -1,6 +1,7 @@
 from django.db import models
 from user_auth.models import Company, User
 from sales.models import Product
+from accounting.models import Account
 
 class ProductCategory(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='product_categories')
@@ -36,6 +37,7 @@ class StockItem(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    account = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True, related_name='stock_items')
 
     def __str__(self):
         return f"{self.product.name} @ {self.warehouse.name}"
@@ -51,6 +53,7 @@ class StockMovement(models.Model):
     performed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='stock_movements')
     timestamp = models.DateTimeField(auto_now_add=True)
     notes = models.TextField(blank=True)
+    cogs_account = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True, related_name='stock_movements_cogs')
 
     def __str__(self):
         return f"{self.movement_type.title()} {self.quantity} of {self.stock_item.product.name}"

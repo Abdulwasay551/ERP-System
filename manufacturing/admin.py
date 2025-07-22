@@ -4,9 +4,9 @@ from .models import BillOfMaterials, BillOfMaterialsItem, WorkOrder, ProductionP
 
 @admin.register(BillOfMaterials)
 class BillOfMaterialsAdmin(ModelAdmin):
-    list_display = ('name', 'company', 'product', 'version', 'created_by', 'created_at')
-    search_fields = ('name', 'product__name', 'version')
-    list_filter = ('company', 'product')
+    list_display = ('name', 'company', 'product', 'version', 'created_by', 'created_at', 'raw_material_account', 'wip_account', 'finished_goods_account', 'overhead_account')
+    search_fields = ('name', 'product__name', 'version', 'raw_material_account__code', 'wip_account__code', 'finished_goods_account__code', 'overhead_account__code')
+    list_filter = ('company', 'product', 'raw_material_account', 'wip_account', 'finished_goods_account', 'overhead_account')
 
 @admin.register(BillOfMaterialsItem)
 class BillOfMaterialsItemAdmin(ModelAdmin):
@@ -16,9 +16,9 @@ class BillOfMaterialsItemAdmin(ModelAdmin):
 
 @admin.register(WorkOrder)
 class WorkOrderAdmin(ModelAdmin):
-    list_display = ('id', 'company', 'product', 'quantity', 'status', 'scheduled_start', 'scheduled_end', 'actual_start', 'actual_end', 'created_by')
-    search_fields = ('id', 'product__name', 'status')
-    list_filter = ('company', 'status')
+    list_display = ('id', 'company', 'product', 'quantity', 'status', 'scheduled_start', 'scheduled_end', 'actual_start', 'actual_end', 'created_by', 'account')
+    search_fields = ('id', 'product__name', 'status', 'account__code', 'account__name')
+    list_filter = ('company', 'status', 'account')
 
 @admin.register(ProductionPlan)
 class ProductionPlanAdmin(ModelAdmin):

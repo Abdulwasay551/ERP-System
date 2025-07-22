@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Inventory Stock Items | ERP System{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-blue-900">Stock Items</h1>
+    <button id="addStockItemBtn" class="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800">+ Add Stock Item</button>
+</div>
+<div class="bg-white rounded-lg shadow p-6">
+    <table id="stockitemsTable" class="min-w-full divide-y divide-gray-200">
+        <thead>
+            <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Warehouse</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Active</th>
+                <th class="px-4 py-2"></th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for item in stockitems %}
+            <tr data-id="{{ item.id }}">
+                <td class="px-4 py-2">{{ item.product.name }}</td>
+                <td class="px-4 py-2">{{ item.warehouse.name }}</td>
+                <td class="px-4 py-2">{{ item.quantity }}</td>
+                <td class="px-4 py-2">{% if item.is_active %}Yes{% else %}No{% endif %}</td>
+                <td class="px-4 py-2 text-right">
+                    <button class="text-blue-700 hover:underline editBtn">Edit</button>
+                    <button class="text-red-600 hover:underline ml-2 deleteBtn">Delete</button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-gray-400 py-4">No stock items found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<!-- Modal -->
+<div id="stockItemModal" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+        <h2 id="modalTitle" class="text-xl font-bold mb-4">Add Stock Item</h2>
+        <form id="stockItemForm">
+            {% csrf_token %}
+            <input type="hidden" name="stockitem_id" id="stockItemIdInput">
+            <input type="text" name="product" id="productInput" placeholder="Product" class="w-full mb-2 p-2 border rounded" required>
+            <input type="text" name="warehouse" id="warehouseInput" placeholder="Warehouse" class="w-full mb-2 p-2 border rounded" required>
+            <input type="number" name="quantity" id="quantityInput" placeholder="Quantity" class="w-full mb-2 p-2 border rounded" required step="0.01">
+            <label class="flex items-center mb-4">
+                <input type="checkbox" name="is_active" id="isActiveInput" class="mr-2"> Active
+            </label>
+            <div id="formError" class="text-red-600 mb-2 hidden"></div>
+            <button type="submit" class="w-full bg-blue-700 text-white py-2 rounded">Save</button>
+            <button type="button" id="closeModalBtn" class="w-full mt-2 bg-gray-200 text-gray-700 py-2 rounded">Cancel</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const modal = document.getElementById('stockItemModal');
+const form = document.getElementById('stockItemForm');
+const formError = document.getElementById('formError');
+const modalTitle = document.getElementById('modalTitle');
+const productInput = document.getElementById('productInput');
+const warehouseInput = document.getElementById('warehouseInput');
+const quantityInput = document.getElementById('quantityInput');
+const isActiveInput = document.getElementById('isActiveInput');
+const stockItemIdInput = document.getElementById('stockItemIdInput');
+
+function openModal(title, item) {
+    modalTitle.textContent = title;
+    formError.classList.add('hidden');
+    if (item) {
+        productInput.value = item.product;
+        warehouseInput.value = item.warehouse;
+        quantityInput.value = item.quantity;
+        isActiveInput.checked = item.is_active;
+        stockItemIdInput.value = item.id;
+    } else {
+        productInput.value = '';
+        warehouseInput.value = '';
+        quantityInput.value = '';
+        isActiveInput.checked = true;
+        stockItemIdInput.value = '';
+    }
+    modal.classList.remove('hidden');
+}
+
+document.getElementById('addStockItemBtn').onclick = () => openModal('Add Stock Item');
+document.getElementById('closeModalBtn').onclick = () => { modal.classList.add('hidden'); };
+
+// Edit button logic
+Array.from(document.getElementsByClassName('editBtn')).forEach(btn => {
+    btn.onclick = function() {
+        const row = btn.closest('tr');
+        openModal('Edit Stock Item', {
+            id: row.getAttribute('data-id'),
+            product: row.children[0].textContent,
+            warehouse: row.children[1].textContent,
+            quantity: row.children[2].textContent,
+            is_active: row.children[3].textContent.trim() === 'Yes'
+        });
+    };
+});
+
+// Delete button logic
+Array.from(document.getElementsByClassName('deleteBtn')).forEach(btn => {
+    btn.onclick = function() {
+        if (!confirm('Are you sure you want to delete this stock item?')) return;
+        const row = btn.closest('tr');
+        const id = row.getAttribute('data-id');
+        fetch(`/inventory/stockitems-delete/${id}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+        })
+        .then(res => res.json())
+        .then(json => {
+            if (json.success) {
+                row.remove();
+            } else {
+                alert('Error deleting stock item.');
+            }
+        })
+        .catch(() => alert('Error deleting stock item.'));
+    };
+});
+
+form.onsubmit = function(e) {
+    e.preventDefault();
+    formError.classList.add('hidden');
+    const data = new FormData(form);
+    const id = stockItemIdInput.value;
+    let url = '/inventory/stockitems-add/';
+    if (id) url = `/inventory/stockitems-edit/${id}/`;
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: data
+    })
+    .then(res => res.json())
+    .then(json => {
+        if (json.success) {
+            const table = document.getElementById('stockitemsTable').getElementsByTagName('tbody')[0];
+            if (id) {
+                // Edit: update row
+                const row = table.querySelector(`tr[data-id='${id}']`);
+                row.children[0].textContent = json.stockitem.product;
+                row.children[1].textContent = json.stockitem.warehouse;
+                row.children[2].textContent = json.stockitem.quantity;
+                row.children[3].textContent = json.stockitem.is_active ? 'Yes' : 'No';
+            } else {
+                // Add: insert new row
+                const row = table.insertRow(0);
+                row.setAttribute('data-id', json.stockitem.id);
+                row.innerHTML = `
+                    <td class='px-4 py-2'>${json.stockitem.product}</td>
+                    <td class='px-4 py-2'>${json.stockitem.warehouse}</td>
+                    <td class='px-4 py-2'>${json.stockitem.quantity}</td>
+                    <td class='px-4 py-2'>${json.stockitem.is_active ? 'Yes' : 'No'}</td>
+                    <td class='px-4 py-2 text-right'>
+                        <button class='text-blue-700 hover:underline editBtn'>Edit</button>
+                        <button class='text-red-600 hover:underline ml-2 deleteBtn'>Delete</button>
+                    </td>
+                `;
+                // Re-bind edit/delete events for new row
+                row.querySelector('.editBtn').onclick = function() {
+                    openModal('Edit Stock Item', {
+                        id: json.stockitem.id,
+                        product: json.stockitem.product,
+                        warehouse: json.stockitem.warehouse,
+                        quantity: json.stockitem.quantity,
+                        is_active: json.stockitem.is_active
+                    });
+                };
+                row.querySelector('.deleteBtn').onclick = function() {
+                    if (!confirm('Are you sure you want to delete this stock item?')) return;
+                    fetch(`/inventory/stockitems-delete/${json.stockitem.id}/`, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+                    })
+                    .then(res => res.json())
+                    .then(json2 => {
+                        if (json2.success) {
+                            row.remove();
+                        } else {
+                            alert('Error deleting stock item.');
+                        }
+                    })
+                    .catch(() => alert('Error deleting stock item.'));
+                };
+            }
+            modal.classList.add('hidden');
+            form.reset();
+        } else {
+            formError.textContent = json.error || 'Error saving stock item.';
+            formError.classList.remove('hidden');
+        }
+    })
+    .catch(() => {
+        formError.textContent = 'Error saving stock item.';
+        formError.classList.remove('hidden');
+    });
+};
+</script>
+{% endblock %} 

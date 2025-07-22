@@ -15,6 +15,10 @@ from django.templatetags.static import static
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 import os
+import environ
+
+env = environ.Env()
+environ.Env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -110,9 +114,13 @@ WSGI_APPLICATION = 'setting.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    'default': {        
+        'ENGINE': env('DB_ENGINE', default='django.db.backends.postgresql'),
+        'NAME': env('DB_NAME', default='erp'),
+        'USER': env('DB_USER', default='postgres'),
+        'PASSWORD': env('DB_PASSWORD', default='password'),
+        'HOST': env('DB_HOST', default='localhost'),
+        'PORT': env('DB_PORT', default='5432'),
     }
 }
 
@@ -270,6 +278,28 @@ UNFOLD = {
                 ],
             },
             {
+                "title": "Accounting",
+                "icon": "account_balance",
+                "collapsible": True,
+                "items": [
+                    {"title": "Accounts", "icon": "account_tree", "link": reverse_lazy("admin:accounting_account_changelist")},
+                    {"title": "Account Categories", "icon": "category", "link": reverse_lazy("admin:accounting_accountcategory_changelist")},
+                    {"title": "Account Groups", "icon": "group_work", "link": reverse_lazy("admin:accounting_accountgroup_changelist")},
+                    {"title": "Journals", "icon": "book", "link": reverse_lazy("admin:accounting_journal_changelist")},
+                    {"title": "Journal Entries", "icon": "edit_note", "link": reverse_lazy("admin:accounting_journalentry_changelist")},
+                    {"title": "Journal Items", "icon": "notes", "link": reverse_lazy("admin:accounting_journalitem_changelist")},
+                    {"title": "Payables", "icon": "money_off", "link": reverse_lazy("admin:accounting_accountpayable_changelist")},
+                    {"title": "Receivables", "icon": "attach_money", "link": reverse_lazy("admin:accounting_accountreceivable_changelist")},
+                    {"title": "Bank Accounts", "icon": "account_balance_wallet", "link": reverse_lazy("admin:accounting_bankaccount_changelist")},
+                    {"title": "Bank Reconciliations", "icon": "compare_arrows", "link": reverse_lazy("admin:accounting_bankreconciliation_changelist")},
+                    {"title": "Tax Configs", "icon": "percent", "link": reverse_lazy("admin:accounting_taxconfig_changelist")},
+                    {"title": "Currencies", "icon": "currency_exchange", "link": reverse_lazy("admin:accounting_currency_changelist")},
+                    {"title": "Financial Statements", "icon": "bar_chart", "link": reverse_lazy("admin:accounting_financialstatement_changelist")},
+                    {"title": "Audit Logs", "icon": "history", "link": reverse_lazy("admin:accounting_accountingauditlog_changelist")},
+                    {"title": "Recurring Journals", "icon": "repeat", "link": reverse_lazy("admin:accounting_recurringjournal_changelist")},
+                ],
+            },
+            {
                 "title": "CRM",
                 "icon": "contact_page",
                 "collapsible": True,
@@ -316,26 +346,6 @@ UNFOLD = {
                     {"title": "Stock Items", "icon": "inventory_2", "link": reverse_lazy("admin:inventory_stockitem_changelist")},
                     {"title": "Stock Movements", "icon": "swap_horiz", "link": reverse_lazy("admin:inventory_stockmovement_changelist")},
                     {"title": "Stock Alerts", "icon": "notification_important", "link": reverse_lazy("admin:inventory_stockalert_changelist")},
-                ],
-            },
-            {
-                "title": "Accounting",
-                "icon": "account_balance",
-                "collapsible": True,
-                "items": [
-                    {"title": "Accounts", "icon": "account_tree", "link": reverse_lazy("admin:accounting_account_changelist")},
-                    {"title": "Journals", "icon": "book", "link": reverse_lazy("admin:accounting_journal_changelist")},
-                    {"title": "Journal Entries", "icon": "edit_note", "link": reverse_lazy("admin:accounting_journalentry_changelist")},
-                    {"title": "Journal Items", "icon": "notes", "link": reverse_lazy("admin:accounting_journalitem_changelist")},
-                    {"title": "Payables", "icon": "money_off", "link": reverse_lazy("admin:accounting_accountpayable_changelist")},
-                    {"title": "Receivables", "icon": "attach_money", "link": reverse_lazy("admin:accounting_accountreceivable_changelist")},
-                    {"title": "Bank Accounts", "icon": "account_balance_wallet", "link": reverse_lazy("admin:accounting_bankaccount_changelist")},
-                    {"title": "Bank Reconciliations", "icon": "compare_arrows", "link": reverse_lazy("admin:accounting_bankreconciliation_changelist")},
-                    {"title": "Tax Configs", "icon": "percent", "link": reverse_lazy("admin:accounting_taxconfig_changelist")},
-                    {"title": "Currencies", "icon": "currency_exchange", "link": reverse_lazy("admin:accounting_currency_changelist")},
-                    {"title": "Financial Statements", "icon": "bar_chart", "link": reverse_lazy("admin:accounting_financialstatement_changelist")},
-                    {"title": "Audit Logs", "icon": "history", "link": reverse_lazy("admin:accounting_accountingauditlog_changelist")},
-                    {"title": "Recurring Journals", "icon": "repeat", "link": reverse_lazy("admin:accounting_recurringjournal_changelist")},
                 ],
             },
             {

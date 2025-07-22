@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}CRM Customers | ERP System{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-blue-900">Customers</h1>
+    <button id="addCustomerBtn" class="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800">+ Add Customer</button>
+</div>
+<div class="bg-white rounded-lg shadow p-6">
+    <table id="customersTable" class="min-w-full divide-y divide-gray-200">
+        <thead>
+            <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Account</th>
+                <th class="px-4 py-2"></th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for customer in customers %}
+            <tr data-id="{{ customer.id }}">
+                <td class="px-4 py-2">{{ customer.name }}</td>
+                <td class="px-4 py-2">{{ customer.email }}</td>
+                <td class="px-4 py-2">{{ customer.phone }}</td>
+                <td class="px-4 py-2">{{ customer.account.name if customer.account }}</td>
+                <td class="px-4 py-2 text-right">
+                    <button class="text-blue-700 hover:underline editBtn">Edit</button>
+                    <button class="text-red-600 hover:underline ml-2 deleteBtn">Delete</button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-gray-400 py-4">No customers found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<!-- Modal -->
+<div id="customerModal" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+        <h2 id="modalTitle" class="text-xl font-bold mb-4">Add Customer</h2>
+        <form id="customerForm">
+            {% csrf_token %}
+            <input type="hidden" name="customer_id" id="customerIdInput">
+            <input type="text" name="name" id="nameInput" placeholder="Name" class="w-full mb-2 p-2 border rounded" required>
+            <input type="email" name="email" id="emailInput" placeholder="Email" class="w-full mb-2 p-2 border rounded" required>
+            <input type="text" name="phone" id="phoneInput" placeholder="Phone" class="w-full mb-4 p-2 border rounded">
+            <div id="formError" class="text-red-600 mb-2 hidden"></div>
+            <button type="submit" class="w-full bg-blue-700 text-white py-2 rounded">Save</button>
+            <button type="button" id="closeModalBtn" class="w-full mt-2 bg-gray-200 text-gray-700 py-2 rounded">Cancel</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const modal = document.getElementById('customerModal');
+const form = document.getElementById('customerForm');
+const formError = document.getElementById('formError');
+const modalTitle = document.getElementById('modalTitle');
+const nameInput = document.getElementById('nameInput');
+const emailInput = document.getElementById('emailInput');
+const phoneInput = document.getElementById('phoneInput');
+const customerIdInput = document.getElementById('customerIdInput');
+
+function openModal(title, customer) {
+    modalTitle.textContent = title;
+    formError.classList.add('hidden');
+    if (customer) {
+        nameInput.value = customer.name;
+        emailInput.value = customer.email;
+        phoneInput.value = customer.phone;
+        customerIdInput.value = customer.id;
+    } else {
+        nameInput.value = '';
+        emailInput.value = '';
+        phoneInput.value = '';
+        customerIdInput.value = '';
+    }
+    modal.classList.remove('hidden');
+}
+
+document.getElementById('addCustomerBtn').onclick = () => openModal('Add Customer');
+document.getElementById('closeModalBtn').onclick = () => { modal.classList.add('hidden'); };
+
+// Edit button logic
+Array.from(document.getElementsByClassName('editBtn')).forEach(btn => {
+    btn.onclick = function() {
+        const row = btn.closest('tr');
+        openModal('Edit Customer', {
+            id: row.getAttribute('data-id'),
+            name: row.children[0].textContent,
+            email: row.children[1].textContent,
+            phone: row.children[2].textContent
+        });
+    };
+});
+
+// Delete button logic
+Array.from(document.getElementsByClassName('deleteBtn')).forEach(btn => {
+    btn.onclick = function() {
+        if (!confirm('Are you sure you want to delete this customer?')) return;
+        const row = btn.closest('tr');
+        const id = row.getAttribute('data-id');
+        fetch(`/crm/customers-delete/${id}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+        })
+        .then(res => res.json())
+        .then(json => {
+            if (json.success) {
+                row.remove();
+            } else {
+                alert('Error deleting customer.');
+            }
+        })
+        .catch(() => alert('Error deleting customer.'));
+    };
+});
+
+form.onsubmit = function(e) {
+    e.preventDefault();
+    formError.classList.add('hidden');
+    const data = new FormData(form);
+    const id = customerIdInput.value;
+    let url = '/crm/customers-add/';
+    if (id) url = `/crm/customers-edit/${id}/`;
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: data
+    })
+    .then(res => res.json())
+    .then(json => {
+        if (json.success) {
+            const table = document.getElementById('customersTable').getElementsByTagName('tbody')[0];
+            if (id) {
+                // Edit: update row
+                const row = table.querySelector(`tr[data-id='${id}']`);
+                row.children[0].textContent = json.customer.name;
+                row.children[1].textContent = json.customer.email;
+                row.children[2].textContent = json.customer.phone;
+                row.children[3].textContent = json.customer.account || '';
+            } else {
+                // Add: insert new row
+                const row = table.insertRow(0);
+                row.setAttribute('data-id', json.customer.id);
+                row.innerHTML = `
+                    <td class='px-4 py-2'>${json.customer.name}</td>
+                    <td class='px-4 py-2'>${json.customer.email}</td>
+                    <td class='px-4 py-2'>${json.customer.phone}</td>
+                    <td class='px-4 py-2'>${json.customer.account || ''}</td>
+                    <td class='px-4 py-2 text-right'>
+                        <button class='text-blue-700 hover:underline editBtn'>Edit</button>
+                        <button class='text-red-600 hover:underline ml-2 deleteBtn'>Delete</button>
+                    </td>
+                `;
+                // Re-bind edit/delete events for new row
+                row.querySelector('.editBtn').onclick = function() {
+                    openModal('Edit Customer', {
+                        id: json.customer.id,
+                        name: json.customer.name,
+                        email: json.customer.email,
+                        phone: json.customer.phone
+                    });
+                };
+                row.querySelector('.deleteBtn').onclick = function() {
+                    if (!confirm('Are you sure you want to delete this customer?')) return;
+                    fetch(`/crm/customers-delete/${json.customer.id}/`, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+                    })
+                    .then(res => res.json())
+                    .then(json2 => {
+                        if (json2.success) {
+                            row.remove();
+                        } else {
+                            alert('Error deleting customer.');
+                        }
+                    })
+                    .catch(() => alert('Error deleting customer.'));
+                };
+            }
+            modal.classList.add('hidden');
+            form.reset();
+        } else {
+            formError.textContent = json.error || 'Error saving customer.';
+            formError.classList.remove('hidden');
+        }
+    })
+    .catch(() => {
+        formError.textContent = 'Error saving customer.';
+        formError.classList.remove('hidden');
+    });
+};
+</script>
+{% endblock %} 

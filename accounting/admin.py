@@ -1,8 +1,20 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 from .models import (
-    Account, Journal, JournalEntry, JournalItem, AccountPayable, AccountReceivable, BankAccount, BankReconciliation, TaxConfig, Currency, FinancialStatement, AccountingAuditLog, RecurringJournal
+    Account, Journal, JournalEntry, JournalItem, AccountPayable, AccountReceivable, BankAccount, BankReconciliation, TaxConfig, Currency, FinancialStatement, AccountingAuditLog, RecurringJournal, AccountCategory, AccountGroup
 )
+
+@admin.register(AccountCategory)
+class AccountCategoryAdmin(ModelAdmin):
+    list_display = ('code', 'name', 'company', 'is_active')
+    search_fields = ('code', 'name')
+    list_filter = ('company', 'is_active')
+
+@admin.register(AccountGroup)
+class AccountGroupAdmin(ModelAdmin):
+    list_display = ('code', 'name', 'company', 'category', 'parent', 'is_active')
+    search_fields = ('code', 'name')
+    list_filter = ('company', 'category', 'is_active')
 
 @admin.register(Account)
 class AccountAdmin(ModelAdmin):

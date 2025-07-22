@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Sales Products | ERP System{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-blue-900">Products</h1>
+    <button id="addProductBtn" class="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800">+ Add Product</button>
+</div>
+<div class="bg-white rounded-lg shadow p-6">
+    <table id="productsTable" class="min-w-full divide-y divide-gray-200">
+        <thead>
+            <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Active</th>
+                <th class="px-4 py-2"></th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for product in products %}
+            <tr data-id="{{ product.id }}">
+                <td class="px-4 py-2">{{ product.name }}</td>
+                <td class="px-4 py-2">{{ product.sku }}</td>
+                <td class="px-4 py-2">{{ product.price }}</td>
+                <td class="px-4 py-2">{% if product.is_active %}Yes{% else %}No{% endif %}</td>
+                <td class="px-4 py-2 text-right">
+                    <button class="text-blue-700 hover:underline editBtn">Edit</button>
+                    <button class="text-red-600 hover:underline ml-2 deleteBtn">Delete</button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-gray-400 py-4">No products found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<!-- Modal -->
+<div id="productModal" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+        <h2 id="modalTitle" class="text-xl font-bold mb-4">Add Product</h2>
+        <form id="productForm">
+            {% csrf_token %}
+            <input type="hidden" name="product_id" id="productIdInput">
+            <input type="text" name="name" id="nameInput" placeholder="Name" class="w-full mb-2 p-2 border rounded" required>
+            <input type="text" name="sku" id="skuInput" placeholder="SKU" class="w-full mb-2 p-2 border rounded">
+            <input type="number" name="price" id="priceInput" placeholder="Price" class="w-full mb-2 p-2 border rounded" required step="0.01">
+            <label class="flex items-center mb-4">
+                <input type="checkbox" name="is_active" id="isActiveInput" class="mr-2"> Active
+            </label>
+            <div id="formError" class="text-red-600 mb-2 hidden"></div>
+            <button type="submit" class="w-full bg-blue-700 text-white py-2 rounded">Save</button>
+            <button type="button" id="closeModalBtn" class="w-full mt-2 bg-gray-200 text-gray-700 py-2 rounded">Cancel</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const modal = document.getElementById('productModal');
+const form = document.getElementById('productForm');
+const formError = document.getElementById('formError');
+const modalTitle = document.getElementById('modalTitle');
+const nameInput = document.getElementById('nameInput');
+const skuInput = document.getElementById('skuInput');
+const priceInput = document.getElementById('priceInput');
+const isActiveInput = document.getElementById('isActiveInput');
+const productIdInput = document.getElementById('productIdInput');
+
+function openModal(title, product) {
+    modalTitle.textContent = title;
+    formError.classList.add('hidden');
+    if (product) {
+        nameInput.value = product.name;
+        skuInput.value = product.sku;
+        priceInput.value = product.price;
+        isActiveInput.checked = product.is_active;
+        productIdInput.value = product.id;
+    } else {
+        nameInput.value = '';
+        skuInput.value = '';
+        priceInput.value = '';
+        isActiveInput.checked = true;
+        productIdInput.value = '';
+    }
+    modal.classList.remove('hidden');
+}
+
+document.getElementById('addProductBtn').onclick = () => openModal('Add Product');
+document.getElementById('closeModalBtn').onclick = () => { modal.classList.add('hidden'); };
+
+// Edit button logic
+Array.from(document.getElementsByClassName('editBtn')).forEach(btn => {
+    btn.onclick = function() {
+        const row = btn.closest('tr');
+        openModal('Edit Product', {
+            id: row.getAttribute('data-id'),
+            name: row.children[0].textContent,
+            sku: row.children[1].textContent,
+            price: row.children[2].textContent,
+            is_active: row.children[3].textContent.trim() === 'Yes'
+        });
+    };
+});
+
+// Delete button logic
+Array.from(document.getElementsByClassName('deleteBtn')).forEach(btn => {
+    btn.onclick = function() {
+        if (!confirm('Are you sure you want to delete this product?')) return;
+        const row = btn.closest('tr');
+        const id = row.getAttribute('data-id');
+        fetch(`/sales/products-delete/${id}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+        })
+        .then(res => res.json())
+        .then(json => {
+            if (json.success) {
+                row.remove();
+            } else {
+                alert('Error deleting product.');
+            }
+        })
+        .catch(() => alert('Error deleting product.'));
+    };
+});
+
+form.onsubmit = function(e) {
+    e.preventDefault();
+    formError.classList.add('hidden');
+    const data = new FormData(form);
+    const id = productIdInput.value;
+    let url = '/sales/products-add/';
+    if (id) url = `/sales/products-edit/${id}/`;
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: data
+    })
+    .then(res => res.json())
+    .then(json => {
+        if (json.success) {
+            const table = document.getElementById('productsTable').getElementsByTagName('tbody')[0];
+            if (id) {
+                // Edit: update row
+                const row = table.querySelector(`tr[data-id='${id}']`);
+                row.children[0].textContent = json.product.name;
+                row.children[1].textContent = json.product.sku;
+                row.children[2].textContent = json.product.price;
+                row.children[3].textContent = json.product.is_active ? 'Yes' : 'No';
+            } else {
+                // Add: insert new row
+                const row = table.insertRow(0);
+                row.setAttribute('data-id', json.product.id);
+                row.innerHTML = `
+                    <td class='px-4 py-2'>${json.product.name}</td>
+                    <td class='px-4 py-2'>${json.product.sku}</td>
+                    <td class='px-4 py-2'>${json.product.price}</td>
+                    <td class='px-4 py-2'>${json.product.is_active ? 'Yes' : 'No'}</td>
+                    <td class='px-4 py-2 text-right'>
+                        <button class='text-blue-700 hover:underline editBtn'>Edit</button>
+                        <button class='text-red-600 hover:underline ml-2 deleteBtn'>Delete</button>
+                    </td>
+                `;
+                // Re-bind edit/delete events for new row
+                row.querySelector('.editBtn').onclick = function() {
+                    openModal('Edit Product', {
+                        id: json.product.id,
+                        name: json.product.name,
+                        sku: json.product.sku,
+                        price: json.product.price,
+                        is_active: json.product.is_active
+                    });
+                };
+                row.querySelector('.deleteBtn').onclick = function() {
+                    if (!confirm('Are you sure you want to delete this product?')) return;
+                    fetch(`/sales/products-delete/${json.product.id}/`, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+                    })
+                    .then(res => res.json())
+                    .then(json2 => {
+                        if (json2.success) {
+                            row.remove();
+                        } else {
+                            alert('Error deleting product.');
+                        }
+                    })
+                    .catch(() => alert('Error deleting product.'));
+                };
+            }
+            modal.classList.add('hidden');
+            form.reset();
+        } else {
+            formError.textContent = json.error || 'Error saving product.';
+            formError.classList.remove('hidden');
+        }
+    })
+    .catch(() => {
+        formError.textContent = 'Error saving product.';
+        formError.classList.remove('hidden');
+    });
+};
+</script>
+{% endblock %} 

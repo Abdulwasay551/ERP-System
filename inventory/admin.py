@@ -16,15 +16,15 @@ class WarehouseAdmin(ModelAdmin):
 
 @admin.register(StockItem)
 class StockItemAdmin(ModelAdmin):
-    list_display = ('product', 'company', 'category', 'warehouse', 'quantity', 'min_stock', 'max_stock', 'is_active')
-    search_fields = ('product__name', 'warehouse__name')
-    list_filter = ('company', 'warehouse', 'is_active')
+    list_display = ('product', 'company', 'category', 'warehouse', 'quantity', 'min_stock', 'max_stock', 'is_active', 'account')
+    search_fields = ('product__name', 'warehouse__name', 'account__code', 'account__name')
+    list_filter = ('company', 'warehouse', 'is_active', 'account')
 
 @admin.register(StockMovement)
 class StockMovementAdmin(ModelAdmin):
-    list_display = ('stock_item', 'company', 'movement_type', 'quantity', 'from_warehouse', 'to_warehouse', 'performed_by', 'timestamp')
-    search_fields = ('stock_item__product__name', 'reference')
-    list_filter = ('company', 'movement_type')
+    list_display = ('stock_item', 'company', 'movement_type', 'quantity', 'from_warehouse', 'to_warehouse', 'performed_by', 'timestamp', 'cogs_account')
+    search_fields = ('stock_item__product__name', 'reference', 'cogs_account__code', 'cogs_account__name')
+    list_filter = ('company', 'movement_type', 'cogs_account')
 
 @admin.register(StockAlert)
 class StockAlertAdmin(ModelAdmin):

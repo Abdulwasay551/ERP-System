@@ -4,9 +4,9 @@ from .models import Customer, Lead, Opportunity, CommunicationLog
 
 @admin.register(Customer)
 class CustomerAdmin(ModelAdmin):
-    list_display = ('name', 'company', 'email', 'phone', 'created_by', 'created_at')
-    search_fields = ('name', 'email', 'phone', 'address')
-    list_filter = ('company',)
+    list_display = ('name', 'company', 'email', 'phone', 'account', 'created_by', 'created_at')
+    search_fields = ('name', 'email', 'phone', 'address', 'account__code', 'account__name')
+    list_filter = ('company', 'account')
 
 @admin.register(Lead)
 class LeadAdmin(ModelAdmin):
@@ -16,9 +16,9 @@ class LeadAdmin(ModelAdmin):
 
 @admin.register(Opportunity)
 class OpportunityAdmin(ModelAdmin):
-    list_display = ('name', 'company', 'customer', 'value', 'stage', 'assigned_to', 'close_date', 'created_at')
-    search_fields = ('name', 'customer__name', 'stage')
-    list_filter = ('company', 'stage')
+    list_display = ('name', 'company', 'customer', 'account', 'value', 'stage', 'assigned_to', 'close_date', 'created_at')
+    search_fields = ('name', 'customer__name', 'stage', 'account__code', 'account__name')
+    list_filter = ('company', 'stage', 'account')
 
 @admin.register(CommunicationLog)
 class CommunicationLogAdmin(ModelAdmin):

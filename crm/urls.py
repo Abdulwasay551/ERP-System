@@ -4,6 +4,7 @@ from .views import CustomerPageView
 from .views import LeadPageView
 from .views import OpportunityPageView
 from .views import CommunicationLogPageView
+from .views import customers_ui, customers_add, customers_edit, customers_delete
 
 urlpatterns = [
     path('customers/', views.CustomerListView.as_view(), name='customer_list'),
@@ -27,4 +28,11 @@ urlpatterns += [
 
 urlpatterns += [
     path('communications-ui/', CommunicationLogPageView.as_view(), name='communicationlog_page'),
+]
+
+urlpatterns += [
+    path('customers-ui/', customers_ui, name='crm_customers_ui'),
+    path('customers-add/', customers_add, name='crm_customers_add'),
+    path('customers-edit/<int:pk>/', customers_edit, name='crm_customers_edit'),
+    path('customers-delete/<int:pk>/', customers_delete, name='crm_customers_delete'),
 ] 

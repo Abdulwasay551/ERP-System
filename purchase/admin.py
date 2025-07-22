@@ -10,9 +10,9 @@ class SupplierAdmin(ModelAdmin):
 
 @admin.register(PurchaseOrder)
 class PurchaseOrderAdmin(ModelAdmin):
-    list_display = ('id', 'company', 'supplier', 'order_date', 'expected_date', 'total', 'status', 'created_by')
-    search_fields = ('id', 'supplier__name', 'status')
-    list_filter = ('company', 'status')
+    list_display = ('id', 'company', 'supplier', 'order_date', 'expected_date', 'total', 'status', 'created_by', 'account')
+    search_fields = ('id', 'supplier__name', 'status', 'account__code', 'account__name')
+    list_filter = ('company', 'status', 'account')
 
 @admin.register(PurchaseOrderItem)
 class PurchaseOrderItemAdmin(ModelAdmin):
@@ -22,12 +22,12 @@ class PurchaseOrderItemAdmin(ModelAdmin):
 
 @admin.register(Bill)
 class BillAdmin(ModelAdmin):
-    list_display = ('id', 'company', 'supplier', 'bill_date', 'due_date', 'total', 'status', 'created_by')
-    search_fields = ('id', 'supplier__name', 'status')
-    list_filter = ('company', 'status')
+    list_display = ('id', 'company', 'supplier', 'bill_date', 'due_date', 'total', 'status', 'created_by', 'account')
+    search_fields = ('id', 'supplier__name', 'status', 'account__code', 'account__name')
+    list_filter = ('company', 'status', 'account')
 
 @admin.register(PurchasePayment)
 class PurchasePaymentAdmin(ModelAdmin):
-    list_display = ('id', 'company', 'bill', 'amount', 'payment_date', 'method', 'paid_by')
-    search_fields = ('id', 'bill__id', 'method', 'reference')
-    list_filter = ('company', 'method')
+    list_display = ('id', 'company', 'bill', 'amount', 'payment_date', 'method', 'paid_by', 'account')
+    search_fields = ('id', 'bill__id', 'method', 'reference', 'account__code', 'account__name')
+    list_filter = ('company', 'method', 'account')

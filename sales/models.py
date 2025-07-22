@@ -1,6 +1,7 @@
 from django.db import models
 from user_auth.models import Company, User
 from crm.models import Customer
+from accounting.models import Account
 
 # Create your models here.
 
@@ -56,6 +57,7 @@ class SalesOrder(models.Model):
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    account = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True, related_name='sales_orders')
 
     def __str__(self):
         return f"Order #{self.id} - {self.customer.name}"
@@ -84,6 +86,7 @@ class Invoice(models.Model):
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    account = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True, related_name='invoices')
 
     def __str__(self):
         return f"Invoice #{self.id} - {self.customer.name}"
@@ -99,6 +102,7 @@ class Payment(models.Model):
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    account = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True, related_name='payments')
 
     def __str__(self):
         return f"Payment #{self.id} - {self.amount} for Invoice #{self.invoice.id}"

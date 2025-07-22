@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}HR Employees | ERP System{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-blue-900">Employees</h1>
+    <button id="addEmployeeBtn" class="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800">+ Add Employee</button>
+</div>
+<div class="bg-white rounded-lg shadow p-6">
+    <table id="employeesTable" class="min-w-full divide-y divide-gray-200">
+        <thead>
+            <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">First Name</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Last Name</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
+                <th class="px-4 py-2"></th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for emp in employees %}
+            <tr data-id="{{ emp.id }}">
+                <td class="px-4 py-2">{{ emp.first_name }}</td>
+                <td class="px-4 py-2">{{ emp.last_name }}</td>
+                <td class="px-4 py-2">{{ emp.email }}</td>
+                <td class="px-4 py-2">{{ emp.department }}</td>
+                <td class="px-4 py-2 text-right">
+                    <button class="text-blue-700 hover:underline editBtn">Edit</button>
+                    <button class="text-red-600 hover:underline ml-2 deleteBtn">Delete</button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-gray-400 py-4">No employees found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<!-- Modal -->
+<div id="employeeModal" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+        <h2 id="modalTitle" class="text-xl font-bold mb-4">Add Employee</h2>
+        <form id="employeeForm">
+            {% csrf_token %}
+            <input type="hidden" name="employee_id" id="employeeIdInput">
+            <input type="text" name="first_name" id="firstNameInput" placeholder="First Name" class="w-full mb-2 p-2 border rounded" required>
+            <input type="text" name="last_name" id="lastNameInput" placeholder="Last Name" class="w-full mb-2 p-2 border rounded" required>
+            <input type="email" name="email" id="emailInput" placeholder="Email" class="w-full mb-2 p-2 border rounded" required>
+            <input type="text" name="department" id="departmentInput" placeholder="Department" class="w-full mb-4 p-2 border rounded">
+            <div id="formError" class="text-red-600 mb-2 hidden"></div>
+            <button type="submit" class="w-full bg-blue-700 text-white py-2 rounded">Save</button>
+            <button type="button" id="closeModalBtn" class="w-full mt-2 bg-gray-200 text-gray-700 py-2 rounded">Cancel</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const modal = document.getElementById('employeeModal');
+document.getElementById('addEmployeeBtn').onclick = () => modal.classList.remove('hidden');
+document.getElementById('closeModalBtn').onclick = () => modal.classList.add('hidden');
+// TODO: AJAX CRUD logic for add/edit/delete
+</script>
+{% endblock %} 

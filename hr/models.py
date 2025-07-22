@@ -1,5 +1,6 @@
 from django.db import models
 from user_auth.models import Company, User
+from accounting.models import Account
 
 class Employee(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='employees')
@@ -56,6 +57,9 @@ class Payroll(models.Model):
     status = models.CharField(max_length=50, default='Pending')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    salary_account = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True, related_name='payroll_salary')
+    benefits_account = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True, related_name='payroll_benefits')
+    liability_account = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True, related_name='payroll_liabilities')
 
     def __str__(self):
         return f"Payroll {self.employee} ({self.period_start} - {self.period_end})"
@@ -64,6 +68,7 @@ class Payslip(models.Model):
     payroll = models.ForeignKey(Payroll, on_delete=models.CASCADE, related_name='payslips')
     pdf_file = models.FileField(upload_to='payslips/', blank=True, null=True)
     generated_at = models.DateTimeField(auto_now_add=True)
+    account = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True, related_name='payslips')
 
     def __str__(self):
         return f"Payslip {self.payroll}"
