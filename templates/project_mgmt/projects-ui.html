@@ -55,8 +55,148 @@
 {% block extra_js %}
 <script>
 const modal = document.getElementById('projectModal');
-document.getElementById('addProjectBtn').onclick = () => modal.classList.remove('hidden');
-document.getElementById('closeModalBtn').onclick = () => modal.classList.add('hidden');
-// TODO: AJAX CRUD logic for add/edit/delete
+const form = document.getElementById('projectForm');
+const formError = document.getElementById('formError');
+const modalTitle = document.getElementById('modalTitle');
+const nameInput = document.getElementById('nameInput');
+const statusInput = document.getElementById('statusInput');
+const startDateInput = document.getElementById('startDateInput');
+const endDateInput = document.getElementById('endDateInput');
+const projectIdInput = document.getElementById('projectIdInput');
+
+function openModal(title, project) {
+    modalTitle.textContent = title;
+    formError.classList.add('hidden');
+    if (project) {
+        nameInput.value = project.name;
+        statusInput.value = project.status;
+        startDateInput.value = project.start_date;
+        endDateInput.value = project.end_date;
+        projectIdInput.value = project.id;
+    } else {
+        nameInput.value = '';
+        statusInput.value = '';
+        startDateInput.value = '';
+        endDateInput.value = '';
+        projectIdInput.value = '';
+    }
+    modal.classList.remove('hidden');
+}
+
+document.getElementById('addProjectBtn').onclick = () => openModal('Add Project');
+document.getElementById('closeModalBtn').onclick = () => { modal.classList.add('hidden'); };
+
+// Edit button logic
+Array.from(document.getElementsByClassName('editBtn')).forEach(btn => {
+    btn.onclick = function() {
+        const row = btn.closest('tr');
+        openModal('Edit Project', {
+            id: row.getAttribute('data-id'),
+            name: row.children[0].textContent,
+            status: row.children[1].textContent,
+            start_date: row.children[2].textContent,
+            end_date: row.children[3].textContent
+        });
+    };
+});
+
+// Delete button logic
+Array.from(document.getElementsByClassName('deleteBtn')).forEach(btn => {
+    btn.onclick = function() {
+        if (!confirm('Are you sure you want to delete this project?')) return;
+        const row = btn.closest('tr');
+        const id = row.getAttribute('data-id');
+        fetch(`/project_mgmt/projects-delete/${id}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+        })
+        .then(res => res.json())
+        .then(json => {
+            if (json.success) {
+                row.remove();
+            } else {
+                alert('Error deleting project.');
+            }
+        })
+        .catch(() => alert('Error deleting project.'));
+    };
+});
+
+form.onsubmit = function(e) {
+    e.preventDefault();
+    formError.classList.add('hidden');
+    const data = new FormData(form);
+    const id = projectIdInput.value;
+    let url = '/project_mgmt/projects-add/';
+    if (id) url = `/project_mgmt/projects-edit/${id}/`;
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: data
+    })
+    .then(res => res.json())
+    .then(json => {
+        if (json.success) {
+            const table = document.getElementById('projectsTable').getElementsByTagName('tbody')[0];
+            if (id) {
+                // Edit: update row
+                const row = table.querySelector(`tr[data-id='${id}']`);
+                row.children[0].textContent = json.project.name;
+                row.children[1].textContent = json.project.status;
+                row.children[2].textContent = json.project.start_date;
+                row.children[3].textContent = json.project.end_date;
+            } else {
+                // Add: insert new row
+                const row = table.insertRow(0);
+                row.setAttribute('data-id', json.project.id);
+                row.innerHTML = `
+                    <td class='px-4 py-2'>${json.project.name}</td>
+                    <td class='px-4 py-2'>${json.project.status}</td>
+                    <td class='px-4 py-2'>${json.project.start_date}</td>
+                    <td class='px-4 py-2'>${json.project.end_date}</td>
+                    <td class='px-4 py-2 text-right'>
+                        <button class='text-blue-700 hover:underline editBtn'>Edit</button>
+                        <button class='text-red-600 hover:underline ml-2 deleteBtn'>Delete</button>
+                    </td>
+                `;
+                // Re-bind edit/delete events for new row
+                row.querySelector('.editBtn').onclick = function() {
+                    openModal('Edit Project', {
+                        id: json.project.id,
+                        name: json.project.name,
+                        status: json.project.status,
+                        start_date: json.project.start_date,
+                        end_date: json.project.end_date
+                    });
+                };
+                row.querySelector('.deleteBtn').onclick = function() {
+                    if (!confirm('Are you sure you want to delete this project?')) return;
+                    fetch(`/project_mgmt/projects-delete/${json.project.id}/`, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+                    })
+                    .then(res => res.json())
+                    .then(json2 => {
+                        if (json2.success) {
+                            row.remove();
+                        } else {
+                            alert('Error deleting project.');
+                        }
+                    })
+                    .catch(() => alert('Error deleting project.'));
+                };
+            }
+            modal.classList.add('hidden');
+            form.reset();
+        } else {
+            formError.textContent = json.error || 'Error saving project.';
+            formError.classList.remove('hidden');
+        }
+    })
+    .catch(() => {
+        formError.textContent = 'Error saving project.';
+        formError.classList.remove('hidden');
+    });
+};
 </script>
 {% endblock %} 

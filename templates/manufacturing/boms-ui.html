@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Manufacturing BOMs | ERP System{% endblock %}
+{% block title %}Bill of Materials | ERP System{% endblock %}
 {% block content %}
 <div class="flex justify-between items-center mb-6">
     <h1 class="text-2xl font-bold text-blue-900">Bill of Materials</h1>
@@ -9,20 +9,20 @@
     <table id="bomsTable" class="min-w-full divide-y divide-gray-200">
         <thead>
             <tr>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Version</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Created By</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Active</th>
                 <th class="px-4 py-2"></th>
             </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
             {% for bom in boms %}
             <tr data-id="{{ bom.id }}">
-                <td class="px-4 py-2">{{ bom.product.name }}</td>
                 <td class="px-4 py-2">{{ bom.name }}</td>
-                <td class="px-4 py-2">{{ bom.version }}</td>
-                <td class="px-4 py-2">{{ bom.created_by.get_full_name }}</td>
+                <td class="px-4 py-2">{{ bom.code }}</td>
+                <td class="px-4 py-2">{{ bom.description }}</td>
+                <td class="px-4 py-2">{{ bom.is_active|yesno:"Yes,No" }}</td>
                 <td class="px-4 py-2 text-right">
                     <button class="text-blue-700 hover:underline editBtn">Edit</button>
                     <button class="text-red-600 hover:underline ml-2 deleteBtn">Delete</button>
@@ -41,9 +41,12 @@
         <form id="bomForm">
             {% csrf_token %}
             <input type="hidden" name="bom_id" id="bomIdInput">
-            <input type="text" name="product" id="productInput" placeholder="Product" class="w-full mb-2 p-2 border rounded" required>
             <input type="text" name="name" id="nameInput" placeholder="Name" class="w-full mb-2 p-2 border rounded" required>
-            <input type="text" name="version" id="versionInput" placeholder="Version" class="w-full mb-2 p-2 border rounded">
+            <input type="text" name="code" id="codeInput" placeholder="Code" class="w-full mb-2 p-2 border rounded" required>
+            <textarea name="description" id="descriptionInput" placeholder="Description" class="w-full mb-2 p-2 border rounded"></textarea>
+            <label class="inline-flex items-center mb-4">
+                <input type="checkbox" name="is_active" id="isActiveInput" class="mr-2"> Active
+            </label>
             <div id="formError" class="text-red-600 mb-2 hidden"></div>
             <button type="submit" class="w-full bg-blue-700 text-white py-2 rounded">Save</button>
             <button type="button" id="closeModalBtn" class="w-full mt-2 bg-gray-200 text-gray-700 py-2 rounded">Cancel</button>
@@ -54,8 +57,148 @@
 {% block extra_js %}
 <script>
 const modal = document.getElementById('bomModal');
-document.getElementById('addBOMBtn').onclick = () => modal.classList.remove('hidden');
-document.getElementById('closeModalBtn').onclick = () => modal.classList.add('hidden');
-// TODO: AJAX CRUD logic for add/edit/delete
+const form = document.getElementById('bomForm');
+const formError = document.getElementById('formError');
+const modalTitle = document.getElementById('modalTitle');
+const nameInput = document.getElementById('nameInput');
+const codeInput = document.getElementById('codeInput');
+const descriptionInput = document.getElementById('descriptionInput');
+const isActiveInput = document.getElementById('isActiveInput');
+const bomIdInput = document.getElementById('bomIdInput');
+
+function openModal(title, bom) {
+    modalTitle.textContent = title;
+    formError.classList.add('hidden');
+    if (bom) {
+        nameInput.value = bom.name;
+        codeInput.value = bom.code;
+        descriptionInput.value = bom.description;
+        isActiveInput.checked = bom.is_active;
+        bomIdInput.value = bom.id;
+    } else {
+        nameInput.value = '';
+        codeInput.value = '';
+        descriptionInput.value = '';
+        isActiveInput.checked = true;
+        bomIdInput.value = '';
+    }
+    modal.classList.remove('hidden');
+}
+
+document.getElementById('addBOMBtn').onclick = () => openModal('Add BOM');
+document.getElementById('closeModalBtn').onclick = () => { modal.classList.add('hidden'); };
+
+// Edit button logic
+Array.from(document.getElementsByClassName('editBtn')).forEach(btn => {
+    btn.onclick = function() {
+        const row = btn.closest('tr');
+        openModal('Edit BOM', {
+            id: row.getAttribute('data-id'),
+            name: row.children[0].textContent,
+            code: row.children[1].textContent,
+            description: row.children[2].textContent,
+            is_active: row.children[3].textContent.trim() === 'Yes'
+        });
+    };
+});
+
+// Delete button logic
+Array.from(document.getElementsByClassName('deleteBtn')).forEach(btn => {
+    btn.onclick = function() {
+        if (!confirm('Are you sure you want to delete this BOM?')) return;
+        const row = btn.closest('tr');
+        const id = row.getAttribute('data-id');
+        fetch(`/manufacturing/boms-delete/${id}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+        })
+        .then(res => res.json())
+        .then(json => {
+            if (json.success) {
+                row.remove();
+            } else {
+                alert('Error deleting BOM.');
+            }
+        })
+        .catch(() => alert('Error deleting BOM.'));
+    };
+});
+
+form.onsubmit = function(e) {
+    e.preventDefault();
+    formError.classList.add('hidden');
+    const data = new FormData(form);
+    const id = bomIdInput.value;
+    let url = '/manufacturing/boms-add/';
+    if (id) url = `/manufacturing/boms-edit/${id}/`;
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: data
+    })
+    .then(res => res.json())
+    .then(json => {
+        if (json.success) {
+            const table = document.getElementById('bomsTable').getElementsByTagName('tbody')[0];
+            if (id) {
+                // Edit: update row
+                const row = table.querySelector(`tr[data-id='${id}']`);
+                row.children[0].textContent = json.bom.name;
+                row.children[1].textContent = json.bom.code;
+                row.children[2].textContent = json.bom.description;
+                row.children[3].textContent = json.bom.is_active ? 'Yes' : 'No';
+            } else {
+                // Add: insert new row
+                const row = table.insertRow(0);
+                row.setAttribute('data-id', json.bom.id);
+                row.innerHTML = `
+                    <td class='px-4 py-2'>${json.bom.name}</td>
+                    <td class='px-4 py-2'>${json.bom.code}</td>
+                    <td class='px-4 py-2'>${json.bom.description}</td>
+                    <td class='px-4 py-2'>${json.bom.is_active ? 'Yes' : 'No'}</td>
+                    <td class='px-4 py-2 text-right'>
+                        <button class='text-blue-700 hover:underline editBtn'>Edit</button>
+                        <button class='text-red-600 hover:underline ml-2 deleteBtn'>Delete</button>
+                    </td>
+                `;
+                // Re-bind edit/delete events for new row
+                row.querySelector('.editBtn').onclick = function() {
+                    openModal('Edit BOM', {
+                        id: json.bom.id,
+                        name: json.bom.name,
+                        code: json.bom.code,
+                        description: json.bom.description,
+                        is_active: json.bom.is_active
+                    });
+                };
+                row.querySelector('.deleteBtn').onclick = function() {
+                    if (!confirm('Are you sure you want to delete this BOM?')) return;
+                    fetch(`/manufacturing/boms-delete/${json.bom.id}/`, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+                    })
+                    .then(res => res.json())
+                    .then(json2 => {
+                        if (json2.success) {
+                            row.remove();
+                        } else {
+                            alert('Error deleting BOM.');
+                        }
+                    })
+                    .catch(() => alert('Error deleting BOM.'));
+                };
+            }
+            modal.classList.add('hidden');
+            form.reset();
+        } else {
+            formError.textContent = json.error || 'Error saving BOM.';
+            formError.classList.remove('hidden');
+        }
+    })
+    .catch(() => {
+        formError.textContent = 'Error saving BOM.';
+        formError.classList.remove('hidden');
+    });
+};
 </script>
 {% endblock %} 

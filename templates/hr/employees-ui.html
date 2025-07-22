@@ -55,8 +55,148 @@
 {% block extra_js %}
 <script>
 const modal = document.getElementById('employeeModal');
-document.getElementById('addEmployeeBtn').onclick = () => modal.classList.remove('hidden');
-document.getElementById('closeModalBtn').onclick = () => modal.classList.add('hidden');
-// TODO: AJAX CRUD logic for add/edit/delete
+const form = document.getElementById('employeeForm');
+const formError = document.getElementById('formError');
+const modalTitle = document.getElementById('modalTitle');
+const firstNameInput = document.getElementById('firstNameInput');
+const lastNameInput = document.getElementById('lastNameInput');
+const emailInput = document.getElementById('emailInput');
+const departmentInput = document.getElementById('departmentInput');
+const employeeIdInput = document.getElementById('employeeIdInput');
+
+function openModal(title, emp) {
+    modalTitle.textContent = title;
+    formError.classList.add('hidden');
+    if (emp) {
+        firstNameInput.value = emp.first_name;
+        lastNameInput.value = emp.last_name;
+        emailInput.value = emp.email;
+        departmentInput.value = emp.department;
+        employeeIdInput.value = emp.id;
+    } else {
+        firstNameInput.value = '';
+        lastNameInput.value = '';
+        emailInput.value = '';
+        departmentInput.value = '';
+        employeeIdInput.value = '';
+    }
+    modal.classList.remove('hidden');
+}
+
+document.getElementById('addEmployeeBtn').onclick = () => openModal('Add Employee');
+document.getElementById('closeModalBtn').onclick = () => { modal.classList.add('hidden'); };
+
+// Edit button logic
+Array.from(document.getElementsByClassName('editBtn')).forEach(btn => {
+    btn.onclick = function() {
+        const row = btn.closest('tr');
+        openModal('Edit Employee', {
+            id: row.getAttribute('data-id'),
+            first_name: row.children[0].textContent,
+            last_name: row.children[1].textContent,
+            email: row.children[2].textContent,
+            department: row.children[3].textContent
+        });
+    };
+});
+
+// Delete button logic
+Array.from(document.getElementsByClassName('deleteBtn')).forEach(btn => {
+    btn.onclick = function() {
+        if (!confirm('Are you sure you want to delete this employee?')) return;
+        const row = btn.closest('tr');
+        const id = row.getAttribute('data-id');
+        fetch(`/hr/employees-delete/${id}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+        })
+        .then(res => res.json())
+        .then(json => {
+            if (json.success) {
+                row.remove();
+            } else {
+                alert('Error deleting employee.');
+            }
+        })
+        .catch(() => alert('Error deleting employee.'));
+    };
+});
+
+form.onsubmit = function(e) {
+    e.preventDefault();
+    formError.classList.add('hidden');
+    const data = new FormData(form);
+    const id = employeeIdInput.value;
+    let url = '/hr/employees-add/';
+    if (id) url = `/hr/employees-edit/${id}/`;
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: data
+    })
+    .then(res => res.json())
+    .then(json => {
+        if (json.success) {
+            const table = document.getElementById('employeesTable').getElementsByTagName('tbody')[0];
+            if (id) {
+                // Edit: update row
+                const row = table.querySelector(`tr[data-id='${id}']`);
+                row.children[0].textContent = json.employee.first_name;
+                row.children[1].textContent = json.employee.last_name;
+                row.children[2].textContent = json.employee.email;
+                row.children[3].textContent = json.employee.department;
+            } else {
+                // Add: insert new row
+                const row = table.insertRow(0);
+                row.setAttribute('data-id', json.employee.id);
+                row.innerHTML = `
+                    <td class='px-4 py-2'>${json.employee.first_name}</td>
+                    <td class='px-4 py-2'>${json.employee.last_name}</td>
+                    <td class='px-4 py-2'>${json.employee.email}</td>
+                    <td class='px-4 py-2'>${json.employee.department}</td>
+                    <td class='px-4 py-2 text-right'>
+                        <button class='text-blue-700 hover:underline editBtn'>Edit</button>
+                        <button class='text-red-600 hover:underline ml-2 deleteBtn'>Delete</button>
+                    </td>
+                `;
+                // Re-bind edit/delete events for new row
+                row.querySelector('.editBtn').onclick = function() {
+                    openModal('Edit Employee', {
+                        id: json.employee.id,
+                        first_name: json.employee.first_name,
+                        last_name: json.employee.last_name,
+                        email: json.employee.email,
+                        department: json.employee.department
+                    });
+                };
+                row.querySelector('.deleteBtn').onclick = function() {
+                    if (!confirm('Are you sure you want to delete this employee?')) return;
+                    fetch(`/hr/employees-delete/${json.employee.id}/`, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+                    })
+                    .then(res => res.json())
+                    .then(json2 => {
+                        if (json2.success) {
+                            row.remove();
+                        } else {
+                            alert('Error deleting employee.');
+                        }
+                    })
+                    .catch(() => alert('Error deleting employee.'));
+                };
+            }
+            modal.classList.add('hidden');
+            form.reset();
+        } else {
+            formError.textContent = json.error || 'Error saving employee.';
+            formError.classList.remove('hidden');
+        }
+    })
+    .catch(() => {
+        formError.textContent = 'Error saving employee.';
+        formError.classList.remove('hidden');
+    });
+};
 </script>
 {% endblock %} 

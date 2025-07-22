@@ -9,19 +9,19 @@
     <table id="purchaseordersTable" class="min-w-full divide-y divide-gray-200">
         <thead>
             <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Order Date</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th class="px-4 py-2"></th>
             </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
             {% for po in purchaseorders %}
-            <tr data-id="{{ po.id }}">
+            <tr data-id="{{ po.id }}" data-supplier-id="{{ po.supplier.id if po.supplier }}">
+                <td class="px-4 py-2">{{ po.order_number }}</td>
                 <td class="px-4 py-2">{{ po.supplier.name }}</td>
                 <td class="px-4 py-2">{{ po.order_date }}</td>
-                <td class="px-4 py-2">{{ po.total }}</td>
                 <td class="px-4 py-2">{{ po.status }}</td>
                 <td class="px-4 py-2 text-right">
                     <button class="text-blue-700 hover:underline editBtn">Edit</button>
@@ -41,9 +41,16 @@
         <form id="purchaseOrderForm">
             {% csrf_token %}
             <input type="hidden" name="purchaseorder_id" id="purchaseOrderIdInput">
-            <input type="text" name="supplier" id="supplierInput" placeholder="Supplier" class="w-full mb-2 p-2 border rounded" required>
+            <input type="hidden" name="order_number" id="orderNumberInput">
+            <label class="block mb-2">Supplier
+                <select name="supplier_id" id="supplierInput" class="w-full mb-2 p-2 border rounded" required>
+                    <option value="">Select supplier</option>
+                    {% for supplier in suppliers %}
+                    <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
             <input type="date" name="order_date" id="orderDateInput" placeholder="Order Date" class="w-full mb-2 p-2 border rounded">
-            <input type="number" name="total" id="totalInput" placeholder="Total" class="w-full mb-2 p-2 border rounded" required step="0.01">
             <input type="text" name="status" id="statusInput" placeholder="Status" class="w-full mb-4 p-2 border rounded">
             <div id="formError" class="text-red-600 mb-2 hidden"></div>
             <button type="submit" class="w-full bg-blue-700 text-white py-2 rounded">Save</button>
@@ -55,8 +62,152 @@
 {% block extra_js %}
 <script>
 const modal = document.getElementById('purchaseOrderModal');
-document.getElementById('addPurchaseOrderBtn').onclick = () => modal.classList.remove('hidden');
-document.getElementById('closeModalBtn').onclick = () => modal.classList.add('hidden');
-// TODO: AJAX CRUD logic for add/edit/delete
+const form = document.getElementById('purchaseOrderForm');
+const formError = document.getElementById('formError');
+const modalTitle = document.getElementById('modalTitle');
+const supplierInput = document.getElementById('supplierInput');
+const orderDateInput = document.getElementById('orderDateInput');
+const statusInput = document.getElementById('statusInput');
+const purchaseOrderIdInput = document.getElementById('purchaseOrderIdInput');
+const orderNumberInput = document.getElementById('orderNumberInput');
+
+function openModal(title, po) {
+    modalTitle.textContent = title;
+    formError.classList.add('hidden');
+    if (po) {
+        orderNumberInput.value = po.order_number;
+        supplierInput.value = po.supplier_id;
+        orderDateInput.value = po.order_date;
+        statusInput.value = po.status;
+        purchaseOrderIdInput.value = po.id;
+    } else {
+        orderNumberInput.value = '';
+        supplierInput.value = '';
+        orderDateInput.value = '';
+        statusInput.value = '';
+        purchaseOrderIdInput.value = '';
+    }
+    modal.classList.remove('hidden');
+}
+
+document.getElementById('addPurchaseOrderBtn').onclick = () => openModal('Add Purchase Order');
+document.getElementById('closeModalBtn').onclick = () => { modal.classList.add('hidden'); };
+
+// Edit button logic
+Array.from(document.getElementsByClassName('editBtn')).forEach(btn => {
+    btn.onclick = function() {
+        const row = btn.closest('tr');
+        openModal('Edit Purchase Order', {
+            id: row.getAttribute('data-id'),
+            order_number: row.children[0].textContent,
+            supplier: row.children[1].textContent,
+            supplier_id: row.getAttribute('data-supplier-id'),
+            order_date: row.children[2].textContent,
+            status: row.children[3].textContent
+        });
+    };
+});
+
+// Delete button logic
+Array.from(document.getElementsByClassName('deleteBtn')).forEach(btn => {
+    btn.onclick = function() {
+        if (!confirm('Are you sure you want to delete this purchase order?')) return;
+        const row = btn.closest('tr');
+        const id = row.getAttribute('data-id');
+        fetch(`/purchase/purchaseorders-delete/${id}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+        })
+        .then(res => res.json())
+        .then(json => {
+            if (json.success) {
+                row.remove();
+            } else {
+                alert('Error deleting purchase order.');
+            }
+        })
+        .catch(() => alert('Error deleting purchase order.'));
+    };
+});
+
+form.onsubmit = function(e) {
+    e.preventDefault();
+    formError.classList.add('hidden');
+    const data = new FormData(form);
+    const id = purchaseOrderIdInput.value;
+    let url = '/purchase/purchaseorders-add/';
+    if (id) url = `/purchase/purchaseorders-edit/${id}/`;
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: data
+    })
+    .then(res => res.json())
+    .then(json => {
+        if (json.success) {
+            const table = document.getElementById('purchaseordersTable').getElementsByTagName('tbody')[0];
+            if (id) {
+                // Edit: update row
+                const row = table.querySelector(`tr[data-id='${id}']`);
+                row.children[0].textContent = json.purchaseorder.order_number;
+                row.children[1].textContent = json.purchaseorder.supplier;
+                row.children[2].textContent = json.purchaseorder.order_date;
+                row.children[3].textContent = json.purchaseorder.status;
+                row.setAttribute('data-supplier-id', json.purchaseorder.supplier_id);
+            } else {
+                // Add: insert new row
+                const row = table.insertRow(0);
+                row.setAttribute('data-id', json.purchaseorder.id);
+                row.setAttribute('data-supplier-id', json.purchaseorder.supplier_id);
+                row.innerHTML = `
+                    <td class='px-4 py-2'>${json.purchaseorder.order_number}</td>
+                    <td class='px-4 py-2'>${json.purchaseorder.supplier}</td>
+                    <td class='px-4 py-2'>${json.purchaseorder.order_date}</td>
+                    <td class='px-4 py-2'>${json.purchaseorder.status}</td>
+                    <td class='px-4 py-2 text-right'>
+                        <button class='text-blue-700 hover:underline editBtn'>Edit</button>
+                        <button class='text-red-600 hover:underline ml-2 deleteBtn'>Delete</button>
+                    </td>
+                `;
+                // Re-bind edit/delete events for new row
+                row.querySelector('.editBtn').onclick = function() {
+                    openModal('Edit Purchase Order', {
+                        id: json.purchaseorder.id,
+                        order_number: json.purchaseorder.order_number,
+                        supplier: json.purchaseorder.supplier,
+                        supplier_id: json.purchaseorder.supplier_id,
+                        order_date: json.purchaseorder.order_date,
+                        status: json.purchaseorder.status
+                    });
+                };
+                row.querySelector('.deleteBtn').onclick = function() {
+                    if (!confirm('Are you sure you want to delete this purchase order?')) return;
+                    fetch(`/purchase/purchaseorders-delete/${json.purchaseorder.id}/`, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+                    })
+                    .then(res => res.json())
+                    .then(json2 => {
+                        if (json2.success) {
+                            row.remove();
+                        } else {
+                            alert('Error deleting purchase order.');
+                        }
+                    })
+                    .catch(() => alert('Error deleting purchase order.'));
+                };
+            }
+            modal.classList.add('hidden');
+            form.reset();
+        } else {
+            formError.textContent = json.error || 'Error saving purchase order.';
+            formError.classList.remove('hidden');
+        }
+    })
+    .catch(() => {
+        formError.textContent = 'Error saving purchase order.';
+        formError.classList.remove('hidden');
+    });
+};
 </script>
 {% endblock %} 
