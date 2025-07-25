@@ -1,44 +1,153 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %}ERP System{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FutureERP - Advanced Business Management System</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link rel="icon" href="/static/logo.png">
-    {% block extra_head %}{% endblock %}
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #10b981 0%, #065f46 50%, #ffffff 100%);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .green-glow {
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+        }
+        
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .pulse-green {
+            animation: pulse-green 2s infinite;
+        }
+        
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            50% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-5px);
+            transition: all 0.3s ease;
+        }
+        
+        .module-card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(240, 253, 244, 0.8));
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .module-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(16, 185, 129, 0.2);
+        }
+        
+        .accounting-highlight {
+            background: linear-gradient(45deg, #10b981, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-gray-100 min-h-screen">
-    <nav class="bg-blue-900 text-white shadow-lg">
-        <div class="container mx-auto flex justify-between items-center py-4 px-6">
-            <div class="flex items-center space-x-6">
-                <a href="/" class="flex items-center font-bold text-xl tracking-wide hover:text-blue-200">
-                    <img src="/static/logo.png" alt="Logo" class="h-8 w-8 mr-2"> ERP System
-                </a>
-                <a href="/" class="hover:text-blue-200">Dashboard</a>
-                <a href="/crm/customers-ui/" class="hover:text-blue-200">CRM</a>
-                <a href="/sales/products-ui/" class="hover:text-blue-200">Sales</a>
-                <a href="/inventory/stockitems-ui/" class="hover:text-blue-200">Inventory</a>
-                <a href="/accounting/accounts-ui/" class="hover:text-blue-200">Accounting</a>
-                <a href="/hr/employees-ui/" class="hover:text-blue-200">HR</a>
-                <a href="/project_mgmt/projects-ui/" class="hover:text-blue-200">Projects</a>
-                <a href="/manufacturing/boms-ui/" class="hover:text-blue-200">Manufacturing</a>
+<body class="bg-gray-50 overflow-x-hidden">
+    <!-- Header Navigation -->
+    <nav class="glass-effect fixed w-full z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <a href='/' class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-green-500/10 to-emerald-600/10 rounded-full outset-0 flex items-center justify-center pulse-green">
+                    <img src="{% static 'logo.png' %}" alt="FutureERP Logo" class="w-10 h-10 mask-radial-at-bottom" style="filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.5));border-radius: 50%;">
+                </div>
+                <span class="text-2xl font-bold text-green-800">FutureERP</span>
+            </a>
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="{% url 'dashboard' %}" class="text-black hover:text-black/50 font-medium">Dashboard</a>
+                <a href="#" class="text-black hover:text-black/50 font-medium">Modules</a>
+                <a href="#" class="text-black hover:text-black/50 font-medium">Reports</a>
+                <a href="#" class="text-black hover:text-black/50 font-medium">Settings</a>
             </div>
-            <div>
-                {% if user.is_authenticated %}
-                    <span class="mr-4">{{ user.email }}</span>
-                    <a href="{% url 'logout' %}" class="bg-blue-700 px-3 py-1 rounded hover:bg-blue-600">Logout</a>
-                {% else %}
-                    <a href="{% url 'login' %}" class="bg-blue-700 px-3 py-1 rounded hover:bg-blue-600">Login</a>
-                {% endif %}
-            </div>
+            {% if user.is_authenticated %}
+            <a href="{% url 'logout' %}" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-2 rounded-full hover:shadow-lg transition-all">
+                Logout
+            </a>
+            {% else %}
+            <a href="{% url 'login' %}" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-2 rounded-full hover:shadow-lg transition-all">
+                Login
+            </a>
+            {% endif %}
         </div>
     </nav>
-    <main class="container mx-auto py-8 px-4">
         {% block content %}{% endblock %}
-    </main>
-    <footer class="text-center text-gray-500 py-6 mt-12">
-        <span class="text-sm">&copy; {{ now|date:'Y' }} ERP System. All rights reserved.</span>
+     <!-- Footer -->
+    <footer class="bg-green-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-3 mb-6">
+                        <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center">
+                            <span class="text-green-800 font-bold text-xl">F</span>
+                        </div>
+                        <span class="text-2xl font-bold">FutureERP</span>
+                    </div>
+                    <p class="text-green-200">
+                        Next-generation ERP system built for Pakistani businesses with comprehensive accounting integration.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="text-lg font-bold mb-4">Modules</h4>
+                    <ul class="space-y-2 text-green-200">
+                        <li>Sales Management</li>
+                        <li>Warehouse</li>
+                        <li>Manufacturing</li>
+                        <li>Human Resources</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-bold mb-4">Accounting</h4>
+                    <ul class="space-y-2 text-green-200">
+                        <li>Assets Management</li>
+                        <li>Liabilities Tracking</li>
+                        <li>Income Recognition</li>
+                        <li>Expense Control</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-bold mb-4">Support</h4>
+                    <ul class="space-y-2 text-green-200">
+                        <li>Documentation</li>
+                        <li>Training</li>
+                        <li>24/7 Support</li>
+                        <li>Implementation</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-green-800 mt-8 pt-8 text-center">
+                <p class="text-green-200">
+                    &copy; 2025 FutureERP. Built with pride in Pakistan. All rights reserved.
+                </p>
+            </div>
+        </div>
     </footer>
     {% block extra_js %}{% endblock %}
 </body>

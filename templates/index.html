@@ -1,0 +1,484 @@
+{%extends 'base.html'%}
+{% block title %}Home | ERP System{% endblock %}
+{% block content %}
+    <!-- Hero Section -->
+    <section class="gradient-bg min-h-screen flex items-center justify-center relative overflow-hidden pt-20">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-20 left-20 w-32 h-32 bg-white rounded-full floating"></div>
+            <div class="absolute top-40 right-32 w-24 h-24 bg-green-300 rounded-full floating" style="animation-delay: -2s;"></div>
+            <div class="absolute bottom-32 left-1/3 w-40 h-40 bg-white rounded-full floating" style="animation-delay: -4s;"></div>
+        </div>
+        
+        <div class="max-w-6xl mx-auto px-6 text-center relative z-10">
+            <h1 class="text-6xl md:text-8xl font-bold text-white mb-6 leading-tight">
+                Future <span class="text-green-200">ERP</span>
+            </h1>
+            <p class="text-xl md:text-2xl text-green-100 mb-12 max-w-3xl mx-auto">
+                Revolutionary Business Management System with Advanced Accounting Integration
+            </p>
+            <div class="flex flex-col md:flex-row gap-6 justify-center items-center">
+                <button class="bg-white text-green-800 px-8 py-4 rounded-full font-bold text-lg hover:shadow-2xl hover-lift green-glow">
+                    Start Free Trial
+                </button>
+                <button class="border-2 border-white text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white hover:text-green-800 transition-all">
+                    Watch Demo
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Accounting Core Section -->
+    <section class="py-20 bg-white relative">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-5xl font-bold accounting-highlight mb-6">Advanced Accounting Core</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Complete financial management with real-time integration across all business modules
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+                <!-- Assets -->
+                <div class="module-card p-8 rounded-2xl text-center hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl mx-auto mb-6 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-green-800 mb-3">Assets</h3>
+                    <p class="text-gray-600">Fixed & Current Assets Management</p>
+                </div>
+
+                <!-- Liabilities -->
+                <div class="module-card p-8 rounded-2xl text-center hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-r from-red-500 to-pink-600 rounded-xl mx-auto mb-6 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-green-800 mb-3">Liabilities</h3>
+                    <p class="text-gray-600">Debt & Obligations Tracking</p>
+                </div>
+
+                <!-- Expenses -->
+                <div class="module-card p-8 rounded-2xl text-center hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-r from-orange-500 to-yellow-600 rounded-xl mx-auto mb-6 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-green-800 mb-3">Expenses</h3>
+                    <p class="text-gray-600">Cost Management & Control</p>
+                </div>
+
+                <!-- Income -->
+                <div class="module-card p-8 rounded-2xl text-center hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl mx-auto mb-6 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-green-800 mb-3">Income</h3>
+                    <p class="text-gray-600">Revenue Stream Analysis</p>
+                </div>
+
+                <!-- Equity -->
+                <div class="module-card p-8 rounded-2xl text-center hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl mx-auto mb-6 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-green-800 mb-3">Equity</h3>
+                    <p class="text-gray-600">Owner's Capital & Reserves</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ERP Modules Section -->
+    <section class="py-20 bg-gradient-to-br from-green-50 to-emerald-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-5xl font-bold text-green-800 mb-6">Integrated ERP Modules</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Seamlessly connected modules with real-time accounting synchronization
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Sales Module -->
+                <div class="module-card p-8 rounded-2xl hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl mb-6 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-green-800 mb-4">Sales Management</h3>
+                    <p class="text-gray-600 mb-6">Complete sales cycle from quotation to invoice with automatic revenue recognition</p>
+                    <div class="text-sm text-green-600 font-medium">
+                        ↗ Auto-posts to Income & Accounts Receivable
+                    </div>
+                </div>
+
+                <!-- Warehouse Module -->
+                <div class="module-card p-8 rounded-2xl hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-xl mb-6 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-green-800 mb-4">Warehouse</h3>
+                    <p class="text-gray-600 mb-6">Inventory management with real-time stock valuation and movement tracking</p>
+                    <div class="text-sm text-green-600 font-medium">
+                        ↗ Updates Inventory Assets & COGS
+                    </div>
+                </div>
+
+                <!-- Purchase Module -->
+                <div class="module-card p-8 rounded-2xl hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl mb-6 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17M17 13v4a2 2 0 01-2 2H9a2 2 0 01-2-2v-4m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-green-800 mb-4">Purchase</h3>
+                    <p class="text-gray-600 mb-6">Procurement process with vendor management and cost allocation</p>
+                    <div class="text-sm text-green-600 font-medium">
+                        ↗ Records Expenses & Accounts Payable
+                    </div>
+                </div>
+
+                <!-- Manufacturing Module -->
+                <div class="module-card p-8 rounded-2xl hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl mb-6 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-green-800 mb-4">Manufacturing</h3>
+                    <p class="text-gray-600 mb-6">Production planning with work-in-progress and finished goods costing</p>
+                    <div class="text-sm text-green-600 font-medium">
+                        ↗ Manages WIP & Manufacturing Costs
+                    </div>
+                </div>
+
+                <!-- HR Module -->
+                <div class="module-card p-8 rounded-2xl hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-r from-teal-500 to-green-600 rounded-xl mb-6 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-green-800 mb-4">Human Resources</h3>
+                    <p class="text-gray-600 mb-6">Payroll, benefits, and employee cost allocation across departments</p>
+                    <div class="text-sm text-green-600 font-medium">
+                        ↗ Allocates Labor Costs & Benefits
+                    </div>
+                </div>
+
+                <!-- Project Management Module -->
+                <div class="module-card p-8 rounded-2xl hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl mb-6 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-green-800 mb-4">Project Management</h3>
+                    <p class="text-gray-600 mb-6">Project costing, budgeting, and profitability analysis in real-time</p>
+                    <div class="text-sm text-green-600 font-medium">
+                        ↗ Tracks Project P&L & Assets
+                    </div>
+                </div>
+
+                <!-- CRM Module -->
+                <div class="module-card p-8 rounded-2xl hover-lift col-span-full lg:col-span-3">
+                    <div class="flex items-center justify-center mb-8">
+                        <div class="w-20 h-20 bg-gradient-to-r from-pink-500 to-rose-600 rounded-xl flex items-center justify-center mr-8">
+                            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-3xl font-bold text-green-800 mb-4">Customer Relationship Management</h3>
+                            <p class="text-gray-600 mb-6">Complete customer lifecycle management with revenue forecasting and customer profitability analysis</p>
+                            <div class="text-sm text-green-600 font-medium">
+                                ↗ Integrates Customer Data with Sales Revenue & Receivables
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Financial Dashboard Preview -->
+    <section class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-5xl font-bold text-green-800 mb-6">Real-Time Financial Dashboard</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Live financial insights with automated journal entries from all modules
+                </p>
+            </div>
+            
+            <div class="glass-effect rounded-3xl p-8 green-glow">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-green-600 mb-2">₨ 2.4M</div>
+                        <div class="text-gray-600">Total Assets</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-blue-600 mb-2">₨ 1.8M</div>
+                        <div class="text-gray-600">Monthly Revenue</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-purple-600 mb-2">24%</div>
+                        <div class="text-gray-600">Profit Margin</div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white rounded-2xl p-6">
+                        <h4 class="text-xl font-bold text-green-800 mb-4">Balance Sheet Summary</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Current Assets</span>
+                                <span class="font-semibold">₨ 1,200,000</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Fixed Assets</span>
+                                <span class="font-semibold">₨ 1,200,000</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Current Liabilities</span>
+                                <span class="font-semibold">₨ 800,000</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Owner's Equity</span>
+                                <span class="font-semibold">₨ 1,600,000</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-2xl p-6">
+                        <h4 class="text-xl font-bold text-green-800 mb-4">P&L Overview</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Sales Revenue</span>
+                                <span class="font-semibold text-green-600">₨ 1,800,000</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Cost of Goods Sold</span>
+                                <span class="font-semibold text-red-600">₨ 900,000</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Operating Expenses</span>
+                                <span class="font-semibold text-red-600">₨ 468,000</span>
+                            </div>
+                            <div class="flex justify-between border-t pt-3">
+                                <span class="text-gray-800 font-bold">Net Profit</span>
+                                <span class="font-bold text-green-600">₨ 432,000</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
+   
+{% block scripts %}
+    <script>
+        // Add smooth scrolling and interactive effects
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate elements on scroll
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, observerOptions);
+
+            // Observe all module cards
+            document.querySelectorAll('.module-card').forEach(card => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                card.style.transition = 'all 0.6s ease-out';
+                observer.observe(card);
+            });
+
+            // Add click effects to buttons
+            document.querySelectorAll('button').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    // Create ripple effect
+                    const ripple = document.createElement('span');
+                    const rect = this.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+                    
+                    ripple.style.width = ripple.style.height = size + 'px';
+                    ripple.style.left = x + 'px';
+                    ripple.style.top = y + 'px';
+                    ripple.classList.add('ripple');
+                    
+                    this.appendChild(ripple);
+                    
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 600);
+                });
+            });
+
+            // Add parallax effect to hero section
+            window.addEventListener('scroll', function() {
+                const scrolled = window.pageYOffset;
+                const rate = scrolled * -0.5;
+                
+                const heroFloatingElements = document.querySelectorAll('.floating');
+                heroFloatingElements.forEach((element, index) => {
+                    const speed = 0.2 + (index * 0.1);
+                    element.style.transform = `translateY(${rate * speed}px)`;
+                });
+            });
+
+            // Add dynamic counter animation for financial metrics
+            function animateCounters() {
+                const counters = document.querySelectorAll('.text-4xl');
+                counters.forEach(counter => {
+                    const target = counter.textContent;
+                    const numericValue = parseFloat(target.replace(/[^\d.]/g, ''));
+                    
+                    if (numericValue) {
+                        let current = 0;
+                        const increment = numericValue / 100;
+                        const timer = setInterval(() => {
+                            current += increment;
+                            if (current >= numericValue) {
+                                current = numericValue;
+                                clearInterval(timer);
+                            }
+                            
+                            if (target.includes('₨')) {
+                                counter.textContent = `₨ ${current.toFixed(1)}M`;
+                            } else if (target.includes('%')) {
+                                counter.textContent = `${Math.round(current)}%`;
+                            }
+                        }, 20);
+                    }
+                });
+            }
+
+            // Trigger counter animation when dashboard comes into view
+            const dashboardObserver = new IntersectionObserver(function(entries) {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        animateCounters();
+                        dashboardObserver.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.5 });
+
+            const dashboard = document.querySelector('.glass-effect');
+            if (dashboard) {
+                dashboardObserver.observe(dashboard);
+            }
+
+            // Add hover effects for module cards
+            document.querySelectorAll('.module-card').forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.boxShadow = '0 25px 50px rgba(16, 185, 129, 0.15)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.boxShadow = '';
+                });
+            });
+
+            // Smooth navigation
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}    
+{% block extra_css %}
+    <style>
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.6);
+            transform: scale(0);
+            animation: ripple-animation 0.6s linear;
+            pointer-events: none;
+        }
+
+        @keyframes ripple-animation {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        /* Additional responsive improvements */
+        @media (max-width: 768px) {
+            .text-6xl {
+                font-size: 3rem;
+            }
+            
+            .text-8xl {
+                font-size: 4rem;
+            }
+            
+            .module-card {
+                padding: 1.5rem;
+            }
+        }
+
+        /* Enhanced green glow effect for Pakistan theme */
+        .green-glow:hover {
+            box-shadow: 0 0 40px rgba(16, 185, 129, 0.4);
+        }
+
+        /* Star field background for hero */
+        .gradient-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.3), transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.2), transparent),
+                radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.4), transparent),
+                radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.3), transparent),
+                radial-gradient(2px 2px at 160px 30px, rgba(255,255,255,0.2), transparent);
+            background-repeat: repeat;
+            background-size: 200px 100px;
+            animation: sparkle 20s linear infinite;
+        }
+
+        @keyframes sparkle {
+            from { transform: translateX(0); }
+            to { transform: translateX(200px); }
+        }
+    </style>
+{% endblock %}

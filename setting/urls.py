@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from user_auth.views import login_view, logout_view, dashboard
+from user_auth.views import login_view, logout_view, dashboard,index
 from rest_framework.authtoken.views import obtain_auth_token
 from django.conf import settings
 from django.conf.urls.static import static
@@ -25,7 +25,10 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('login/', login_view, name='login'),
     path('logout/', logout_view, name='logout'),
-    path('', dashboard, name='dashboard'),
+    path('accounts/login/', login_view, name='login_redirect'),  # Redirect for login
+    path('accounts/logout/', logout_view, name='logout_redirect'),  # Redirect for logout
+    path('',index, name='index'),
+    path('dashboard/', dashboard, name='dashboard'),
     path('crm/', include('crm.urls')),
     path('sales/', include('sales.urls')),
     path('purchase/', include('purchase.urls')),
@@ -43,6 +46,7 @@ urlpatterns = [
     path('api/project/', include('project_mgmt.api_urls')),
     path('api/manufacturing/', include('manufacturing.api_urls')),
     path('api/token-auth/', obtain_auth_token, name='api_token_auth'),
+    path('analytics/', include('analytics.urls')),
 ]
 
 if settings.DEBUG:

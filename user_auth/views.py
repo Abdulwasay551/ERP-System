@@ -47,6 +47,9 @@ def dashboard(request):
     }
     return render(request, 'dashboard.html', context)
 
+def index(request):
+    return render(request, 'index.html')
+
 # Templates:
 # - user_auth/login.html (for login view)
 # - base.html (global base template)

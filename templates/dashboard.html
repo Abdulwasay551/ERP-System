@@ -39,4 +39,64 @@
         </ul>
     </div>
 </div>
-{% endblock %} 
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+    <div class="bg-white rounded-lg shadow p-6 w-full">
+        <h2 class="text-xl font-semibold mb-4 text-blue-800">Business Analytics</h2>
+        <div id="analytics-kpis" class="grid grid-cols-2 gap-4 mb-6">
+            <div class="p-4 bg-blue-50 rounded text-center">
+                <div class="text-2xl font-bold" id="kpi-sales">...</div>
+                <div class="text-gray-600">Total Sales</div>
+            </div>
+            <div class="p-4 bg-green-50 rounded text-center">
+                <div class="text-2xl font-bold" id="kpi-inventory">...</div>
+                <div class="text-gray-600">Inventory Items</div>
+            </div>
+            <div class="p-4 bg-yellow-50 rounded text-center">
+                <div class="text-2xl font-bold" id="kpi-accounts">...</div>
+                <div class="text-gray-600">Accounts</div>
+            </div>
+            <div class="p-4 bg-purple-50 rounded text-center">
+                <div class="text-2xl font-bold" id="kpi-employees">...</div>
+                <div class="text-gray-600">Employees</div>
+            </div>
+        </div>
+        <div class="mt-6">
+            <h3 class="text-lg font-semibold mb-2">Sales Trend</h3>
+            <canvas id="salesChart" height="120"></canvas>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+fetch('/analytics/dashboard/')
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('kpi-sales').textContent = data.total_sales;
+        document.getElementById('kpi-inventory').textContent = data.total_inventory;
+        document.getElementById('kpi-accounts').textContent = data.total_accounts;
+        document.getElementById('kpi-employees').textContent = data.total_employees;
+        // Chart
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        const months = data.sales_by_month.map(x => x.month.substring(0,7));
+        const counts = data.sales_by_month.map(x => x.count);
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Sales Orders',
+                    data: counts,
+                    borderColor: 'rgb(37,99,235)',
+                    backgroundColor: 'rgba(37,99,235,0.1)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } }
+            }
+        });
+    });
+</script>
+{% endblock %}

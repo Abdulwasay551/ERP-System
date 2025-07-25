@@ -178,6 +178,76 @@ graph TD;
 
 ---
 
+<details> <summary>🔍 Expand to view ERP flow</summary>
+
+```mermaid
+flowchart TD
+  %% Core Auth
+  A1[user_auth]
+  A1_desc[/"User & Company Authentication\n• Role-based Access Control\n• Multi-tenant Login"/]
+
+  %% Chart of Accounts Core
+  B1[Chart of Accounts]
+  B1_desc[/"• Multi-level COA (Category > Group > Account)\n• Sub-ledgers (Customer, Vendor, Employee)\n• Auto-posting + Validation\n• Single Source of Truth"/]
+
+  %% Sales
+  C1[Sales Module]
+  C1_desc[/"• Quotations, Sales Orders, Invoices\n• Customer Sub-ledger Integration\n• Auto-posting to Revenue & Receivables"/]
+
+  %% Purchase
+  D1[Purchase Module]
+  D1_desc[/"• Vendor Management\n• Purchase Requisition → Order → Bill\n• Auto-posting to Payables, COGS"/]
+
+  %% Inventory
+  E1[Inventory Module]
+  E1_desc[/"• Warehouse Locations\n• Stock Moves, Deliveries, Transfers\n• Auto-journal entries for stock changes"/]
+
+  %% Manufacturing
+  F1[Manufacturing Module]
+  F1_desc[/"• Bill of Materials (BoM)\n• Work Orders, Routing\n• Raw → Finished Good + Cost Posting"/]
+
+  %% HR
+  G1[HR Module]
+  G1_desc[/"• Employee Records\n• Attendance, Leaves\n• Payroll + Auto Posting"/]
+
+  %% Project Management
+  H1[Project Management]
+  H1_desc[/"• Projects → Tasks → Timesheets\n• Project Costing\n• Resource Management"/]
+
+  %% CRM
+  I1[CRM Module]
+  I1_desc[/"• Leads, Opportunities\n• Customer Journey\n• Sales Integration"/]
+
+  %% FLOW STRUCTURE
+  A1 --> A1_desc
+  A1_desc --> B1
+  B1 --> B1_desc
+
+  %% Modules Connected to COA
+  B1 --> C1
+  C1 --> C1_desc
+  B1 --> D1
+  D1 --> D1_desc
+  B1 --> E1
+  E1 --> E1_desc
+  B1 --> F1
+  F1 --> F1_desc
+  B1 --> G1
+  G1 --> G1_desc
+  B1 --> H1
+  H1 --> H1_desc
+  B1 --> I1
+  I1 --> I1_desc
+
+  %% Module Inter-Links
+  C1_desc --> F1
+  D1_desc --> E1
+  F1_desc --> E1
+  H1_desc --> G1
+```
+
+</details>
+
 ## 📦 Extending & Customizing
 - Add new modules by creating a Django app and following the pattern
 - Add new API endpoints with DRF ViewSets/Serializers
