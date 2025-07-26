@@ -329,7 +329,6 @@ UNFOLD = {
         "description": "Please login to access the system",
     },
     "STYLES": [
-        lambda request: static("css/admin.css"),
     ],
     "SCRIPTS": [],
     "COLORS": {
