@@ -11,6 +11,9 @@ mkdir -p static
 mkdir -p staticfiles
 
 echo "Collecting static files..."
-python manage.py collectstatic --noinput --clear
+python manage.py collectstatic --noinput --clear --verbosity=2
+
+echo "Listing collected static files..."
+ls -la staticfiles/
 
 echo "Build complete!"
