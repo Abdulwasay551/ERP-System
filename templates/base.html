@@ -197,6 +197,7 @@
 
 </head>
 <body class="bg-gray-50 overflow-x-hidden">
+    {%if user.is_authenticated%}
     <!-- Sidebar -->
     <div id="sidebar" class="sidebar fixed left-0 top-0 w-80 h-full z-40 text-white overflow-y-auto">
         <div class="p-6">
@@ -373,7 +374,7 @@
             </nav>
         </div>
     </div>
-
+    {%endif%}
     <!-- Sidebar Overlay for Mobile -->
     <div id="sidebar-overlay" class="sidebar-overlay fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
 
