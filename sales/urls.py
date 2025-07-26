@@ -22,9 +22,9 @@ urlpatterns = [
     path('taxes-add/', taxes_add, name='sales_taxes_add'),
     path('taxes-edit/<int:pk>/', taxes_edit, name='sales_taxes_edit'),
     path('taxes-delete/<int:pk>/', taxes_delete, name='sales_taxes_delete'),
-    
-    # Quotation URLs
+      # Quotation URLs
     path('quotations/', QuotationPageView.as_view(), name='sales_quotations'),
+    path('quotations-ui/', QuotationPageView.as_view(), name='sales_quotations_ui'),
     path('quotations-add/', quotations_add, name='sales_quotations_add'),
     path('quotations-edit/<int:pk>/', quotations_edit, name='sales_quotations_edit'),
     path('quotations-delete/<int:pk>/', quotations_delete, name='sales_quotations_delete'),

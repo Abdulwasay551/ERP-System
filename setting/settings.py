@@ -193,12 +193,30 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # WhiteNoise configuration for static files
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 WHITENOISE_USE_FINDERS = True
 WHITENOISE_AUTOREFRESH = True
 
 # Environment-based configurations
 IS_PRODUCTION = env.bool('VERCEL', default=False) or not DEBUG
+
+# Static files configuration for production
+if IS_PRODUCTION:
+    # For production, ensure static files are served correctly
+    STATIC_ROOT = BASE_DIR / 'staticfiles'
+    # Disable finders in production
+    WHITENOISE_USE_FINDERS = False
+else:
+    # For development
+    STATIC_ROOT = BASE_DIR / 'staticfiles'
+    WHITENOISE_USE_FINDERS = True
 
 # Celery settings (only for development)
 if not IS_PRODUCTION:
