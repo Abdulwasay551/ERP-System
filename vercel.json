@@ -9,10 +9,7 @@
   "routes": [
     {
       "src": "/static/(.*)",
-      "dest": "/staticfiles/$1",
-      "headers": {
-        "Cache-Control": "public, max-age=31536000, immutable"
-      }
+      "dest": "/staticfiles/$1"
     },
     {
       "src": "/media/(.*)",
@@ -28,9 +25,5 @@
     "VERCEL": "1",
     "DJANGO_DEBUG": "False"
   },
-  "functions": {
-    "setting/wsgi.py": {
-      "maxDuration": 30
-    }
-  }
+  "installCommand": "pip install -r requirements.txt && python manage.py collectstatic --noinput"
 } 
