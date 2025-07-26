@@ -10,12 +10,11 @@ https://docs.djangoproject.com/en/5.2/howto/deployment/wsgi/
 import os
 from django.core.wsgi import get_wsgi_application
 
-# Set Django settings module (using single settings.py for all environments)
+# Set Django settings module
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'setting.settings')
 
 # Django WSGI application
 application = get_wsgi_application()
 
-# Vercel compatibility - provide both 'handler' and 'app' variables
-handler = application
+# Vercel compatibility
 app = application
