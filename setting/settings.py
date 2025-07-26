@@ -47,7 +47,7 @@ SECRET_KEY = env('DJANGO_SECRET_KEY', default='django-insecure-68t(2+%h9$c^ojm#k
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DJANGO_DEBUG', default=True)
 
-ALLOWED_HOSTS = env.list('DJANGO_ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '.vercel.app'])
+ALLOWED_HOSTS = env.list('DJANGO_ALLOWED_HOSTS', default=['*'])
 
 
 # Application definition
