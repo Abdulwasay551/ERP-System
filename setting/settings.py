@@ -192,7 +192,7 @@ STATICFILES_DIRS = [
 ]
 
 # Environment-based configurations
-IS_PRODUCTION = env.bool('VERCEL', default=True) or not DEBUG
+IS_PRODUCTION = env('VERCEL'==True, default=True)
 
 # Create static directories if they don't exist (only in development)
 if not IS_PRODUCTION:
