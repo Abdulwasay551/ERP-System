@@ -184,6 +184,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
+# Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
@@ -191,7 +192,7 @@ STATICFILES_DIRS = [
 ]
 
 # Environment-based configurations
-IS_PRODUCTION = env.bool('VERCEL', default=False) or not DEBUG
+IS_PRODUCTION = env.bool('VERCEL', default=True) or not DEBUG
 
 # Create static directories if they don't exist (only in development)
 if not IS_PRODUCTION:
@@ -202,17 +203,18 @@ if not IS_PRODUCTION:
         # Directory creation failed (e.g., read-only filesystem in production)
         pass
 
-# WhiteNoise configuration for static files
+# Enable WhiteNoise for static files
 if IS_PRODUCTION:
-    # Production: Use CompressedManifestStaticFilesStorage for better performance
+    # In production, use WhiteNoise for static file serving
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
     # Add WhiteNoise configuration for better performance
     WHITENOISE_USE_FINDERS = True
     WHITENOISE_AUTOREFRESH = True
     WHITENOISE_INDEX_FILE = True
+
     WHITENOISE_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 else:
-    # Development: Use default static files storage
+    # In development, use default static files storage
     STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 # Media files
