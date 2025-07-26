@@ -71,3 +71,15 @@ def projects_delete(request, pk):
     project = get_object_or_404(Project, pk=pk, company=request.user.company)
     project.delete()
     return JsonResponse({'success': True})
+
+@login_required
+def tasks_ui(request):
+    return render(request, 'project_mgmt/tasks-ui.html')
+
+@login_required
+def timesheets_ui(request):
+    return render(request, 'project_mgmt/timesheets-ui.html')
+
+@login_required
+def reports_ui(request):
+    return render(request, 'project_mgmt/reports-ui.html')

@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    primary: '#10B981',
+                    secondary: '#059669',
+                    accent: '#065F46'
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}
+
+{% block content %}
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl font-bold text-gray-900">Inventory Analytics</h1>
+                        <span class="ml-2 px-2 py-1 bg-primary text-white text-xs rounded-full">Analytics Module</span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary transition-colors">
+                            <i class="fas fa-download mr-2"></i>Export Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Inventory KPIs -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-blue-100 rounded-lg">
+                            <i class="fas fa-boxes text-blue-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">$485K</p>
+                            <p class="text-sm text-gray-600">Total Stock Value</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-green-100 rounded-lg">
+                            <i class="fas fa-sync-alt text-green-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">6.2x</p>
+                            <p class="text-sm text-gray-600">Turnover Rate</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-yellow-100 rounded-lg">
+                            <i class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">12</p>
+                            <p class="text-sm text-gray-600">Low Stock Items</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-red-100 rounded-lg">
+                            <i class="fas fa-ban text-red-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">3</p>
+                            <p class="text-sm text-gray-600">Out of Stock</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Stock Movement -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Stock Movement Trend</h3>
+                    <div class="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <div class="text-center">
+                            <i class="fas fa-chart-line text-gray-400 text-4xl mb-2"></i>
+                            <p class="text-gray-500">Stock movement chart placeholder</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ABC Analysis -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">ABC Analysis</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Category A (High Value)</span>
+                            <div class="flex items-center">
+                                <div class="w-24 bg-gray-200 rounded-full h-3 mr-2">
+                                    <div class="bg-red-600 h-3 rounded-full" style="width: 20%"></div>
+                                </div>
+                                <span class="text-sm font-medium">80% value</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Category B (Medium Value)</span>
+                            <div class="flex items-center">
+                                <div class="w-24 bg-gray-200 rounded-full h-3 mr-2">
+                                    <div class="bg-yellow-600 h-3 rounded-full" style="width: 30%"></div>
+                                </div>
+                                <span class="text-sm font-medium">15% value</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Category C (Low Value)</span>
+                            <div class="flex items-center">
+                                <div class="w-24 bg-gray-200 rounded-full h-3 mr-2">
+                                    <div class="bg-green-600 h-3 rounded-full" style="width: 50%"></div>
+                                </div>
+                                <span class="text-sm font-medium">5% value</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory Performance -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Moving Items</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Widget Pro Max</span>
+                            <span class="font-medium text-green-600">342 units</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Standard Widget</span>
+                            <span class="font-medium text-blue-600">567 units</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Mini Widget</span>
+                            <span class="font-medium text-yellow-600">891 units</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Widget Accessories</span>
+                            <span class="font-medium text-purple-600">234 units</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Slow Moving Items</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Legacy Widget V1</span>
+                            <span class="font-medium text-red-600">5 units</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Prototype Parts</span>
+                            <span class="font-medium text-orange-600">12 units</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Discontinued Model</span>
+                            <span class="font-medium text-gray-600">8 units</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Seasonal Items</span>
+                            <span class="font-medium text-yellow-600">23 units</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Reorder Alerts</h3>
+                    <div class="space-y-3">
+                        <div class="p-3 border-l-4 border-red-500 bg-red-50">
+                            <h4 class="font-medium text-red-900">Critical Stock</h4>
+                            <p class="text-sm text-red-700">Widget Pro Components</p>
+                        </div>
+                        <div class="p-3 border-l-4 border-yellow-500 bg-yellow-50">
+                            <h4 class="font-medium text-yellow-900">Low Stock</h4>
+                            <p class="text-sm text-yellow-700">Standard Widget Parts</p>
+                        </div>
+                        <div class="p-3 border-l-4 border-orange-500 bg-orange-50">
+                            <h4 class="font-medium text-orange-900">Reorder Soon</h4>
+                            <p class="text-sm text-orange-700">Mini Widget Assembly</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Integration Notice -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-8">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-blue-600 text-lg mr-3 mt-1"></i>
+                    <div>
+                        <h4 class="text-blue-900 font-medium mb-2">Inventory Analytics Integration</h4>
+                        <p class="text-blue-800 text-sm">
+                            Inventory analytics integrate with Sales, Purchase, and Manufacturing modules for real-time stock tracking, 
+                            automated reorder alerts, and comprehensive supply chain visibility across all business operations.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+{% endblock %}

@@ -1,0 +1,705 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    primary: '#10B981',
+                    secondary: '#059669',
+                    accent: '#065F46'
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}
+
+{% block content %}
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl font-bold text-gray-900">Time Tracking</h1>
+                        <span class="ml-2 px-2 py-1 bg-primary text-white text-xs rounded-full">Project Management Module</span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button id="start-timer" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary transition-colors">
+                            <i class="fas fa-play mr-2"></i>Start Timer
+                        </button>
+                        <button class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-download mr-2"></i>Export Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Timer Widget -->
+            <div class="bg-gradient-to-r from-primary to-secondary rounded-lg shadow-lg p-6 mb-8 text-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-semibold mb-2">Current Session</h2>
+                        <div class="flex items-center space-x-4">
+                            <div class="text-4xl font-mono font-bold" id="timer-display">00:00:00</div>
+                            <div>
+                                <p class="text-sm opacity-90">Task: ERP Module Development</p>
+                                <p class="text-sm opacity-90">Project: System Enhancement</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="pause-timer" class="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-pause mr-2"></i>Pause
+                        </button>
+                        <button id="stop-timer" class="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-stop mr-2"></i>Stop
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Time Statistics -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-blue-100 rounded-lg">
+                            <i class="fas fa-clock text-blue-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">42.5h</p>
+                            <p class="text-sm text-gray-600">This Week</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-green-100 rounded-lg">
+                            <i class="fas fa-calendar-week text-green-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">165h</p>
+                            <p class="text-sm text-gray-600">This Month</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-yellow-100 rounded-lg">
+                            <i class="fas fa-tasks text-yellow-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">8</p>
+                            <p class="text-sm text-gray-600">Active Projects</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-purple-100 rounded-lg">
+                            <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">95%</p>
+                            <p class="text-sm text-gray-600">Billable Rate</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="bg-white rounded-lg shadow mb-6">
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-8 px-6">
+                        <button class="tab-button py-4 px-1 border-b-2 border-primary font-medium text-sm text-primary" data-tab="timesheet">
+                            Daily Timesheet
+                        </button>
+                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="entries">
+                            Time Entries
+                        </button>
+                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="projects">
+                            Project Hours
+                        </button>
+                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="reports">
+                            Time Reports
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Daily Timesheet Tab -->
+                <div id="timesheet-tab" class="tab-content p-6">
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Today's Timesheet - January 17, 2024</h3>
+                            <div class="flex space-x-2">
+                                <input type="date" value="2024-01-17" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                <button class="bg-primary text-white px-4 py-2 rounded-lg text-sm hover:bg-secondary">
+                                    <i class="fas fa-plus mr-2"></i>Add Entry
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Quick Start Buttons -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <button class="p-4 border border-gray-300 rounded-lg hover:border-primary hover:bg-primary hover:text-white transition-colors">
+                                <i class="fas fa-code text-2xl mb-2"></i>
+                                <p class="text-sm font-medium">Development</p>
+                            </button>
+                            <button class="p-4 border border-gray-300 rounded-lg hover:border-primary hover:bg-primary hover:text-white transition-colors">
+                                <i class="fas fa-bug text-2xl mb-2"></i>
+                                <p class="text-sm font-medium">Bug Fixes</p>
+                            </button>
+                            <button class="p-4 border border-gray-300 rounded-lg hover:border-primary hover:bg-primary hover:text-white transition-colors">
+                                <i class="fas fa-users text-2xl mb-2"></i>
+                                <p class="text-sm font-medium">Meetings</p>
+                            </button>
+                            <button class="p-4 border border-gray-300 rounded-lg hover:border-primary hover:bg-primary hover:text-white transition-colors">
+                                <i class="fas fa-clipboard-check text-2xl mb-2"></i>
+                                <p class="text-sm font-medium">Testing</p>
+                            </button>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Time</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Time</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Billable</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">ERP Development</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Accounting Module Features</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">09:00 AM</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">12:30 PM</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">3h 30m</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Yes</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <button class="text-blue-600 hover:text-blue-900 mr-2">Edit</button>
+                                            <button class="text-red-600 hover:text-red-900">Delete</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Marketing</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Team Meeting</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">01:00 PM</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">02:00 PM</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1h 0m</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">No</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <button class="text-blue-600 hover:text-blue-900 mr-2">Edit</button>
+                                            <button class="text-red-600 hover:text-red-900">Delete</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">ERP Development</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Bug Fixes</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">02:30 PM</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">05:00 PM</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2h 30m</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Yes</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <button class="text-blue-600 hover:text-blue-900 mr-2">Edit</button>
+                                            <button class="text-red-600 hover:text-red-900">Delete</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Daily Summary -->
+                        <div class="mt-6 bg-gray-50 rounded-lg p-4">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                                <div>
+                                    <p class="text-2xl font-bold text-gray-900">7h 0m</p>
+                                    <p class="text-sm text-gray-600">Total Hours</p>
+                                </div>
+                                <div>
+                                    <p class="text-2xl font-bold text-green-600">6h 0m</p>
+                                    <p class="text-sm text-gray-600">Billable Hours</p>
+                                </div>
+                                <div>
+                                    <p class="text-2xl font-bold text-blue-600">1h 0m</p>
+                                    <p class="text-sm text-gray-600">Non-Billable</p>
+                                </div>
+                                <div>
+                                    <p class="text-2xl font-bold text-purple-600">$420</p>
+                                    <p class="text-sm text-gray-600">Total Value</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time Entries Tab -->
+                <div id="entries-tab" class="tab-content p-6 hidden">
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Recent Time Entries</h3>
+                            <div class="flex space-x-2">
+                                <input type="date" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                <input type="date" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                    <option>All Projects</option>
+                                    <option>ERP Development</option>
+                                    <option>Marketing</option>
+                                    <option>Operations</option>
+                                </select>
+                                <button class="bg-primary text-white px-4 py-2 rounded-lg text-sm hover:bg-secondary">Filter</button>
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hours</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rate</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Jan 17, 2024</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <img class="w-8 h-8 rounded-full mr-2" src="https://via.placeholder.com/32" alt="User">
+                                                <span class="text-sm text-gray-900">John Smith</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">ERP Development</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Accounting Module</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">6.0h</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$70/hr</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">$420</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Approved</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Jan 16, 2024</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <img class="w-8 h-8 rounded-full mr-2" src="https://via.placeholder.com/32" alt="User">
+                                                <span class="text-sm text-gray-900">Sarah Johnson</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Marketing</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Campaign Design</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">8.0h</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$60/hr</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">$480</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Jan 16, 2024</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <img class="w-8 h-8 rounded-full mr-2" src="https://via.placeholder.com/32" alt="User">
+                                                <span class="text-sm text-gray-900">Mike Wilson</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Operations</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">System Maintenance</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">4.5h</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$55/hr</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">$247.50</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Approved</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project Hours Tab -->
+                <div id="projects-tab" class="tab-content p-6 hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Project Time Summary -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Project Time Summary (This Month)</h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                                    <div>
+                                        <h4 class="font-medium text-gray-900">ERP Development</h4>
+                                        <p class="text-sm text-gray-600">85.5 hours logged</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-medium text-blue-600">$5,985</p>
+                                        <p class="text-sm text-gray-500">95% billable</p>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                                    <div>
+                                        <h4 class="font-medium text-gray-900">Marketing Campaign</h4>
+                                        <p class="text-sm text-gray-600">42.0 hours logged</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-medium text-green-600">$2,520</p>
+                                        <p class="text-sm text-gray-500">100% billable</p>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                                    <div>
+                                        <h4 class="font-medium text-gray-900">Operations Support</h4>
+                                        <p class="text-sm text-gray-600">28.5 hours logged</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-medium text-yellow-600">$1,567.50</p>
+                                        <p class="text-sm text-gray-500">90% billable</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Budget vs Actual -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Budget vs Actual Hours</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="flex justify-between mb-1">
+                                        <span class="text-sm text-gray-600">ERP Development</span>
+                                        <span class="text-sm font-medium">85.5h / 120h</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-blue-600 h-2 rounded-full" style="width: 71%"></div>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1">71% of budget used</p>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between mb-1">
+                                        <span class="text-sm text-gray-600">Marketing Campaign</span>
+                                        <span class="text-sm font-medium">42h / 60h</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-green-600 h-2 rounded-full" style="width: 70%"></div>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1">70% of budget used</p>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between mb-1">
+                                        <span class="text-sm text-gray-600">Operations Support</span>
+                                        <span class="text-sm font-medium">28.5h / 40h</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-yellow-600 h-2 rounded-full" style="width: 71%"></div>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1">71% of budget used</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Team Utilization -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Team Utilization</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <img class="w-8 h-8 rounded-full mr-3" src="https://via.placeholder.com/32" alt="User">
+                                        <span class="font-medium text-gray-900">John Smith</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-green-600 h-2 rounded-full" style="width: 95%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">95%</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <img class="w-8 h-8 rounded-full mr-3" src="https://via.placeholder.com/32" alt="User">
+                                        <span class="font-medium text-gray-900">Sarah Johnson</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-blue-600 h-2 rounded-full" style="width: 88%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">88%</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <img class="w-8 h-8 rounded-full mr-3" src="https://via.placeholder.com/32" alt="User">
+                                        <span class="font-medium text-gray-900">Mike Wilson</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-yellow-600 h-2 rounded-full" style="width: 76%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">76%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Overtime Analysis -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Overtime Analysis</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Regular Hours</span>
+                                    <span class="font-medium text-gray-900">152.0h</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Overtime Hours</span>
+                                    <span class="font-medium text-orange-600">13.0h</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Weekend Hours</span>
+                                    <span class="font-medium text-blue-600">8.5h</span>
+                                </div>
+                                <div class="flex justify-between items-center border-t pt-2">
+                                    <span class="font-medium text-gray-900">Total Hours</span>
+                                    <span class="font-bold text-primary">173.5h</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time Reports Tab -->
+                <div id="reports-tab" class="tab-content p-6 hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Report Templates -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Time Reports</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center p-3 border border-gray-200 rounded-lg">
+                                    <div>
+                                        <h4 class="font-medium text-gray-900">Weekly Timesheet Summary</h4>
+                                        <p class="text-sm text-gray-600">Employee hours by project and task</p>
+                                    </div>
+                                    <button class="text-blue-600 hover:text-blue-900 text-sm">Generate</button>
+                                </div>
+                                <div class="flex justify-between items-center p-3 border border-gray-200 rounded-lg">
+                                    <div>
+                                        <h4 class="font-medium text-gray-900">Project Time Analysis</h4>
+                                        <p class="text-sm text-gray-600">Budget vs actual time by project</p>
+                                    </div>
+                                    <button class="text-blue-600 hover:text-blue-900 text-sm">Generate</button>
+                                </div>
+                                <div class="flex justify-between items-center p-3 border border-gray-200 rounded-lg">
+                                    <div>
+                                        <h4 class="font-medium text-gray-900">Billable Hours Report</h4>
+                                        <p class="text-sm text-gray-600">Client billing summary with rates</p>
+                                    </div>
+                                    <button class="text-blue-600 hover:text-blue-900 text-sm">Generate</button>
+                                </div>
+                                <div class="flex justify-between items-center p-3 border border-gray-200 rounded-lg">
+                                    <div>
+                                        <h4 class="font-medium text-gray-900">Employee Utilization</h4>
+                                        <p class="text-sm text-gray-600">Team productivity and utilization rates</p>
+                                    </div>
+                                    <button class="text-blue-600 hover:text-blue-900 text-sm">Generate</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Analytics -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Analytics</h3>
+                            <div class="space-y-4">
+                                <div class="p-3 bg-blue-50 rounded-lg">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-blue-900 font-medium">Most Productive Day</span>
+                                        <span class="text-blue-700">Tuesday</span>
+                                    </div>
+                                    <p class="text-sm text-blue-600 mt-1">Average 8.5 hours per employee</p>
+                                </div>
+                                <div class="p-3 bg-green-50 rounded-lg">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-green-900 font-medium">Top Project</span>
+                                        <span class="text-green-700">ERP Development</span>
+                                    </div>
+                                    <p class="text-sm text-green-600 mt-1">52% of total logged hours</p>
+                                </div>
+                                <div class="p-3 bg-yellow-50 rounded-lg">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-yellow-900 font-medium">Average Daily Hours</span>
+                                        <span class="text-yellow-700">7.8 hours</span>
+                                    </div>
+                                    <p class="text-sm text-yellow-600 mt-1">2% increase from last month</p>
+                                </div>
+                                <div class="p-3 bg-purple-50 rounded-lg">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-purple-900 font-medium">Billable Ratio</span>
+                                        <span class="text-purple-700">94.5%</span>
+                                    </div>
+                                    <p class="text-sm text-purple-600 mt-1">Above target of 90%</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Activities -->
+                        <div class="bg-white border rounded-lg p-6 lg:col-span-2">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Time Activities</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-start">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3"></div>
+                                    <div>
+                                        <p class="text-sm text-gray-900"><span class="font-medium">John Smith</span> completed 8.5 hours on ERP Development</p>
+                                        <p class="text-xs text-gray-500">2 hours ago</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start">
+                                    <div class="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
+                                    <div>
+                                        <p class="text-sm text-gray-900"><span class="font-medium">Sarah Johnson</span> started timer for Marketing Campaign</p>
+                                        <p class="text-xs text-gray-500">3 hours ago</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start">
+                                    <div class="w-2 h-2 bg-yellow-500 rounded-full mt-2 mr-3"></div>
+                                    <div>
+                                        <p class="text-sm text-gray-900"><span class="font-medium">Mike Wilson</span> submitted timesheet for approval</p>
+                                        <p class="text-xs text-gray-500">5 hours ago</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start">
+                                    <div class="w-2 h-2 bg-purple-500 rounded-full mt-2 mr-3"></div>
+                                    <div>
+                                        <p class="text-sm text-gray-900"><span class="font-medium">Admin</span> approved 24 time entries</p>
+                                        <p class="text-xs text-gray-500">6 hours ago</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Time Tracking Integration Notice -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-blue-600 text-lg mr-3 mt-1"></i>
+                    <div>
+                        <h4 class="text-blue-900 font-medium mb-2">Time Tracking Integration</h4>
+                        <p class="text-blue-800 text-sm">
+                            Time tracking seamlessly integrates with Payroll, Project Management, and Client Billing systems. 
+                            Time entries automatically flow to payroll calculations, project cost tracking, and generate accurate client invoices based on billable hours and rates.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // Timer functionality
+        let timerInterval;
+        let seconds = 0;
+        let isRunning = false;
+
+        function updateTimerDisplay() {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            document.getElementById('timer-display').textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function startTimer() {
+            if (!isRunning) {
+                isRunning = true;
+                timerInterval = setInterval(() => {
+                    seconds++;
+                    updateTimerDisplay();
+                }, 1000);
+                
+                document.getElementById('start-timer').innerHTML = '<i class="fas fa-pause mr-2"></i>Running...';
+                document.getElementById('start-timer').classList.add('bg-yellow-500');
+                document.getElementById('start-timer').classList.remove('bg-primary');
+            }
+        }
+
+        function pauseTimer() {
+            if (isRunning) {
+                isRunning = false;
+                clearInterval(timerInterval);
+                
+                document.getElementById('start-timer').innerHTML = '<i class="fas fa-play mr-2"></i>Resume';
+                document.getElementById('start-timer').classList.remove('bg-yellow-500');
+                document.getElementById('start-timer').classList.add('bg-primary');
+            }
+        }
+
+        function stopTimer() {
+            isRunning = false;
+            clearInterval(timerInterval);
+            seconds = 0;
+            updateTimerDisplay();
+            
+            document.getElementById('start-timer').innerHTML = '<i class="fas fa-play mr-2"></i>Start Timer';
+            document.getElementById('start-timer').classList.remove('bg-yellow-500');
+            document.getElementById('start-timer').classList.add('bg-primary');
+        }
+
+        // Tab functionality
+        function initTabs() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabName = button.getAttribute('data-tab');
+                    
+                    // Remove active classes
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('border-primary', 'text-primary');
+                        btn.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    
+                    tabContents.forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    
+                    // Add active classes
+                    button.classList.remove('border-transparent', 'text-gray-500');
+                    button.classList.add('border-primary', 'text-primary');
+                    
+                    // Show selected tab content
+                    document.getElementById(tabName + '-tab').classList.remove('hidden');
+                });
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initTabs();
+            
+            // Timer event listeners
+            document.getElementById('start-timer').addEventListener('click', startTimer);
+            document.getElementById('pause-timer').addEventListener('click', pauseTimer);
+            document.getElementById('stop-timer').addEventListener('click', stopTimer);
+        });
+    </script>
+{% endblock %}

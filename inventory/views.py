@@ -78,3 +78,23 @@ def stockitems_delete(request, pk):
     stockitem = get_object_or_404(StockItem, pk=pk, company=request.user.company)
     stockitem.delete()
     return JsonResponse({'success': True})
+
+@login_required
+def warehouses_ui(request):
+    warehouses = Warehouse.objects.filter(company=request.user.company)
+    return render(request, 'inventory/warehouses-ui.html', {'warehouses': warehouses})
+
+@login_required
+def movements_ui(request):
+    # For now, just return a simple template
+    return render(request, 'inventory/movements-ui.html')
+
+@login_required
+def alerts_ui(request):
+    # For now, just return a simple template
+    return render(request, 'inventory/alerts-ui.html')
+
+@login_required
+def categories_ui(request):
+    # For now, just return a simple template
+    return render(request, 'inventory/categories-ui.html')

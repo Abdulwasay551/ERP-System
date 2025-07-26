@@ -2,26 +2,190 @@
 {% load static %}
 {% block title %}Leads | ERP System{% endblock %}
 {% block content %}
-<div class="flex justify-between items-center mb-6">
-    <h2 class="text-2xl font-bold text-emerald-700">Leads</h2>
-    <button id="addLeadBtn" class="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-4 py-2 rounded-lg shadow hover:from-emerald-700 hover:to-green-800 transition">Add Lead</button>
+<div class="pt-24 pb-8">
+    <!-- Header Section -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-3xl font-bold text-emerald-700">Lead Management</h2>
+            <p class="text-emerald-600 mt-1">Track and nurture potential customers</p>
+        </div>
+        <button id="addLeadBtn" class="quick-action-btn">
+            <i class="fas fa-user-plus mr-2"></i>Add Lead
+        </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="stat-card">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-emerald-100 text-emerald-600">
+                    <i class="fas fa-users text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Leads</p>
+                    <p class="text-2xl font-bold text-emerald-700">{{ leads.count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                    <i class="fas fa-star text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Hot Leads</p>
+                    <p class="text-2xl font-bold text-blue-700">{{ hot_leads_count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                    <i class="fas fa-check-circle text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Converted</p>
+                    <p class="text-2xl font-bold text-green-700">{{ converted_leads_count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                    <i class="fas fa-percentage text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Conversion Rate</p>
+                    <p class="text-2xl font-bold text-yellow-700">{{ conversion_rate|floatformat:1 }}%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COA Integration Notice -->
+    <div class="coa-integration mb-6">
+        <div class="flex items-center">
+            <i class="fas fa-funnel-dollar text-emerald-600 mr-3"></i>
+            <div>
+                <h4 class="font-semibold text-emerald-700">Sales Pipeline Integration</h4>
+                <p class="text-sm text-emerald-600">Lead conversions automatically create customer records and track sales performance</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leads Table -->
+    <div class="bg-white rounded-xl shadow-lg p-6 accounting-highlight">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-emerald-700">Lead Pipeline</h3>
+            <div class="flex space-x-3">
+                <input type="text" id="searchInput" placeholder="Search leads..." 
+                       class="px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <select id="statusFilter" class="px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="">All Status</option>
+                    <option value="new">New</option>
+                    <option value="contacted">Contacted</option>
+                    <option value="qualified">Qualified</option>
+                    <option value="converted">Converted</option>
+                    <option value="lost">Lost</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-emerald-200">
+                <thead class="bg-emerald-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-emerald-700 uppercase tracking-wider">Lead</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-emerald-700 uppercase tracking-wider">Contact Info</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-emerald-700 uppercase tracking-wider">Source</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-emerald-700 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-emerald-700 uppercase tracking-wider">Created</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-emerald-700 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-emerald-100">
+                    {% for lead in leads %}
+                    <tr class="hover:bg-emerald-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <i class="fas fa-user-tie text-blue-600"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">{{ lead.name }}</div>
+                                    <div class="text-sm text-gray-500">{{ lead.company|default:"Individual" }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ lead.email|default:"—" }}</div>
+                            <div class="text-sm text-gray-500">{{ lead.phone|default:"—" }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ lead.source|default:"—" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if lead.status == 'converted' %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    Converted
+                                </span>
+                            {% elif lead.status == 'qualified' %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    Qualified
+                                </span>
+                            {% elif lead.status == 'contacted' %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    Contacted
+                                </span>
+                            {% elif lead.status == 'lost' %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                    Lost
+                                </span>
+                            {% else %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                    New
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ lead.created_at|date:"M d, Y" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button onclick="convertLead({{ lead.id }})" 
+                                    class="text-green-600 hover:text-green-900 mr-3" title="Convert">
+                                <i class="fas fa-exchange-alt"></i>
+                            </button>
+                            <button onclick="editLead({{ lead.id }})" 
+                                    class="text-emerald-600 hover:text-emerald-900 mr-3" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteLead({{ lead.id }})" 
+                                    class="text-red-600 hover:text-red-900" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                            <div class="flex flex-col items-center py-12">
+                                <i class="fas fa-user-tie text-4xl text-gray-300 mb-4"></i>
+                                <p class="text-lg font-medium text-gray-500">No leads found</p>
+                                <p class="text-sm text-gray-400">Add your first lead to start building your pipeline</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
-<div class="bg-white rounded-xl shadow p-6">
-    <table class="min-w-full divide-y divide-emerald-200">
-        <thead>
-            <tr>
-                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Name</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Email</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Phone</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Status</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Actions</th>
-            </tr>
-        </thead>
-        <tbody id="leadTableBody" class="divide-y divide-emerald-100">
-            <!-- Data will be loaded here by JS -->
-        </tbody>
-    </table>
-</div>
+
+<!-- Lead Modal and Scripts would go here -->
+{% endblock %}
 
 <!-- Modal for Add/Edit Lead -->
 <div id="leadModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden">

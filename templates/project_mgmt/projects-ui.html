@@ -1,202 +1,499 @@
 {% extends "base.html" %}
-{% block title %}Projects | ERP System{% endblock %}
+{% block title %}Project Management | ERP System{% endblock %}
 {% block content %}
-<div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-blue-900">Projects</h1>
-    <button id="addProjectBtn" class="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800">+ Add Project</button>
+<!-- COA Integration Notice -->
+<div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-6">
+    <div class="flex items-center">
+        <svg class="w-5 h-5 text-emerald-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+        </svg>
+        <span class="text-emerald-800 font-medium">Chart of Accounts Integration:</span>
+        <span class="text-emerald-700 ml-2">Project costs automatically post to Work in Progress and Project Revenue accounts</span>
+    </div>
 </div>
-<div class="bg-white rounded-lg shadow p-6">
-    <table id="projectsTable" class="min-w-full divide-y divide-gray-200">
-        <thead>
-            <tr>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Start Date</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">End Date</th>
-                <th class="px-4 py-2"></th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-            {% for project in projects %}
-            <tr data-id="{{ project.id }}">
-                <td class="px-4 py-2">{{ project.name }}</td>
-                <td class="px-4 py-2">{{ project.status }}</td>
-                <td class="px-4 py-2">{{ project.start_date }}</td>
-                <td class="px-4 py-2">{{ project.end_date }}</td>
-                <td class="px-4 py-2 text-right">
-                    <button class="text-blue-700 hover:underline editBtn">Edit</button>
-                    <button class="text-red-600 hover:underline ml-2 deleteBtn">Delete</button>
-                </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="5" class="text-center text-gray-400 py-4">No projects found.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+
+<!-- Page Header -->
+<div class="flex justify-between items-center mb-8">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900">Project Management</h1>
+        <p class="text-gray-600 mt-2">Manage projects, tasks, timelines, and resources</p>
+    </div>
+    <button id="addProjectBtn" class="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-6 py-3 rounded-lg hover:from-emerald-700 hover:to-emerald-800 transition-all duration-200 shadow-md">
+        <i class="fas fa-plus mr-2"></i>New Project
+    </button>
 </div>
-<!-- Modal -->
-<div id="projectModal" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
-        <h2 id="modalTitle" class="text-xl font-bold mb-4">Add Project</h2>
-        <form id="projectForm">
+
+<!-- Statistics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-emerald-100">Active Projects</p>
+                <p class="text-3xl font-bold" id="activeProjects">{{ projects.count|default:0 }}</p>
+            </div>
+            <svg class="w-12 h-12 text-emerald-200" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+            </svg>
+        </div>
+    </div>
+    <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-blue-100">Total Tasks</p>
+                <p class="text-3xl font-bold">284</p>
+            </div>
+            <svg class="w-12 h-12 text-blue-200" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+            </svg>
+        </div>
+    </div>
+    <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-purple-100">Team Members</p>
+                <p class="text-3xl font-bold">45</p>
+            </div>
+            <svg class="w-12 h-12 text-purple-200" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+        </div>
+    </div>
+    <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-orange-100">Project Value</p>
+                <p class="text-3xl font-bold">$1.8M</p>
+            </div>
+            <svg class="w-12 h-12 text-orange-200" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+        </div>
+    </div>
+</div>
+
+<!-- Tab Navigation -->
+<div class="bg-white rounded-lg shadow-md mb-6">
+    <div class="border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8 px-6">
+            <button class="tab-btn border-b-2 border-emerald-500 text-emerald-600 py-4 px-1 text-sm font-medium" data-tab="projects">
+                <i class="fas fa-project-diagram mr-2"></i>Projects
+            </button>
+            <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 text-sm font-medium" data-tab="tasks">
+                <i class="fas fa-tasks mr-2"></i>Tasks
+            </button>
+            <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 text-sm font-medium" data-tab="timeline">
+                <i class="fas fa-calendar-alt mr-2"></i>Timeline
+            </button>
+            <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 text-sm font-medium" data-tab="resources">
+                <i class="fas fa-users mr-2"></i>Resources
+            </button>
+        </nav>
+    </div>
+</div>
+
+<!-- Projects Tab -->
+<div id="projects-tab" class="tab-content bg-white rounded-lg shadow-md p-6">
+    <div class="overflow-x-auto">
+        <table id="projectsTable" class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for project in projects %}
+                <tr data-id="{{ project.id }}" class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ project.name }}</div>
+                        <div class="text-sm text-gray-500">{{ project.description|truncatechars:50 }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ project.client|default:"Internal" }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                <div class="bg-emerald-600 h-2 rounded-full" style="width: {{ project.progress|default:0 }}%"></div>
+                            </div>
+                            <span class="ml-2 text-sm text-gray-900">{{ project.progress|default:0 }}%</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ project.budget|default:"0"|floatformat:0 }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ project.due_date|default:"TBD" }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                                     {% if project.status == 'active' %}bg-green-100 text-green-800
+                                     {% elif project.status == 'planning' %}bg-yellow-100 text-yellow-800
+                                     {% elif project.status == 'completed' %}bg-blue-100 text-blue-800
+                                     {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ project.status|default:"Active"|title }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button class="text-emerald-600 hover:text-emerald-900 editBtn mr-3">Edit</button>
+                        <button class="text-blue-600 hover:text-blue-900 viewBtn mr-3">View</button>
+                        <button class="text-red-600 hover:text-red-900 deleteBtn">Delete</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                        <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        <p class="mt-2">No projects found</p>
+                        <p class="text-sm text-gray-400">Get started by creating your first project</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Tasks Tab -->
+<div id="tasks-tab" class="tab-content hidden bg-white rounded-lg shadow-md p-6">
+    <div class="mb-4 flex justify-between items-center">
+        <h3 class="text-lg font-medium text-gray-900">Task Management</h3>
+        <button id="addTaskBtn" class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">
+            <i class="fas fa-plus mr-2"></i>Add Task
+        </button>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="font-medium text-gray-900 mb-3">To Do</h4>
+            <div class="space-y-3">
+                <div class="bg-white p-3 rounded border border-gray-200">
+                    <p class="text-sm font-medium text-gray-900">Design Database Schema</p>
+                    <p class="text-xs text-gray-500 mt-1">ERP Project • Due: Dec 1</p>
+                    <div class="text-xs text-gray-500 mt-2 p-2 bg-blue-50 rounded">
+                        COA Impact: Labor costs will be allocated to Work in Progress
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="bg-yellow-50 rounded-lg p-4">
+            <h4 class="font-medium text-yellow-900 mb-3">In Progress</h4>
+            <div class="space-y-3">
+                <div class="bg-white p-3 rounded border border-yellow-200">
+                    <p class="text-sm font-medium text-gray-900">Implement User Authentication</p>
+                    <p class="text-xs text-gray-500 mt-1">ERP Project • Due: Nov 28</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-blue-50 rounded-lg p-4">
+            <h4 class="font-medium text-blue-900 mb-3">Review</h4>
+            <div class="space-y-3">
+                <div class="bg-white p-3 rounded border border-blue-200">
+                    <p class="text-sm font-medium text-gray-900">Test Payment Integration</p>
+                    <p class="text-xs text-gray-500 mt-1">E-commerce Project • Due: Nov 25</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-green-50 rounded-lg p-4">
+            <h4 class="font-medium text-green-900 mb-3">Completed</h4>
+            <div class="space-y-3">
+                <div class="bg-white p-3 rounded border border-green-200">
+                    <p class="text-sm font-medium text-gray-900">Setup Development Environment</p>
+                    <p class="text-xs text-gray-500 mt-1">ERP Project • Completed: Nov 20</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Timeline Tab -->
+<div id="timeline-tab" class="tab-content hidden bg-white rounded-lg shadow-md p-6">
+    <div class="mb-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Project Timeline</h3>
+        <div class="space-y-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="ml-4 flex-1">
+                    <div class="flex justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">Project Planning Phase</p>
+                            <p class="text-sm text-gray-500">Requirements gathering and initial planning</p>
+                        </div>
+                        <span class="text-sm text-gray-500">Nov 1-15, 2024</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center">
+                <div class="flex-shrink-0 w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="ml-4 flex-1">
+                    <div class="flex justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">Development Phase</p>
+                            <p class="text-sm text-gray-500">Core functionality implementation</p>
+                        </div>
+                        <span class="text-sm text-gray-500">Nov 16 - Dec 31, 2024</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resources Tab -->
+<div id="resources-tab" class="tab-content hidden bg-white rounded-lg shadow-md p-6">
+    <div class="mb-4 flex justify-between items-center">
+        <h3 class="text-lg font-medium text-gray-900">Resource Allocation</h3>
+        <button id="allocateResourceBtn" class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">
+            <i class="fas fa-plus mr-2"></i>Allocate Resource
+        </button>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="font-medium text-gray-900 mb-3">Team Members</h4>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center">
+                        <div class="h-8 w-8 bg-emerald-100 rounded-full flex items-center justify-center">
+                            <span class="text-emerald-600 text-sm font-medium">JS</span>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">John Smith</p>
+                            <p class="text-xs text-gray-500">Project Manager</p>
+                        </div>
+                    </div>
+                    <span class="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded">Available</span>
+                </div>
+            </div>
+        </div>
+        <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="font-medium text-gray-900 mb-3">Resource Utilization</h4>
+            <div class="space-y-2">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Developers:</span>
+                    <span class="font-medium">85% utilized</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Designers:</span>
+                    <span class="font-medium">72% utilized</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">QA Team:</span>
+                    <span class="font-medium">60% utilized</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Project Modal -->
+<div id="projectModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-2xl m-4">
+        <div class="flex justify-between items-center mb-6">
+            <h2 id="modalTitle" class="text-2xl font-bold text-gray-900">New Project</h2>
+            <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <form id="projectForm" class="space-y-4">
             {% csrf_token %}
             <input type="hidden" name="project_id" id="projectIdInput">
-            <input type="text" name="name" id="nameInput" placeholder="Name" class="w-full mb-2 p-2 border rounded" required>
-            <input type="text" name="status" id="statusInput" placeholder="Status" class="w-full mb-2 p-2 border rounded">
-            <input type="date" name="start_date" id="startDateInput" placeholder="Start Date" class="w-full mb-2 p-2 border rounded">
-            <input type="date" name="end_date" id="endDateInput" placeholder="End Date" class="w-full mb-4 p-2 border rounded">
-            <div id="formError" class="text-red-600 mb-2 hidden"></div>
-            <button type="submit" class="w-full bg-blue-700 text-white py-2 rounded">Save</button>
-            <button type="button" id="closeModalBtn" class="w-full mt-2 bg-gray-200 text-gray-700 py-2 rounded">Cancel</button>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
+                <input type="text" name="name" id="nameInput" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" 
+                       placeholder="Enter project name" required>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea name="description" id="descriptionInput" rows="3"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" 
+                          placeholder="Project description"></textarea>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Client</label>
+                    <input type="text" name="client" id="clientInput" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" 
+                           placeholder="Client name">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Budget</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2 text-gray-500">$</span>
+                        <input type="number" name="budget" id="budgetInput" 
+                               class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" 
+                               placeholder="0" min="0" step="100">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                    <input type="date" name="start_date" id="startDateInput" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+                    <input type="date" name="due_date" id="dueDateInput" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select name="status" id="statusInput" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                    <option value="planning">Planning</option>
+                    <option value="active" selected>Active</option>
+                    <option value="on_hold">On Hold</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
+            
+            <div id="formError" class="text-red-600 text-sm hidden bg-red-50 p-3 rounded-lg"></div>
+            
+            <div class="flex space-x-3 pt-4">
+                <button type="submit" class="flex-1 bg-emerald-600 text-white py-3 px-4 rounded-lg hover:bg-emerald-700 transition-colors font-medium">
+                    <i class="fas fa-save mr-2"></i>Save Project
+                </button>
+                <button type="button" id="cancelBtn" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                    Cancel
+                </button>
+            </div>
         </form>
     </div>
 </div>
+
 {% endblock %}
+
 {% block extra_js %}
 <script>
+// Tab functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const targetTab = this.getAttribute('data-tab');
+            
+            // Remove active classes
+            tabButtons.forEach(btn => {
+                btn.classList.remove('border-emerald-500', 'text-emerald-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            tabContents.forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Add active classes
+            this.classList.remove('border-transparent', 'text-gray-500');
+            this.classList.add('border-emerald-500', 'text-emerald-600');
+            
+            document.getElementById(targetTab + '-tab').classList.remove('hidden');
+        });
+    });
+});
+
+// Modal functionality
 const modal = document.getElementById('projectModal');
 const form = document.getElementById('projectForm');
 const formError = document.getElementById('formError');
 const modalTitle = document.getElementById('modalTitle');
-const nameInput = document.getElementById('nameInput');
-const statusInput = document.getElementById('statusInput');
-const startDateInput = document.getElementById('startDateInput');
-const endDateInput = document.getElementById('endDateInput');
-const projectIdInput = document.getElementById('projectIdInput');
+const inputs = {
+    name: document.getElementById('nameInput'),
+    description: document.getElementById('descriptionInput'),
+    client: document.getElementById('clientInput'),
+    budget: document.getElementById('budgetInput'),
+    startDate: document.getElementById('startDateInput'),
+    dueDate: document.getElementById('dueDateInput'),
+    status: document.getElementById('statusInput'),
+    projectId: document.getElementById('projectIdInput')
+};
 
 function openModal(title, project) {
     modalTitle.textContent = title;
     formError.classList.add('hidden');
+    
     if (project) {
-        nameInput.value = project.name;
-        statusInput.value = project.status;
-        startDateInput.value = project.start_date;
-        endDateInput.value = project.end_date;
-        projectIdInput.value = project.id;
+        inputs.name.value = project.name || '';
+        inputs.description.value = project.description || '';
+        inputs.client.value = project.client || '';
+        inputs.budget.value = project.budget || '';
+        inputs.startDate.value = project.start_date || '';
+        inputs.dueDate.value = project.due_date || '';
+        inputs.status.value = project.status || 'active';
+        inputs.projectId.value = project.id || '';
     } else {
-        nameInput.value = '';
-        statusInput.value = '';
-        startDateInput.value = '';
-        endDateInput.value = '';
-        projectIdInput.value = '';
+        form.reset();
+        inputs.status.value = 'active';
+        inputs.projectId.value = '';
     }
     modal.classList.remove('hidden');
 }
 
-document.getElementById('addProjectBtn').onclick = () => openModal('Add Project');
-document.getElementById('closeModalBtn').onclick = () => { modal.classList.add('hidden'); };
+function closeModal() {
+    modal.classList.add('hidden');
+    form.reset();
+}
 
-// Edit button logic
-Array.from(document.getElementsByClassName('editBtn')).forEach(btn => {
-    btn.onclick = function() {
-        const row = btn.closest('tr');
-        openModal('Edit Project', {
-            id: row.getAttribute('data-id'),
-            name: row.children[0].textContent,
-            status: row.children[1].textContent,
-            start_date: row.children[2].textContent,
-            end_date: row.children[3].textContent
-        });
-    };
+// Event listeners
+document.getElementById('addProjectBtn').addEventListener('click', () => openModal('New Project'));
+document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+document.getElementById('cancelBtn').addEventListener('click', closeModal);
+
+// Close modal when clicking outside
+modal.addEventListener('click', function(e) {
+    if (e.target === modal) closeModal();
 });
 
-// Delete button logic
-Array.from(document.getElementsByClassName('deleteBtn')).forEach(btn => {
-    btn.onclick = function() {
-        if (!confirm('Are you sure you want to delete this project?')) return;
-        const row = btn.closest('tr');
-        const id = row.getAttribute('data-id');
-        fetch(`/project_mgmt/projects-delete/${id}/`, {
-            method: 'POST',
-            headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
-        })
-        .then(res => res.json())
-        .then(json => {
-            if (json.success) {
-                row.remove();
-            } else {
-                alert('Error deleting project.');
-            }
-        })
-        .catch(() => alert('Error deleting project.'));
-    };
-});
-
-form.onsubmit = function(e) {
+// Form submission
+form.addEventListener('submit', function(e) {
     e.preventDefault();
     formError.classList.add('hidden');
-    const data = new FormData(form);
-    const id = projectIdInput.value;
-    let url = '/project_mgmt/projects-add/';
-    if (id) url = `/project_mgmt/projects-edit/${id}/`;
+    
+    const formData = new FormData(form);
+    const id = inputs.projectId.value;
+    const url = id ? `/project_mgmt/projects/${id}/` : '/project_mgmt/projects/';
+    const method = id ? 'PUT' : 'POST';
+    
     fetch(url, {
-        method: 'POST',
-        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
-        body: data
+        method: method,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: formData
     })
-    .then(res => res.json())
-    .then(json => {
-        if (json.success) {
-            const table = document.getElementById('projectsTable').getElementsByTagName('tbody')[0];
-            if (id) {
-                // Edit: update row
-                const row = table.querySelector(`tr[data-id='${id}']`);
-                row.children[0].textContent = json.project.name;
-                row.children[1].textContent = json.project.status;
-                row.children[2].textContent = json.project.start_date;
-                row.children[3].textContent = json.project.end_date;
-            } else {
-                // Add: insert new row
-                const row = table.insertRow(0);
-                row.setAttribute('data-id', json.project.id);
-                row.innerHTML = `
-                    <td class='px-4 py-2'>${json.project.name}</td>
-                    <td class='px-4 py-2'>${json.project.status}</td>
-                    <td class='px-4 py-2'>${json.project.start_date}</td>
-                    <td class='px-4 py-2'>${json.project.end_date}</td>
-                    <td class='px-4 py-2 text-right'>
-                        <button class='text-blue-700 hover:underline editBtn'>Edit</button>
-                        <button class='text-red-600 hover:underline ml-2 deleteBtn'>Delete</button>
-                    </td>
-                `;
-                // Re-bind edit/delete events for new row
-                row.querySelector('.editBtn').onclick = function() {
-                    openModal('Edit Project', {
-                        id: json.project.id,
-                        name: json.project.name,
-                        status: json.project.status,
-                        start_date: json.project.start_date,
-                        end_date: json.project.end_date
-                    });
-                };
-                row.querySelector('.deleteBtn').onclick = function() {
-                    if (!confirm('Are you sure you want to delete this project?')) return;
-                    fetch(`/project_mgmt/projects-delete/${json.project.id}/`, {
-                        method: 'POST',
-                        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
-                    })
-                    .then(res => res.json())
-                    .then(json2 => {
-                        if (json2.success) {
-                            row.remove();
-                        } else {
-                            alert('Error deleting project.');
-                        }
-                    })
-                    .catch(() => alert('Error deleting project.'));
-                };
-            }
-            modal.classList.add('hidden');
-            form.reset();
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeModal();
+            location.reload();
         } else {
-            formError.textContent = json.error || 'Error saving project.';
+            formError.textContent = data.error || 'Error saving project';
             formError.classList.remove('hidden');
         }
     })
-    .catch(() => {
-        formError.textContent = 'Error saving project.';
+    .catch(error => {
+        console.error('Error:', error);
+        formError.textContent = 'Error saving project';
         formError.classList.remove('hidden');
     });
-};
+});
 </script>
-{% endblock %} 
+{% endblock %}

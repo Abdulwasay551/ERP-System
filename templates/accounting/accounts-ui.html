@@ -1,214 +1,580 @@
 {% extends "base.html" %}
-{% block title %}Accounting Accounts | ERP System{% endblock %}
+{% block title %}Accounting Management | ERP System{% endblock %}
 {% block content %}
-<div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-blue-900">Accounts</h1>
-    <button id="addAccountBtn" class="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800">+ Add Account</button>
-</div>
-<div class="bg-white rounded-lg shadow p-6">
-    <table id="accountsTable" class="min-w-full divide-y divide-gray-200">
-        <thead>
-            <tr>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Group</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Active</th>
-                <th class="px-4 py-2"></th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-            {% for account in accounts %}
-            <tr data-id="{{ account.id }}">
-                <td class="px-4 py-2">{{ account.code }}</td>
-                <td class="px-4 py-2">{{ account.name }}</td>
-                <td class="px-4 py-2">{{ account.get_type_display }}</td>
-                <td class="px-4 py-2">{{ account.group.name }}</td>
-                <td class="px-4 py-2">{% if account.is_active %}Yes{% else %}No{% endif %}</td>
-                <td class="px-4 py-2 text-right">
-                    <button class="text-blue-700 hover:underline editBtn">Edit</button>
-                    <button class="text-red-600 hover:underline ml-2 deleteBtn">Delete</button>
-                </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="6" class="text-center text-gray-400 py-4">No accounts found.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-<!-- Modal -->
-<div id="accountModal" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
-        <h2 id="modalTitle" class="text-xl font-bold mb-4">Add Account</h2>
-        <form id="accountForm">
-            {% csrf_token %}
-            <input type="hidden" name="account_id" id="accountIdInput">
-            <input type="text" name="code" id="codeInput" placeholder="Code" class="w-full mb-2 p-2 border rounded" required>
-            <input type="text" name="name" id="nameInput" placeholder="Name" class="w-full mb-2 p-2 border rounded" required>
-            <input type="text" name="type" id="typeInput" placeholder="Type" class="w-full mb-2 p-2 border rounded" required>
-            <input type="text" name="group" id="groupInput" placeholder="Group" class="w-full mb-2 p-2 border rounded" required>
-            <label class="flex items-center mb-4">
-                <input type="checkbox" name="is_active" id="isActiveInput" class="mr-2"> Active
-            </label>
-            <div id="formError" class="text-red-600 mb-2 hidden"></div>
-            <button type="submit" class="w-full bg-blue-700 text-white py-2 rounded">Save</button>
-            <button type="button" id="closeModalBtn" class="w-full mt-2 bg-gray-200 text-gray-700 py-2 rounded">Cancel</button>
-        </form>
+<!-- COA Integration Notice -->
+<div class="mt-16 p-8">
+    <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 text-emerald-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            <span class="text-emerald-800 font-medium">Chart of Accounts Integration:</span>
+            <span class="text-emerald-700 ml-2">Manage the foundation of your financial reporting system</span>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Accounting Management</h1>
+            <p class="text-gray-600 mt-2">Chart of Accounts, Journal Entries, and Financial Reports</p>
+        </div>
+        <button id="addAccountBtn" class="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-6 py-3 rounded-lg hover:from-emerald-700 hover:to-emerald-800 transition-all duration-200 shadow-md">
+            <i class="fas fa-plus mr-2"></i>Add Account
+        </button>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-emerald-100">Total Accounts</p>
+                    <p class="text-3xl font-bold" id="totalAccounts">{{ accounts.count|default:0 }}</p>
+                </div>
+                <svg class="w-12 h-12 text-emerald-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+            </div>
+        </div>
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">Assets Total</p>
+                    <p class="text-3xl font-bold">$850,000</p>
+                </div>
+                <svg class="w-12 h-12 text-blue-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+            </div>
+        </div>
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100">Liabilities</p>
+                    <p class="text-3xl font-bold">$325,000</p>
+                </div>
+                <svg class="w-12 h-12 text-purple-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+                </svg>
+            </div>
+        </div>
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100">Equity</p>
+                    <p class="text-3xl font-bold">$525,000</p>
+                </div>
+                <svg class="w-12 h-12 text-green-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="bg-white rounded-lg shadow-md mb-6">
+        <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8 px-6">
+                <button class="tab-btn border-b-2 border-emerald-500 text-emerald-600 py-4 px-1 text-sm font-medium" data-tab="accounts">
+                    <i class="fas fa-list mr-2"></i>Chart of Accounts
+                </button>
+                <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 text-sm font-medium" data-tab="journal">
+                    <i class="fas fa-book mr-2"></i>Journal Entries
+                </button>
+                <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 text-sm font-medium" data-tab="reports">
+                    <i class="fas fa-chart-line mr-2"></i>Financial Reports
+                </button>
+                <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 text-sm font-medium" data-tab="reconciliation">
+                    <i class="fas fa-balance-scale mr-2"></i>Reconciliation
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Chart of Accounts Tab -->
+    <div id="accounts-tab" class="tab-content bg-white rounded-lg shadow-md p-6">
+        <div class="overflow-x-auto">
+            <table id="accountsTable" class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Code</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Group</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for account in accounts %}
+                    <tr data-id="{{ account.id }}" class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">{{ account.code }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ account.name }}</div>
+                            <div class="text-sm text-gray-500">{{ account.description|default:"No description" }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                                        {% if account.type == 'ASSET' %}bg-blue-100 text-blue-800
+                                        {% elif account.type == 'LIABILITY' %}bg-red-100 text-red-800
+                                        {% elif account.type == 'EQUITY' %}bg-green-100 text-green-800
+                                        {% elif account.type == 'REVENUE' %}bg-emerald-100 text-emerald-800
+                                        {% elif account.type == 'EXPENSE' %}bg-orange-100 text-orange-800
+                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ account.get_type_display|default:account.type }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ account.group.name|default:"No Group" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ account.balance|default:"0.00"|floatformat:2 }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if account.is_active %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                            {% else %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="text-emerald-600 hover:text-emerald-900 editBtn mr-3">Edit</button>
+                            <button class="text-blue-600 hover:text-blue-900 viewBtn mr-3">View</button>
+                            <button class="text-red-600 hover:text-red-900 deleteBtn">Delete</button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                            <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <p class="mt-2">No accounts found</p>
+                            <p class="text-sm text-gray-400">Get started by adding your first account</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Journal Entries Tab -->
+    <div id="journal-tab" class="tab-content hidden bg-white rounded-lg shadow-md p-6">
+        <div class="mb-4 flex justify-between items-center">
+            <h3 class="text-lg font-medium text-gray-900">Journal Entries</h3>
+            <button id="addJournalBtn" class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">
+                <i class="fas fa-plus mr-2"></i>New Journal Entry
+            </button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reference</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-11-20</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">JE-001</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">Sales Revenue - Customer ABC</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$5,000.00</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Posted</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="text-emerald-600 hover:text-emerald-900 mr-3">View</button>
+                            <button class="text-blue-600 hover:text-blue-900">Edit</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Financial Reports Tab -->
+    <div id="reports-tab" class="tab-content hidden bg-white rounded-lg shadow-md p-6">
+        <div class="mb-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Financial Reports</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div class="flex items-center mb-3">
+                        <svg class="w-8 h-8 text-emerald-600 mr-3" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+                        </svg>
+                        <h4 class="font-medium text-gray-900">Balance Sheet</h4>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-4">Statement of financial position showing assets, liabilities, and equity</p>
+                    <button class="w-full bg-emerald-600 text-white py-2 px-4 rounded hover:bg-emerald-700">Generate Report</button>
+                </div>
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div class="flex items-center mb-3">
+                        <svg class="w-8 h-8 text-blue-600 mr-3" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+                        </svg>
+                        <h4 class="font-medium text-gray-900">Income Statement</h4>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-4">Profit and loss statement showing revenues and expenses</p>
+                    <button class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">Generate Report</button>
+                </div>
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div class="flex items-center mb-3">
+                        <svg class="w-8 h-8 text-purple-600 mr-3" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        </svg>
+                        <h4 class="font-medium text-gray-900">Cash Flow</h4>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-4">Statement of cash flows from operating, investing, and financing activities</p>
+                    <button class="w-full bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700">Generate Report</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reconciliation Tab -->
+    <div id="reconciliation-tab" class="tab-content hidden bg-white rounded-lg shadow-md p-6">
+        <div class="mb-4 flex justify-between items-center">
+            <h3 class="text-lg font-medium text-gray-900">Bank Reconciliation</h3>
+            <button id="newReconciliationBtn" class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">
+                <i class="fas fa-plus mr-2"></i>New Reconciliation
+            </button>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h4 class="font-medium text-gray-900 mb-3">Book Balance</h4>
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Cash Account Balance:</span>
+                        <span class="font-medium text-emerald-600">$45,230.50</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Outstanding Checks:</span>
+                        <span class="font-medium text-red-600">-$2,150.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Deposits in Transit:</span>
+                        <span class="font-medium text-blue-600">+$3,500.00</span>
+                    </div>
+                    <hr class="my-2">
+                    <div class="flex justify-between font-bold">
+                        <span>Adjusted Book Balance:</span>
+                        <span class="text-emerald-600">$46,580.50</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h4 class="font-medium text-gray-900 mb-3">Bank Statement</h4>
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Statement Balance:</span>
+                        <span class="font-medium text-blue-600">$47,180.50</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Bank Fees:</span>
+                        <span class="font-medium text-red-600">-$25.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Interest Earned:</span>
+                        <span class="font-medium text-green-600">+$15.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">NSF Checks:</span>
+                        <span class="font-medium text-red-600">-$590.00</span>
+                    </div>
+                    <hr class="my-2">
+                    <div class="flex justify-between font-bold">
+                        <span>Adjusted Bank Balance:</span>
+                        <span class="text-blue-600">$46,580.50</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                <span class="text-green-800 font-medium">Reconciliation Complete</span>
+                <span class="text-green-700 ml-2">- Adjusted balances match ($46,580.50)</span>
+            </div>
+        </div>
+    </div>
+    <!-- Account Modal -->
+    <div id="accountModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-2xl m-4">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="modalTitle" class="text-2xl font-bold text-gray-900">Add Account</h2>
+                <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="accountForm" class="space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="account_id" id="accountIdInput">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Account Code</label>
+                        <input type="text" name="code" id="codeInput" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 font-mono" 
+                            placeholder="e.g., 1000" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Account Type</label>
+                        <select name="type" id="typeInput" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" required>
+                            <option value="">Select Type</option>
+                            <option value="ASSET">Asset</option>
+                            <option value="LIABILITY">Liability</option>
+                            <option value="EQUITY">Equity</option>
+                            <option value="REVENUE">Revenue</option>
+                            <option value="EXPENSE">Expense</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Account Name</label>
+                    <input type="text" name="name" id="nameInput" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" 
+                        placeholder="Enter account name" required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea name="description" id="descriptionInput" rows="3"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" 
+                            placeholder="Optional description"></textarea>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Account Group</label>
+                        <select name="group" id="groupInput" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                            <option value="">Select Group</option>
+                            <option value="current_assets">Current Assets</option>
+                            <option value="fixed_assets">Fixed Assets</option>
+                            <option value="current_liabilities">Current Liabilities</option>
+                            <option value="long_term_liabilities">Long-term Liabilities</option>
+                            <option value="equity">Equity</option>
+                            <option value="operating_revenue">Operating Revenue</option>
+                            <option value="operating_expenses">Operating Expenses</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Opening Balance</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2 text-gray-500">$</span>
+                            <input type="number" name="opening_balance" id="openingBalanceInput" 
+                                class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" 
+                                placeholder="0.00" step="0.01">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="is_active" id="isActiveInput" 
+                            class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded" checked>
+                        <span class="ml-2 text-sm text-gray-700">Active Account</span>
+                    </label>
+                </div>
+                
+                <div id="formError" class="text-red-600 text-sm hidden bg-red-50 p-3 rounded-lg"></div>
+                
+                <div class="flex space-x-3 pt-4">
+                    <button type="submit" class="flex-1 bg-emerald-600 text-white py-3 px-4 rounded-lg hover:bg-emerald-700 transition-colors font-medium">
+                        <i class="fas fa-save mr-2"></i>Save Account
+                    </button>
+                    <button type="button" id="cancelBtn" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 {% endblock %}
+
 {% block extra_js %}
 <script>
+// Tab functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const targetTab = this.getAttribute('data-tab');
+            
+            // Remove active classes
+            tabButtons.forEach(btn => {
+                btn.classList.remove('border-emerald-500', 'text-emerald-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            tabContents.forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Add active classes
+            this.classList.remove('border-transparent', 'text-gray-500');
+            this.classList.add('border-emerald-500', 'text-emerald-600');
+            
+            document.getElementById(targetTab + '-tab').classList.remove('hidden');
+        });
+    });
+});
+
+// Modal functionality
 const modal = document.getElementById('accountModal');
 const form = document.getElementById('accountForm');
 const formError = document.getElementById('formError');
 const modalTitle = document.getElementById('modalTitle');
-const codeInput = document.getElementById('codeInput');
-const nameInput = document.getElementById('nameInput');
-const typeInput = document.getElementById('typeInput');
-const groupInput = document.getElementById('groupInput');
-const isActiveInput = document.getElementById('isActiveInput');
-const accountIdInput = document.getElementById('accountIdInput');
+const inputs = {
+    code: document.getElementById('codeInput'),
+    name: document.getElementById('nameInput'),
+    type: document.getElementById('typeInput'),
+    description: document.getElementById('descriptionInput'),
+    group: document.getElementById('groupInput'),
+    openingBalance: document.getElementById('openingBalanceInput'),
+    isActive: document.getElementById('isActiveInput'),
+    accountId: document.getElementById('accountIdInput')
+};
 
 function openModal(title, account) {
     modalTitle.textContent = title;
     formError.classList.add('hidden');
+    
     if (account) {
-        codeInput.value = account.code;
-        nameInput.value = account.name;
-        typeInput.value = account.type;
-        groupInput.value = account.group;
-        isActiveInput.checked = account.is_active;
-        accountIdInput.value = account.id;
+        inputs.code.value = account.code || '';
+        inputs.name.value = account.name || '';
+        inputs.type.value = account.type || '';
+        inputs.description.value = account.description || '';
+        inputs.group.value = account.group || '';
+        inputs.openingBalance.value = account.opening_balance || '';
+        inputs.isActive.checked = account.is_active !== false;
+        inputs.accountId.value = account.id || '';
     } else {
-        codeInput.value = '';
-        nameInput.value = '';
-        typeInput.value = '';
-        groupInput.value = '';
-        isActiveInput.checked = true;
-        accountIdInput.value = '';
+        form.reset();
+        inputs.isActive.checked = true;
+        inputs.accountId.value = '';
     }
     modal.classList.remove('hidden');
 }
 
-document.getElementById('addAccountBtn').onclick = () => openModal('Add Account');
-document.getElementById('closeModalBtn').onclick = () => { modal.classList.add('hidden'); };
+function closeModal() {
+    modal.classList.add('hidden');
+    form.reset();
+}
 
-// Edit button logic
-Array.from(document.getElementsByClassName('editBtn')).forEach(btn => {
-    btn.onclick = function() {
-        const row = btn.closest('tr');
-        openModal('Edit Account', {
-            id: row.getAttribute('data-id'),
-            code: row.children[0].textContent,
-            name: row.children[1].textContent,
-            type: row.children[2].textContent,
-            group: row.children[3].textContent,
-            is_active: row.children[4].textContent.trim() === 'Yes'
-        });
-    };
+// Event listeners
+document.getElementById('addAccountBtn').addEventListener('click', () => openModal('Add Account'));
+document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+document.getElementById('cancelBtn').addEventListener('click', closeModal);
+
+// Close modal when clicking outside
+modal.addEventListener('click', function(e) {
+    if (e.target === modal) closeModal();
 });
 
-// Delete button logic
-Array.from(document.getElementsByClassName('deleteBtn')).forEach(btn => {
-    btn.onclick = function() {
-        if (!confirm('Are you sure you want to delete this account?')) return;
-        const row = btn.closest('tr');
-        const id = row.getAttribute('data-id');
-        fetch(`/accounting/accounts-delete/${id}/`, {
-            method: 'POST',
-            headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
-        })
-        .then(res => res.json())
-        .then(json => {
-            if (json.success) {
-                row.remove();
-            } else {
-                alert('Error deleting account.');
-            }
-        })
-        .catch(() => alert('Error deleting account.'));
-    };
-});
+// Bind account actions
+function bindAccountActions() {
+    document.querySelectorAll('.editBtn').forEach(btn => {
+        btn.onclick = function() {
+            const row = btn.closest('tr');
+            const cells = row.querySelectorAll('td');
+            const typeSpan = cells[2].querySelector('span');
+            const statusSpan = cells[5].querySelector('span');
+            
+            openModal('Edit Account', {
+                id: row.getAttribute('data-id'),
+                code: cells[0].textContent.trim(),
+                name: cells[1].querySelector('.text-sm.font-medium').textContent.trim(),
+                description: cells[1].querySelector('.text-sm.text-gray-500').textContent.trim(),
+                type: typeSpan.textContent.trim().toUpperCase(),
+                group: cells[3].textContent.trim(),
+                opening_balance: cells[4].textContent.replace('$', '').replace(',', ''),
+                is_active: statusSpan.textContent.trim() === 'Active'
+            });
+        };
+    });
+    
+    document.querySelectorAll('.deleteBtn').forEach(btn => {
+        btn.onclick = function() {
+            if (!confirm('Are you sure you want to delete this account?')) return;
+            
+            const row = btn.closest('tr');
+            const id = row.getAttribute('data-id');
+            
+            fetch(`/accounting/accounts/${id}/delete/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    row.remove();
+                    // Update account count
+                    document.getElementById('totalAccounts').textContent = 
+                        parseInt(document.getElementById('totalAccounts').textContent) - 1;
+                } else {
+                    alert('Error deleting account: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error deleting account');
+            });
+        };
+    });
+}
 
-form.onsubmit = function(e) {
+// Form submission
+form.addEventListener('submit', function(e) {
     e.preventDefault();
     formError.classList.add('hidden');
-    const data = new FormData(form);
-    const id = accountIdInput.value;
-    let url = '/accounting/accounts-add/';
-    if (id) url = `/accounting/accounts-edit/${id}/`;
+    
+    const formData = new FormData(form);
+    const id = inputs.accountId.value;
+    const url = id ? `/accounting/accounts/${id}/` : '/accounting/accounts/';
+    const method = id ? 'PUT' : 'POST';
+    
     fetch(url, {
-        method: 'POST',
-        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
-        body: data
+        method: method,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: formData
     })
-    .then(res => res.json())
-    .then(json => {
-        if (json.success) {
-            const table = document.getElementById('accountsTable').getElementsByTagName('tbody')[0];
-            if (id) {
-                // Edit: update row
-                const row = table.querySelector(`tr[data-id='${id}']`);
-                row.children[0].textContent = json.account.code;
-                row.children[1].textContent = json.account.name;
-                row.children[2].textContent = json.account.type;
-                row.children[3].textContent = json.account.group;
-                row.children[4].textContent = json.account.is_active ? 'Yes' : 'No';
-            } else {
-                // Add: insert new row
-                const row = table.insertRow(0);
-                row.setAttribute('data-id', json.account.id);
-                row.innerHTML = `
-                    <td class='px-4 py-2'>${json.account.code}</td>
-                    <td class='px-4 py-2'>${json.account.name}</td>
-                    <td class='px-4 py-2'>${json.account.type}</td>
-                    <td class='px-4 py-2'>${json.account.group}</td>
-                    <td class='px-4 py-2'>${json.account.is_active ? 'Yes' : 'No'}</td>
-                    <td class='px-4 py-2 text-right'>
-                        <button class='text-blue-700 hover:underline editBtn'>Edit</button>
-                        <button class='text-red-600 hover:underline ml-2 deleteBtn'>Delete</button>
-                    </td>
-                `;
-                // Re-bind edit/delete events for new row
-                row.querySelector('.editBtn').onclick = function() {
-                    openModal('Edit Account', {
-                        id: json.account.id,
-                        code: json.account.code,
-                        name: json.account.name,
-                        type: json.account.type,
-                        group: json.account.group,
-                        is_active: json.account.is_active
-                    });
-                };
-                row.querySelector('.deleteBtn').onclick = function() {
-                    if (!confirm('Are you sure you want to delete this account?')) return;
-                    fetch(`/accounting/accounts-delete/${json.account.id}/`, {
-                        method: 'POST',
-                        headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
-                    })
-                    .then(res => res.json())
-                    .then(json2 => {
-                        if (json2.success) {
-                            row.remove();
-                        } else {
-                            alert('Error deleting account.');
-                        }
-                    })
-                    .catch(() => alert('Error deleting account.'));
-                };
-            }
-            modal.classList.add('hidden');
-            form.reset();
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeModal();
+            location.reload(); // Simple reload for now - in production, update the table dynamically
         } else {
-            formError.textContent = json.error || 'Error saving account.';
+            formError.textContent = data.error || 'Error saving account';
             formError.classList.remove('hidden');
         }
     })
-    .catch(() => {
-        formError.textContent = 'Error saving account.';
+    .catch(error => {
+        console.error('Error:', error);
+        formError.textContent = 'Error saving account';
         formError.classList.remove('hidden');
     });
-};
+});
+
+// Initialize
+bindAccountActions();
 </script>
-{% endblock %} 
+{% endblock %}

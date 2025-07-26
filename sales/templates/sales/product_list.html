@@ -2,142 +2,396 @@
 {% load static %}
 {% block title %}Products | ERP System{% endblock %}
 {% block content %}
-<div class="flex justify-between items-center mb-6">
-    <h2 class="text-2xl font-bold text-emerald-700">Products</h2>
-    <button id="addProductBtn" class="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-4 py-2 rounded-lg shadow hover:from-emerald-700 hover:to-green-800 transition">Add Product</button>
-</div>
-<div class="bg-white rounded-xl shadow p-6">
-    <table class="min-w-full divide-y divide-emerald-200">
-        <thead>
-            <tr>
-                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Name</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">SKU</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Price</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Active</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-emerald-700 uppercase">Actions</th>
-            </tr>
-        </thead>
-        <tbody id="productTableBody" class="divide-y divide-emerald-100">
-            <!-- Data will be loaded here by JS -->
-        </tbody>
-    </table>
-</div>
+<div class="pt-24 pb-8">
+    <!-- Header Section -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-3xl font-bold text-emerald-700">Product Management</h2>
+            <p class="text-emerald-600 mt-1">Manage your product catalog and inventory</p>
+        </div>
+        <button id="addProductBtn" class="quick-action-btn">
+            <i class="fas fa-plus mr-2"></i>Add Product
+        </button>
+    </div>
 
-<!-- Modal for Add/Edit Product -->
-<div id="productModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-xl shadow-xl p-8 w-full max-w-lg relative">
-        <button id="closeProductModalBtn" class="absolute top-2 right-2 text-gray-400 hover:text-red-500">&times;</button>
-        <h3 id="productModalTitle" class="text-xl font-bold text-emerald-700 mb-4">Add Product</h3>
-        <form id="productForm" class="space-y-4">
-            <input type="hidden" id="productId" name="id">
-            <div>
-                <label for="product_name" class="block text-gray-700 font-medium mb-1">Name</label>
-                <input type="text" id="product_name" name="name" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="stat-card">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-emerald-100 text-emerald-600">
+                    <i class="fas fa-boxes text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Products</p>
+                    <p class="text-2xl font-bold text-emerald-700" id="totalProducts">{{ products.count }}</p>
+                </div>
             </div>
-            <div>
-                <label for="product_sku" class="block text-gray-700 font-medium mb-1">SKU</label>
-                <input type="text" id="product_sku" name="sku" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                    <i class="fas fa-check-circle text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Active Products</p>
+                    <p class="text-2xl font-bold text-green-700" id="activeProducts">{{ active_products_count }}</p>
+                </div>
             </div>
-            <div>
-                <label for="product_price" class="block text-gray-700 font-medium mb-1">Price</label>
-                <input type="number" id="product_price" name="price" step="0.01" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                    <i class="fas fa-dollar-sign text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Avg Price</p>
+                    <p class="text-2xl font-bold text-blue-700" id="avgPrice">${{ average_price|floatformat:2 }}</p>
+                </div>
             </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                    <i class="fas fa-barcode text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">SKUs</p>
+                    <p class="text-2xl font-bold text-purple-700" id="totalSKUs">{{ products_with_sku_count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COA Integration Notice -->
+    <div class="coa-integration mb-6">
+        <div class="flex items-center">
+            <i class="fas fa-link text-emerald-600 mr-3"></i>
             <div>
-                <label for="product_is_active" class="block text-gray-700 font-medium mb-1">Active</label>
-                <select id="product_is_active" name="is_active" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    <option value="true">Yes</option>
-                    <option value="false">No</option>
+                <h4 class="font-semibold text-emerald-700">Chart of Accounts Integration</h4>
+                <p class="text-sm text-emerald-600">Products are linked to inventory and revenue accounts for automated financial tracking</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products Table -->
+    <div class="bg-white rounded-xl shadow-lg p-6 accounting-highlight">        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-emerald-700">Product List</h3>
+            <div class="flex space-x-3">
+                <input type="text" id="searchInput" placeholder="Search products..." 
+                       class="px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <select id="statusFilter" class="px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="">All Status</option>
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
                 </select>
             </div>
-            <div class="flex justify-end">
-                <button type="submit" class="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-4 py-2 rounded-lg shadow hover:from-emerald-700 hover:to-green-800 transition">Save</button>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-emerald-200">
+                <thead class="bg-emerald-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-emerald-700 uppercase tracking-wider">Product</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-emerald-700 uppercase tracking-wider">SKU</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-emerald-700 uppercase tracking-wider">Price</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-emerald-700 uppercase tracking-wider">Company</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-emerald-700 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-emerald-700 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="productTableBody" class="bg-white divide-y divide-emerald-100">
+                    {% for product in products %}
+                    <tr class="hover:bg-emerald-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    <div class="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                                        <i class="fas fa-box text-emerald-600"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">{{ product.name }}</div>
+                                    <div class="text-sm text-gray-500">{{ product.description|truncatechars:50 }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ product.sku|default:"—" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            ${{ product.price|floatformat:2|default:"—" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ product.company.name|default:"—" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if product.is_active %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    Active
+                                </span>
+                            {% else %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                    Inactive
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button onclick="editProduct({{ product.id }})" 
+                                    class="text-emerald-600 hover:text-emerald-900 mr-3">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteProduct({{ product.id }})" 
+                                    class="text-red-600 hover:text-red-900">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                            <div class="flex flex-col items-center py-12">
+                                <i class="fas fa-box-open text-4xl text-gray-300 mb-4"></i>
+                                <p class="text-lg font-medium text-gray-500">No products found</p>
+                                <p class="text-sm text-gray-400">Get started by adding your first product</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Modal for Add/Edit Product -->
+<div id="productModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-2xl relative transform transition-all">
+        <button id="closeProductModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <h3 id="productModalTitle" class="text-2xl font-bold text-emerald-700 mb-6">
+            <i class="fas fa-box mr-2"></i>Add Product
+        </h3>
+        
+        <form id="productForm" class="space-y-6">
+            {% csrf_token %}
+            <input type="hidden" id="productId" name="id">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="product_name" class="block text-sm font-medium text-gray-700 mb-2">
+                        Product Name <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="product_name" name="name" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+                
+                <div>
+                    <label for="product_sku" class="block text-sm font-medium text-gray-700 mb-2">SKU</label>
+                    <input type="text" id="product_sku" name="sku" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+                
+                <div>
+                    <label for="product_price" class="block text-sm font-medium text-gray-700 mb-2">Price ($)</label>
+                    <input type="number" id="product_price" name="price" step="0.01" min="0"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+                
+                <div>
+                    <label for="product_company" class="block text-sm font-medium text-gray-700 mb-2">Company</label>
+                    <select id="product_company" name="company"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                        <option value="">Select Company</option>
+                        {% for company in companies %}
+                        <option value="{{ company.id }}">{{ company.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div>
+                <label for="product_description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea id="product_description" name="description" rows="3"
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"></textarea>
+            </div>
+            
+            <div>
+                <label class="flex items-center">
+                    <input type="checkbox" id="product_is_active" name="is_active" checked
+                           class="rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-300 focus:ring focus:ring-emerald-200 focus:ring-opacity-50">
+                    <span class="ml-2 text-sm font-medium text-gray-700">Product is active</span>
+                </label>
+            </div>
+            
+            <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                <button type="button" id="cancelBtn" 
+                        class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="quick-action-btn">
+                    <i class="fas fa-save mr-2"></i>Save Product
+                </button>
             </div>
         </form>
     </div>
 </div>
 
-<script src="{% static 'core/api.js' %}"></script>
 <script>
-const apiBase = '/api/sales/products/';
-const tableBody = document.getElementById('productTableBody');
-const modal = document.getElementById('productModal');
-const addBtn = document.getElementById('addProductBtn');
-const closeModalBtn = document.getElementById('closeProductModalBtn');
-const form = document.getElementById('productForm');
-const modalTitle = document.getElementById('productModalTitle');
-const productIdInput = document.getElementById('productId');
+// Enhanced Product Management with proper Django integration
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('productModal');
+    const addBtn = document.getElementById('addProductBtn');
+    const closeModalBtn = document.getElementById('closeProductModalBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const form = document.getElementById('productForm');
+    const modalTitle = document.getElementById('productModalTitle');
+    const productIdInput = document.getElementById('productId');
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
 
-function showModal(edit = false, data = {}) {
-    modal.classList.remove('hidden');
-    modalTitle.textContent = edit ? 'Edit Product' : 'Add Product';
-    form.reset();
-    productIdInput.value = data.id || '';
-    form.name.value = data.name || '';
-    form.sku.value = data.sku || '';
-    form.price.value = data.price || '';
-    form.is_active.value = data.is_active ? 'true' : 'false';
-}
-function hideModal() { modal.classList.add('hidden'); }
-addBtn.onclick = () => showModal();
-closeModalBtn.onclick = hideModal;
-window.onclick = e => { if (e.target === modal) hideModal(); };
-
-async function loadProducts() {
-    tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-400">Loading...</td></tr>';
-    try {
-        const data = await apiFetch(apiBase);
-        tableBody.innerHTML = '';
-        data.forEach(p => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="px-4 py-2">${p.name}</td>
-                <td class="px-4 py-2">${p.sku || ''}</td>
-                <td class="px-4 py-2">${p.price || ''}</td>
-                <td class="px-4 py-2">${p.is_active ? 'Yes' : 'No'}</td>
-                <td class="px-4 py-2">
-                    <button class="text-emerald-700 hover:underline mr-2" onclick="editProduct(${p.id})">Edit</button>
-                    <button class="text-red-600 hover:underline" onclick="deleteProduct(${p.id})">Delete</button>
-                </td>
-            `;
-            tableBody.appendChild(tr);
-        });
-        if (!data.length) tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-400">No products found.</td></tr>';
-    } catch (err) {
-        tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-red-500">Failed to load products.</td></tr>';
+    // Modal functions
+    function showModal(edit = false, data = {}) {
+        modal.classList.remove('hidden');
+        modalTitle.innerHTML = edit ? '<i class="fas fa-edit mr-2"></i>Edit Product' : '<i class="fas fa-plus mr-2"></i>Add Product';
+        form.reset();
+        
+        if (edit && data) {
+            productIdInput.value = data.id || '';
+            document.getElementById('product_name').value = data.name || '';
+            document.getElementById('product_sku').value = data.sku || '';
+            document.getElementById('product_price').value = data.price || '';
+            document.getElementById('product_description').value = data.description || '';
+            document.getElementById('product_company').value = data.company || '';
+            document.getElementById('product_is_active').checked = data.is_active !== false;
+        }
     }
-}
-window.editProduct = async function(id) {
-    try {
-        const data = await apiFetch(apiBase + id + '/');
-        showModal(true, data);
-    } catch (err) { alert('Failed to load product.'); }
-};
-window.deleteProduct = async function(id) {
-    if (!confirm('Delete this product?')) return;
-    try {
-        await apiFetch(apiBase + id + '/', { method: 'DELETE' });
-        loadProducts();
-    } catch (err) { alert('Failed to delete product.'); }
-};
-form.onsubmit = async function(e) {
-    e.preventDefault();
-    const id = productIdInput.value;
-    const method = id ? 'PUT' : 'POST';
-    const url = id ? apiBase + id + '/' : apiBase;
-    const body = JSON.stringify({
-        name: form.name.value,
-        sku: form.sku.value,
-        price: form.price.value,
-        is_active: form.is_active.value === 'true'
+
+    function hideModal() {
+        modal.classList.add('hidden');
+    }
+
+    // Event listeners
+    addBtn.addEventListener('click', () => showModal(false));
+    closeModalBtn.addEventListener('click', hideModal);
+    cancelBtn.addEventListener('click', hideModal);
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) hideModal();
     });
-    try {
-        await apiFetch(url, { method, body });
-        hideModal();
-        loadProducts();
-    } catch (err) {
-        alert('Failed to save product.');
+
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const isEdit = productIdInput.value !== '';
+        const url = isEdit ? `/sales/products/${productIdInput.value}/update/` : '/sales/products/create/';
+        
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                hideModal();
+                location.reload(); // Refresh to show updated data
+            } else {
+                alert('Error: ' + (data.message || 'Failed to save product'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while saving the product');
+        });
+    });
+
+    // Search and filter functionality
+    if (searchInput) {
+        searchInput.addEventListener('input', filterTable);
     }
+    if (statusFilter) {
+        statusFilter.addEventListener('change', filterTable);
+    }
+
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const statusValue = statusFilter.value;
+        const rows = document.querySelectorAll('#productTableBody tr');
+        
+        rows.forEach(row => {
+            const name = row.querySelector('td:first-child .text-sm.font-medium')?.textContent.toLowerCase() || '';
+            const sku = row.querySelector('td:nth-child(2)')?.textContent.toLowerCase() || '';
+            const status = row.querySelector('.inline-flex')?.textContent.toLowerCase().includes('active');
+            
+            const matchesSearch = name.includes(searchTerm) || sku.includes(searchTerm);
+            const matchesStatus = statusValue === '' || 
+                                  (statusValue === 'true' && status) || 
+                                  (statusValue === 'false' && !status);
+            
+            row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+        });
+    }
+});
+
+// Global functions for edit/delete (called from template)
+window.editProduct = function(productId) {
+    fetch(`/sales/products/${productId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const modal = document.getElementById('productModal');
+                const event = new CustomEvent('showModal', { detail: { edit: true, data: data.product } });
+                document.dispatchEvent(event);
+                
+                // Show modal with data
+                document.getElementById('productModal').classList.remove('hidden');
+                document.getElementById('productModalTitle').innerHTML = '<i class="fas fa-edit mr-2"></i>Edit Product';
+                document.getElementById('productId').value = data.product.id;
+                document.getElementById('product_name').value = data.product.name;
+                document.getElementById('product_sku').value = data.product.sku || '';
+                document.getElementById('product_price').value = data.product.price || '';
+                document.getElementById('product_description').value = data.product.description || '';
+                document.getElementById('product_company').value = data.product.company || '';
+                document.getElementById('product_is_active').checked = data.product.is_active;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to load product data');
+        });
 };
-loadProducts();
+
+window.deleteProduct = function(productId) {
+    if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+        return;
+    }
+    
+    fetch(`/sales/products/${productId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to delete product'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while deleting the product');
+    });
+};
 </script>
-{% endblock %} 
+{% endblock %}

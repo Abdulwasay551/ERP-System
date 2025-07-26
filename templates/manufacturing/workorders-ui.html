@@ -1,0 +1,676 @@
+{% extends 'base.html' %}
+{% block title %}Work Orders | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .production-status-pending { color: #d97706; }
+    .production-status-active { color: #059669; }
+    .production-status-completed { color: #10b981; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="max-w-7xl mx-auto px-6">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Work Orders</h1>
+                <p class="text-gray-600">Track production schedules and manufacturing progress</p>
+            </div>
+            <div class="flex gap-4">
+                <button id="newWorkOrderBtn" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    New Work Order
+                </button>
+                <button class="action-btn bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Export
+                </button>
+            </div>
+        </div>
+
+        <!-- COA Integration Notice -->
+        <div class="coa-integration rounded-2xl p-6 mb-8">
+            <div class="flex items-center">
+                <svg class="w-6 h-6 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                    <h3 class="text-lg font-semibold text-green-800">Chart of Accounts Integration</h3>
+                    <p class="text-green-700">Work orders automatically post: <strong>Dr. Work in Progress</strong> | <strong>Cr. Raw Materials + Labor Costs</strong></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Active Work Orders</p>
+                        <p class="text-3xl font-bold text-emerald-600">47</p>
+                    </div>
+                    <div class="p-3 bg-emerald-100 rounded-xl">
+                        <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">In Production</p>
+                        <p class="text-3xl font-bold text-blue-600">23</p>
+                    </div>
+                    <div class="p-3 bg-blue-100 rounded-xl">
+                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Completed Today</p>
+                        <p class="text-3xl font-bold text-green-600">8</p>
+                    </div>
+                    <div class="p-3 bg-green-100 rounded-xl">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Behind Schedule</p>
+                        <p class="text-3xl font-bold text-red-600">3</p>
+                    </div>
+                    <div class="p-3 bg-red-100 rounded-xl">
+                        <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+                    </div>        </div>
+
+        <!-- Tab Navigation -->
+        <div class="bg-white rounded-2xl shadow-lg mb-8">
+            <nav class="flex space-x-8 px-8 py-4" aria-label="Tabs">
+                <button id="activeOrdersTab" class="tab-btn active whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    Active Work Orders
+                </button>
+                <button id="completedOrdersTab" class="tab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    Completed Orders
+                </button>
+                <button id="schedulingTab" class="tab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    Production Schedule
+                </button>
+                <button id="materialRequirementsTab" class="tab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    Material Requirements
+                </button>
+            </nav>
+        </div>
+
+        <!-- Active Work Orders Tab Content -->
+        <div id="activeOrdersContent" class="tab-content">
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-gradient-to-r from-emerald-50 to-green-50">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-emerald-800 uppercase tracking-wider">Work Order</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-emerald-800 uppercase tracking-wider">Product</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-emerald-800 uppercase tracking-wider">Quantity</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-emerald-800 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-emerald-800 uppercase tracking-wider">Start Date</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-emerald-800 uppercase tracking-wider">Due Date</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-emerald-800 uppercase tracking-wider">Progress</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-emerald-800 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="workOrdersTableBody" class="bg-white divide-y divide-gray-100">
+                            <tr class="table-row">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">WO-2025-001</div>
+                                    <div class="text-sm text-gray-500">Priority: High</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">Custom Widget A</div>
+                                    <div class="text-sm text-gray-500">SKU: CWA-001</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">500 units</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="production-status-active inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100">
+                                        In Production
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">July 20, 2025</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">July 30, 2025</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-emerald-600 h-2 rounded-full" style="width: 65%"></div>
+                                    </div>
+                                    <span class="text-xs text-gray-500">65% Complete</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <button class="text-emerald-600 hover:text-emerald-900 mr-3">View</button>
+                                    <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                                    <button class="text-purple-600 hover:text-purple-900">Track</button>
+                                </td>
+                            </tr>
+                            <!-- More work orders will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Completed Orders Tab Content -->
+        <div id="completedOrdersContent" class="tab-content hidden">
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Recently Completed Work Orders</h3>
+                <div class="space-y-4">
+                    <div class="border-l-4 border-green-400 bg-green-50 p-4 rounded-r-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-medium text-green-800">WO-2025-099 - Widget B Production</p>
+                                <p class="text-sm text-green-600">Completed on July 25, 2025 | 1,000 units</p>
+                            </div>
+                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">100% Complete</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Production Schedule Tab Content -->
+        <div id="schedulingContent" class="tab-content hidden">
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Production Schedule Overview</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
+                        <h4 class="font-medium text-emerald-900 mb-3">This Week's Schedule</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-emerald-700">Monday - Widget A:</span>
+                                <span class="font-medium text-emerald-900">200 units</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-emerald-700">Wednesday - Component C:</span>
+                                <span class="font-medium text-emerald-900">150 units</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Material Requirements Tab Content -->
+        <div id="materialRequirementsContent" class="tab-content hidden">
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Material Requirements Planning</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Material</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Required</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Available</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Steel Plates</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">50 kg</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">75 kg</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                        Available
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for New Work Order -->
+<div id="workOrderModal" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-4xl m-4 max-h-screen overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-900">Create New Work Order</h2>
+            <button id="closeWorkOrderModal" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <form id="workOrderForm" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Product</label>
+                    <select id="productSelect" name="product"
+                            class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                        <option value="">Select Product</option>
+                        <option value="widget-a">Custom Widget A</option>
+                        <option value="widget-b">Widget B</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                    <input type="number" id="quantityInput" name="quantity" min="1"
+                           class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                    <input type="date" id="startDateInput" name="start_date"
+                           class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+                    <input type="date" id="dueDateInput" name="due_date"
+                           class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                <select id="prioritySelect" name="priority"
+                        class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                <textarea id="notesInput" name="notes" rows="3"
+                          class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          placeholder="Additional instructions or notes..."></textarea>
+            </div>
+
+            <div class="flex gap-4">
+                <button type="submit" class="flex-1 quick-action-btn text-white py-3 rounded-xl font-medium">
+                    Create Work Order
+                </button>
+                <button type="button" id="cancelWorkOrderBtn" class="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Tab functionality
+function switchTab(target) {
+    // Hide all tab content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    // Remove active class from all tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.classList.add('border-transparent', 'text-gray-500');
+        btn.classList.remove('border-emerald-500', 'text-emerald-600');
+    });
+    
+    // Show target content and activate tab
+    document.getElementById(target + 'Content').classList.remove('hidden');
+    document.getElementById(target + 'Tab').classList.add('active');
+    document.getElementById(target + 'Tab').classList.remove('border-transparent', 'text-gray-500');
+    document.getElementById(target + 'Tab').classList.add('border-emerald-500', 'text-emerald-600');
+}
+
+// Initialize tab events
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('activeOrdersTab').addEventListener('click', () => switchTab('activeOrders'));
+    document.getElementById('completedOrdersTab').addEventListener('click', () => switchTab('completedOrders'));
+    document.getElementById('schedulingTab').addEventListener('click', () => switchTab('scheduling'));
+    document.getElementById('materialRequirementsTab').addEventListener('click', () => switchTab('materialRequirements'));
+    
+    // Modal functionality
+    const modal = document.getElementById('workOrderModal');
+    const openBtn = document.getElementById('newWorkOrderBtn');
+    const closeBtn = document.getElementById('closeWorkOrderModal');
+    const cancelBtn = document.getElementById('cancelWorkOrderBtn');
+    
+    openBtn.addEventListener('click', () => {
+        modal.classList.remove('hidden');
+    });
+    
+    [closeBtn, cancelBtn].forEach(btn => {
+        btn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+    });
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.classList.add('hidden');
+        }
+    });
+    
+    // Form submission
+    document.getElementById('workOrderForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        // Add form submission logic here
+        console.log('Work order form submitted');
+        modal.classList.add('hidden');
+    });
+});
+</script>
+                            <div class="relative">
+                                <input type="text" placeholder="Search work orders..." 
+                                       class="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            </div>
+                            <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <option>All Statuses</option>
+                                <option>Draft</option>
+                                <option>Released</option>
+                                <option>In Progress</option>
+                                <option>Completed</option>
+                                <option>Cancelled</option>
+                            </select>
+                            <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <option>All Priorities</option>
+                                <option>Low</option>
+                                <option>Normal</option>
+                                <option>High</option>
+                                <option>Urgent</option>
+                            </select>
+                        </div>
+                        <button class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                            <i class="fas fa-filter mr-2"></i>Advanced Filters
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Work Orders Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Work Order</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="text-sm font-medium text-gray-900">WO-2024-001</div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">Steel Beam - A100</div>
+                                    <div class="text-sm text-gray-500">Category: Structural</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">250 units</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                        In Progress
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        High
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="w-full bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-primary h-2 rounded-full" style="width: 65%"></div>
+                                        </div>
+                                        <span class="text-sm text-gray-600">65%</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-02-15</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button class="text-indigo-600 hover:text-indigo-900 mr-2">View</button>
+                                    <button class="text-green-600 hover:text-green-900 mr-2">Edit</button>
+                                    <button class="text-red-600 hover:text-red-900">Cancel</button>
+                                </td>
+                            </tr>
+                            
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="text-sm font-medium text-gray-900">WO-2024-002</div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">Aluminum Sheet - B200</div>
+                                    <div class="text-sm text-gray-500">Category: Metal Works</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">500 sheets</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Completed
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Normal
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="w-full bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-green-500 h-2 rounded-full" style="width: 100%"></div>
+                                        </div>
+                                        <span class="text-sm text-gray-600">100%</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-02-10</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button class="text-indigo-600 hover:text-indigo-900 mr-2">View</button>
+                                    <button class="text-blue-600 hover:text-blue-900">Report</button>
+                                </td>
+                            </tr>
+
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="text-sm font-medium text-gray-900">WO-2024-003</div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">Custom Bracket - C300</div>
+                                    <div class="text-sm text-gray-500">Category: Custom Parts</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">100 pieces</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                        Released
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                        Urgent
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="w-full bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-yellow-500 h-2 rounded-full" style="width: 25%"></div>
+                                        </div>
+                                        <span class="text-sm text-gray-600">25%</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-02-20</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button class="text-indigo-600 hover:text-indigo-900 mr-2">View</button>
+                                    <button class="text-green-600 hover:text-green-900 mr-2">Start</button>
+                                    <button class="text-yellow-600 hover:text-yellow-900">Schedule</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <p class="text-sm text-gray-700">
+                                Showing <span class="font-medium">1</span> to <span class="font-medium">10</span> of <span class="font-medium">47</span> results
+                            </p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50">Previous</button>
+                            <button class="px-3 py-1 bg-primary text-white rounded text-sm">1</button>
+                            <button class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50">2</button>
+                            <button class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50">3</button>
+                            <button class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Production Schedule -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Production Schedule</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                            <div>
+                                <div class="font-medium text-blue-900">WO-2024-001</div>
+                                <div class="text-sm text-blue-700">Steel Beam Production</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm text-blue-600">Today 09:00</div>
+                                <div class="text-xs text-blue-500">Station A</div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                            <div>
+                                <div class="font-medium text-green-900">WO-2024-003</div>
+                                <div class="text-sm text-green-700">Custom Bracket Manufacturing</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm text-green-600">Today 14:00</div>
+                                <div class="text-xs text-green-500">Station B</div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                            <div>
+                                <div class="font-medium text-yellow-900">WO-2024-004</div>
+                                <div class="text-sm text-yellow-700">Assembly Line Setup</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm text-yellow-600">Tomorrow 08:00</div>
+                                <div class="text-xs text-yellow-500">Station C</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Resource Utilization</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-sm text-gray-600">Station A</span>
+                                <span class="text-sm font-medium">85%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-red-500 h-2 rounded-full" style="width: 85%"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-sm text-gray-600">Station B</span>
+                                <span class="text-sm font-medium">72%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-yellow-500 h-2 rounded-full" style="width: 72%"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-sm text-gray-600">Station C</span>
+                                <span class="text-sm font-medium">45%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-green-500 h-2 rounded-full" style="width: 45%"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-sm text-gray-600">Assembly Line</span>
+                                <span class="text-sm font-medium">90%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-red-500 h-2 rounded-full" style="width: 90%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COA Integration Notice -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-blue-600 text-lg mr-3 mt-1"></i>
+                    <div>
+                        <h4 class="text-blue-900 font-medium mb-2">Chart of Accounts Integration</h4>
+                        <p class="text-blue-800 text-sm">
+                            Work orders automatically post material costs, labor expenses, and overhead allocation to the appropriate accounts 
+                            (Raw Materials, Work in Progress, Finished Goods, Manufacturing Overhead) upon completion, ensuring accurate cost tracking and inventory valuation.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // Work order management functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add any JavaScript functionality here
+            console.log('Work Orders page loaded');
+        });
+    </script>
+{% endblock %}

@@ -6,6 +6,7 @@ from accounting.models import Account
 from hr.models import Employee
 from crm.models import Customer
 from django.db.models import Count, Sum
+from django.contrib.auth.decorators import login_required
 
 # Create your views here.
 
@@ -34,3 +35,19 @@ def analytics_dashboard(request):
         'sales_by_month': list(sales_by_month),
     }
     return JsonResponse(data)
+
+@login_required
+def dashboard_ui(request):
+    return render(request, 'analytics/dashboard-ui.html')
+
+@login_required
+def sales_reports_ui(request):
+    return render(request, 'analytics/sales-reports-ui.html')
+
+@login_required
+def financial_reports_ui(request):
+    return render(request, 'analytics/financial-reports-ui.html')
+
+@login_required
+def inventory_reports_ui(request):
+    return render(request, 'analytics/inventory-reports-ui.html')

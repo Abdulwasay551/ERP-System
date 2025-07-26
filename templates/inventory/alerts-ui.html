@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% block title %}Stock Alerts | ERP System{% endblock %}
+{% block content %}
+<!-- COA Integration Notice -->
+<div class="mt-16 p-8">
+    <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 text-emerald-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            <span class="text-emerald-800 font-medium">Chart of Accounts Integration:</span>
+            <span class="text-emerald-700 ml-2">Alerts help prevent stockouts that could impact sales and inventory valuations</span>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Stock Alerts</h1>
+            <p class="text-gray-600 mt-2">Monitor inventory levels and receive notifications</p>
+        </div>
+        <button id="configureAlertsBtn" class="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-6 py-3 rounded-lg hover:from-emerald-700 hover:to-emerald-800 transition-all duration-200 shadow-md">
+            <i class="fas fa-cog mr-2"></i>Configure Alerts
+        </button>
+    </div>
+
+    <!-- Alert Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-red-100">Critical Alerts</p>
+                    <p class="text-3xl font-bold" id="criticalAlerts">3</p>
+                </div>
+                <svg class="w-12 h-12 text-red-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-orange-100">Low Stock</p>
+                    <p class="text-3xl font-bold">8</p>
+                </div>
+                <svg class="w-12 h-12 text-orange-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">Reorder Points</p>
+                    <p class="text-3xl font-bold">5</p>
+                </div>
+                <svg class="w-12 h-12 text-blue-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7c0 2.21-3.582 4-8 4s-8-1.79-8-4z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100">Overstock Items</p>
+                    <p class="text-3xl font-bold">2</p>
+                </div>
+                <svg class="w-12 h-12 text-green-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M7 14l5-5 5 5z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Filters -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Alert Type</label>
+                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
+                    <option value="">All Alerts</option>
+                    <option value="critical">Critical</option>
+                    <option value="low_stock">Low Stock</option>
+                    <option value="reorder">Reorder Point</option>
+                    <option value="overstock">Overstock</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Warehouse</label>
+                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
+                    <option value="">All Warehouses</option>
+                    <option value="main">Main Warehouse</option>
+                    <option value="branch">Branch Warehouse</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
+                    <option value="">All Categories</option>
+                    <option value="raw_materials">Raw Materials</option>
+                    <option value="finished_goods">Finished Goods</option>
+                    <option value="components">Components</option>
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button class="w-full bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700">
+                    Apply Filters
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Alerts -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Active Alerts</h3>
+        </div>
+        <div class="divide-y divide-gray-200">
+            <!-- Critical Alert -->
+            <div class="p-6 bg-red-50 border-l-4 border-red-400">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="text-sm font-medium text-red-800">Critical Stock Level</h4>
+                                <p class="text-sm text-red-700 mt-1">Raw Material A (SKU: RM-001)</p>
+                                <p class="text-xs text-red-600 mt-1">Current: 5 kg | Minimum: 50 kg | Reorder: 100 kg</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700">
+                                    Create PO
+                                </button>
+                                <button class="bg-gray-600 text-white px-3 py-1 rounded text-xs hover:bg-gray-700">
+                                    Dismiss
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Low Stock Alert -->
+            <div class="p-6 bg-orange-50 border-l-4 border-orange-400">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg class="w-5 h-5 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="text-sm font-medium text-orange-800">Low Stock Warning</h4>
+                                <p class="text-sm text-orange-700 mt-1">Component Y (SKU: CM-002)</p>
+                                <p class="text-xs text-orange-600 mt-1">Current: 25 pcs | Minimum: 20 pcs | Reorder: 50 pcs</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="bg-orange-600 text-white px-3 py-1 rounded text-xs hover:bg-orange-700">
+                                    Reorder
+                                </button>
+                                <button class="bg-gray-600 text-white px-3 py-1 rounded text-xs hover:bg-gray-700">
+                                    Snooze
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reorder Point Alert -->
+            <div class="p-6 bg-blue-50 border-l-4 border-blue-400">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg class="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="text-sm font-medium text-blue-800">Reorder Point Reached</h4>
+                                <p class="text-sm text-blue-700 mt-1">Finished Product X (SKU: FG-001)</p>
+                                <p class="text-xs text-blue-600 mt-1">Current: 100 pcs | Reorder Point: 100 pcs | EOQ: 500 pcs</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">
+                                    Create Order
+                                </button>
+                                <button class="bg-gray-600 text-white px-3 py-1 rounded text-xs hover:bg-gray-700">
+                                    Later
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overstock Alert -->
+            <div class="p-6 bg-green-50 border-l-4 border-green-400">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="text-sm font-medium text-green-800">Overstock Alert</h4>
+                                <p class="text-sm text-green-700 mt-1">Office Supplies (SKU: OS-001)</p>
+                                <p class="text-xs text-green-600 mt-1">Current: 1,000 units | Maximum: 500 units | Excess: 500 units</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700">
+                                    Review
+                                </button>
+                                <button class="bg-gray-600 text-white px-3 py-1 rounded text-xs hover:bg-gray-700">
+                                    Ignore
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Configuration -->
+    <div class="mt-6 bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Alert Settings</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h4 class="text-sm font-medium text-gray-700 mb-3">Notification Preferences</h4>
+                <div class="space-y-2">
+                    <label class="flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" checked>
+                        <span class="ml-2 text-sm text-gray-700">Email notifications</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                        <span class="ml-2 text-sm text-gray-700">SMS notifications</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" checked>
+                        <span class="ml-2 text-sm text-gray-700">Dashboard alerts</span>
+                    </label>
+                </div>
+            </div>
+            <div>
+                <h4 class="text-sm font-medium text-gray-700 mb-3">Alert Frequency</h4>
+                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
+                    <option>Real-time</option>
+                    <option>Daily digest</option>
+                    <option>Weekly summary</option>
+                </select>
+            </div>
+        </div>
+        <div class="mt-6">
+            <button class="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700">
+                Save Settings
+            </button>
+        </div>
+    </div>
+
+    <!-- COA Integration Info -->
+    <div class="mt-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+        <div class="text-sm text-emerald-800">
+            <strong>Financial Impact:</strong> Stock alerts help prevent:
+            <ul class="mt-2 space-y-1">
+                <li>• Lost sales due to stockouts (missed revenue)</li>
+                <li>• Excessive carrying costs from overstock</li>
+                <li>• Emergency purchasing at higher costs</li>
+                <li>• Inventory write-offs from obsolete stock</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% block title %}Stock Movements | ERP System{% endblock %}
+{% block content %}
+<!-- COA Integration Notice -->
+<div class="mt-16 p-8">
+    <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 text-emerald-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            <span class="text-emerald-800 font-medium">Chart of Accounts Integration:</span>
+            <span class="text-emerald-700 ml-2">Stock movements automatically post to inventory accounts and COGS</span>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Stock Movements</h1>
+            <p class="text-gray-600 mt-2">Track all inventory movements and adjustments</p>
+        </div>
+        <button id="addMovementBtn" class="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-6 py-3 rounded-lg hover:from-emerald-700 hover:to-emerald-800 transition-all duration-200 shadow-md">
+            <i class="fas fa-plus mr-2"></i>Record Movement
+        </button>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">Today's Movements</p>
+                    <p class="text-3xl font-bold" id="todayMovements">0</p>
+                </div>
+                <svg class="w-12 h-12 text-blue-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7c0 2.21-3.582 4-8 4s-8-1.79-8-4z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100">Stock In</p>
+                    <p class="text-3xl font-bold">250</p>
+                </div>
+                <svg class="w-12 h-12 text-green-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M7 14l5-5 5 5z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-red-100">Stock Out</p>
+                    <p class="text-3xl font-bold">180</p>
+                </div>
+                <svg class="w-12 h-12 text-red-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17 10l-5 5-5-5z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100">Net Change</p>
+                    <p class="text-3xl font-bold">+70</p>
+                </div>
+                <svg class="w-12 h-12 text-purple-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Movement Type</label>
+                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
+                    <option value="">All Types</option>
+                    <option value="receipt">Receipt</option>
+                    <option value="issue">Issue</option>
+                    <option value="transfer">Transfer</option>
+                    <option value="adjustment">Adjustment</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Warehouse</label>
+                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
+                    <option value="">All Warehouses</option>
+                    <option value="main">Main Warehouse</option>
+                    <option value="branch">Branch Warehouse</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Date From</label>
+                <input type="date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Date To</label>
+                <input type="date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
+            </div>
+        </div>
+        <div class="mt-4 flex space-x-3">
+            <button class="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700">
+                Apply Filters
+            </button>
+            <button class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+                Clear
+            </button>
+        </div>
+    </div>
+
+    <!-- Movements Table -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Movement Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Warehouse</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Cost</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div>Nov 20, 2024</div>
+                            <div class="text-xs text-gray-500">10:30 AM</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-cube text-blue-600 text-sm"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">Raw Material A</div>
+                                    <div class="text-xs text-gray-500">SKU: RM-001</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                <i class="fas fa-arrow-up mr-1"></i>Receipt
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Main Warehouse</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-green-600">+100 kg</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₨125.00</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">PO-2024-001</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="text-emerald-600 hover:text-emerald-900 mr-3">View</button>
+                            <button class="text-blue-600 hover:text-blue-900">Edit</button>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div>Nov 20, 2024</div>
+                            <div class="text-xs text-gray-500">09:15 AM</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-box text-purple-600 text-sm"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">Finished Product X</div>
+                                    <div class="text-xs text-gray-500">SKU: FG-001</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                <i class="fas fa-arrow-down mr-1"></i>Issue
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Main Warehouse</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-red-600">-25 pcs</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₨850.00</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">SO-2024-015</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="text-emerald-600 hover:text-emerald-900 mr-3">View</button>
+                            <button class="text-blue-600 hover:text-blue-900">Edit</button>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div>Nov 19, 2024</div>
+                            <div class="text-xs text-gray-500">03:45 PM</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-cog text-green-600 text-sm"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">Component Y</div>
+                                    <div class="text-xs text-gray-500">SKU: CM-002</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                <i class="fas fa-exchange-alt mr-1"></i>Transfer
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Main → Branch</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-blue-600">50 pcs</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₨45.00</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">TF-2024-003</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="text-emerald-600 hover:text-emerald-900 mr-3">View</button>
+                            <button class="text-blue-600 hover:text-blue-900">Edit</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <button class="bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors text-center">
+            <i class="fas fa-plus mb-2 block text-xl"></i>
+            <span class="text-sm">Stock Receipt</span>
+        </button>
+        <button class="bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 transition-colors text-center">
+            <i class="fas fa-minus mb-2 block text-xl"></i>
+            <span class="text-sm">Stock Issue</span>
+        </button>
+        <button class="bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors text-center">
+            <i class="fas fa-exchange-alt mb-2 block text-xl"></i>
+            <span class="text-sm">Transfer</span>
+        </button>
+        <button class="bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 transition-colors text-center">
+            <i class="fas fa-adjust mb-2 block text-xl"></i>
+            <span class="text-sm">Adjustment</span>
+        </button>
+    </div>
+
+    <!-- COA Integration Info -->
+    <div class="mt-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+        <div class="text-sm text-emerald-800">
+            <strong>Accounting Impact:</strong> 
+            <ul class="mt-2 space-y-1">
+                <li>• <strong>Receipt:</strong> Dr. Inventory Asset | Cr. Accounts Payable (if from PO)</li>
+                <li>• <strong>Issue:</strong> Dr. Cost of Goods Sold | Cr. Inventory Asset</li>
+                <li>• <strong>Transfer:</strong> No accounting impact (location change only)</li>
+                <li>• <strong>Adjustment:</strong> Dr./Cr. Inventory Asset | Cr./Dr. Inventory Adjustment</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

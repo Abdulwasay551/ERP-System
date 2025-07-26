@@ -1,0 +1,883 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    primary: '#10B981',
+                    secondary: '#059669',
+                    accent: '#065F46'
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}
+
+{% block content %}
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl font-bold text-gray-900">Project Reports</h1>
+                        <span class="ml-2 px-2 py-1 bg-primary text-white text-xs rounded-full">Project Management Module</span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Custom Report
+                        </button>
+                        <button class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-download mr-2"></i>Export All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Project KPIs -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-blue-100 rounded-lg">
+                            <i class="fas fa-project-diagram text-blue-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">12</p>
+                            <p class="text-sm text-gray-600">Active Projects</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-green-100 rounded-lg">
+                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">87%</p>
+                            <p class="text-sm text-gray-600">On-Time Delivery</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-yellow-100 rounded-lg">
+                            <i class="fas fa-dollar-sign text-yellow-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">$2.4M</p>
+                            <p class="text-sm text-gray-600">Total Budget</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-purple-100 rounded-lg">
+                            <i class="fas fa-users text-purple-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">48</p>
+                            <p class="text-sm text-gray-600">Team Members</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="bg-white rounded-lg shadow mb-6">
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-8 px-6">
+                        <button class="tab-button py-4 px-1 border-b-2 border-primary font-medium text-sm text-primary" data-tab="overview">
+                            Project Overview
+                        </button>
+                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="performance">
+                            Performance Reports
+                        </button>
+                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="financial">
+                            Financial Reports
+                        </button>
+                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="resource">
+                            Resource Reports
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Project Overview Tab -->
+                <div id="overview-tab" class="tab-content p-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <!-- Project Status Overview -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Project Status Overview</h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Planning</span>
+                                    <div class="flex items-center">
+                                        <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-blue-600 h-2 rounded-full" style="width: 25%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">3 projects</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">In Progress</span>
+                                    <div class="flex items-center">
+                                        <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-yellow-600 h-2 rounded-full" style="width: 58%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">7 projects</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Review</span>
+                                    <div class="flex items-center">
+                                        <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-orange-600 h-2 rounded-full" style="width: 17%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">2 projects</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Completed</span>
+                                    <div class="flex items-center">
+                                        <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-green-600 h-2 rounded-full" style="width: 42%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">5 projects</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Timeline Overview -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Project Timeline Overview</h3>
+                            <div class="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <div class="text-center">
+                                    <i class="fas fa-chart-gantt text-gray-400 text-4xl mb-2"></i>
+                                    <p class="text-gray-500">Gantt chart placeholder</p>
+                                    <p class="text-gray-400 text-sm">Interactive timeline showing project milestones</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Projects Summary -->
+                    <div class="bg-white border rounded-lg p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Active Projects Summary</h3>
+                            <button class="text-blue-600 hover:text-blue-900 text-sm">View All Projects</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manager</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget Used</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div>
+                                                <div class="text-sm font-medium text-gray-900">ERP System Enhancement</div>
+                                                <div class="text-sm text-gray-500">Accounting & HR modules</div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <img class="w-8 h-8 rounded-full mr-2" src="https://via.placeholder.com/32" alt="User">
+                                                <span class="text-sm text-gray-900">John Smith</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                                    <div class="bg-blue-600 h-2 rounded-full" style="width: 65%"></div>
+                                                </div>
+                                                <span class="text-sm text-gray-600">65%</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                                    <div class="bg-green-600 h-2 rounded-full" style="width: 58%"></div>
+                                                </div>
+                                                <span class="text-sm text-gray-600">58%</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Feb 28, 2024</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">In Progress</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div>
+                                                <div class="text-sm font-medium text-gray-900">Marketing Campaign Q1</div>
+                                                <div class="text-sm text-gray-500">Product launch campaign</div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <img class="w-8 h-8 rounded-full mr-2" src="https://via.placeholder.com/32" alt="User">
+                                                <span class="text-sm text-gray-900">Sarah Johnson</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                                    <div class="bg-green-600 h-2 rounded-full" style="width: 85%"></div>
+                                                </div>
+                                                <span class="text-sm text-gray-600">85%</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                                    <div class="bg-yellow-600 h-2 rounded-full" style="width: 72%"></div>
+                                                </div>
+                                                <span class="text-sm text-gray-600">72%</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Jan 31, 2024</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">Review</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div>
+                                                <div class="text-sm font-medium text-gray-900">Quality Management System</div>
+                                                <div class="text-sm text-gray-500">ISO 9001 compliance</div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <img class="w-8 h-8 rounded-full mr-2" src="https://via.placeholder.com/32" alt="User">
+                                                <span class="text-sm text-gray-900">Mike Wilson</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                                    <div class="bg-yellow-600 h-2 rounded-full" style="width: 40%"></div>
+                                                </div>
+                                                <span class="text-sm text-gray-600">40%</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                                    <div class="bg-green-600 h-2 rounded-full" style="width: 35%"></div>
+                                                </div>
+                                                <span class="text-sm text-gray-600">35%</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Mar 15, 2024</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">In Progress</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Reports Tab -->
+                <div id="performance-tab" class="tab-content p-6 hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <!-- Performance Metrics -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Key Performance Indicators</h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">On-Time Delivery Rate</span>
+                                    <div class="flex items-center">
+                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-green-600 h-2 rounded-full" style="width: 87%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium text-green-600">87%</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Budget Adherence</span>
+                                    <div class="flex items-center">
+                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-blue-600 h-2 rounded-full" style="width: 92%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium text-blue-600">92%</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Quality Score</span>
+                                    <div class="flex items-center">
+                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-primary h-2 rounded-full" style="width: 94%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium text-primary">94%</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Team Productivity</span>
+                                    <div class="flex items-center">
+                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-purple-600 h-2 rounded-full" style="width: 89%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium text-purple-600">89%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Risk Analysis -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Risk Analysis</h3>
+                            <div class="space-y-3">
+                                <div class="p-3 border-l-4 border-red-500 bg-red-50">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-medium text-red-900">High Risk</h4>
+                                            <p class="text-sm text-red-700">2 projects behind schedule</p>
+                                        </div>
+                                        <span class="text-red-600 font-bold">2</span>
+                                    </div>
+                                </div>
+                                <div class="p-3 border-l-4 border-yellow-500 bg-yellow-50">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-medium text-yellow-900">Medium Risk</h4>
+                                            <p class="text-sm text-yellow-700">3 projects over budget</p>
+                                        </div>
+                                        <span class="text-yellow-600 font-bold">3</span>
+                                    </div>
+                                </div>
+                                <div class="p-3 border-l-4 border-green-500 bg-green-50">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-medium text-green-900">Low Risk</h4>
+                                            <p class="text-sm text-green-700">7 projects on track</p>
+                                        </div>
+                                        <span class="text-green-600 font-bold">7</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performance Trends -->
+                    <div class="bg-white border rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Performance Trends (Last 6 Months)</h3>
+                        <div class="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <div class="text-center">
+                                <i class="fas fa-chart-line text-gray-400 text-4xl mb-2"></i>
+                                <p class="text-gray-500">Chart placeholder - Performance trends over time</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Team Performance -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Performers</h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <img class="w-10 h-10 rounded-full mr-3" src="https://via.placeholder.com/40" alt="User">
+                                        <div>
+                                            <h4 class="font-medium text-gray-900">John Smith</h4>
+                                            <p class="text-sm text-gray-600">Lead Developer</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-medium text-green-600">96% Efficiency</p>
+                                        <p class="text-sm text-gray-500">5 projects</p>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <img class="w-10 h-10 rounded-full mr-3" src="https://via.placeholder.com/40" alt="User">
+                                        <div>
+                                            <h4 class="font-medium text-gray-900">Sarah Johnson</h4>
+                                            <p class="text-sm text-gray-600">Marketing Manager</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-medium text-blue-600">94% Efficiency</p>
+                                        <p class="text-sm text-gray-500">3 projects</p>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <img class="w-10 h-10 rounded-full mr-3" src="https://via.placeholder.com/40" alt="User">
+                                        <div>
+                                            <h4 class="font-medium text-gray-900">Mike Wilson</h4>
+                                            <p class="text-sm text-gray-600">Quality Manager</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-medium text-purple-600">91% Efficiency</p>
+                                        <p class="text-sm text-gray-500">2 projects</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Project Milestones</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center p-3 bg-green-50 rounded-lg">
+                                    <i class="fas fa-check-circle text-green-600 mr-3"></i>
+                                    <div>
+                                        <p class="font-medium text-green-900">ERP Module Alpha Release</p>
+                                        <p class="text-sm text-green-700">Completed on time</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center p-3 bg-blue-50 rounded-lg">
+                                    <i class="fas fa-clock text-blue-600 mr-3"></i>
+                                    <div>
+                                        <p class="font-medium text-blue-900">Marketing Campaign Launch</p>
+                                        <p class="text-sm text-blue-700">Due in 3 days</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center p-3 bg-yellow-50 rounded-lg">
+                                    <i class="fas fa-exclamation-triangle text-yellow-600 mr-3"></i>
+                                    <div>
+                                        <p class="font-medium text-yellow-900">Quality Audit</p>
+                                        <p class="text-sm text-yellow-700">Delayed by 5 days</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Reports Tab -->
+                <div id="financial-tab" class="tab-content p-6 hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <!-- Budget Overview -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Budget Overview</h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Total Budget</span>
+                                    <span class="font-bold text-gray-900">$2,400,000</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Allocated</span>
+                                    <span class="font-medium text-blue-600">$2,100,000</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Spent</span>
+                                    <span class="font-medium text-orange-600">$1,680,000</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Remaining</span>
+                                    <span class="font-medium text-green-600">$720,000</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-3">
+                                    <div class="bg-primary h-3 rounded-full" style="width: 70%"></div>
+                                </div>
+                                <p class="text-sm text-gray-600 text-center">70% of total budget utilized</p>
+                            </div>
+                        </div>
+
+                        <!-- Cost by Category -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Cost Breakdown by Category</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Personnel</span>
+                                    <div class="flex items-center">
+                                        <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-blue-600 h-2 rounded-full" style="width: 65%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">$1,092,000</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Technology</span>
+                                    <div class="flex items-center">
+                                        <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-green-600 h-2 rounded-full" style="width: 20%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">$336,000</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Marketing</span>
+                                    <div class="flex items-center">
+                                        <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-yellow-600 h-2 rounded-full" style="width: 10%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">$168,000</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Operations</span>
+                                    <div class="flex items-center">
+                                        <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-purple-600 h-2 rounded-full" style="width: 5%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">$84,000</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Project Financial Performance -->
+                    <div class="bg-white border rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Project Financial Performance</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spent</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remaining</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variance</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ROI</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">ERP System Enhancement</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$850,000</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$493,000</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$357,000</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">-$25,000</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-primary">18.5%</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Marketing Campaign Q1</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$320,000</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$230,400</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$89,600</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">-$12,000</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-primary">22.3%</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Quality Management</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$180,000</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$63,000</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$117,000</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">-$8,000</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-primary">15.2%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Financial Trends -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Monthly Spend Trend</h3>
+                            <div class="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <div class="text-center">
+                                    <i class="fas fa-chart-area text-gray-400 text-4xl mb-2"></i>
+                                    <p class="text-gray-500">Chart placeholder - Monthly spending trend</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Cost Forecast</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Q1 2024 Forecast</span>
+                                    <span class="font-medium text-blue-600">$580,000</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Q2 2024 Forecast</span>
+                                    <span class="font-medium text-green-600">$420,000</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Projected Completion</span>
+                                    <span class="font-medium text-purple-600">$2,180,000</span>
+                                </div>
+                                <div class="flex justify-between items-center border-t pt-2">
+                                    <span class="font-medium text-gray-900">Budget Variance</span>
+                                    <span class="font-bold text-green-600">+$220,000</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resource Reports Tab -->
+                <div id="resource-tab" class="tab-content p-6 hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <!-- Resource Allocation -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Resource Allocation</h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Development Team</span>
+                                    <div class="flex items-center">
+                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-blue-600 h-2 rounded-full" style="width: 85%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">17/20</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Marketing Team</span>
+                                    <div class="flex items-center">
+                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-green-600 h-2 rounded-full" style="width: 90%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">9/10</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Quality Team</span>
+                                    <div class="flex items-center">
+                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-yellow-600 h-2 rounded-full" style="width: 60%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">6/10</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Operations Team</span>
+                                    <div class="flex items-center">
+                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-purple-600 h-2 rounded-full" style="width: 75%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">6/8</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Capacity Planning -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Capacity vs Demand</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Available Hours</span>
+                                    <span class="font-medium text-gray-900">1,920h</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Allocated Hours</span>
+                                    <span class="font-medium text-blue-600">1,680h</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Utilization Rate</span>
+                                    <span class="font-medium text-primary">87.5%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-3 mt-4">
+                                    <div class="bg-primary h-3 rounded-full" style="width: 87.5%"></div>
+                                </div>
+                                <div class="flex justify-between items-center border-t pt-2">
+                                    <span class="font-medium text-gray-900">Spare Capacity</span>
+                                    <span class="font-bold text-green-600">240h</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Team Workload -->
+                    <div class="bg-white border rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Team Member Workload</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team Member</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Projects</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Weekly Hours</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Utilization</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <img class="w-8 h-8 rounded-full mr-2" src="https://via.placeholder.com/32" alt="User">
+                                                <span class="text-sm text-gray-900">John Smith</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Lead Developer</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">3</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">42h</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                                    <div class="bg-red-600 h-2 rounded-full" style="width: 105%"></div>
+                                                </div>
+                                                <span class="text-sm text-red-600">105%</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Overloaded</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <img class="w-8 h-8 rounded-full mr-2" src="https://via.placeholder.com/32" alt="User">
+                                                <span class="text-sm text-gray-900">Sarah Johnson</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Marketing Manager</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">38h</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                                    <div class="bg-green-600 h-2 rounded-full" style="width: 95%"></div>
+                                                </div>
+                                                <span class="text-sm text-green-600">95%</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Optimal</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <img class="w-8 h-8 rounded-full mr-2" src="https://via.placeholder.com/32" alt="User">
+                                                <span class="text-sm text-gray-900">Mike Wilson</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Quality Manager</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">28h</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                                    <div class="bg-yellow-600 h-2 rounded-full" style="width: 70%"></div>
+                                                </div>
+                                                <span class="text-sm text-yellow-600">70%</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Available</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Resource Forecast -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Resource Forecast (Next 3 Months)</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">January 2024</span>
+                                    <span class="font-medium text-blue-600">48 resources</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">February 2024</span>
+                                    <span class="font-medium text-green-600">52 resources</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">March 2024</span>
+                                    <span class="font-medium text-purple-600">46 resources</span>
+                                </div>
+                                <div class="flex justify-between items-center border-t pt-2">
+                                    <span class="font-medium text-gray-900">Peak Demand</span>
+                                    <span class="font-bold text-red-600">52 resources</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Skills Gap Analysis</h3>
+                            <div class="space-y-3">
+                                <div class="p-3 bg-red-50 rounded-lg">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-red-900 font-medium">Backend Development</span>
+                                        <span class="text-red-700">-2 resources</span>
+                                    </div>
+                                </div>
+                                <div class="p-3 bg-yellow-50 rounded-lg">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-yellow-900 font-medium">UI/UX Design</span>
+                                        <span class="text-yellow-700">-1 resource</span>
+                                    </div>
+                                </div>
+                                <div class="p-3 bg-green-50 rounded-lg">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-green-900 font-medium">Project Management</span>
+                                        <span class="text-green-700">+1 resource</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Management Integration Notice -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-blue-600 text-lg mr-3 mt-1"></i>
+                    <div>
+                        <h4 class="text-blue-900 font-medium mb-2">Project Management Integration</h4>
+                        <p class="text-blue-800 text-sm">
+                            Project reports integrate with Time Tracking, HR, Financial, and Resource Management systems. 
+                            Real-time data from task completion, time entries, budget allocations, and resource assignments automatically update all project analytics and forecasts.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // Tab functionality
+        function initTabs() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabName = button.getAttribute('data-tab');
+                    
+                    // Remove active classes
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('border-primary', 'text-primary');
+                        btn.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    
+                    tabContents.forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    
+                    // Add active classes
+                    button.classList.remove('border-transparent', 'text-gray-500');
+                    button.classList.add('border-primary', 'text-primary');
+                    
+                    // Show selected tab content
+                    document.getElementById(tabName + '-tab').classList.remove('hidden');
+                });
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initTabs();
+        });
+    </script>
+{% endblock %}

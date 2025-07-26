@@ -1,0 +1,679 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    primary: '#10B981',
+                    secondary: '#059669',
+                    accent: '#065F46'
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}
+
+{% block content %}
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl font-bold text-gray-900">Task Management</h1>
+                        <span class="ml-2 px-2 py-1 bg-primary text-white text-xs rounded-full">Project Management Module</span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary transition-colors">
+                            <i class="fas fa-plus mr-2"></i>New Task
+                        </button>
+                        <button class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-filter mr-2"></i>Filter
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Task Statistics -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-blue-100 rounded-lg">
+                            <i class="fas fa-tasks text-blue-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">42</p>
+                            <p class="text-sm text-gray-600">Total Tasks</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-green-100 rounded-lg">
+                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">18</p>
+                            <p class="text-sm text-gray-600">Completed</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-yellow-100 rounded-lg">
+                            <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">15</p>
+                            <p class="text-sm text-gray-600">In Progress</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-red-100 rounded-lg">
+                            <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">5</p>
+                            <p class="text-sm text-gray-600">Overdue</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="bg-white rounded-lg shadow mb-6">
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-8 px-6">
+                        <button class="tab-button py-4 px-1 border-b-2 border-primary font-medium text-sm text-primary" data-tab="kanban">
+                            Kanban Board
+                        </button>
+                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="list">
+                            Task List
+                        </button>
+                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="calendar">
+                            Calendar View
+                        </button>
+                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="analytics">
+                            Task Analytics
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Kanban Board Tab -->
+                <div id="kanban-tab" class="tab-content p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <!-- To Do Column -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="font-semibold text-gray-900">To Do</h3>
+                                <span class="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full">9</span>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-500">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h4 class="font-medium text-gray-900">Update Product Catalog</h4>
+                                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">High</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-3">Update product descriptions and images for Q1 catalog</p>
+                                    <div class="flex justify-between items-center">
+                                        <div class="flex -space-x-1">
+                                            <img class="w-6 h-6 rounded-full border-2 border-white" src="https://via.placeholder.com/24" alt="User">
+                                            <img class="w-6 h-6 rounded-full border-2 border-white" src="https://via.placeholder.com/24" alt="User">
+                                        </div>
+                                        <span class="text-xs text-gray-500">Due: Jan 20</span>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h4 class="font-medium text-gray-900">Inventory Audit</h4>
+                                        <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Medium</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-3">Quarterly inventory count and verification</p>
+                                    <div class="flex justify-between items-center">
+                                        <div class="flex -space-x-1">
+                                            <img class="w-6 h-6 rounded-full border-2 border-white" src="https://via.placeholder.com/24" alt="User">
+                                        </div>
+                                        <span class="text-xs text-gray-500">Due: Jan 25</span>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-yellow-500">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h4 class="font-medium text-gray-900">Customer Survey</h4>
+                                        <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Low</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-3">Prepare and send customer satisfaction survey</p>
+                                    <div class="flex justify-between items-center">
+                                        <div class="flex -space-x-1">
+                                            <img class="w-6 h-6 rounded-full border-2 border-white" src="https://via.placeholder.com/24" alt="User">
+                                        </div>
+                                        <span class="text-xs text-gray-500">Due: Jan 30</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- In Progress Column -->
+                        <div class="bg-blue-50 rounded-lg p-4">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="font-semibold text-gray-900">In Progress</h3>
+                                <span class="bg-blue-200 text-blue-700 text-xs px-2 py-1 rounded-full">15</span>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-500">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h4 class="font-medium text-gray-900">ERP Module Development</h4>
+                                        <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Critical</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-3">Develop new accounting module features</p>
+                                    <div class="w-full bg-gray-200 rounded-full h-2 mb-3">
+                                        <div class="bg-blue-600 h-2 rounded-full" style="width: 65%"></div>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <div class="flex -space-x-1">
+                                            <img class="w-6 h-6 rounded-full border-2 border-white" src="https://via.placeholder.com/24" alt="User">
+                                            <img class="w-6 h-6 rounded-full border-2 border-white" src="https://via.placeholder.com/24" alt="User">
+                                            <img class="w-6 h-6 rounded-full border-2 border-white" src="https://via.placeholder.com/24" alt="User">
+                                        </div>
+                                        <span class="text-xs text-gray-500">Due: Jan 22</span>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h4 class="font-medium text-gray-900">Marketing Campaign</h4>
+                                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">High</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-3">Q1 product launch marketing campaign</p>
+                                    <div class="w-full bg-gray-200 rounded-full h-2 mb-3">
+                                        <div class="bg-green-600 h-2 rounded-full" style="width: 40%"></div>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <div class="flex -space-x-1">
+                                            <img class="w-6 h-6 rounded-full border-2 border-white" src="https://via.placeholder.com/24" alt="User">
+                                            <img class="w-6 h-6 rounded-full border-2 border-white" src="https://via.placeholder.com/24" alt="User">
+                                        </div>
+                                        <span class="text-xs text-gray-500">Due: Jan 28</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Review Column -->
+                        <div class="bg-yellow-50 rounded-lg p-4">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="font-semibold text-gray-900">Review</h3>
+                                <span class="bg-yellow-200 text-yellow-700 text-xs px-2 py-1 rounded-full">8</span>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-yellow-500">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h4 class="font-medium text-gray-900">Financial Report</h4>
+                                        <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Medium</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-3">Monthly financial analysis report</p>
+                                    <div class="flex justify-between items-center">
+                                        <div class="flex -space-x-1">
+                                            <img class="w-6 h-6 rounded-full border-2 border-white" src="https://via.placeholder.com/24" alt="User">
+                                        </div>
+                                        <span class="text-xs text-gray-500">Due: Jan 18</span>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-purple-500">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h4 class="font-medium text-gray-900">Quality Documentation</h4>
+                                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">High</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-3">Update quality control procedures</p>
+                                    <div class="flex justify-between items-center">
+                                        <div class="flex -space-x-1">
+                                            <img class="w-6 h-6 rounded-full border-2 border-white" src="https://via.placeholder.com/24" alt="User">
+                                            <img class="w-6 h-6 rounded-full border-2 border-white" src="https://via.placeholder.com/24" alt="User">
+                                        </div>
+                                        <span class="text-xs text-gray-500">Due: Jan 24</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Done Column -->
+                        <div class="bg-green-50 rounded-lg p-4">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="font-semibold text-gray-900">Done</h3>
+                                <span class="bg-green-200 text-green-700 text-xs px-2 py-1 rounded-full">18</span>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h4 class="font-medium text-gray-900">Database Backup</h4>
+                                        <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Completed</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-3">Weekly database backup and verification</p>
+                                    <div class="flex justify-between items-center">
+                                        <div class="flex -space-x-1">
+                                            <img class="w-6 h-6 rounded-full border-2 border-white" src="https://via.placeholder.com/24" alt="User">
+                                        </div>
+                                        <span class="text-xs text-gray-500">Completed: Jan 15</span>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h4 class="font-medium text-gray-900">Team Training</h4>
+                                        <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Completed</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-3">New employee onboarding session</p>
+                                    <div class="flex justify-between items-center">
+                                        <div class="flex -space-x-1">
+                                            <img class="w-6 h-6 rounded-full border-2 border-white" src="https://via.placeholder.com/24" alt="User">
+                                            <img class="w-6 h-6 rounded-full border-2 border-white" src="https://via.placeholder.com/24" alt="User">
+                                        </div>
+                                        <span class="text-xs text-gray-500">Completed: Jan 14</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task List Tab -->
+                <div id="list-tab" class="tab-content p-6 hidden">
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">All Tasks</h3>
+                            <div class="flex space-x-2">
+                                <input type="text" placeholder="Search tasks..." class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                    <option>All Projects</option>
+                                    <option>ERP Development</option>
+                                    <option>Marketing</option>
+                                    <option>Operations</option>
+                                </select>
+                                <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                    <option>All Status</option>
+                                    <option>To Do</option>
+                                    <option>In Progress</option>
+                                    <option>Review</option>
+                                    <option>Done</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignee</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div>
+                                                <div class="text-sm font-medium text-gray-900">ERP Module Development</div>
+                                                <div class="text-sm text-gray-500">Develop new accounting module features</div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">ERP Development</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <img class="w-8 h-8 rounded-full mr-2" src="https://via.placeholder.com/32" alt="User">
+                                                <span class="text-sm text-gray-900">John Smith</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Critical</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Jan 22, 2024</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">In Progress</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                                    <div class="bg-blue-600 h-2 rounded-full" style="width: 65%"></div>
+                                                </div>
+                                                <span class="text-sm text-gray-600">65%</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <button class="text-blue-600 hover:text-blue-900 mr-2">Edit</button>
+                                            <button class="text-green-600 hover:text-green-900">Complete</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div>
+                                                <div class="text-sm font-medium text-gray-900">Update Product Catalog</div>
+                                                <div class="text-sm text-gray-500">Update product descriptions and images for Q1 catalog</div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Marketing</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <img class="w-8 h-8 rounded-full mr-2" src="https://via.placeholder.com/32" alt="User">
+                                                <span class="text-sm text-gray-900">Sarah Johnson</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">High</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Jan 20, 2024</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">To Do</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                                    <div class="bg-gray-400 h-2 rounded-full" style="width: 0%"></div>
+                                                </div>
+                                                <span class="text-sm text-gray-600">0%</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <button class="text-blue-600 hover:text-blue-900 mr-2">Edit</button>
+                                            <button class="text-green-600 hover:text-green-900">Start</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div>
+                                                <div class="text-sm font-medium text-gray-900">Database Backup</div>
+                                                <div class="text-sm text-gray-500">Weekly database backup and verification</div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Operations</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <img class="w-8 h-8 rounded-full mr-2" src="https://via.placeholder.com/32" alt="User">
+                                                <span class="text-sm text-gray-900">Mike Wilson</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Medium</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Jan 15, 2024</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Done</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                                    <div class="bg-green-600 h-2 rounded-full" style="width: 100%"></div>
+                                                </div>
+                                                <span class="text-sm text-gray-600">100%</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <button class="text-blue-600 hover:text-blue-900 mr-2">View</button>
+                                            <button class="text-gray-600 hover:text-gray-900">Archive</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calendar View Tab -->
+                <div id="calendar-tab" class="tab-content p-6 hidden">
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Task Calendar</h3>
+                            <div class="flex space-x-2">
+                                <button class="bg-primary text-white px-3 py-2 rounded-lg text-sm hover:bg-secondary">Today</button>
+                                <button class="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50">Week</button>
+                                <button class="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50">Month</button>
+                            </div>
+                        </div>
+
+                        <!-- Calendar Placeholder -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <div class="h-96 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <div class="text-center">
+                                    <i class="fas fa-calendar-alt text-gray-400 text-4xl mb-2"></i>
+                                    <p class="text-gray-500">Calendar view placeholder</p>
+                                    <p class="text-gray-400 text-sm">Interactive calendar showing task deadlines and milestones</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upcoming Deadlines -->
+                        <div class="mt-6 bg-white border rounded-lg p-6">
+                            <h4 class="font-semibold text-gray-900 mb-4">Upcoming Deadlines</h4>
+                            <div class="space-y-3">
+                                <div class="flex items-center p-3 bg-red-50 rounded-lg">
+                                    <div class="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
+                                    <div class="flex-1">
+                                        <p class="font-medium text-red-900">Update Product Catalog</p>
+                                        <p class="text-sm text-red-700">Due in 3 days (Jan 20)</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center p-3 bg-yellow-50 rounded-lg">
+                                    <div class="w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
+                                    <div class="flex-1">
+                                        <p class="font-medium text-yellow-900">ERP Module Development</p>
+                                        <p class="text-sm text-yellow-700">Due in 5 days (Jan 22)</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center p-3 bg-blue-50 rounded-lg">
+                                    <div class="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
+                                    <div class="flex-1">
+                                        <p class="font-medium text-blue-900">Quality Documentation</p>
+                                        <p class="text-sm text-blue-700">Due in 7 days (Jan 24)</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task Analytics Tab -->
+                <div id="analytics-tab" class="tab-content p-6 hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Task Completion Chart -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Task Completion Trend</h3>
+                            <div class="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <div class="text-center">
+                                    <i class="fas fa-chart-line text-gray-400 text-4xl mb-2"></i>
+                                    <p class="text-gray-500">Chart placeholder - Task completion over time</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Team Performance -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Team Performance</h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <img class="w-8 h-8 rounded-full mr-3" src="https://via.placeholder.com/32" alt="User">
+                                        <span class="font-medium text-gray-900">John Smith</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-green-600 h-2 rounded-full" style="width: 92%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">92%</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <img class="w-8 h-8 rounded-full mr-3" src="https://via.placeholder.com/32" alt="User">
+                                        <span class="font-medium text-gray-900">Sarah Johnson</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-blue-600 h-2 rounded-full" style="width: 88%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">88%</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <img class="w-8 h-8 rounded-full mr-3" src="https://via.placeholder.com/32" alt="User">
+                                        <span class="font-medium text-gray-900">Mike Wilson</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-yellow-600 h-2 rounded-full" style="width: 75%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">75%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Task Distribution -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Task Distribution by Priority</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Critical</span>
+                                    <div class="flex items-center">
+                                        <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-red-600 h-2 rounded-full" style="width: 12%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">5 tasks</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">High</span>
+                                    <div class="flex items-center">
+                                        <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-orange-600 h-2 rounded-full" style="width: 28%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">12 tasks</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Medium</span>
+                                    <div class="flex items-center">
+                                        <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-yellow-600 h-2 rounded-full" style="width: 43%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">18 tasks</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Low</span>
+                                    <div class="flex items-center">
+                                        <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-green-600 h-2 rounded-full" style="width: 17%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium">7 tasks</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-start">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3"></div>
+                                    <div>
+                                        <p class="text-sm text-gray-900"><span class="font-medium">John Smith</span> completed "Database Backup"</p>
+                                        <p class="text-xs text-gray-500">2 hours ago</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start">
+                                    <div class="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
+                                    <div>
+                                        <p class="text-sm text-gray-900"><span class="font-medium">Sarah Johnson</span> updated "Marketing Campaign"</p>
+                                        <p class="text-xs text-gray-500">4 hours ago</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start">
+                                    <div class="w-2 h-2 bg-yellow-500 rounded-full mt-2 mr-3"></div>
+                                    <div>
+                                        <p class="text-sm text-gray-900"><span class="font-medium">Mike Wilson</span> created "Inventory Audit"</p>
+                                        <p class="text-xs text-gray-500">6 hours ago</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start">
+                                    <div class="w-2 h-2 bg-purple-500 rounded-full mt-2 mr-3"></div>
+                                    <div>
+                                        <p class="text-sm text-gray-900"><span class="font-medium">Admin</span> assigned "Quality Documentation" to team</p>
+                                        <p class="text-xs text-gray-500">8 hours ago</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Integration Notice -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-blue-600 text-lg mr-3 mt-1"></i>
+                    <div>
+                        <h4 class="text-blue-900 font-medium mb-2">Project Management Integration</h4>
+                        <p class="text-blue-800 text-sm">
+                            Task Management integrates with Time Tracking, HR, and Resource Planning modules. 
+                            Task assignments automatically sync with employee schedules, time entries flow to payroll, and project deadlines update inventory and production planning.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // Tab functionality
+        function initTabs() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabName = button.getAttribute('data-tab');
+                    
+                    // Remove active classes
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('border-primary', 'text-primary');
+                        btn.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    
+                    tabContents.forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    
+                    // Add active classes
+                    button.classList.remove('border-transparent', 'text-gray-500');
+                    button.classList.add('border-primary', 'text-primary');
+                    
+                    // Show selected tab content
+                    document.getElementById(tabName + '-tab').classList.remove('hidden');
+                });
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initTabs();
+        });
+    </script>
+{% endblock %}

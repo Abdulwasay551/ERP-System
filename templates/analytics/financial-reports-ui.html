@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    primary: '#10B981',
+                    secondary: '#059669',
+                    accent: '#065F46'
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}
+
+{% block content %}
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl font-bold text-gray-900">Financial Analytics</h1>
+                        <span class="ml-2 px-2 py-1 bg-primary text-white text-xs rounded-full">Analytics Module</span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary transition-colors">
+                            <i class="fas fa-download mr-2"></i>Export Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Financial KPIs -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-green-100 rounded-lg">
+                            <i class="fas fa-dollar-sign text-green-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">$2.4M</p>
+                            <p class="text-sm text-gray-600">Revenue</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-blue-100 rounded-lg">
+                            <i class="fas fa-chart-line text-blue-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">$571K</p>
+                            <p class="text-sm text-gray-600">Net Profit</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-yellow-100 rounded-lg">
+                            <i class="fas fa-percentage text-yellow-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">23.8%</p>
+                            <p class="text-sm text-gray-600">Profit Margin</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-red-100 rounded-lg">
+                            <i class="fas fa-coins text-red-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-2xl font-bold text-gray-900">$1.83M</p>
+                            <p class="text-sm text-gray-600">Total Expenses</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Revenue vs Expenses -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Revenue vs Expenses</h3>
+                    <div class="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <div class="text-center">
+                            <i class="fas fa-chart-bar text-gray-400 text-4xl mb-2"></i>
+                            <p class="text-gray-500">Revenue vs Expenses chart</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cash Flow -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Cash Flow Analysis</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Operating Cash Flow</span>
+                            <span class="font-medium text-green-600">$485K</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Investing Cash Flow</span>
+                            <span class="font-medium text-red-600">-$125K</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Financing Cash Flow</span>
+                            <span class="font-medium text-blue-600">$75K</span>
+                        </div>
+                        <div class="flex justify-between border-t pt-2">
+                            <span class="font-medium text-gray-900">Net Cash Flow</span>
+                            <span class="font-bold text-primary">$435K</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financial Breakdown -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Expense Categories</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Cost of Goods Sold</span>
+                            <div class="flex items-center">
+                                <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="bg-red-600 h-2 rounded-full" style="width: 65%"></div>
+                                </div>
+                                <span class="text-sm font-medium">$1.19M</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Operating Expenses</span>
+                            <div class="flex items-center">
+                                <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="bg-yellow-600 h-2 rounded-full" style="width: 25%"></div>
+                                </div>
+                                <span class="text-sm font-medium">$460K</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Administrative</span>
+                            <div class="flex items-center">
+                                <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="bg-blue-600 h-2 rounded-full" style="width: 10%"></div>
+                                </div>
+                                <span class="text-sm font-medium">$180K</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Financial Ratios</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Current Ratio</span>
+                            <span class="font-medium text-green-600">2.4</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Quick Ratio</span>
+                            <span class="font-medium text-blue-600">1.8</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Debt-to-Equity</span>
+                            <span class="font-medium text-yellow-600">0.6</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">ROE</span>
+                            <span class="font-medium text-purple-600">18.5%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">ROA</span>
+                            <span class="font-medium text-primary">12.3%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Budget vs Actual</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm text-gray-600">Revenue</span>
+                                <span class="text-sm font-medium">$2.4M / $2.6M</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-green-600 h-2 rounded-full" style="width: 92%"></div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">92% of budget</p>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm text-gray-600">Expenses</span>
+                                <span class="text-sm font-medium">$1.83M / $2.0M</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: 91%"></div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">91% of budget</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+{% endblock %}

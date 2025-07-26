@@ -1,0 +1,580 @@
+{% extends 'base.html' %}
+{% block title %}Leave Management | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .leave-status-pending { color: #d97706; }
+    .leave-status-approved { color: #059669; }
+    .leave-status-rejected { color: #dc2626; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="max-w-7xl mx-auto px-6">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Leave Management</h1>
+                <p class="text-gray-600">Track employee leave requests and approvals</p>
+            </div>
+            <div class="flex gap-4">
+                <button id="applyLeaveBtn" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Apply for Leave
+                </button>
+                <button class="action-btn bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-4 6a2 2 0 11-4 0m4 0a2 2 0 104 0m-4 0v3a2 2 0 01-2 2H9a2 2 0 01-2-2v-3m0 0h6"></path>
+                    </svg>
+                    Leave Calendar
+                </button>
+            </div>
+        </div>
+
+        <!-- COA Integration Notice -->
+        <div class="coa-integration rounded-2xl p-6 mb-8">
+            <div class="flex items-center">
+                <svg class="w-6 h-6 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                    <h3 class="text-lg font-semibold text-green-800">Chart of Accounts Integration</h3>
+                    <p class="text-green-700">Leave management automatically posts: <strong>Dr. Salary Expense</strong> | <strong>Cr. Accrued Leave Payable</strong></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Pending Requests</p>
+                        <p class="text-3xl font-bold text-orange-600">23</p>
+                    </div>
+                    <div class="p-3 bg-orange-100 rounded-xl">
+                        <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Approved Today</p>
+                        <p class="text-3xl font-bold text-emerald-600">8</p>
+                    </div>
+                    <div class="p-3 bg-emerald-100 rounded-xl">
+                        <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Available Balance</p>
+                        <p class="text-3xl font-bold text-blue-600">156 days</p>
+                    </div>
+                    <div class="p-3 bg-blue-100 rounded-xl">
+                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-4 6a2 2 0 11-4 0m4 0a2 2 0 104 0m-4 0v3a2 2 0 01-2 2H9a2 2 0 01-2-2v-3m0 0h6"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">On Leave Today</p>
+                        <p class="text-3xl font-bold text-purple-600">12</p>
+                    </div>
+                    <div class="p-3 bg-purple-100 rounded-xl">
+                        <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-green-100 rounded-lg">
+                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Approved Today</p>
+                            <p class="text-2xl font-bold text-gray-900">8</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-yellow-100 rounded-lg">
+                            <i class="fas fa-user-clock text-yellow-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">On Leave Today</p>
+                            <p class="text-2xl font-bold text-gray-900">15</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-purple-100 rounded-lg">
+                            <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">This Month</p>
+                            <p class="text-2xl font-bold text-gray-900">142</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="bg-white rounded-lg shadow mb-6">
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-8 px-6">
+                        <button class="tab-button py-4 px-1 border-b-2 border-primary font-medium text-sm text-primary" data-tab="requests">
+                            Leave Requests
+                        </button>
+                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="calendar">
+                            Leave Calendar
+                        </button>
+                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="policies">
+                            Leave Policies
+                        </button>
+                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="balances">
+                            Leave Balances
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Leave Requests Tab -->
+                <div id="requests-tab" class="tab-content p-6">
+                    <!-- Filters -->
+                    <div class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                            <select class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary">
+                                <option>All Status</option>
+                                <option>Pending</option>
+                                <option>Approved</option>
+                                <option>Rejected</option>
+                                <option>Cancelled</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Leave Type</label>
+                            <select class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary">
+                                <option>All Types</option>
+                                <option>Annual Leave</option>
+                                <option>Sick Leave</option>
+                                <option>Personal Leave</option>
+                                <option>Maternity Leave</option>
+                                <option>Emergency Leave</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                            <select class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary">
+                                <option>All Departments</option>
+                                <option>Sales</option>
+                                <option>Marketing</option>
+                                <option>Engineering</option>
+                                <option>HR</option>
+                                <option>Finance</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                            <input type="text" placeholder="Search employees..." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary">
+                        </div>
+                    </div>
+
+                    <!-- Leave Requests Table -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leave Type</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="h-8 w-8 bg-primary text-white rounded-full flex items-center justify-center text-sm font-medium">JS</div>
+                                            <div class="ml-3">
+                                                <div class="text-sm font-medium text-gray-900">John Smith</div>
+                                                <div class="text-sm text-gray-500">Sales Department</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            Annual Leave
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-15</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-19</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">5</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            Pending
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="text-green-600 hover:text-green-900 mr-2">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button class="text-red-600 hover:text-red-900 mr-2">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                        <button class="text-gray-600 hover:text-gray-900">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="h-8 w-8 bg-secondary text-white rounded-full flex items-center justify-center text-sm font-medium">MJ</div>
+                                            <div class="ml-3">
+                                                <div class="text-sm font-medium text-gray-900">Mary Johnson</div>
+                                                <div class="text-sm text-gray-500">Marketing Department</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                            Sick Leave
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-12</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-14</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">3</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Approved
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="text-gray-600 hover:text-gray-900">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="h-8 w-8 bg-accent text-white rounded-full flex items-center justify-center text-sm font-medium">RW</div>
+                                            <div class="ml-3">
+                                                <div class="text-sm font-medium text-gray-900">Robert Wilson</div>
+                                                <div class="text-sm text-gray-500">Engineering Department</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                            Personal Leave
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-20</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-22</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            Pending
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="text-green-600 hover:text-green-900 mr-2">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button class="text-red-600 hover:text-red-900 mr-2">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                        <button class="text-gray-600 hover:text-gray-900">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Leave Calendar Tab -->
+                <div id="calendar-tab" class="tab-content p-6 hidden">
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <div class="text-center">
+                            <i class="fas fa-calendar-alt text-gray-400 text-4xl mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Leave Calendar View</h3>
+                            <p class="text-gray-600">Interactive calendar showing all employee leaves will be displayed here.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leave Policies Tab -->
+                <div id="policies-tab" class="tab-content p-6 hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Annual Leave Policy -->
+                        <div class="bg-blue-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-blue-900 mb-4">
+                                <i class="fas fa-calendar-check mr-2"></i>Annual Leave Policy
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-blue-700">Annual Entitlement:</span>
+                                    <span class="font-medium text-blue-900">21 days</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-blue-700">Carry Forward:</span>
+                                    <span class="font-medium text-blue-900">5 days max</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-blue-700">Notice Period:</span>
+                                    <span class="font-medium text-blue-900">2 weeks</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sick Leave Policy -->
+                        <div class="bg-red-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-red-900 mb-4">
+                                <i class="fas fa-user-injured mr-2"></i>Sick Leave Policy
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-red-700">Annual Entitlement:</span>
+                                    <span class="font-medium text-red-900">10 days</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-red-700">Medical Certificate:</span>
+                                    <span class="font-medium text-red-900">Required for 3+ days</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-red-700">Notice Period:</span>
+                                    <span class="font-medium text-red-900">ASAP</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Personal Leave Policy -->
+                        <div class="bg-purple-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-purple-900 mb-4">
+                                <i class="fas fa-user mr-2"></i>Personal Leave Policy
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-purple-700">Annual Entitlement:</span>
+                                    <span class="font-medium text-purple-900">5 days</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-purple-700">Approval Required:</span>
+                                    <span class="font-medium text-purple-900">Manager</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-purple-700">Notice Period:</span>
+                                    <span class="font-medium text-purple-900">1 week</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Maternity Leave Policy -->
+                        <div class="bg-green-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-green-900 mb-4">
+                                <i class="fas fa-baby mr-2"></i>Maternity Leave Policy
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-green-700">Entitlement:</span>
+                                    <span class="font-medium text-green-900">16 weeks</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-green-700">Payment:</span>
+                                    <span class="font-medium text-green-900">100% salary</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-green-700">Notice Period:</span>
+                                    <span class="font-medium text-green-900">4 weeks</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leave Balances Tab -->
+                <div id="balances-tab" class="tab-content p-6 hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Annual Leave</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sick Leave</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Personal Leave</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Used</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="h-8 w-8 bg-primary text-white rounded-full flex items-center justify-center text-sm font-medium">JS</div>
+                                            <div class="ml-3">
+                                                <div class="text-sm font-medium text-gray-900">John Smith</div>
+                                                <div class="text-sm text-gray-500">Sales Department</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <div class="flex items-center">
+                                            <span class="mr-2">15/21</span>
+                                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                                <div class="bg-blue-600 h-2 rounded-full" style="width: 71%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <div class="flex items-center">
+                                            <span class="mr-2">3/10</span>
+                                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                                <div class="bg-red-600 h-2 rounded-full" style="width: 30%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <div class="flex items-center">
+                                            <span class="mr-2">2/5</span>
+                                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                                <div class="bg-purple-600 h-2 rounded-full" style="width: 40%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">20 days</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="text-primary hover:text-secondary">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="h-8 w-8 bg-secondary text-white rounded-full flex items-center justify-center text-sm font-medium">MJ</div>
+                                            <div class="ml-3">
+                                                <div class="text-sm font-medium text-gray-900">Mary Johnson</div>
+                                                <div class="text-sm text-gray-500">Marketing Department</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <div class="flex items-center">
+                                            <span class="mr-2">8/21</span>
+                                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                                <div class="bg-blue-600 h-2 rounded-full" style="width: 38%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <div class="flex items-center">
+                                            <span class="mr-2">5/10</span>
+                                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                                <div class="bg-red-600 h-2 rounded-full" style="width: 50%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <div class="flex items-center">
+                                            <span class="mr-2">1/5</span>
+                                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                                <div class="bg-purple-600 h-2 rounded-full" style="width: 20%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">14 days</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="text-primary hover:text-secondary">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COA Integration Notice -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-blue-600 text-lg mr-3 mt-1"></i>
+                    <div>
+                        <h4 class="text-blue-900 font-medium mb-2">Chart of Accounts Integration</h4>
+                        <p class="text-blue-800 text-sm">
+                            Leave management integrates with the Chart of Accounts for accurate cost tracking. 
+                            Paid leave expenses are automatically posted to the appropriate expense accounts based on employee departments and leave types.
+                        </p>
+                    </div>
+                </div>            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // Tab functionality
+        function initTabs() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabName = button.getAttribute('data-tab');
+                    
+                    // Remove active classes
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('border-primary', 'text-primary');
+                        btn.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    
+                    tabContents.forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    
+                    // Add active classes
+                    button.classList.remove('border-transparent', 'text-gray-500');
+                    button.classList.add('border-primary', 'text-primary');
+                    
+                    // Show selected tab content
+                    document.getElementById(tabName + '-tab').classList.remove('hidden');
+                });
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initTabs();
+        });
+    </script>
+{% endblock %}

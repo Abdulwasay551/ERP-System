@@ -71,3 +71,15 @@ def boms_delete(request, pk):
     bom = get_object_or_404(BillOfMaterials, pk=pk, company=request.user.company)
     bom.delete()
     return JsonResponse({'success': True})
+
+@login_required
+def workorders_ui(request):
+    return render(request, 'manufacturing/workorders-ui.html')
+
+@login_required
+def production_ui(request):
+    return render(request, 'manufacturing/production-ui.html')
+
+@login_required
+def quality_ui(request):
+    return render(request, 'manufacturing/quality-ui.html')

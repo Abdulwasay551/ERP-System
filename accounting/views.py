@@ -82,3 +82,19 @@ def accounts_delete(request, pk):
     account = get_object_or_404(Account, pk=pk, company=request.user.company)
     account.delete()
     return JsonResponse({'success': True})
+
+@login_required
+def journals_ui(request):
+    return render(request, 'accounting/journals-ui.html')
+
+@login_required
+def ledger_ui(request):
+    return render(request, 'accounting/ledger-ui.html')
+
+@login_required
+def trial_balance_ui(request):
+    return render(request, 'accounting/trial-balance-ui.html')
+
+@login_required
+def reports_ui(request):
+    return render(request, 'accounting/reports-ui.html')

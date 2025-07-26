@@ -43,6 +43,17 @@ class Quotation(models.Model):
     def __str__(self):
         return f"Quotation #{self.id} - {self.customer.name}"
 
+class QuotationItem(models.Model):
+    quotation = models.ForeignKey(Quotation, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.DecimalField(max_digits=12, decimal_places=2)
+    tax = models.ForeignKey(Tax, on_delete=models.SET_NULL, null=True, blank=True)
+    total = models.DecimalField(max_digits=12, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.product.name} x {self.quantity}"
+
 class SalesOrder(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='sales_orders')
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='sales_orders')

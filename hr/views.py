@@ -70,3 +70,19 @@ def employees_delete(request, pk):
     employee = get_object_or_404(Employee, pk=pk, company=request.user.company)
     employee.delete()
     return JsonResponse({'success': True})
+
+@login_required
+def attendance_ui(request):
+    return render(request, 'hr/attendance-ui.html')
+
+@login_required
+def payroll_ui(request):
+    return render(request, 'hr/payroll-ui.html')
+
+@login_required
+def leaves_ui(request):
+    return render(request, 'hr/leaves-ui.html')
+
+@login_required
+def reports_ui(request):
+    return render(request, 'hr/reports-ui.html')

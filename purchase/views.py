@@ -76,3 +76,18 @@ def purchaseorders_delete(request, pk):
     po = get_object_or_404(PurchaseOrder, pk=pk, company=request.user.company)
     po.delete()
     return JsonResponse({'success': True})
+
+@login_required
+def suppliers_ui(request):
+    suppliers = Supplier.objects.filter(company=request.user.company)
+    return render(request, 'purchase/suppliers-ui.html', {'suppliers': suppliers})
+
+@login_required
+def bills_ui(request):
+    # For now, just return a simple template
+    return render(request, 'purchase/bills-ui.html')
+
+@login_required
+def payments_ui(request):
+    # For now, just return a simple template
+    return render(request, 'purchase/payments-ui.html')

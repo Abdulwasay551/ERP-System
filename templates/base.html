@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FutureERP - Advanced Business Management System</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         
@@ -67,30 +68,344 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
+
+        /* Sidebar Styles */
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+            background: linear-gradient(180deg, #065f46, #047857, #059669);
+            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+        }
+        
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+        
+        .sidebar-overlay {
+            transition: opacity 0.3s ease-in-out;
+        }
+        
+        .sidebar-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+        }
+        
+        .submenu.expanded {
+            max-height: 500px;
+        }
+        
+        .sidebar-item {
+            transition: all 0.2s ease;
+        }
+        
+        .sidebar-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(4px);
+        }
+        
+        .sidebar-item.active {
+            background: rgba(255, 255, 255, 0.15);
+            border-right: 3px solid #34d399;
+        }
+          @media (max-width: 768px) {
+            .main-content {
+                margin-left: 0 !important;
+            }
+        }
+
+        /* Emerald Design System - Standard Styles */
+        .quick-action-btn {
+            background: linear-gradient(135deg, #10b981, #065f46);
+            transition: all 0.3s ease;
+        }
+        
+        .quick-action-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+        }
+
+        .action-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .action-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .coa-integration {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .stat-card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(240, 253, 244, 0.8));
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.15);
+        }
+
+        .table-row:hover {
+            background: linear-gradient(145deg, rgba(16, 185, 129, 0.05), rgba(240, 253, 244, 0.3));
+        }
+
+        .tab-btn {
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            border-color: #10b981;
+            color: #059669;
+        }
+
+        .tab-content {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        /* Emerald color scheme variables */
+        :root {
+            --emerald-50: #ecfdf5;
+            --emerald-100: #d1fae5;
+            --emerald-200: #a7f3d0;
+            --emerald-300: #6ee7b7;
+            --emerald-400: #34d399;
+            --emerald-500: #10b981;
+            --emerald-600: #059669;
+            --emerald-700: #047857;
+            --emerald-800: #065f46;
+            --emerald-900: #064e3b;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 
 </head>
 <body class="bg-gray-50 overflow-x-hidden">
-    <!-- Header Navigation -->
-    <nav class="glass-effect fixed w-full z-50 px-6 py-4">
-        <div class="max-w-7xl mx-auto flex items-center justify-between">
-            <a href='/' class="flex items-center space-x-3">
-                <div class="w-10 h-10 bg-gradient-to-r from-green-500/10 to-emerald-600/10 rounded-full outset-0 flex items-center justify-center pulse-green">
-                    <img src="{% static 'logo.png' %}" alt="FutureERP Logo" class="w-10 h-10 mask-radial-at-bottom" style="filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.5));border-radius: 50%;">
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar fixed left-0 top-0 w-80 h-full z-40 text-white overflow-y-auto">
+        <div class="p-6">
+            <!-- Logo Section -->
+            <div class="flex items-center space-x-3 mb-8">
+                <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+                    <img src="{% static 'logo.png' %}" alt="FutureERP Logo" class="w-8 h-8 rounded-full">
                 </div>
-                <span class="text-2xl font-bold text-green-800">FutureERP</span>
-            </a>
-            <div class="hidden md:flex items-center space-x-8">
-                <a href="{% url 'dashboard' %}" class="text-black hover:text-black/50 font-medium">Dashboard</a>
-                <a href="#" class="text-black hover:text-black/50 font-medium">Modules</a>
-                <a href="#" class="text-black hover:text-black/50 font-medium">Reports</a>
-                <a href="#" class="text-black hover:text-black/50 font-medium">Settings</a>
+                <span class="text-xl font-bold">FutureERP</span>
             </div>
+
+            <!-- Navigation Menu -->
+            <nav class="space-y-2">
+                <!-- Dashboard -->
+                <a href="{% url 'dashboard' %}" class="sidebar-item flex items-center space-x-3 p-3 rounded-lg">
+                    <i class="fas fa-home w-5"></i>
+                    <span>Dashboard</span>
+                </a>                <!-- Sales Management -->
+                <div class="sidebar-group">
+                    <button onclick="toggleSubmenu('sales-menu')" class="sidebar-item w-full flex items-center justify-between p-3 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-chart-line w-5"></i>
+                            <span>Sales</span>
+                        </div>
+                        <i class="fas fa-chevron-down transition-transform" id="sales-icon"></i>
+                    </button>
+                    <div id="sales-menu" class="submenu ml-8 space-y-1">
+                        <a href="/sales/products-ui/" class="sidebar-item block p-2 rounded">Products</a>
+                        <a href="/sales/quotations-ui/" class="sidebar-item block p-2 rounded">Quotations</a>
+                        <a href="/sales/salesorders-ui/" class="sidebar-item block p-2 rounded">Sales Orders</a>
+                        <a href="/sales/invoices-ui/" class="sidebar-item block p-2 rounded">Invoices</a>
+                        <a href="/sales/taxes-ui/" class="sidebar-item block p-2 rounded">Taxes</a>
+                    </div>
+                </div>
+
+                <!-- Purchase Management -->
+                <div class="sidebar-group">
+                    <button onclick="toggleSubmenu('purchase-menu')" class="sidebar-item w-full flex items-center justify-between p-3 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-shopping-cart w-5"></i>
+                            <span>Purchase</span>
+                        </div>
+                        <i class="fas fa-chevron-down transition-transform" id="purchase-icon"></i>
+                    </button>
+                    <div id="purchase-menu" class="submenu ml-8 space-y-1">
+                        <a href="/purchase/purchaseorders-ui/" class="sidebar-item block p-2 rounded">Purchase Orders</a>
+                        <a href="/purchase/suppliers-ui/" class="sidebar-item block p-2 rounded">Suppliers</a>
+                        <a href="/purchase/bills-ui/" class="sidebar-item block p-2 rounded">Bills</a>
+                        <a href="/purchase/payments-ui/" class="sidebar-item block p-2 rounded">Payments</a>
+                    </div>
+                </div>
+
+                <!-- Inventory Management -->
+                <div class="sidebar-group">
+                    <button onclick="toggleSubmenu('inventory-menu')" class="sidebar-item w-full flex items-center justify-between p-3 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-warehouse w-5"></i>
+                            <span>Inventory</span>
+                        </div>
+                        <i class="fas fa-chevron-down transition-transform" id="inventory-icon"></i>
+                    </button>
+                    <div id="inventory-menu" class="submenu ml-8 space-y-1">
+                        <a href="/inventory/stockitems-ui/" class="sidebar-item block p-2 rounded">Stock Items</a>
+                        <a href="/inventory/warehouses-ui/" class="sidebar-item block p-2 rounded">Warehouses</a>
+                        <a href="/inventory/movements-ui/" class="sidebar-item block p-2 rounded">Stock Movements</a>
+                        <a href="/inventory/alerts-ui/" class="sidebar-item block p-2 rounded">Stock Alerts</a>
+                        <a href="/inventory/categories-ui/" class="sidebar-item block p-2 rounded">Categories</a>
+                    </div>
+                </div>
+
+                <!-- CRM -->
+                <div class="sidebar-group">
+                    <button onclick="toggleSubmenu('crm-menu')" class="sidebar-item w-full flex items-center justify-between p-3 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-users w-5"></i>
+                            <span>CRM</span>
+                        </div>
+                        <i class="fas fa-chevron-down transition-transform" id="crm-icon"></i>
+                    </button>
+                    <div id="crm-menu" class="submenu ml-8 space-y-1">
+                        <a href="/crm/customers-ui/" class="sidebar-item block p-2 rounded">Customers</a>
+                        <a href="/crm/leads-ui/" class="sidebar-item block p-2 rounded">Leads</a>
+                        <a href="/crm/opportunities-ui/" class="sidebar-item block p-2 rounded">Opportunities</a>
+                        <a href="/crm/communications-ui/" class="sidebar-item block p-2 rounded">Communications</a>
+                    </div>
+                </div>
+
+                <!-- HR Management -->
+                <div class="sidebar-group">
+                    <button onclick="toggleSubmenu('hr-menu')" class="sidebar-item w-full flex items-center justify-between p-3 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-user-tie w-5"></i>
+                            <span>HR</span>
+                        </div>
+                        <i class="fas fa-chevron-down transition-transform" id="hr-icon"></i>
+                    </button>
+                    <div id="hr-menu" class="submenu ml-8 space-y-1">
+                        <a href="/hr/employees-ui/" class="sidebar-item block p-2 rounded">Employees</a>
+                        <a href="/hr/attendance-ui/" class="sidebar-item block p-2 rounded">Attendance</a>
+                        <a href="/hr/payroll-ui/" class="sidebar-item block p-2 rounded">Payroll</a>
+                        <a href="/hr/leaves-ui/" class="sidebar-item block p-2 rounded">Leave Management</a>
+                        <a href="/hr/reports-ui/" class="sidebar-item block p-2 rounded">HR Reports</a>
+                    </div>
+                </div>
+
+                <!-- Accounting -->
+                <div class="sidebar-group">
+                    <button onclick="toggleSubmenu('accounting-menu')" class="sidebar-item w-full flex items-center justify-between p-3 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-calculator w-5"></i>
+                            <span>Accounting</span>
+                        </div>
+                        <i class="fas fa-chevron-down transition-transform" id="accounting-icon"></i>
+                    </button>
+                    <div id="accounting-menu" class="submenu ml-8 space-y-1">
+                        <a href="/accounting/accounts-ui/" class="sidebar-item block p-2 rounded">Chart of Accounts</a>
+                        <a href="/accounting/journals-ui/" class="sidebar-item block p-2 rounded">Journal Entries</a>
+                        <a href="/accounting/ledger-ui/" class="sidebar-item block p-2 rounded">General Ledger</a>
+                        <a href="/accounting/trial-balance-ui/" class="sidebar-item block p-2 rounded">Trial Balance</a>
+                        <a href="/accounting/reports-ui/" class="sidebar-item block p-2 rounded">Financial Reports</a>
+                    </div>
+                </div>
+
+                <!-- Manufacturing -->
+                <div class="sidebar-group">
+                    <button onclick="toggleSubmenu('manufacturing-menu')" class="sidebar-item w-full flex items-center justify-between p-3 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-cogs w-5"></i>
+                            <span>Manufacturing</span>
+                        </div>
+                        <i class="fas fa-chevron-down transition-transform" id="manufacturing-icon"></i>
+                    </button>
+                    <div id="manufacturing-menu" class="submenu ml-8 space-y-1">
+                        <a href="/manufacturing/boms-ui/" class="sidebar-item block p-2 rounded">Bill of Materials</a>
+                        <a href="/manufacturing/workorders-ui/" class="sidebar-item block p-2 rounded">Work Orders</a>
+                        <a href="/manufacturing/production-ui/" class="sidebar-item block p-2 rounded">Production</a>
+                        <a href="/manufacturing/quality-ui/" class="sidebar-item block p-2 rounded">Quality Control</a>
+                    </div>
+                </div>
+
+                <!-- Project Management -->
+                <div class="sidebar-group">
+                    <button onclick="toggleSubmenu('project-menu')" class="sidebar-item w-full flex items-center justify-between p-3 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-project-diagram w-5"></i>
+                            <span>Projects</span>
+                        </div>
+                        <i class="fas fa-chevron-down transition-transform" id="project-icon"></i>
+                    </button>
+                    <div id="project-menu" class="submenu ml-8 space-y-1">
+                        <a href="/project_mgmt/projects-ui/" class="sidebar-item block p-2 rounded">Projects</a>
+                        <a href="/project_mgmt/tasks-ui/" class="sidebar-item block p-2 rounded">Tasks</a>
+                        <a href="/project_mgmt/timesheets-ui/" class="sidebar-item block p-2 rounded">Timesheets</a>
+                        <a href="/project_mgmt/reports-ui/" class="sidebar-item block p-2 rounded">Project Reports</a>
+                    </div>
+                </div>
+
+                <!-- Analytics -->
+                <div class="sidebar-group">
+                    <button onclick="toggleSubmenu('analytics-menu')" class="sidebar-item w-full flex items-center justify-between p-3 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-chart-bar w-5"></i>
+                            <span>Analytics</span>
+                        </div>
+                        <i class="fas fa-chevron-down transition-transform" id="analytics-icon"></i>
+                    </button>
+                    <div id="analytics-menu" class="submenu ml-8 space-y-1">
+                        <a href="/analytics/dashboard-ui/" class="sidebar-item block p-2 rounded">Analytics Dashboard</a>
+                        <a href="/analytics/sales-reports-ui/" class="sidebar-item block p-2 rounded">Sales Reports</a>
+                        <a href="/analytics/financial-reports-ui/" class="sidebar-item block p-2 rounded">Financial Reports</a>
+                        <a href="/analytics/inventory-reports-ui/" class="sidebar-item block p-2 rounded">Inventory Reports</a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div id="sidebar-overlay" class="sidebar-overlay fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
+
+    <!-- Header Navigation -->
+    <nav class="relative glass-effect w-full z-20 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <!-- Menu Toggle Button -->
+            <div class="flex items-center space-x-4">
+                <button id="menu-toggle" class="text-green-800 hover:text-green-600 p-2 rounded-lg">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <a href='/' class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-r from-green-500/10 to-emerald-600/10 rounded-full outset-0 flex items-center justify-center pulse-green">
+                        <img src="{% static 'logo.png' %}" alt="FutureERP Logo" class="w-10 h-10 mask-radial-at-bottom" style="filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.5));border-radius: 50%;">
+                    </div>
+                    <span class="text-2xl font-bold text-green-800">FutureERP</span>
+                </a>
+            </div>
+            
+            <div class="hidden lg:flex items-center space-x-8">
+                <a href="{% url 'dashboard' %}" class="text-black hover:text-black/50 font-medium">Dashboard</a>
+                <a href="/analytics/dashboard-ui/" class="text-black hover:text-black/50 font-medium">Reports</a>
+                <a href="{% url 'dashboard' %}" class="text-black hover:text-black/50 font-medium">Settings</a>
+            </div>
+            
             {% if user.is_authenticated %}
-            <a href="{% url 'logout' %}" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-2 rounded-full hover:shadow-lg transition-all">
-                Logout
-            </a>
+            <div class="flex items-center space-x-4">
+                <span class="text-green-800 font-medium">Welcome, {{ user.username }}</span>
+                <a href="{% url 'logout' %}" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-2 rounded-full hover:shadow-lg transition-all">
+                    Logout
+                </a>
+            </div>
             {% else %}
             <a href="{% url 'login' %}" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-2 rounded-full hover:shadow-lg transition-all">
                 Login
@@ -98,8 +413,11 @@
             {% endif %}
         </div>
     </nav>
+
+    <!-- Main Content -->
+    <div class="main-content transition-all duration-300 ml-80">
         {% block content %}{% endblock %}
-     <!-- Footer -->
+    </div>    <!-- Footer -->
     <footer class="bg-green-900 text-white py-12">
         <div class="max-w-7xl mx-auto px-6">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -149,6 +467,115 @@
             </div>
         </div>
     </footer>
+
+    <script>
+        // Sidebar functionality
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const menuToggle = document.getElementById('menu-toggle');
+        const mainContent = document.querySelector('.main-content');
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('collapsed');
+            sidebarOverlay.classList.toggle('hidden');
+            
+            if (sidebar.classList.contains('collapsed')) {
+                mainContent.style.marginLeft = '0';
+            } else {
+                if (window.innerWidth >= 768) {
+                    mainContent.style.marginLeft = '320px';
+                }
+            }
+        }
+
+        // Toggle sidebar on menu button click
+        menuToggle.addEventListener('click', toggleSidebar);
+
+        // Close sidebar when clicking overlay
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.add('collapsed');
+            sidebarOverlay.classList.add('hidden');
+            if (window.innerWidth >= 768) {
+                mainContent.style.marginLeft = '0';
+            }
+        });
+
+        // Handle submenu toggles
+        function toggleSubmenu(menuId) {
+            const menu = document.getElementById(menuId);
+            const icon = document.getElementById(menuId.replace('-menu', '-icon'));
+            
+            menu.classList.toggle('expanded');
+            icon.classList.toggle('rotate-180');
+            
+            // Close other submenus
+            const allMenus = document.querySelectorAll('.submenu');
+            const allIcons = document.querySelectorAll('.fa-chevron-down');
+            
+            allMenus.forEach(otherMenu => {
+                if (otherMenu.id !== menuId && otherMenu.classList.contains('expanded')) {
+                    otherMenu.classList.remove('expanded');
+                }
+            });
+            
+            allIcons.forEach(otherIcon => {
+                if (otherIcon.id !== icon.id && otherIcon.classList.contains('rotate-180')) {
+                    otherIcon.classList.remove('rotate-180');
+                }
+            });
+        }
+
+        // Handle responsive behavior
+        function handleResize() {
+            if (window.innerWidth < 768) {
+                sidebar.classList.add('collapsed');
+                sidebarOverlay.classList.add('hidden');
+                mainContent.style.marginLeft = '0';
+            } else {
+                if (!sidebar.classList.contains('collapsed')) {
+                    mainContent.style.marginLeft = '320px';
+                }
+            }
+        }
+
+        // Set active menu item based on current URL
+        function setActiveMenuItem() {
+            const currentPath = window.location.pathname;
+            const sidebarItems = document.querySelectorAll('.sidebar-item');
+            
+            sidebarItems.forEach(item => {
+                if (item.href && currentPath.includes(item.getAttribute('href'))) {
+                    item.classList.add('active');
+                    
+                    // Expand parent submenu if needed
+                    const parentSubmenu = item.closest('.submenu');
+                    if (parentSubmenu) {
+                        parentSubmenu.classList.add('expanded');
+                        const parentButton = parentSubmenu.previousElementSibling;
+                        const icon = parentButton.querySelector('.fa-chevron-down');
+                        if (icon) {
+                            icon.classList.add('rotate-180');
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize
+        window.addEventListener('resize', handleResize);
+        document.addEventListener('DOMContentLoaded', () => {
+            handleResize();
+            setActiveMenuItem();
+        });
+
+        // Escape key to close sidebar
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !sidebar.classList.contains('collapsed')) {
+                toggleSidebar();
+            }
+        });
+    </script>
+
     {% block extra_js %}{% endblock %}
 </body>
-</html> 
+</html>

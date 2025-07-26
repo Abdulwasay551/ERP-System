@@ -1,0 +1,758 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    primary: '#10B981',
+                    secondary: '#059669',
+                    accent: '#065F46'
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}
+
+{% block content %}
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl font-bold text-gray-900">Financial Reports</h1>
+                        <span class="ml-2 px-2 py-1 bg-primary text-white text-xs rounded-full">Accounting Module</span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary transition-colors">
+                            <i class="fas fa-download mr-2"></i>Export All Reports
+                        </button>
+                        <button class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-calendar-alt mr-2"></i>Schedule Reports
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Report Categories -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-blue-100 rounded-lg">
+                            <i class="fas fa-chart-line text-blue-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-lg font-bold text-gray-900">Financial Statements</p>
+                            <p class="text-sm text-gray-600">P&L, Balance Sheet, Cash Flow</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-green-100 rounded-lg">
+                            <i class="fas fa-calculator text-green-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-lg font-bold text-gray-900">Management Reports</p>
+                            <p class="text-sm text-gray-600">Budget vs Actual, KPIs</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-yellow-100 rounded-lg">
+                            <i class="fas fa-receipt text-yellow-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-lg font-bold text-gray-900">Tax Reports</p>
+                            <p class="text-sm text-gray-600">VAT, Sales Tax, Income Tax</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-purple-100 rounded-lg">
+                            <i class="fas fa-search text-purple-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-lg font-bold text-gray-900">Audit Reports</p>
+                            <p class="text-sm text-gray-600">Compliance & Reconciliation</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="bg-white rounded-lg shadow mb-6">
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-8 px-6">
+                        <button class="tab-button py-4 px-1 border-b-2 border-primary font-medium text-sm text-primary" data-tab="financial">
+                            Financial Statements
+                        </button>
+                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="management">
+                            Management Reports
+                        </button>
+                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="tax">
+                            Tax Reports
+                        </button>
+                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="audit">
+                            Audit Reports
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Financial Statements Tab -->
+                <div id="financial-tab" class="tab-content p-6">
+                    <!-- Income Statement -->
+                    <div class="mb-8">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-semibold text-gray-900">Profit & Loss Statement</h3>
+                            <div class="flex space-x-2">
+                                <button class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                                    <i class="fas fa-eye mr-1"></i>View
+                                </button>
+                                <button class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                                    <i class="fas fa-download mr-1"></i>Export
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="bg-white rounded-lg p-4 border">
+                                    <h4 class="font-medium text-gray-900 mb-2">Revenue</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Sales Revenue</span>
+                                            <span class="font-medium">$485,250</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Service Revenue</span>
+                                            <span class="font-medium">$125,800</span>
+                                        </div>
+                                        <div class="flex justify-between border-t pt-2">
+                                            <span class="font-medium text-gray-900">Total Revenue</span>
+                                            <span class="font-bold text-green-600">$611,050</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-white rounded-lg p-4 border">
+                                    <h4 class="font-medium text-gray-900 mb-2">Expenses</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">COGS</span>
+                                            <span class="font-medium">$185,450</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Operating Expenses</span>
+                                            <span class="font-medium">$372,200</span>
+                                        </div>
+                                        <div class="flex justify-between border-t pt-2">
+                                            <span class="font-medium text-gray-900">Total Expenses</span>
+                                            <span class="font-bold text-red-600">$557,650</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-white rounded-lg p-4 border">
+                                    <h4 class="font-medium text-gray-900 mb-2">Net Income</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Gross Profit</span>
+                                            <span class="font-medium">$425,600</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Operating Income</span>
+                                            <span class="font-medium">$53,400</span>
+                                        </div>
+                                        <div class="flex justify-between border-t pt-2">
+                                            <span class="font-medium text-gray-900">Net Income</span>
+                                            <span class="font-bold text-primary">$53,400</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Balance Sheet -->
+                    <div class="mb-8">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-semibold text-gray-900">Balance Sheet</h3>
+                            <div class="flex space-x-2">
+                                <button class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                                    <i class="fas fa-eye mr-1"></i>View
+                                </button>
+                                <button class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                                    <i class="fas fa-download mr-1"></i>Export
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div>
+                                    <h4 class="font-semibold text-gray-900 mb-4">Assets</h4>
+                                    <div class="bg-white rounded-lg p-4 border">
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">Current Assets</span>
+                                                <span class="font-medium">$562,550</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">Fixed Assets</span>
+                                                <span class="font-medium">$1,364,700</span>
+                                            </div>
+                                            <div class="flex justify-between border-t pt-2">
+                                                <span class="font-bold text-gray-900">Total Assets</span>
+                                                <span class="font-bold text-blue-600">$1,927,250</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <h4 class="font-semibold text-gray-900 mb-4">Liabilities & Equity</h4>
+                                    <div class="bg-white rounded-lg p-4 border">
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">Current Liabilities</span>
+                                                <span class="font-medium">$96,200</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">Long-term Liabilities</span>
+                                                <span class="font-medium">$725,000</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">Total Equity</span>
+                                                <span class="font-medium">$1,106,050</span>
+                                            </div>
+                                            <div class="flex justify-between border-t pt-2">
+                                                <span class="font-bold text-gray-900">Total Liab. & Equity</span>
+                                                <span class="font-bold text-blue-600">$1,927,250</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cash Flow Statement -->
+                    <div class="mb-8">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-semibold text-gray-900">Cash Flow Statement</h3>
+                            <div class="flex space-x-2">
+                                <button class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                                    <i class="fas fa-eye mr-1"></i>View
+                                </button>
+                                <button class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                                    <i class="fas fa-download mr-1"></i>Export
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="bg-white rounded-lg p-4 border">
+                                    <h4 class="font-medium text-gray-900 mb-2">Operating Activities</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Net Income</span>
+                                            <span class="font-medium">$53,400</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Depreciation</span>
+                                            <span class="font-medium">$41,285</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Working Capital Changes</span>
+                                            <span class="font-medium">-$15,200</span>
+                                        </div>
+                                        <div class="flex justify-between border-t pt-2">
+                                            <span class="font-medium text-gray-900">Operating Cash Flow</span>
+                                            <span class="font-bold text-green-600">$79,485</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-white rounded-lg p-4 border">
+                                    <h4 class="font-medium text-gray-900 mb-2">Investing Activities</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Equipment Purchase</span>
+                                            <span class="font-medium">-$125,000</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Asset Disposal</span>
+                                            <span class="font-medium">$8,500</span>
+                                        </div>
+                                        <div class="flex justify-between border-t pt-2">
+                                            <span class="font-medium text-gray-900">Investing Cash Flow</span>
+                                            <span class="font-bold text-red-600">-$116,500</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-white rounded-lg p-4 border">
+                                    <h4 class="font-medium text-gray-900 mb-2">Financing Activities</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Loan Proceeds</span>
+                                            <span class="font-medium">$50,000</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Loan Payments</span>
+                                            <span class="font-medium">-$25,000</span>
+                                        </div>
+                                        <div class="flex justify-between border-t pt-2">
+                                            <span class="font-medium text-gray-900">Financing Cash Flow</span>
+                                            <span class="font-bold text-blue-600">$25,000</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 bg-white rounded-lg p-4 border">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-lg font-semibold text-gray-900">Net Change in Cash</span>
+                                    <span class="text-lg font-bold text-primary">-$12,015</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Management Reports Tab -->
+                <div id="management-tab" class="tab-content p-6 hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Budget vs Actual -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Budget vs Actual</h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Revenue</span>
+                                    <div class="text-right">
+                                        <div class="text-sm text-gray-500">Budget: $580,000</div>
+                                        <div class="text-sm font-medium">Actual: $611,050</div>
+                                        <div class="text-sm text-green-600">+5.4%</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Expenses</span>
+                                    <div class="text-right">
+                                        <div class="text-sm text-gray-500">Budget: $520,000</div>
+                                        <div class="text-sm font-medium">Actual: $557,650</div>
+                                        <div class="text-sm text-red-600">+7.2%</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex justify-between items-center border-t pt-2">
+                                    <span class="text-gray-600 font-medium">Net Income</span>
+                                    <div class="text-right">
+                                        <div class="text-sm text-gray-500">Budget: $60,000</div>
+                                        <div class="text-sm font-bold">Actual: $53,400</div>
+                                        <div class="text-sm text-red-600">-11.0%</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Key Performance Indicators -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Key Performance Indicators</h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Gross Margin</span>
+                                    <span class="font-medium text-green-600">69.6%</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Operating Margin</span>
+                                    <span class="font-medium text-blue-600">8.7%</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Current Ratio</span>
+                                    <span class="font-medium text-purple-600">5.85</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">ROA</span>
+                                    <span class="font-medium text-yellow-600">2.77%</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Debt-to-Equity</span>
+                                    <span class="font-medium text-red-600">0.74</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aging Reports -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Accounts Receivable Aging</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Current (0-30 days)</span>
+                                    <span class="font-medium">$28,450</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">31-60 days</span>
+                                    <span class="font-medium">$12,800</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">61-90 days</span>
+                                    <span class="font-medium">$4,200</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Over 90 days</span>
+                                    <span class="font-medium text-red-600">$1,400</span>
+                                </div>
+                                <div class="flex justify-between border-t pt-2">
+                                    <span class="font-medium text-gray-900">Total A/R</span>
+                                    <span class="font-bold">$46,850</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Department P&L -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Department P&L</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Sales Department</span>
+                                    <span class="font-medium text-green-600">$25,800</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Marketing Department</span>
+                                    <span class="font-medium text-blue-600">$18,200</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Operations Department</span>
+                                    <span class="font-medium text-purple-600">$12,400</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Admin Department</span>
+                                    <span class="font-medium text-red-600">-$3,000</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tax Reports Tab -->
+                <div id="tax-tab" class="tab-content p-6 hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- VAT Report -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">VAT/Sales Tax Report</h3>
+                            <div class="space-y-4">
+                                <div class="bg-green-50 p-4 rounded-lg">
+                                    <h4 class="font-medium text-green-900 mb-2">Tax Collected (Output VAT)</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-green-700">Standard Rate (10%)</span>
+                                            <span class="font-medium">$48,525</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-green-700">Reduced Rate (5%)</span>
+                                            <span class="font-medium">$6,290</span>
+                                        </div>
+                                        <div class="flex justify-between border-t pt-2">
+                                            <span class="font-medium text-green-900">Total Collected</span>
+                                            <span class="font-bold">$54,815</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-red-50 p-4 rounded-lg">
+                                    <h4 class="font-medium text-red-900 mb-2">Tax Paid (Input VAT)</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-red-700">Standard Rate (10%)</span>
+                                            <span class="font-medium">$18,545</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-red-700">Reduced Rate (5%)</span>
+                                            <span class="font-medium">$2,850</span>
+                                        </div>
+                                        <div class="flex justify-between border-t pt-2">
+                                            <span class="font-medium text-red-900">Total Paid</span>
+                                            <span class="font-bold">$21,395</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-blue-50 p-4 rounded-lg">
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-blue-900">Net VAT Payable</span>
+                                        <span class="font-bold text-blue-900">$33,420</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Income Tax Summary -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Income Tax Summary</h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Taxable Income</span>
+                                    <span class="font-medium">$53,400</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Tax Rate</span>
+                                    <span class="font-medium">25%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Tax Liability</span>
+                                    <span class="font-medium">$13,350</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Prepayments</span>
+                                    <span class="font-medium">$8,000</span>
+                                </div>
+                                <div class="flex justify-between border-t pt-2">
+                                    <span class="font-medium text-gray-900">Balance Due</span>
+                                    <span class="font-bold text-red-600">$5,350</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payroll Tax Report -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Payroll Tax Report</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Federal Income Tax</span>
+                                    <span class="font-medium">$42,850</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">State Income Tax</span>
+                                    <span class="font-medium">$18,450</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Social Security</span>
+                                    <span class="font-medium">$28,150</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Medicare</span>
+                                    <span class="font-medium">$8,150</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Unemployment Tax</span>
+                                    <span class="font-medium">$5,250</span>
+                                </div>
+                                <div class="flex justify-between border-t pt-2">
+                                    <span class="font-medium text-gray-900">Total Payroll Tax</span>
+                                    <span class="font-bold">$102,850</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tax Calendar -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Tax Calendar</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center p-2 bg-yellow-50 rounded">
+                                    <span class="text-yellow-700">VAT Return Due</span>
+                                    <span class="text-sm font-medium">Feb 28, 2024</span>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-red-50 rounded">
+                                    <span class="text-red-700">Quarterly Tax Due</span>
+                                    <span class="text-sm font-medium">Mar 15, 2024</span>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-blue-50 rounded">
+                                    <span class="text-blue-700">Annual Report Due</span>
+                                    <span class="text-sm font-medium">Apr 15, 2024</span>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-green-50 rounded">
+                                    <span class="text-green-700">Payroll Tax Due</span>
+                                    <span class="text-sm font-medium">Jan 31, 2024</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audit Reports Tab -->
+                <div id="audit-tab" class="tab-content p-6 hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Account Reconciliation -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Account Reconciliation Status</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center p-2 bg-green-50 rounded">
+                                    <span class="text-green-700">Cash Accounts</span>
+                                    <span class="text-green-600 font-medium">✓ Reconciled</span>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-green-50 rounded">
+                                    <span class="text-green-700">Accounts Receivable</span>
+                                    <span class="text-green-600 font-medium">✓ Reconciled</span>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-yellow-50 rounded">
+                                    <span class="text-yellow-700">Inventory</span>
+                                    <span class="text-yellow-600 font-medium">⚠ Pending</span>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-green-50 rounded">
+                                    <span class="text-green-700">Accounts Payable</span>
+                                    <span class="text-green-600 font-medium">✓ Reconciled</span>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-red-50 rounded">
+                                    <span class="text-red-700">Credit Card</span>
+                                    <span class="text-red-600 font-medium">✗ Unreconciled</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Compliance Checklist -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Compliance Checklist</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center p-2 bg-green-50 rounded">
+                                    <i class="fas fa-check-circle text-green-600 mr-3"></i>
+                                    <span class="text-green-700">Monthly Close Complete</span>
+                                </div>
+                                <div class="flex items-center p-2 bg-green-50 rounded">
+                                    <i class="fas fa-check-circle text-green-600 mr-3"></i>
+                                    <span class="text-green-700">Trial Balance Balanced</span>
+                                </div>
+                                <div class="flex items-center p-2 bg-yellow-50 rounded">
+                                    <i class="fas fa-exclamation-triangle text-yellow-600 mr-3"></i>
+                                    <span class="text-yellow-700">Depreciation Entries Pending</span>
+                                </div>
+                                <div class="flex items-center p-2 bg-green-50 rounded">
+                                    <i class="fas fa-check-circle text-green-600 mr-3"></i>
+                                    <span class="text-green-700">Backup Procedures Complete</span>
+                                </div>
+                                <div class="flex items-center p-2 bg-red-50 rounded">
+                                    <i class="fas fa-times-circle text-red-600 mr-3"></i>
+                                    <span class="text-red-700">Internal Controls Review Due</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Audit Trail -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Audit Trail</h3>
+                            <div class="space-y-3">
+                                <div class="text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="font-medium">JE-2024-001 Modified</span>
+                                        <span class="text-gray-500">2024-01-15 14:32</span>
+                                    </div>
+                                    <div class="text-gray-600">User: admin@company.com</div>
+                                </div>
+                                
+                                <div class="text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="font-medium">Account 1200 Balance Updated</span>
+                                        <span class="text-gray-500">2024-01-15 10:15</span>
+                                    </div>
+                                    <div class="text-gray-600">User: accounting@company.com</div>
+                                </div>
+                                
+                                <div class="text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="font-medium">Period Close Initiated</span>
+                                        <span class="text-gray-500">2024-01-31 17:45</span>
+                                    </div>
+                                    <div class="text-gray-600">User: controller@company.com</div>
+                                </div>
+                                
+                                <div class="text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="font-medium">Report Generated</span>
+                                        <span class="text-gray-500">2024-01-31 18:00</span>
+                                    </div>
+                                    <div class="text-gray-600">User: admin@company.com</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Data Integrity Check -->
+                        <div class="bg-white border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Data Integrity Check</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Total Journal Entries</span>
+                                    <span class="font-medium">1,247</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Balanced Entries</span>
+                                    <span class="font-medium text-green-600">1,247</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Unbalanced Entries</span>
+                                    <span class="font-medium text-red-600">0</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Orphaned Transactions</span>
+                                    <span class="font-medium text-red-600">0</span>
+                                </div>
+                                <div class="flex justify-between border-t pt-2">
+                                    <span class="font-medium text-gray-900">Data Integrity</span>
+                                    <span class="font-bold text-green-600">100%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COA Integration Notice -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-blue-600 text-lg mr-3 mt-1"></i>
+                    <div>
+                        <h4 class="text-blue-900 font-medium mb-2">Chart of Accounts Integration</h4>
+                        <p class="text-blue-800 text-sm">
+                            All financial reports are generated from the Chart of Accounts and reflect real-time account balances. 
+                            Reports automatically update when journal entries are posted, ensuring accurate and timely financial information for decision-making.
+                        </p>
+                    </div>
+                </div>            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // Tab functionality
+        function initTabs() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabName = button.getAttribute('data-tab');
+                    
+                    // Remove active classes
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('border-primary', 'text-primary');
+                        btn.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    
+                    tabContents.forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    
+                    // Add active classes
+                    button.classList.remove('border-transparent', 'text-gray-500');
+                    button.classList.add('border-primary', 'text-primary');
+                    
+                    // Show selected tab content
+                    document.getElementById(tabName + '-tab').classList.remove('hidden');
+                });
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initTabs();
+        });
+    </script>
+{% endblock %}

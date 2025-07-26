@@ -9,9 +9,9 @@ from .models import Company, Role, User
 from crm.models import Customer
 from sales.models import SalesOrder
 from inventory.models import StockItem
+from hr.models import Employee
 
 # Login view
-
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
@@ -36,16 +36,26 @@ def logout_view(request):
 # Dashboard view
 @login_required
 def dashboard(request):
-    company = request.user.company
-    stat_customers = Customer.objects.filter(company=company).count()
-    stat_sales = SalesOrder.objects.filter(company=company).count()
-    stat_inventory = StockItem.objects.filter(company=company).count()
+    company = request.user.company if request.user.company else None
+    
+    if company:
+        stat_customers = Customer.objects.filter(company=company).count()
+        stat_sales = SalesOrder.objects.filter(company=company).count()
+        stat_inventory = StockItem.objects.filter(company=company).count()
+        stat_employees = Employee.objects.filter(company=company).count()
+    else:
+        stat_customers = 0
+        stat_sales = 0
+        stat_inventory = 0
+        stat_employees = 0
+    
     context = {
         'stat_customers': stat_customers,
         'stat_sales': stat_sales,
         'stat_inventory': stat_inventory,
+        'stat_employees': stat_employees,
     }
-    return render(request, 'dashboard.html', context)
+    return render(request, 'dashboard_complete.html', context)
 
 def index(request):
     return render(request, 'index.html')
