@@ -8,13 +8,6 @@
                 "maxLambdaSize": "15mb",
                 "runtime": "python3.11"
             }
-        },
-        {
-            "src": "build_files.sh",
-            "use": "@vercel/static-build",
-            "config": {
-                "distDir": "staticfiles"
-            }
         }
     ],
     "routes": [
@@ -34,10 +27,5 @@
     "env": {
         "PYTHONPATH": "/var/task",
         "DJANGO_SETTINGS_MODULE": "setting.settings"
-    },
-    "functions": {
-        "setting/wsgi.py": {
-            "maxDuration": 30
-        }
     }
 } 
