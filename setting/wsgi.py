@@ -10,10 +10,12 @@ https://docs.djangoproject.com/en/5.2/howto/deployment/wsgi/
 import os
 from django.core.wsgi import get_wsgi_application
 
-# Use production settings for Vercel deployment
-if os.environ.get('VERCEL'):
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'setting.production')
-else:
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'setting.settings')
+# Set Django settings module (using single settings.py for all environments)
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'setting.settings')
 
+# Django WSGI application
 application = get_wsgi_application()
+
+# Vercel compatibility - provide both 'handler' and 'app' variables
+handler = application
+app = application
