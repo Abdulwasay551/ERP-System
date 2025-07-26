@@ -185,43 +185,39 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
-    BASE_DIR / 'static',
+    os.path.join(BASE_DIR, 'static'),
 ]
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
 
 # Environment-based configurations
 IS_PRODUCTION = env.bool('VERCEL', default=False) or not DEBUG
 
+# Create static directories if they don't exist (only in development)
+if not IS_PRODUCTION:
+    try:
+        os.makedirs(STATIC_ROOT, exist_ok=True)
+        os.makedirs(os.path.join(BASE_DIR, 'static'), exist_ok=True)
+    except OSError:
+        # Directory creation failed (e.g., read-only filesystem in production)
+        pass
+
 # WhiteNoise configuration for static files
 if IS_PRODUCTION:
-    # Production: Use simple static files storage for better compatibility with serverless
-    STORAGES = {
-        "default": {
-            "BACKEND": "django.core.files.storage.FileSystemStorage",
-        },
-        "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
-        },
-    }
-    WHITENOISE_USE_FINDERS = False
-    WHITENOISE_AUTOREFRESH = False
-    STATIC_ROOT = BASE_DIR / 'staticfiles'
-else:
-    # Development: Use manifest storage with finders
-    STORAGES = {
-        "default": {
-            "BACKEND": "django.core.files.storage.FileSystemStorage",
-        },
-        "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-        },
-    }
+    # Production: Use CompressedManifestStaticFilesStorage for better performance
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    # Add WhiteNoise configuration for better performance
     WHITENOISE_USE_FINDERS = True
     WHITENOISE_AUTOREFRESH = True
-    STATIC_ROOT = BASE_DIR / 'staticfiles'
+    WHITENOISE_INDEX_FILE = True
+    WHITENOISE_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+else:
+    # Development: Use default static files storage
+    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Celery settings (only for development)
 if not IS_PRODUCTION:
