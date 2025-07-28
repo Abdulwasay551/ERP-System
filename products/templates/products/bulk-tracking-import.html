@@ -1,0 +1,557 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Bulk Import Tracking Data - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .import-card {
+        background: white;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .step-indicator {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 30px;
+        position: relative;
+    }
+    
+    .step-indicator::before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #dee2e6;
+        z-index: 1;
+    }
+    
+    .step {
+        background: white;
+        border: 3px solid #dee2e6;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: #6c757d;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .step.active {
+        border-color: #007bff;
+        background: #007bff;
+        color: white;
+    }
+    
+    .step.completed {
+        border-color: #28a745;
+        background: #28a745;
+        color: white;
+    }
+    
+    .import-section {
+        margin-bottom: 30px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #007bff;
+    }
+    
+    .import-section h5 {
+        color: #007bff;
+        margin-bottom: 15px;
+    }
+    
+    .textarea-large {
+        min-height: 200px;
+        font-family: 'Courier New', monospace;
+    }
+    
+    .preview-table {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+    }
+    
+    .error-list {
+        max-height: 200px;
+        overflow-y: auto;
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 4px;
+        padding: 10px;
+    }
+    
+    .success-list {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-radius: 4px;
+        padding: 10px;
+    }
+    
+    .tracking-example {
+        background: #e3f2fd;
+        border-radius: 4px;
+        padding: 15px;
+        margin: 15px 0;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+    }
+    
+    .format-help {
+        background: #fff3e0;
+        border-radius: 4px;
+        padding: 15px;
+        margin: 15px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-upload mr-2"></i>Bulk Import Tracking Data</h2>
+                <a href="{% url 'products:tracking_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left mr-1"></i>Back to Tracking List
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="import-card">
+                <!-- Step Indicator -->
+                <div class="step-indicator">
+                    <div class="step active">1</div>
+                    <div class="step">2</div>
+                    <div class="step">3</div>
+                </div>
+                
+                <form method="post" id="importForm">
+                    {% csrf_token %}
+                    
+                    <!-- Step 1: Product Selection -->
+                    <div class="import-section">
+                        <h5><i class="fas fa-box mr-2"></i>Step 1: Select Product</h5>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.product.id_for_label }}">
+                                Product <span class="text-danger">*</span>
+                            </label>
+                            {{ form.product|add_class:"form-control" }}
+                            {% if form.product.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.product.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text text-muted">
+                                Select the product for which you want to import tracking data
+                            </div>
+                        </div>
+
+                        <!-- Product Info Display -->
+                        <div id="productInfo" class="alert alert-info" style="display: none;">
+                            <h6><i class="fas fa-info-circle mr-2"></i>Product Information</h6>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div><strong>Name:</strong> <span id="productName"></span></div>
+                                    <div><strong>SKU:</strong> <span id="productSku"></span></div>
+                                    <div><strong>Tracking Method:</strong> <span id="productTracking"></span></div>
+                                    <div><strong>Requires Individual Tracking:</strong> <span id="requiresIndividual"></span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.warehouse.id_for_label }}">Default Warehouse</label>
+                            {{ form.warehouse|add_class:"form-control" }}
+                            {% if form.warehouse.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.warehouse.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text text-muted">
+                                Optional: Set a default warehouse for all imported tracking units
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Tracking Data Input -->
+                    <div class="import-section">
+                        <h5><i class="fas fa-barcode mr-2"></i>Step 2: Enter Tracking Data</h5>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.tracking_data.id_for_label }}">
+                                Tracking Numbers <span class="text-danger">*</span>
+                            </label>
+                            {{ form.tracking_data|add_class:"form-control textarea-large" }}
+                            {% if form.tracking_data.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.tracking_data.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text text-muted">
+                                Enter one tracking number per line. The format depends on the selected product's tracking method.
+                            </div>
+                        </div>
+
+                        <!-- Format Help -->
+                        <div id="formatHelp" class="format-help" style="display: none;">
+                            <h6><i class="fas fa-question-circle mr-2"></i>Format Guide</h6>
+                            <div id="formatDetails"></div>
+                        </div>
+
+                        <!-- Examples -->
+                        <div id="trackingExamples" style="display: none;">
+                            <h6>Examples:</h6>
+                            <div class="tracking-example">
+                                <div id="exampleContent"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Preview & Import -->
+                    <div class="import-section">
+                        <h5><i class="fas fa-eye mr-2"></i>Step 3: Preview & Import</h5>
+                        
+                        <div class="form-group">
+                            <button type="button" class="btn btn-outline-primary" onclick="previewImport()">
+                                <i class="fas fa-eye mr-1"></i>Preview Import
+                            </button>
+                            <div class="form-text text-muted">
+                                Preview the tracking numbers before importing to check for duplicates or errors
+                            </div>
+                        </div>
+
+                        <!-- Preview Results -->
+                        <div id="previewResults" style="display: none;">
+                            <h6>Import Preview:</h6>
+                            <div id="previewContent"></div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="text-right">
+                        <button type="submit" class="btn btn-success btn-lg" id="submitBtn" disabled>
+                            <i class="fas fa-upload mr-1"></i>Import Tracking Data
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Help Panel -->
+        <div class="col-md-4">
+            <!-- Import Tips -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6><i class="fas fa-lightbulb mr-2"></i>Import Tips</h6>
+                </div>
+                <div class="card-body">
+                    <div class="small">
+                        <h6>Before Importing:</h6>
+                        <ul>
+                            <li>Ensure all tracking numbers are unique</li>
+                            <li>Use the correct format for each tracking method</li>
+                            <li>Remove any duplicate entries</li>
+                            <li>Check that tracking numbers don't already exist</li>
+                        </ul>
+                        
+                        <h6>Tracking Methods:</h6>
+                        <ul>
+                            <li><strong>Serial:</strong> Alphanumeric codes</li>
+                            <li><strong>IMEI:</strong> 15-digit numbers</li>
+                            <li><strong>Barcode:</strong> Various formats</li>
+                            <li><strong>Batch:</strong> Batch/lot numbers</li>
+                        </ul>
+                        
+                        <h6>Common Issues:</h6>
+                        <ul>
+                            <li>Duplicate tracking numbers</li>
+                            <li>Invalid format for tracking method</li>
+                            <li>Empty lines in input data</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sample Data -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6><i class="fas fa-file-alt mr-2"></i>Sample Data</h6>
+                </div>
+                <div class="card-body">
+                    <div class="small">
+                        <h6>Serial Numbers:</h6>
+                        <div class="tracking-example">
+SN001234567<br>
+SN001234568<br>
+SN001234569
+                        </div>
+                        
+                        <h6>IMEI Numbers:</h6>
+                        <div class="tracking-example">
+123456789012345<br>
+123456789012346<br>
+123456789012347
+                        </div>
+                        
+                        <h6>Barcodes:</h6>
+                        <div class="tracking-example">
+1234567890123<br>
+1234567890124<br>
+1234567890125
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import Status -->
+            <div id="importStatus" class="card" style="display: none;">
+                <div class="card-header">
+                    <h6><i class="fas fa-info-circle mr-2"></i>Import Status</h6>
+                </div>
+                <div class="card-body">
+                    <div id="importStatusContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize form
+    initializeForm();
+    
+    // Product selection change handler
+    $('#{{ form.product.id_for_label }}').change(function() {
+        const productId = $(this).val();
+        if (productId) {
+            loadProductInfo(productId);
+        } else {
+            hideProductInfo();
+        }
+    });
+    
+    // Enable/disable submit button based on form validation
+    $('#{{ form.tracking_data.id_for_label }}').on('input', function() {
+        validateForm();
+    });
+});
+
+function initializeForm() {
+    validateForm();
+}
+
+function loadProductInfo(productId) {
+    $.ajax({
+        url: '{% url "products:ajax_product_tracking_info" %}',
+        data: { product_id: productId },
+        dataType: 'json',
+        success: function(data) {
+            if (data.success) {
+                showProductInfo(data);
+                showFormatHelp(data);
+                updateStepIndicator(2);
+            } else {
+                alert('Error loading product information: ' + data.error);
+            }
+        },
+        error: function() {
+            alert('Error loading product information');
+        }
+    });
+}
+
+function showProductInfo(data) {
+    $('#productName').text(data.product_name || 'N/A');
+    $('#productSku').text(data.product_sku || 'N/A');
+    $('#productTracking').text(data.tracking_method_display || 'N/A');
+    $('#requiresIndividual').text(data.requires_individual_tracking ? 'Yes' : 'No');
+    
+    $('#productInfo').show();
+}
+
+function hideProductInfo() {
+    $('#productInfo').hide();
+    $('#formatHelp').hide();
+    $('#trackingExamples').hide();
+    updateStepIndicator(1);
+}
+
+function showFormatHelp(data) {
+    let formatDetails = '';
+    let examples = '';
+    
+    switch(data.tracking_method) {
+        case 'serial':
+            formatDetails = 'Enter unique serial numbers, one per line. Alphanumeric codes are accepted.';
+            examples = 'SN001234567\nSN001234568\nSN001234569';
+            break;
+        case 'imei':
+            formatDetails = 'Enter 15-digit IMEI numbers, one per line. Only numeric values are accepted.';
+            examples = '123456789012345\n123456789012346\n123456789012347';
+            break;
+        case 'barcode':
+            formatDetails = 'Enter barcode values, one per line. Various formats are supported.';
+            examples = '1234567890123\n1234567890124\n1234567890125';
+            break;
+        case 'batch':
+            formatDetails = 'Enter batch/lot numbers, one per line. Alphanumeric codes are accepted.';
+            examples = 'BATCH001\nBATCH002\nBATCH003';
+            break;
+        default:
+            formatDetails = 'Select a trackable product to see format requirements.';
+            examples = '';
+    }
+    
+    $('#formatDetails').text(formatDetails);
+    $('#exampleContent').html(examples.replace(/\n/g, '<br>'));
+    
+    $('#formatHelp').show();
+    if (examples) {
+        $('#trackingExamples').show();
+    }
+}
+
+function previewImport() {
+    const productId = $('#{{ form.product.id_for_label }}').val();
+    const trackingData = $('#{{ form.tracking_data.id_for_label }}').val();
+    
+    if (!productId) {
+        alert('Please select a product first');
+        return;
+    }
+    
+    if (!trackingData.trim()) {
+        alert('Please enter tracking data');
+        return;
+    }
+    
+    // Parse tracking data
+    const trackingNumbers = trackingData.trim().split('\n').map(line => line.trim()).filter(line => line);
+    
+    if (trackingNumbers.length === 0) {
+        alert('No valid tracking numbers found');
+        return;
+    }
+    
+    // Check for duplicates
+    const duplicates = trackingNumbers.filter((item, index) => trackingNumbers.indexOf(item) !== index);
+    const unique = [...new Set(trackingNumbers)];
+    
+    let previewHtml = `
+        <div class="alert alert-info">
+            <strong>Import Summary:</strong><br>
+            Total entries: ${trackingNumbers.length}<br>
+            Unique entries: ${unique.length}<br>
+            ${duplicates.length > 0 ? `Duplicates found: ${duplicates.length}` : 'No duplicates found'}
+        </div>
+    `;
+    
+    if (duplicates.length > 0) {
+        previewHtml += `
+            <div class="alert alert-warning">
+                <strong>Duplicate tracking numbers:</strong><br>
+                ${duplicates.join(', ')}
+            </div>
+        `;
+    }
+    
+    previewHtml += `
+        <div class="preview-table">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Tracking Number</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    unique.forEach((number, index) => {
+        previewHtml += `
+            <tr>
+                <td>${index + 1}</td>
+                <td><code>${number}</code></td>
+                <td><span class="badge badge-success">Ready</span></td>
+            </tr>
+        `;
+    });
+    
+    previewHtml += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    $('#previewContent').html(previewHtml);
+    $('#previewResults').show();
+    updateStepIndicator(3);
+    
+    // Enable submit button if no duplicates
+    if (duplicates.length === 0 && unique.length > 0) {
+        $('#submitBtn').prop('disabled', false);
+    }
+}
+
+function validateForm() {
+    const productId = $('#{{ form.product.id_for_label }}').val();
+    const trackingData = $('#{{ form.tracking_data.id_for_label }}').val().trim();
+    
+    if (productId && trackingData) {
+        // Enable preview but keep submit disabled until preview is run
+        return true;
+    }
+    
+    $('#submitBtn').prop('disabled', true);
+    return false;
+}
+
+function updateStepIndicator(currentStep) {
+    $('.step').removeClass('active completed');
+    
+    for (let i = 1; i <= 3; i++) {
+        const step = $(`.step:nth-child(${i})`);
+        if (i < currentStep) {
+            step.addClass('completed');
+        } else if (i === currentStep) {
+            step.addClass('active');
+        }
+    }
+}
+
+// Form submission handler
+$('#importForm').submit(function(e) {
+    if (!validateForm()) {
+        e.preventDefault();
+        alert('Please complete all required fields');
+        return false;
+    }
+    
+    // Show loading state
+    $('#submitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Importing...');
+    
+    // The form will submit normally
+    return true;
+});
+</script>
+{% endblock %}

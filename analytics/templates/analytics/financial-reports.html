@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Financial Reports - Analytics{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-header {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    .financial-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+        transition: transform 0.2s ease-in-out;
+    }
+    .financial-card:hover {
+        transform: translateY(-2px);
+    }
+    .account-row {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .account-row:last-child {
+        border-bottom: none;
+    }
+    .account-type {
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .type-asset {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+    .type-liability {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    .type-equity {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .type-income {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+    .type-expense {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    .balance-positive {
+        color: #28a745;
+        font-weight: 600;
+    }
+    .balance-negative {
+        color: #dc3545;
+        font-weight: 600;
+    }
+    .summary-section {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Report Header -->
+    <div class="report-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-1">Financial Reports</h1>
+                <p class="mb-0 opacity-75">Account balances, profit & loss, and financial statements</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-light btn-sm" onclick="generateBalanceSheet()">
+                    <i class="fas fa-balance-scale me-1"></i> Balance Sheet
+                </button>
+                <button class="btn btn-light btn-sm" onclick="generateProfitLoss()">
+                    <i class="fas fa-chart-line me-1"></i> P&L Statement
+                </button>
+                <button class="btn btn-light btn-sm" onclick="exportFinancials()">
+                    <i class="fas fa-file-excel me-1"></i> Export
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Summary -->
+    <div class="summary-section">
+        <h5 class="mb-3">Financial Summary</h5>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="h4 text-info mb-1">$0.00</div>
+                    <div class="text-muted">Total Assets</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="h4 text-warning mb-1">$0.00</div>
+                    <div class="text-muted">Total Liabilities</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="h4 text-success mb-1">$0.00</div>
+                    <div class="text-muted">Total Equity</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="h4 text-primary mb-1">$0.00</div>
+                    <div class="text-muted">Net Income</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Categories -->
+    <div class="row g-3">
+        <!-- Assets -->
+        <div class="col-xl-6 col-lg-12">
+            <div class="financial-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-coins me-2 text-info"></i>
+                        Assets
+                    </h5>
+                    <span class="badge bg-info">{{ accounts_data|length }} accounts</span>
+                </div>
+                
+                {% if accounts_data %}
+                    {% for account in accounts_data %}
+                        {% if account.account_type == 'asset' %}
+                        <div class="account-row">
+                            <div>
+                                <div class="fw-bold">{{ account.name }}</div>
+                                <div class="small text-muted">{{ account.code }}</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="balance-positive">$0.00</div>
+                                <span class="account-type type-asset">Asset</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-coins fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No asset accounts found</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Liabilities -->
+        <div class="col-xl-6 col-lg-12">
+            <div class="financial-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-credit-card me-2 text-warning"></i>
+                        Liabilities
+                    </h5>
+                    <span class="badge bg-warning">0 accounts</span>
+                </div>
+                
+                <div class="text-center py-4">
+                    <i class="fas fa-credit-card fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No liability accounts found</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- Income -->
+        <div class="col-xl-6 col-lg-12">
+            <div class="financial-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-arrow-up me-2 text-success"></i>
+                        Income
+                    </h5>
+                    <span class="badge bg-success">0 accounts</span>
+                </div>
+                
+                <div class="text-center py-4">
+                    <i class="fas fa-arrow-up fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No income accounts found</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expenses -->
+        <div class="col-xl-6 col-lg-12">
+            <div class="financial-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-arrow-down me-2 text-danger"></i>
+                        Expenses
+                    </h5>
+                    <span class="badge bg-danger">0 accounts</span>
+                </div>
+                
+                <div class="text-center py-4">
+                    <i class="fas fa-arrow-down fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No expense accounts found</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart of Accounts Table -->
+    <div class="financial-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Chart of Accounts</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary btn-sm" onclick="addNewAccount()">
+                    <i class="fas fa-plus me-1"></i> Add Account
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="printChart()">
+                    <i class="fas fa-print me-1"></i> Print
+                </button>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Account Code</th>
+                        <th>Account Name</th>
+                        <th>Type</th>
+                        <th>Balance</th>
+                        <th>Parent Account</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if accounts_data %}
+                        {% for account in accounts_data %}
+                        <tr>
+                            <td><strong>{{ account.code }}</strong></td>
+                            <td>{{ account.name }}</td>
+                            <td>
+                                <span class="account-type type-asset">
+                                    {{ account.account_type|title|default:"Asset" }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="balance-positive">$0.00</span>
+                            </td>
+                            <td>{{ account.parent.name|default:"—" }}</td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#"><i class="fas fa-edit me-2"></i>Edit</a></li>
+                                        <li><a class="dropdown-item" href="#"><i class="fas fa-list me-2"></i>View Transactions</a></li>
+                                        <li><a class="dropdown-item" href="#"><i class="fas fa-chart-line me-2"></i>Account Report</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-trash me-2"></i>Delete</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fas fa-calculator fa-3x mb-3"></i>
+                                    <p class="mb-0">No accounts found</p>
+                                    <small>Chart of accounts will appear here once accounts are created</small>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-warning mt-3">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Notice:</strong> {{ error }}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function generateBalanceSheet() {
+        alert('Balance Sheet generation will be implemented soon!');
+    }
+
+    function generateProfitLoss() {
+        alert('Profit & Loss statement generation will be implemented soon!');
+    }
+
+    function exportFinancials() {
+        alert('Financial export functionality will be implemented soon!');
+    }
+
+    function addNewAccount() {
+        alert('Add new account functionality will be implemented soon!');
+    }
+
+    function printChart() {
+        window.print();
+    }
+</script>
+{% endblock %}

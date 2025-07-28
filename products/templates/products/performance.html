@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Product Performance | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
+    }
+    .chart-container {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Product Performance</h1>
+                <p class="text-gray-600">Analyze product catalog performance and trends</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'products:dashboard' %}" class="action-btn bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Product Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ stats.total_products }}</h3>
+                        <p class="text-gray-600">Total Products</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ stats.active_products }}</h3>
+                        <p class="text-gray-600">Active Products</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ tracking_stats.total_tracked }}</h3>
+                        <p class="text-gray-600">Tracked Items</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ tracking_stats.available_items }}</h3>
+                        <p class="text-gray-600">Available Items</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tracking Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="chart-container rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Tracking Methods</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Serial Numbers</span>
+                        <span class="font-bold text-blue-600">{{ tracking_stats.serial_tracked }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">IMEI Numbers</span>
+                        <span class="font-bold text-yellow-600">{{ tracking_stats.imei_tracked }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Barcodes</span>
+                        <span class="font-bold text-purple-600">{{ tracking_stats.barcode_tracked }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Categories</h3>
+                <div class="space-y-3">
+                    {% for category in stats.top_categories|slice:":5" %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">{{ category.category__name|default:"No Category" }}</span>
+                        <span class="font-bold text-green-600">{{ category.count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="chart-container rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Product Types</h3>
+                <div class="space-y-3">
+                    {% for type in stats.product_types %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">{{ type.product_type|capfirst }}</span>
+                        <span class="font-bold text-indigo-600">{{ type.count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Insights -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="card-modern rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Product Distribution</h3>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>Active Products</span>
+                            <span>{{ stats.active_products }}/{{ stats.total_products }}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-green-600 h-2 rounded-full" style="width: {% if stats.total_products %}{% widthratio stats.active_products stats.total_products 100 %}%{% else %}0%{% endif %}"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>Tracked Items</span>
+                            <span>{{ tracking_stats.total_tracked }}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: {% if tracking_stats.total_tracked %}{% widthratio tracking_stats.available_items tracking_stats.total_tracked 100 %}%{% else %}0%{% endif %}"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">{{ tracking_stats.available_items }} available</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-modern rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                <div class="space-y-3">
+                    <a href="{% url 'products:list' %}" class="block w-full text-left p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                            <span class="font-medium">View All Products</span>
+                        </div>
+                    </a>
+                    
+                    <a href="{% url 'products:tracking_list' %}" class="block w-full text-left p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span class="font-medium">Manage Tracking</span>
+                        </div>
+                    </a>
+                    
+                    <a href="{% url 'products:category_list' %}" class="block w-full text-left p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 text-purple-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                            </svg>
+                            <span class="font-medium">Manage Categories</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

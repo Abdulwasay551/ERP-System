@@ -1,0 +1,505 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ tracking_unit.get_tracking_value }} - Tracking Detail - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tracking-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .tracking-number {
+        font-family: 'Courier New', monospace;
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    
+    .info-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 5px;
+    }
+    
+    .info-value {
+        font-size: 1.1rem;
+        color: #495057;
+        margin-bottom: 15px;
+    }
+    
+    .status-badge {
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+    }
+    
+    .expiry-badge {
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+    }
+    
+    .expired {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .expiring-soon {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    
+    .fresh {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .movement-timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .movement-timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #dee2e6;
+    }
+    
+    .movement-item {
+        position: relative;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .movement-item::before {
+        content: '';
+        position: absolute;
+        left: -22px;
+        top: 20px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #007bff;
+        border: 2px solid white;
+    }
+    
+    .movement-item.in::before {
+        background: #28a745;
+    }
+    
+    .movement-item.out::before {
+        background: #dc3545;
+    }
+    
+    .movement-item.transfer::before {
+        background: #ffc107;
+    }
+    
+    .qr-code {
+        max-width: 200px;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 10px;
+        background: white;
+    }
+    
+    .product-image {
+        max-width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="tracking-header">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="tracking-number">{{ tracking_unit.get_tracking_value }}</div>
+                        <h4 class="mb-2">{{ tracking_unit.product.name }}</h4>
+                        <p class="mb-0 opacity-75">{{ tracking_unit.product.get_tracking_method_display }} Tracking</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="btn-group mb-3">
+                            <a href="{% url 'products:tracking_edit' tracking_unit.pk %}" class="btn btn-light">
+                                <i class="fas fa-edit mr-1"></i>Edit
+                            </a>
+                            <a href="{% url 'products:tracking_list' %}" class="btn btn-outline-light">
+                                <i class="fas fa-arrow-left mr-1"></i>Back to List
+                            </a>
+                        </div>
+                        <div>
+                            <span class="status-badge badge-{{ tracking_unit.get_status_color }}">
+                                {{ tracking_unit.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Left Column - Product & Tracking Info -->
+        <div class="col-md-8">
+            <!-- Product Information -->
+            <div class="info-card">
+                <h5 class="mb-3"><i class="fas fa-box mr-2"></i>Product Information</h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        {% if tracking_unit.product.image %}
+                            <img src="{{ tracking_unit.product.image.url }}" alt="{{ tracking_unit.product.name }}" class="product-image w-100">
+                        {% else %}
+                            <div class="product-image w-100 d-flex align-items-center justify-content-center bg-light">
+                                <i class="fas fa-box fa-2x text-muted"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-9">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="info-label">Product Name</div>
+                                <div class="info-value">{{ tracking_unit.product.name }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-label">SKU</div>
+                                <div class="info-value">{{ tracking_unit.product.sku }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-label">Category</div>
+                                <div class="info-value">{{ tracking_unit.product.category.name|default:"N/A" }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-label">Brand</div>
+                                <div class="info-value">{{ tracking_unit.product.brand|default:"N/A" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tracking Details -->
+            <div class="info-card">
+                <h5 class="mb-3"><i class="fas fa-barcode mr-2"></i>Tracking Details</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="info-label">{{ tracking_unit.product.get_tracking_method_display }} Number</div>
+                        <div class="info-value tracking-number" style="font-size: 1.2rem;">{{ tracking_unit.get_tracking_value }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-label">Status</div>
+                        <div class="info-value">
+                            <span class="badge badge-{{ tracking_unit.get_status_color }}">
+                                {{ tracking_unit.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                    {% if tracking_unit.batch_number %}
+                    <div class="col-md-6">
+                        <div class="info-label">Batch Number</div>
+                        <div class="info-value">{{ tracking_unit.batch_number }}</div>
+                    </div>
+                    {% endif %}
+                    <div class="col-md-6">
+                        <div class="info-label">Quality Status</div>
+                        <div class="info-value">
+                            <span class="badge badge-{{ tracking_unit.get_quality_status_color }}">
+                                {{ tracking_unit.get_quality_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                    {% if tracking_unit.expiry_date %}
+                    <div class="col-md-6">
+                        <div class="info-label">Expiry Date</div>
+                        <div class="info-value">
+                            <span class="expiry-badge {% if tracking_unit.is_expired %}expired{% elif tracking_unit.is_expiring_soon %}expiring-soon{% else %}fresh{% endif %}">
+                                {{ tracking_unit.expiry_date|date:"F j, Y" }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if tracking_unit.manufacture_date %}
+                    <div class="col-md-6">
+                        <div class="info-label">Manufacture Date</div>
+                        <div class="info-value">{{ tracking_unit.manufacture_date|date:"F j, Y" }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Location & Supplier Info -->
+            <div class="info-card">
+                <h5 class="mb-3"><i class="fas fa-map-marker-alt mr-2"></i>Location & Supplier</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="info-label">Current Warehouse</div>
+                        <div class="info-value">
+                            {% if tracking_unit.current_warehouse %}
+                                {{ tracking_unit.current_warehouse.name }}
+                            {% else %}
+                                <span class="text-muted">Not assigned</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-label">Supplier</div>
+                        <div class="info-value">
+                            {% if tracking_unit.supplier %}
+                                {{ tracking_unit.supplier.name }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if tracking_unit.location_details %}
+                    <div class="col-md-12">
+                        <div class="info-label">Location Details</div>
+                        <div class="info-value">{{ tracking_unit.location_details }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Movement History -->
+            <div class="info-card">
+                <h5 class="mb-3"><i class="fas fa-history mr-2"></i>Movement History</h5>
+                {% if movements %}
+                    <div class="movement-timeline">
+                        {% for movement in movements %}
+                        <div class="movement-item {{ movement.movement_type }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ movement.get_movement_type_display }}</h6>
+                                    <p class="mb-1">{{ movement.notes|default:"No description" }}</p>
+                                    <small class="text-muted">
+                                        {{ movement.timestamp|date:"F j, Y g:i A" }}
+                                        {% if movement.created_by %}
+                                            by {{ movement.created_by.get_full_name|default:movement.created_by.username }}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                <div class="text-right">
+                                    {% if movement.quantity %}
+                                        <span class="badge badge-info">Qty: {{ movement.quantity }}</span>
+                                    {% endif %}
+                                    {% if movement.warehouse %}
+                                        <div class="small text-muted">{{ movement.warehouse.name }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-history fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">No movement history recorded for this tracking unit.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right Column - QR Code & Actions -->
+        <div class="col-md-4">
+            <!-- QR Code -->
+            <div class="info-card text-center">
+                <h5 class="mb-3"><i class="fas fa-qrcode mr-2"></i>QR Code</h5>
+                <div class="mb-3">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ tracking_unit.get_tracking_value }}" 
+                         alt="QR Code" class="qr-code">
+                </div>
+                <small class="text-muted">Scan to view tracking details</small>
+                <div class="mt-3">
+                    <button class="btn btn-sm btn-outline-primary" onclick="printQRCode()">
+                        <i class="fas fa-print mr-1"></i>Print QR Code
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="info-card">
+                <h5 class="mb-3"><i class="fas fa-bolt mr-2"></i>Quick Actions</h5>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'products:tracking_edit' tracking_unit.pk %}" class="btn btn-primary">
+                        <i class="fas fa-edit mr-1"></i>Edit Details
+                    </a>
+                    {% if tracking_unit.status == 'available' %}
+                    <button class="btn btn-warning" onclick="updateStatus('reserved')">
+                        <i class="fas fa-lock mr-1"></i>Reserve Item
+                    </button>
+                    {% elif tracking_unit.status == 'reserved' %}
+                    <button class="btn btn-success" onclick="updateStatus('available')">
+                        <i class="fas fa-unlock mr-1"></i>Release Reserve
+                    </button>
+                    {% endif %}
+                    {% if tracking_unit.quality_status != 'quarantine' %}
+                    <button class="btn btn-danger" onclick="updateQualityStatus('quarantine')">
+                        <i class="fas fa-shield-alt mr-1"></i>Quarantine
+                    </button>
+                    {% else %}
+                    <button class="btn btn-success" onclick="updateQualityStatus('passed')">
+                        <i class="fas fa-check mr-1"></i>Release Quarantine
+                    </button>
+                    {% endif %}
+                    <a href="{% url 'products:detail' tracking_unit.product.pk %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-box mr-1"></i>View Product
+                    </a>
+                </div>
+            </div>
+
+            <!-- Timeline Summary -->
+            <div class="info-card">
+                <h5 class="mb-3"><i class="fas fa-clock mr-2"></i>Timeline</h5>
+                <div class="small">
+                    <div class="d-flex justify-content-between">
+                        <span>Created:</span>
+                        <span>{{ tracking_unit.created_at|date:"M j, Y" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Last Updated:</span>
+                        <span>{{ tracking_unit.updated_at|date:"M j, Y" }}</span>
+                    </div>
+                    {% if tracking_unit.manufacture_date %}
+                    <div class="d-flex justify-content-between">
+                        <span>Manufactured:</span>
+                        <span>{{ tracking_unit.manufacture_date|date:"M j, Y" }}</span>
+                    </div>
+                    {% endif %}
+                    {% if tracking_unit.expiry_date %}
+                    <div class="d-flex justify-content-between">
+                        <span>Expires:</span>
+                        <span>{{ tracking_unit.expiry_date|date:"M j, Y" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function printQRCode() {
+    const qrCodeImg = document.querySelector('.qr-code');
+    const trackingValue = '{{ tracking_unit.get_tracking_value }}';
+    const productName = '{{ tracking_unit.product.name }}';
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>QR Code - ${trackingValue}</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        text-align: center;
+                        margin: 20px;
+                    }
+                    .qr-code {
+                        max-width: 300px;
+                        margin: 20px 0;
+                    }
+                    .tracking-info {
+                        margin-top: 20px;
+                        font-size: 14px;
+                    }
+                </style>
+            </head>
+            <body>
+                <h2>${productName}</h2>
+                <img src="${qrCodeImg.src}" alt="QR Code" class="qr-code">
+                <div class="tracking-info">
+                    <strong>Tracking Number: ${trackingValue}</strong>
+                </div>
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+function updateStatus(newStatus) {
+    if (confirm(`Are you sure you want to change the status to ${newStatus}?`)) {
+        // Implementation for status update via AJAX
+        fetch(`{% url 'products:tracking_detail' tracking_unit.pk %}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'update_status',
+                status: newStatus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error updating status: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    }
+}
+
+function updateQualityStatus(newStatus) {
+    if (confirm(`Are you sure you want to change the quality status to ${newStatus}?`)) {
+        // Implementation for quality status update via AJAX
+        fetch(`{% url 'products:tracking_detail' tracking_unit.pk %}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'update_quality_status',
+                quality_status: newStatus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error updating quality status: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    }
+}
+</script>
+{% endblock %}

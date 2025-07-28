@@ -1,0 +1,76 @@
+{% load static %}
+<!-- Products Module Sidebar -->
+<div class="sidebar-content">
+    <!-- Logo/Back Section -->
+    <div class="sidebar-logo p-4 border-b border-white/20">
+        <div class="flex items-center space-x-3 min-h-[3rem]">
+            <a href="{% url 'dashboard' %}" class="w-12 h-12 bg-white/20 backdrop-blur-md hover:bg-white/30 rounded-full flex items-center justify-center transition-all flex-shrink-0 border border-white/30">
+                <i class="fas fa-arrow-left text-white text-base"></i>
+            </a>
+            <span class="text-xl font-bold sidebar-text whitespace-nowrap text-white">Products</span>
+        </div>
+    </div>
+
+    <!-- Navigation Items -->
+    <nav class="sidebar-nav flex-1 py-4 space-y-2 mt-2">
+        <!-- Dashboard -->
+        <a href="{% url 'products:dashboard' %}" class="sidebar-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <i class="fas fa-tachometer-alt sidebar-icon"></i>
+            <span class="sidebar-text">Dashboard</span>
+        </a>
+
+        <!-- All Products -->
+        <a href="{% url 'products:list' %}" class="sidebar-item {% if request.resolver_match.url_name == 'list' %}active{% endif %}">
+            <i class="fas fa-list sidebar-icon"></i>
+            <span class="sidebar-text">All Products</span>
+        </a>
+
+        <!-- Add New Product -->
+        <a href="{% url 'products:create' %}" class="sidebar-item {% if request.resolver_match.url_name == 'create' %}active{% endif %}">
+            <i class="fas fa-plus-circle sidebar-icon"></i>
+            <span class="sidebar-text">Add New Product</span>
+        </a>
+
+        <!-- Product Categories -->
+        <a href="{% url 'products:category_list' %}" class="sidebar-item {% if request.resolver_match.url_name == 'category_list' %}active{% endif %}">
+            <i class="fas fa-tags sidebar-icon"></i>
+            <span class="sidebar-text">Categories</span>
+        </a>
+
+        <!-- Product Variants -->
+        <a href="{% url 'products:variant_list' %}" class="sidebar-item">
+            <i class="fas fa-clone sidebar-icon"></i>
+            <span class="sidebar-text">Product Variants</span>
+        </a>
+
+        <!-- Product Tracking -->
+        <a href="{% url 'products:tracking_list' %}" class="sidebar-item">
+            <i class="fas fa-barcode sidebar-icon"></i>
+            <span class="sidebar-text">Inventory Tracking</span>
+        </a>
+
+        <!-- Product Attributes -->
+        <a href="{% url 'products:attribute_list' %}" class="sidebar-item {% if request.resolver_match.url_name == 'attribute_list' %}active{% endif %}">
+            <i class="fas fa-sliders-h sidebar-icon"></i>
+            <span class="sidebar-text">Attributes</span>
+        </a>
+
+        <!-- Product Performance -->
+        <a href="{% url 'products:performance' %}" class="sidebar-item">
+            <i class="fas fa-chart-line sidebar-icon"></i>
+            <span class="sidebar-text">Performance</span>
+        </a>
+
+        <!-- Inventory Reports -->
+        <a href="{% url 'products:inventory_reports' %}" class="sidebar-item">
+            <i class="fas fa-chart-column sidebar-icon"></i>
+            <span class="sidebar-text">Inventory Reports</span>
+        </a>
+
+        <!-- Low Stock Alerts -->
+        <a href="{% url 'products:low_stock_alerts' %}" class="sidebar-item">
+            <i class="fas fa-exclamation-triangle sidebar-icon"></i>
+            <span class="sidebar-text">Low Stock Alerts</span>
+        </a>
+    </nav>
+</div>

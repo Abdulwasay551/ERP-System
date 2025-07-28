@@ -1,0 +1,65 @@
+{% load static %}     
+    <!-- Logo/Back Section -->
+    <div class="sidebar-logo p-4 border-b border-white/20">
+        <div class="flex items-center space-x-3 min-h-[3rem]">
+            <a href="{% url 'dashboard' %}" class="w-12 h-12 bg-white/20 backdrop-blur-md hover:bg-white/30 rounded-full flex items-center justify-center transition-all flex-shrink-0 border border-white/30">
+                <i class="fas fa-arrow-left text-white text-base"></i>
+            </a>
+            <span class="text-xl font-bold sidebar-text whitespace-nowrap text-white">Inventory</span>
+        </div>
+    </div>
+<!-- Inventory Module Sidebar -->
+<div class="sidebar-content">
+    
+
+    <!-- Navigation Items -->
+    <nav class="sidebar-nav flex-1 py-4 space-y-2">
+        <!-- Dashboard -->
+        <a href="/inventory/dashboard-ui/" class="sidebar-item">
+            <i class="fas fa-tachometer-alt sidebar-icon"></i>
+            <span class="sidebar-text">Dashboard</span>
+        </a>
+
+        <!-- Stock Items -->
+        <a href="/inventory/stockitems-ui/" class="sidebar-item">
+            <i class="fas fa-boxes sidebar-icon"></i>
+            <span class="sidebar-text">Stock Items</span>
+        </a>
+
+        <!-- Warehouses -->
+        <a href="/inventory/warehouses-ui/" class="sidebar-item">
+            <i class="fas fa-warehouse sidebar-icon"></i>
+            <span class="sidebar-text">Warehouses</span>
+        </a>
+
+        <!-- Stock Movements -->
+        <a href="/inventory/movements-ui/" class="sidebar-item">
+            <i class="fas fa-exchange-alt sidebar-icon"></i>
+            <span class="sidebar-text">Stock Movements</span>
+        </a>
+
+        <!-- Stock Alerts -->
+        <a href="/inventory/alerts-ui/" class="sidebar-item">
+            <i class="fas fa-exclamation-triangle sidebar-icon"></i>
+            <span class="sidebar-text">Stock Alerts</span>
+        </a>
+
+        <!-- Categories -->
+        <a href="/inventory/categories-ui/" class="sidebar-item">
+            <i class="fas fa-tags sidebar-icon"></i>
+            <span class="sidebar-text">Categories</span>
+        </a>
+
+        <!-- Adjustments -->
+        <a href="/inventory/adjustments-ui/" class="sidebar-item">
+            <i class="fas fa-edit sidebar-icon"></i>
+            <span class="sidebar-text">Adjustments</span>
+        </a>
+
+        <!-- Reports -->
+        <a href="/analytics/inventory-reports-ui/" class="sidebar-item">
+            <i class="fas fa-chart-bar sidebar-icon"></i>
+            <span class="sidebar-text">Reports</span>
+        </a>
+    </nav>
+</div>

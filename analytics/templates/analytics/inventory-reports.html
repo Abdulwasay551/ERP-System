@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Inventory Reports - Analytics{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-header {
+        background: linear-gradient(135deg, #17a2b8 0%, #6610f2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    .inventory-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+        transition: transform 0.2s ease-in-out;
+    }
+    .inventory-card:hover {
+        transform: translateY(-2px);
+    }
+    .stock-level {
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .stock-high {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .stock-medium {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    .stock-low {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    .stock-out {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    .metric-widget {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+    .metric-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.5rem;
+    }
+    .filter-section {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Report Header -->
+    <div class="report-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-1">Inventory Reports</h1>
+                <p class="mb-0 opacity-75">Stock levels, movements, and inventory analytics</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-light btn-sm" onclick="generateStockReport()">
+                    <i class="fas fa-boxes me-1"></i> Stock Report
+                </button>
+                <button class="btn btn-light btn-sm" onclick="generateMovementReport()">
+                    <i class="fas fa-exchange-alt me-1"></i> Movements
+                </button>
+                <button class="btn btn-light btn-sm" onclick="exportInventory()">
+                    <i class="fas fa-file-csv me-1"></i> Export CSV
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Metrics -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-widget">
+                <div class="metric-icon bg-primary text-white">
+                    <i class="fas fa-boxes"></i>
+                </div>
+                <div class="h4 mb-1">{{ inventory_data|length }}</div>
+                <div class="text-muted">Total Items</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-widget">
+                <div class="metric-icon bg-success text-white">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="h4 mb-1">0</div>
+                <div class="text-muted">In Stock</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-widget">
+                <div class="metric-icon bg-warning text-white">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="h4 mb-1">0</div>
+                <div class="text-muted">Low Stock</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-widget">
+                <div class="metric-icon bg-danger text-white">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <div class="h4 mb-1">0</div>
+                <div class="text-muted">Out of Stock</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="categoryFilter">
+                    <option value="">All Categories</option>
+                    <option value="electronics">Electronics</option>
+                    <option value="furniture">Furniture</option>
+                    <option value="supplies">Office Supplies</option>
+                    <option value="raw-materials">Raw Materials</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Stock Level</label>
+                <select class="form-select" id="stockLevelFilter">
+                    <option value="">All Levels</option>
+                    <option value="high">High Stock</option>
+                    <option value="medium">Medium Stock</option>
+                    <option value="low">Low Stock</option>
+                    <option value="out">Out of Stock</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Location</label>
+                <select class="form-select" id="locationFilter">
+                    <option value="">All Locations</option>
+                    <option value="warehouse-a">Warehouse A</option>
+                    <option value="warehouse-b">Warehouse B</option>
+                    <option value="retail-store">Retail Store</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button class="btn btn-primary" onclick="applyInventoryFilters()">
+                        <i class="fas fa-filter me-1"></i> Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Table -->
+    <div class="inventory-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Inventory Items</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary btn-sm" onclick="addNewItem()">
+                    <i class="fas fa-plus me-1"></i> Add Item
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="bulkUpdate()">
+                    <i class="fas fa-edit me-1"></i> Bulk Update
+                </button>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>
+                            <input type="checkbox" class="form-check-input" id="selectAll">
+                        </th>
+                        <th>Item Code</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Current Stock</th>
+                        <th>Min Stock</th>
+                        <th>Unit Price</th>
+                        <th>Stock Level</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if inventory_data %}
+                        {% for item in inventory_data %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="form-check-input item-checkbox">
+                            </td>
+                            <td><strong>{{ item.code|default:"N/A" }}</strong></td>
+                            <td>{{ item.name }}</td>
+                            <td>{{ item.category|default:"General" }}</td>
+                            <td>
+                                <strong>{{ item.current_stock|default:"0" }}</strong>
+                                <small class="text-muted">{{ item.unit|default:"pcs" }}</small>
+                            </td>
+                            <td>{{ item.minimum_stock|default:"0" }}</td>
+                            <td>${{ item.unit_price|default:"0.00"|floatformat:2 }}</td>
+                            <td>
+                                <span class="stock-level stock-high">In Stock</span>
+                            </td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#"><i class="fas fa-edit me-2"></i>Edit Item</a></li>
+                                        <li><a class="dropdown-item" href="#"><i class="fas fa-plus me-2"></i>Stock In</a></li>
+                                        <li><a class="dropdown-item" href="#"><i class="fas fa-minus me-2"></i>Stock Out</a></li>
+                                        <li><a class="dropdown-item" href="#"><i class="fas fa-history me-2"></i>View History</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-trash me-2"></i>Delete</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fas fa-boxes fa-3x mb-3"></i>
+                                    <p class="mb-0">No inventory items found</p>
+                                    <small>Inventory items will appear here once they are added</small>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Stock Movement Summary -->
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="inventory-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-arrow-up me-2 text-success"></i>
+                    Recent Stock Ins
+                </h5>
+                <div class="text-center py-4">
+                    <i class="fas fa-arrow-up fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No recent stock ins</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="inventory-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-arrow-down me-2 text-danger"></i>
+                    Recent Stock Outs
+                </h5>
+                <div class="text-center py-4">
+                    <i class="fas fa-arrow-down fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No recent stock outs</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Low Stock Alerts -->
+    <div class="inventory-card">
+        <h5 class="mb-3">
+            <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+            Low Stock Alerts
+        </h5>
+        <div class="text-center py-4">
+            <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+            <p class="text-success mb-0">All items are well stocked!</p>
+            <small class="text-muted">Items below minimum stock levels will appear here</small>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-warning mt-3">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Notice:</strong> {{ error }}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Select all checkbox functionality
+    document.getElementById('selectAll')?.addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.item-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+    });
+
+    function applyInventoryFilters() {
+        const category = document.getElementById('categoryFilter').value;
+        const stockLevel = document.getElementById('stockLevelFilter').value;
+        const location = document.getElementById('locationFilter').value;
+        
+        console.log('Applying inventory filters:', { category, stockLevel, location });
+        alert('Filter functionality will be implemented soon!');
+    }
+
+    function generateStockReport() {
+        alert('Stock report generation will be implemented soon!');
+    }
+
+    function generateMovementReport() {
+        alert('Movement report generation will be implemented soon!');
+    }
+
+    function exportInventory() {
+        alert('Inventory export functionality will be implemented soon!');
+    }
+
+    function addNewItem() {
+        alert('Add new inventory item functionality will be implemented soon!');
+    }
+
+    function bulkUpdate() {
+        const selectedItems = document.querySelectorAll('.item-checkbox:checked');
+        if (selectedItems.length === 0) {
+            alert('Please select items to update');
+            return;
+        }
+        alert(`Bulk update for ${selectedItems.length} items will be implemented soon!`);
+    }
+</script>
+{% endblock %}

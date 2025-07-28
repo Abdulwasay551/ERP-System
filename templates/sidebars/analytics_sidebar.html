@@ -1,0 +1,100 @@
+{% load static %}
+
+<div class="sidebar-content">
+    <!-- Logo -->
+    <div class="sidebar-logo p-6">
+        <a href="{% url 'dashboard' %}" class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur">
+                <img src="{% static 'logo.png' %}" alt="FutureERP Logo" class="w-8 h-8" style="border-radius: 50%;">
+            </div>
+            <span class="sidebar-text text-xl font-bold text-white">FutureERP</span>
+        </a>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav mt-2">
+        <!-- Back to Dashboard -->
+        <a href="{% url 'dashboard' %}" class="sidebar-item bg-white/20 border border-white/20 mb-4">
+            <span class="sidebar-icon">
+                <i class="fas fa-arrow-left"></i>
+            </span>
+            <span class="sidebar-text">Back to Dashboard</span>
+        </a>
+
+        <!-- Analytics Dashboard -->
+        <a href="{% url 'analytics_dashboard_ui' %}" class="sidebar-item">
+            <span class="sidebar-icon">
+                <i class="fas fa-tachometer-alt"></i>
+            </span>
+            <span class="sidebar-text">Analytics Dashboard</span>
+        </a>
+
+        <!-- Sales Analytics -->
+        <div class="sidebar-section mb-4">
+            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Sales Analytics</h3>
+            <a href="/analytics/sales-analytics/" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-chart-line"></i>
+                </span>
+                <span class="sidebar-text">Sales Performance</span>
+            </a>
+            <a href="/analytics/customer-analytics/" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-users"></i>
+                </span>
+                <span class="sidebar-text">Customer Analytics</span>
+            </a>
+        </div>
+
+        <!-- Financial Analytics -->
+        <div class="sidebar-section mb-4">
+            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Financial Analytics</h3>
+            <a href="/analytics/financial-overview/" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-chart-pie"></i>
+                </span>
+                <span class="sidebar-text">Financial Overview</span>
+            </a>
+            <a href="/analytics/profitability/" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-coins"></i>
+                </span>
+                <span class="sidebar-text">Profitability</span>
+            </a>
+        </div>
+
+        <!-- Inventory Analytics -->
+        <div class="sidebar-section mb-4">
+            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Inventory Analytics</h3>
+            <a href="/analytics/inventory-turnover/" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-boxes"></i>
+                </span>
+                <span class="sidebar-text">Inventory Turnover</span>
+            </a>
+            <a href="/analytics/stock-analytics/" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-warehouse"></i>
+                </span>
+                <span class="sidebar-text">Stock Analytics</span>
+            </a>
+        </div>
+
+        <!-- Custom Reports -->
+        <div class="sidebar-section">
+            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Custom Reports</h3>
+            <a href="/analytics/custom-reports/" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-file-alt"></i>
+                </span>
+                <span class="sidebar-text">Custom Reports</span>
+            </a>
+            <a href="/analytics/kpi-dashboard/" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-bullseye"></i>
+                </span>
+                <span class="sidebar-text">KPI Dashboard</span>
+            </a>
+        </div>
+    </nav>
+</div>

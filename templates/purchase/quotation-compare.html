@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+{% block title %}Quotation Comparison | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .comparison-card {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(124, 58, 237, 0.1));
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        transition: all 0.3s ease;
+    }
+    .winner-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 95, 70, 0.15));
+        border: 2px solid rgba(16, 185, 129, 0.4);
+    }
+    .comparison-table {
+        overflow-x: auto;
+    }
+    .uom-converter {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+    .cost-breakdown {
+        background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1));
+    }
+    .supplier-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .best-price {
+        background: linear-gradient(135deg, #10b981, #059669);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Quotation Comparison</h1>
+                <p class="text-gray-600">Compare supplier quotations with automatic UOM conversion</p>
+            </div>
+            <div class="flex gap-4">
+                <select class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                    <option value="">Select RFQ</option>
+                    <option value="RFQ-2024-001" selected>RFQ-2024-001 - Steel Products</option>
+                    <option value="RFQ-2024-002">RFQ-2024-002 - Office Equipment</option>
+                </select>
+                <button class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    Generate Report
+                </button>
+            </div>
+        </div>
+
+        <!-- UOM Converter Widget -->
+        <div class="uom-converter rounded-2xl shadow-lg p-6 mb-8">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">
+                <svg class="w-6 h-6 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                </svg>
+                UOM Conversion Example: Balloon Packets
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white rounded-lg p-4">
+                    <h4 class="font-medium text-blue-700 mb-2">Supplier A Quote</h4>
+                    <div class="space-y-1 text-sm">
+                        <div>Package: 10 balloons/packet</div>
+                        <div>Price: $25.00/packet</div>
+                        <div class="font-bold text-blue-600">Unit Cost: $2.50/balloon</div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg p-4">
+                    <h4 class="font-medium text-green-700 mb-2">Supplier B Quote</h4>
+                    <div class="space-y-1 text-sm">
+                        <div>Box: 50 balloons/box</div>
+                        <div>Price: $110.00/box</div>
+                        <div class="font-bold text-green-600">Unit Cost: $2.20/balloon</div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg p-4">
+                    <h4 class="font-medium text-purple-700 mb-2">Supplier C Quote</h4>
+                    <div class="space-y-1 text-sm">
+                        <div>Bulk: 1000 balloons/bulk</div>
+                        <div>Price: $2,100/bulk</div>
+                        <div class="font-bold text-purple-600">Unit Cost: $2.10/balloon</div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 p-4 bg-green-50 rounded-lg">
+                <div class="text-sm text-green-800">
+                    <strong>Best Option:</strong> Supplier C offers the lowest unit cost at $2.10/balloon
+                    <br><strong>For 100 balloons needed:</strong> Cost would be $210 (vs $250 from Supplier A)
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparison Summary -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-2xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-purple-600">3</div>
+                <div class="text-gray-600">Suppliers Compared</div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-blue-600">5</div>
+                <div class="text-gray-600">Products Analyzed</div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-green-600">$7,250</div>
+                <div class="text-gray-600">Potential Savings</div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-orange-600">15%</div>
+                <div class="text-gray-600">Cost Reduction</div>
+            </div>
+        </div>
+
+        <!-- Detailed Comparison Table -->
+        <div class="comparison-table bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <h3 class="text-xl font-bold text-gray-900 mb-6">Detailed Price Comparison</h3>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b-2 border-gray-200">
+                            <th class="text-left p-4">Product</th>
+                            <th class="text-center p-4">Acme Corp</th>
+                            <th class="text-center p-4">Global Supply</th>
+                            <th class="text-center p-4">TechParts Inc</th>
+                            <th class="text-center p-4">Best Deal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-gray-100 hover:bg-gray-50">
+                            <td class="p-4">
+                                <div class="font-medium">Steel Rods (20mm)</div>
+                                <div class="text-sm text-gray-600">Need: 100 pieces</div>
+                            </td>
+                            <td class="text-center p-4">
+                                <div class="winner-card rounded-lg p-3">
+                                    <div class="font-bold best-price">$9.75</div>
+                                    <div class="text-sm">per piece</div>
+                                    <div class="text-xs text-green-600">Package: 10 pcs</div>
+                                    <div class="text-xs text-gray-500">Total: $975</div>
+                                </div>
+                            </td>
+                            <td class="text-center p-4">
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="font-bold">$10.20</div>
+                                    <div class="text-sm">per piece</div>
+                                    <div class="text-xs text-blue-600">Individual units</div>
+                                    <div class="text-xs text-gray-500">Total: $1,020</div>
+                                </div>
+                            </td>
+                            <td class="text-center p-4">
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="font-bold">$9.90</div>
+                                    <div class="text-sm">per piece</div>
+                                    <div class="text-xs text-purple-600">Box: 25 pcs</div>
+                                    <div class="text-xs text-gray-500">Total: $990</div>
+                                </div>
+                            </td>
+                            <td class="text-center p-4">
+                                <div class="bg-green-100 text-green-800 px-3 py-2 rounded-lg">
+                                    <div class="font-bold">Acme Corp</div>
+                                    <div class="text-sm">Save $45</div>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <tr class="border-b border-gray-100 hover:bg-gray-50">
+                            <td class="p-4">
+                                <div class="font-medium">Industrial Bearings</div>
+                                <div class="text-sm text-gray-600">Need: 50 units</div>
+                            </td>
+                            <td class="text-center p-4">
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="font-bold">$31.20</div>
+                                    <div class="text-sm">per unit</div>
+                                    <div class="text-xs text-green-600">Box: 25 units</div>
+                                    <div class="text-xs text-gray-500">Total: $1,560</div>
+                                </div>
+                            </td>
+                            <td class="text-center p-4">
+                                <div class="winner-card rounded-lg p-3">
+                                    <div class="font-bold best-price">$29.50</div>
+                                    <div class="text-sm">per unit</div>
+                                    <div class="text-xs text-blue-600">Crate: 50 units</div>
+                                    <div class="text-xs text-gray-500">Total: $1,475</div>
+                                </div>
+                            </td>
+                            <td class="text-center p-4">
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="font-bold">$32.00</div>
+                                    <div class="text-sm">per unit</div>
+                                    <div class="text-xs text-purple-600">Individual units</div>
+                                    <div class="text-xs text-gray-500">Total: $1,600</div>
+                                </div>
+                            </td>
+                            <td class="text-center p-4">
+                                <div class="bg-green-100 text-green-800 px-3 py-2 rounded-lg">
+                                    <div class="font-bold">Global Supply</div>
+                                    <div class="text-sm">Save $85</div>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <tr class="border-b border-gray-100 hover:bg-gray-50">
+                            <td class="p-4">
+                                <div class="font-medium">Hydraulic Pumps</div>
+                                <div class="text-sm text-gray-600">Need: 3 units</div>
+                            </td>
+                            <td class="text-center p-4">
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="font-bold">$2,450</div>
+                                    <div class="text-sm">per unit</div>
+                                    <div class="text-xs text-green-600">Individual units</div>
+                                    <div class="text-xs text-gray-500">Total: $7,350</div>
+                                </div>
+                            </td>
+                            <td class="text-center p-4">
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="font-bold">$2,520</div>
+                                    <div class="text-sm">per unit</div>
+                                    <div class="text-xs text-blue-600">Individual units</div>
+                                    <div class="text-xs text-gray-500">Total: $7,560</div>
+                                </div>
+                            </td>
+                            <td class="text-center p-4">
+                                <div class="winner-card rounded-lg p-3">
+                                    <div class="font-bold best-price">$2,380</div>
+                                    <div class="text-sm">per unit</div>
+                                    <div class="text-xs text-purple-600">Individual units</div>
+                                    <div class="text-xs text-gray-500">Total: $7,140</div>
+                                </div>
+                            </td>
+                            <td class="text-center p-4">
+                                <div class="bg-green-100 text-green-800 px-3 py-2 rounded-lg">
+                                    <div class="font-bold">TechParts Inc</div>
+                                    <div class="text-sm">Save $210</div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Cost Breakdown -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="comparison-card rounded-2xl shadow-lg p-6">
+                <div class="supplier-header text-white px-4 py-2 rounded-lg mb-4">
+                    <h3 class="font-bold">Acme Corporation</h3>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span>Subtotal</span>
+                        <span>$45,850</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Shipping</span>
+                        <span>$1,200</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Tax</span>
+                        <span>$3,685</span>
+                    </div>
+                    <div class="border-t pt-2 flex justify-between font-bold">
+                        <span>Total</span>
+                        <span>$50,735</span>
+                    </div>
+                    <div class="text-sm text-gray-600">Delivery: 7-10 days</div>
+                </div>
+            </div>
+            
+            <div class="comparison-card rounded-2xl shadow-lg p-6">
+                <div class="supplier-header text-white px-4 py-2 rounded-lg mb-4">
+                    <h3 class="font-bold">Global Supply Co</h3>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span>Subtotal</span>
+                        <span>$48,240</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Shipping</span>
+                        <span>$950</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Tax</span>
+                        <span>$3,875</span>
+                    </div>
+                    <div class="border-t pt-2 flex justify-between font-bold">
+                        <span>Total</span>
+                        <span>$53,065</span>
+                    </div>
+                    <div class="text-sm text-gray-600">Delivery: 5-7 days</div>
+                </div>
+            </div>
+            
+            <div class="winner-card rounded-2xl shadow-lg p-6">
+                <div class="supplier-header text-white px-4 py-2 rounded-lg mb-4">
+                    <h3 class="font-bold">Mixed Best Options</h3>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span>Subtotal</span>
+                        <span class="best-price">$43,485</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Shipping</span>
+                        <span>$1,450</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Tax</span>
+                        <span>$3,615</span>
+                    </div>
+                    <div class="border-t pt-2 flex justify-between font-bold">
+                        <span>Total</span>
+                        <span class="best-price">$48,550</span>
+                    </div>
+                    <div class="text-sm text-green-600 font-medium">Save $2,185 (4.3%)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-4 justify-center">
+            <button class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                Create Split Purchase Orders
+            </button>
+            <button class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                Request Final Quotes
+            </button>
+            <button class="bg-gray-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                Export Analysis
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

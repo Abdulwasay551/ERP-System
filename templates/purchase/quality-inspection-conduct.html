@@ -1,0 +1,564 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Conduct Quality Inspection - {{ inspection.inspection_number }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .inspection-conduct-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+        border: 1px solid #bfdbfe;
+        transition: all 0.3s ease;
+    }
+
+    .test-item-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+    }
+
+    .test-item-card:hover {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+
+    .test-parameter {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .result-indicator {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+    }
+
+    .result-pass { background-color: #10b981; }
+    .result-fail { background-color: #ef4444; }
+    .result-pending { background-color: #6b7280; }
+    .result-na { background-color: #d1d5db; }
+
+    .quality-form {
+        border: 2px solid #e5e7eb;
+        border-radius: 0.75rem;
+        transition: border-color 0.3s ease;
+    }
+
+    .quality-form:focus-within {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .measurement-input {
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        padding: 0.5rem;
+        width: 100%;
+        transition: border-color 0.3s ease;
+    }
+
+    .measurement-input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+
+    .photo-upload {
+        border: 2px dashed #d1d5db;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .photo-upload:hover {
+        border-color: #3b82f6;
+        background-color: #f8fafc;
+    }
+
+    .progress-bar {
+        background-color: #e5e7eb;
+        border-radius: 9999px;
+        height: 8px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        background: linear-gradient(90deg, #10b981, #34d399);
+        height: 100%;
+        border-radius: 9999px;
+        transition: width 0.3s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="inspection-conduct-card rounded-2xl p-6 mb-8">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Conduct Quality Inspection</h1>
+                    <div class="flex items-center gap-4 text-sm text-gray-600">
+                        <span><strong>Inspection #:</strong> {{ inspection.inspection_number }}</span>
+                        <span><strong>GRN:</strong> {{ inspection.grn.grn_number }}</span>
+                        <span><strong>Supplier:</strong> {{ inspection.grn.purchase_order.supplier.name }}</span>
+                        <span><strong>Type:</strong> {{ inspection.get_inspection_type_display }}</span>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                        In Progress
+                    </span>
+                    <p class="text-sm text-gray-600 mt-1">Inspector: {{ inspection.inspector.get_full_name }}</p>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="mt-6">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-gray-700">Inspection Progress</span>
+                    <span class="text-sm text-gray-600" id="progress-text">0 of {{ inspection_items.count }} items completed</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <form id="inspectionForm" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <!-- Items for Inspection -->
+            <div class="grid grid-cols-1 gap-6">
+                {% for item in inspection_items %}
+                <div class="test-item-card p-6" data-item-id="{{ item.id }}">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-2">
+                                <span class="result-indicator result-pending" id="indicator-{{ item.id }}"></span>
+                                <h3 class="text-lg font-semibold text-gray-900">{{ item.product.name }}</h3>
+                            </div>
+                            <p class="text-gray-600">SKU: {{ item.product.sku }}</p>
+                            <div class="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                                <span><strong>Received Qty:</strong> {{ item.received_quantity }} {{ item.unit_of_measure.abbreviation }}</span>
+                                <span><strong>Sample Size:</strong> {{ item.sample_quantity }} {{ item.unit_of_measure.abbreviation }}</span>
+                                <span><strong>Batch:</strong> {{ item.batch_number|default:"N/A" }}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            {% if item.product.image %}
+                            <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" 
+                                 class="w-16 h-16 object-cover rounded-lg">
+                            {% else %}
+                            <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-box text-gray-400"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Test Parameters -->
+                    <div class="space-y-4">
+                        <!-- Visual Inspection -->
+                        <div class="test-parameter">
+                            <h4 class="font-semibold text-gray-900 mb-3">
+                                <i class="fas fa-eye mr-2 text-blue-600"></i>
+                                Visual Inspection
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Overall Appearance</label>
+                                    <select name="visual_appearance_{{ item.id }}" class="measurement-input" 
+                                            onchange="updateTestResult({{ item.id }}, 'visual')">
+                                        <option value="">Select</option>
+                                        <option value="excellent">Excellent</option>
+                                        <option value="good">Good</option>
+                                        <option value="fair">Fair</option>
+                                        <option value="poor">Poor</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Surface Finish</label>
+                                    <select name="surface_finish_{{ item.id }}" class="measurement-input"
+                                            onchange="updateTestResult({{ item.id }}, 'visual')">
+                                        <option value="">Select</option>
+                                        <option value="smooth">Smooth</option>
+                                        <option value="rough">Rough</option>
+                                        <option value="damaged">Damaged</option>
+                                        <option value="scratched">Scratched</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Color Match</label>
+                                    <select name="color_match_{{ item.id }}" class="measurement-input"
+                                            onchange="updateTestResult({{ item.id }}, 'visual')">
+                                        <option value="">Select</option>
+                                        <option value="perfect">Perfect Match</option>
+                                        <option value="good">Good Match</option>
+                                        <option value="slight_variation">Slight Variation</option>
+                                        <option value="poor">Poor Match</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dimensional Check -->
+                        <div class="test-parameter">
+                            <h4 class="font-semibold text-gray-900 mb-3">
+                                <i class="fas fa-ruler mr-2 text-green-600"></i>
+                                Dimensional Check
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Length (mm)</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="number" name="length_actual_{{ item.id }}" 
+                                               class="measurement-input" step="0.1" 
+                                               placeholder="Actual" onchange="updateTestResult({{ item.id }}, 'dimensional')">
+                                        <span class="text-gray-500">±</span>
+                                        <input type="number" name="length_tolerance_{{ item.id }}" 
+                                               class="measurement-input" step="0.1" 
+                                               placeholder="Tolerance">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Width (mm)</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="number" name="width_actual_{{ item.id }}" 
+                                               class="measurement-input" step="0.1" 
+                                               placeholder="Actual" onchange="updateTestResult({{ item.id }}, 'dimensional')">
+                                        <span class="text-gray-500">±</span>
+                                        <input type="number" name="width_tolerance_{{ item.id }}" 
+                                               class="measurement-input" step="0.1" 
+                                               placeholder="Tolerance">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Height (mm)</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="number" name="height_actual_{{ item.id }}" 
+                                               class="measurement-input" step="0.1" 
+                                               placeholder="Actual" onchange="updateTestResult({{ item.id }}, 'dimensional')">
+                                        <span class="text-gray-500">±</span>
+                                        <input type="number" name="height_tolerance_{{ item.id }}" 
+                                               class="measurement-input" step="0.1" 
+                                               placeholder="Tolerance">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Functional Test -->
+                        <div class="test-parameter">
+                            <h4 class="font-semibold text-gray-900 mb-3">
+                                <i class="fas fa-cog mr-2 text-purple-600"></i>
+                                Functional Test
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Performance</label>
+                                    <select name="performance_{{ item.id }}" class="measurement-input"
+                                            onchange="updateTestResult({{ item.id }}, 'functional')">
+                                        <option value="">Select</option>
+                                        <option value="exceeds">Exceeds Specification</option>
+                                        <option value="meets">Meets Specification</option>
+                                        <option value="below">Below Specification</option>
+                                        <option value="fails">Fails Specification</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Durability</label>
+                                    <select name="durability_{{ item.id }}" class="measurement-input"
+                                            onchange="updateTestResult({{ item.id }}, 'functional')">
+                                        <option value="">Select</option>
+                                        <option value="excellent">Excellent</option>
+                                        <option value="good">Good</option>
+                                        <option value="fair">Fair</option>
+                                        <option value="poor">Poor</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Material Test -->
+                        <div class="test-parameter">
+                            <h4 class="font-semibold text-gray-900 mb-3">
+                                <i class="fas fa-flask mr-2 text-orange-600"></i>
+                                Material Test
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Material Quality</label>
+                                    <select name="material_quality_{{ item.id }}" class="measurement-input"
+                                            onchange="updateTestResult({{ item.id }}, 'material')">
+                                        <option value="">Select</option>
+                                        <option value="premium">Premium</option>
+                                        <option value="standard">Standard</option>
+                                        <option value="below_standard">Below Standard</option>
+                                        <option value="defective">Defective</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Composition</label>
+                                    <select name="composition_{{ item.id }}" class="measurement-input"
+                                            onchange="updateTestResult({{ item.id }}, 'material')">
+                                        <option value="">Select</option>
+                                        <option value="correct">Correct</option>
+                                        <option value="minor_deviation">Minor Deviation</option>
+                                        <option value="major_deviation">Major Deviation</option>
+                                        <option value="incorrect">Incorrect</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Overall Result -->
+                    <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <label class="block text-sm font-medium text-gray-700">Overall Result</label>
+                            <select name="overall_result_{{ item.id }}" id="overall-result-{{ item.id }}"
+                                    class="measurement-input w-40" onchange="updateItemStatus({{ item.id }})">
+                                <option value="">Select</option>
+                                <option value="pass">Pass</option>
+                                <option value="fail">Fail</option>
+                                <option value="conditional">Conditional Pass</option>
+                                <option value="quarantine">Quarantine</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Photos -->
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Inspection Photos</label>
+                        <div class="photo-upload">
+                            <input type="file" name="photos_{{ item.id }}" accept="image/*" multiple 
+                                   class="hidden" id="photos-{{ item.id }}" onchange="handlePhotoUpload({{ item.id }})">
+                            <label for="photos-{{ item.id }}" class="cursor-pointer">
+                                <i class="fas fa-camera text-2xl text-gray-400 mb-2"></i>
+                                <p class="text-gray-600">Click to upload photos</p>
+                                <p class="text-xs text-gray-500">Multiple files allowed</p>
+                            </label>
+                            <div id="photo-preview-{{ item.id }}" class="mt-2 flex flex-wrap gap-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Inspection Notes</label>
+                        <textarea name="notes_{{ item.id }}" class="measurement-input" rows="3"
+                                  placeholder="Any observations, defects, or additional notes..."></textarea>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Final Inspection Summary -->
+            <div class="inspection-conduct-card rounded-2xl p-6 mt-8">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Inspection Summary</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Inspection Conclusion</label>
+                        <select name="final_status" id="final-status" class="measurement-input" required>
+                            <option value="">Select</option>
+                            <option value="passed">Passed</option>
+                            <option value="failed">Failed</option>
+                            <option value="partial">Partial Pass</option>
+                            <option value="quarantined">Quarantined</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quality Grade</label>
+                        <select name="quality_grade" class="measurement-input">
+                            <option value="">Select Grade</option>
+                            <option value="A">Grade A (Excellent)</option>
+                            <option value="B">Grade B (Good)</option>
+                            <option value="C">Grade C (Acceptable)</option>
+                            <option value="D">Grade D (Below Standard)</option>
+                            <option value="F">Grade F (Rejected)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Pass Rate (%)</label>
+                        <input type="number" name="pass_rate" id="pass-rate" class="measurement-input" 
+                               min="0" max="100" readonly>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Final Report</label>
+                    <textarea name="final_report" class="measurement-input" rows="4"
+                              placeholder="Overall inspection findings, recommendations, and conclusions..."></textarea>
+                </div>
+
+                <!-- Actions for Failed Items -->
+                <div id="failed-actions" class="mb-6" style="display: none;">
+                    <h4 class="font-semibold text-gray-900 mb-3">Actions for Failed Items</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="action_return" value="1" class="form-checkbox text-red-600">
+                            <span class="ml-2 text-sm text-gray-700">Return to Supplier</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="action_quarantine" value="1" class="form-checkbox text-yellow-600">
+                            <span class="ml-2 text-sm text-gray-700">Quarantine</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="action_rework" value="1" class="form-checkbox text-blue-600">
+                            <span class="ml-2 text-sm text-gray-700">Rework Required</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-end gap-4 mt-8">
+                <a href="{% url 'purchase:quality_assurance' %}" 
+                   class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                    Cancel
+                </a>
+                <button type="button" onclick="saveDraft()"
+                        class="px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">
+                    Save Progress
+                </button>
+                <button type="submit" 
+                        class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Complete Inspection
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let completedItems = 0;
+const totalItems = {{ inspection_items.count }};
+
+function updateTestResult(itemId, testType) {
+    // Auto-calculate overall result based on individual test results
+    // This is a simplified logic - you can make it more sophisticated
+    calculateOverallResult(itemId);
+}
+
+function calculateOverallResult(itemId) {
+    const visual = document.querySelector(`select[name="visual_appearance_${itemId}"]`).value;
+    const performance = document.querySelector(`select[name="performance_${itemId}"]`).value;
+    const material = document.querySelector(`select[name="material_quality_${itemId}"]`).value;
+    
+    // Simple logic: if any critical parameter fails, overall fails
+    if (visual === 'poor' || performance === 'fails' || material === 'defective') {
+        document.querySelector(`select[name="overall_result_${itemId}"]`).value = 'fail';
+    } else if (visual && performance && material) {
+        document.querySelector(`select[name="overall_result_${itemId}"]`).value = 'pass';
+    }
+    
+    updateItemStatus(itemId);
+}
+
+function updateItemStatus(itemId) {
+    const result = document.querySelector(`select[name="overall_result_${itemId}"]`).value;
+    const indicator = document.getElementById(`indicator-${itemId}`);
+    
+    // Remove existing classes
+    indicator.classList.remove('result-pass', 'result-fail', 'result-pending', 'result-na');
+    
+    switch(result) {
+        case 'pass':
+            indicator.classList.add('result-pass');
+            break;
+        case 'fail':
+        case 'quarantine':
+            indicator.classList.add('result-fail');
+            break;
+        case 'conditional':
+            indicator.classList.add('result-na');
+            break;
+        default:
+            indicator.classList.add('result-pending');
+    }
+    
+    updateProgress();
+    calculatePassRate();
+}
+
+function updateProgress() {
+    const completedSelects = document.querySelectorAll('select[name^="overall_result_"]:not([value=""])');
+    completedItems = completedSelects.length;
+    
+    const percentage = (completedItems / totalItems) * 100;
+    document.getElementById('progress-fill').style.width = percentage + '%';
+    document.getElementById('progress-text').textContent = `${completedItems} of ${totalItems} items completed`;
+}
+
+function calculatePassRate() {
+    const passedItems = document.querySelectorAll('select[name^="overall_result_"][value="pass"]').length;
+    const completedSelects = document.querySelectorAll('select[name^="overall_result_"]:not([value=""])');
+    
+    if (completedSelects.length > 0) {
+        const passRate = Math.round((passedItems / completedSelects.length) * 100);
+        document.getElementById('pass-rate').value = passRate;
+        
+        // Auto-select final status based on pass rate
+        const finalStatus = document.getElementById('final-status');
+        if (passRate >= 95) {
+            finalStatus.value = 'passed';
+        } else if (passRate >= 70) {
+            finalStatus.value = 'partial';
+        } else {
+            finalStatus.value = 'failed';
+        }
+        
+        // Show failed actions if pass rate is low
+        if (passRate < 80) {
+            document.getElementById('failed-actions').style.display = 'block';
+        } else {
+            document.getElementById('failed-actions').style.display = 'none';
+        }
+    }
+}
+
+function handlePhotoUpload(itemId) {
+    const input = document.getElementById(`photos-${itemId}`);
+    const preview = document.getElementById(`photo-preview-${itemId}`);
+    
+    preview.innerHTML = '';
+    
+    for (let i = 0; i < input.files.length; i++) {
+        const file = input.files[i];
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.className = 'w-16 h-16 object-cover rounded border';
+            preview.appendChild(img);
+        };
+        
+        reader.readAsDataURL(file);
+    }
+}
+
+function saveDraft() {
+    const form = document.getElementById('inspectionForm');
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'action';
+    hiddenInput.value = 'save_draft';
+    form.appendChild(hiddenInput);
+    form.submit();
+}
+
+// Initialize progress
+document.addEventListener('DOMContentLoaded', function() {
+    updateProgress();
+});
+</script>
+{% endblock %}

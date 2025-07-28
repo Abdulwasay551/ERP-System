@@ -1,0 +1,64 @@
+{% load static %}
+<!-- Sales Module Sidebar -->
+<div class="sidebar-content">
+    <!-- Logo/Back Section -->
+    <div class="sidebar-logo p-4 border-b border-white/20">
+        <div class="flex items-center space-x-3 min-h-[3rem]">
+            <a href="{% url 'dashboard' %}" class="w-12 h-12 bg-white/20 backdrop-blur-md hover:bg-white/30 rounded-full flex items-center justify-center transition-all flex-shrink-0 border border-white/30">
+                <i class="fas fa-arrow-left text-white text-base"></i>
+            </a>
+            <span class="text-xl font-bold sidebar-text whitespace-nowrap text-white">Sales</span>
+        </div>
+    </div>
+
+    <!-- Navigation Items -->
+    <nav class="sidebar-nav flex-1 py-4 space-y-2">
+        <!-- Dashboard -->
+        <a href="/sales/dashboard-ui/" class="sidebar-item">
+            <i class="fas fa-tachometer-alt sidebar-icon"></i>
+            <span class="sidebar-text">Dashboard</span>
+        </a>
+
+        <!-- Products -->
+        <a href="/sales/products-ui/" class="sidebar-item">
+            <i class="fas fa-box sidebar-icon"></i>
+            <span class="sidebar-text">Products</span>
+        </a>
+
+        <!-- Quotations -->
+        <a href="/sales/quotations-ui/" class="sidebar-item">
+            <i class="fas fa-file-invoice-dollar sidebar-icon"></i>
+            <span class="sidebar-text">Quotations</span>
+        </a>
+
+        <!-- Sales Orders -->
+        <a href="/sales/salesorders-ui/" class="sidebar-item">
+            <i class="fas fa-shopping-bag sidebar-icon"></i>
+            <span class="sidebar-text">Sales Orders</span>
+        </a>
+
+        <!-- Invoices -->
+        <a href="/sales/invoices-ui/" class="sidebar-item">
+            <i class="fas fa-file-invoice sidebar-icon"></i>
+            <span class="sidebar-text">Sales Invoices</span>
+        </a>
+
+        <!-- Customers -->
+        <a href="/crm/customers-ui/" class="sidebar-item">
+            <i class="fas fa-user-friends sidebar-icon"></i>
+            <span class="sidebar-text">Customers</span>
+        </a>
+
+        <!-- Taxes -->
+        <a href="/sales/taxes-ui/" class="sidebar-item">
+            <i class="fas fa-percent sidebar-icon"></i>
+            <span class="sidebar-text">Taxes</span>
+        </a>
+
+        <!-- Reports -->
+        <a href="/analytics/sales-reports-ui/" class="sidebar-item">
+            <i class="fas fa-chart-line sidebar-icon"></i>
+            <span class="sidebar-text">Sales Reports</span>
+        </a>
+    </nav>
+</div>

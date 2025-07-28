@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Product Tracking Dashboard - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: transform 0.3s ease;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .stats-label {
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+    
+    .alert-card {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    }
+    
+    .success-card {
+        background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+    }
+    
+    .warning-card {
+        background: linear-gradient(135deg, #ffd43b 0%, #fab005 100%);
+        color: #333;
+    }
+    
+    .info-card {
+        background: linear-gradient(135deg, #74c0fc 0%, #339af0 100%);
+    }
+    
+    .tracking-unit-card {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        transition: box-shadow 0.3s ease;
+    }
+    
+    .tracking-unit-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .tracking-number {
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        color: #495057;
+    }
+    
+    .expiry-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+    
+    .expired {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .expiring-soon {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    
+    .fresh {
+        background-color: #28a745;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-barcode mr-2"></i>Product Tracking Dashboard</h2>
+                <div class="btn-group">
+                    <a href="{% url 'products:tracking_list' %}" class="btn btn-primary">
+                        <i class="fas fa-list mr-1"></i>View All Tracking Units
+                    </a>
+                    <a href="{% url 'products:tracking_add' %}" class="btn btn-success">
+                        <i class="fas fa-plus mr-1"></i>Add Tracking Unit
+                    </a>
+                    <a href="{% url 'products:bulk_tracking_import' %}" class="btn btn-info">
+                        <i class="fas fa-upload mr-1"></i>Bulk Import
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card info-card">
+                <div class="stats-number">{{ stats.total_tracked_units }}</div>
+                <div class="stats-label">Total Tracked Units</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card success-card">
+                <div class="stats-number">{{ stats.trackable_products }}</div>
+                <div class="stats-label">Trackable Products</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card warning-card">
+                <div class="stats-number">{{ stats.expiring_soon }}</div>
+                <div class="stats-label">Expiring Soon (30 days)</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card alert-card">
+                <div class="stats-number">{{ stats.expired_units }}</div>
+                <div class="stats-label">Expired Units</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt mr-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <a href="{% url 'products:expiry_alerts' %}" class="btn btn-outline-warning btn-block">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>View Expiry Alerts
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{% url 'products:tracking_list' %}?status=quarantine" class="btn btn-outline-danger btn-block">
+                                <i class="fas fa-shield-alt mr-2"></i>Quarantined Items
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{% url 'products:tracking_list' %}?tracking_type=serial" class="btn btn-outline-info btn-block">
+                                <i class="fas fa-hashtag mr-2"></i>Serial Tracked Items
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Tracking Activity -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-clock mr-2"></i>Recent Tracking Activity</h5>
+                    <a href="{% url 'products:tracking_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_tracking %}
+                        <div class="row">
+                            {% for tracking_unit in recent_tracking %}
+                            <div class="col-md-6">
+                                <div class="tracking-unit-card">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">
+                                                <a href="{% url 'products:tracking_detail' tracking_unit.pk %}" class="text-decoration-none">
+                                                    {{ tracking_unit.product.name }}
+                                                </a>
+                                            </h6>
+                                            <div class="tracking-number">{{ tracking_unit.get_tracking_value }}</div>
+                                            <small class="text-muted">
+                                                {{ tracking_unit.product.get_tracking_method_display }}
+                                                {% if tracking_unit.current_warehouse %}
+                                                    • {{ tracking_unit.current_warehouse.name }}
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                        <div class="text-right">
+                                            <span class="badge badge-{{ tracking_unit.get_status_color }}">
+                                                {{ tracking_unit.get_status_display }}
+                                            </span>
+                                            {% if tracking_unit.expiry_date %}
+                                                <div class="mt-1">
+                                                    <span class="expiry-badge {% if tracking_unit.is_expired %}expired{% elif tracking_unit.is_expiring_soon %}expiring-soon{% else %}fresh{% endif %}">
+                                                        Exp: {{ tracking_unit.expiry_date|date:"M j, Y" }}
+                                                    </span>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-barcode fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No tracking units found</h5>
+                            <p class="text-muted">Start tracking your products by adding tracking units.</p>
+                            <a href="{% url 'products:tracking_add' %}" class="btn btn-primary">
+                                <i class="fas fa-plus mr-1"></i>Add First Tracking Unit
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Auto-refresh dashboard every 5 minutes
+    setTimeout(function() {
+        location.reload();
+    }, 300000);
+    
+    // Add tooltip for stats cards
+    $('.stats-card').tooltip({
+        placement: 'top',
+        trigger: 'hover'
+    });
+});
+</script>
+{% endblock %}

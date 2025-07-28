@@ -37,6 +37,7 @@ urlpatterns = [
     path('hr/', include('hr.urls')),
     path('project_mgmt/', include('project_mgmt.urls')),
     path('manufacturing/', include('manufacturing.urls')),
+    path('products/', include('products.urls')),
     path('api/crm/', include('crm.api_urls')),
     path('api/sales/', include('sales.api_urls')),
     path('api/purchase/', include('purchase.api_urls')),
@@ -45,6 +46,7 @@ urlpatterns = [
     path('api/hr/', include('hr.api_urls')),
     path('api/project/', include('project_mgmt.api_urls')),
     path('api/manufacturing/', include('manufacturing.api_urls')),
+    path('api/products/', include('products.api_urls')),
     path('api/token-auth/', obtain_auth_token, name='api_token_auth'),
     path('analytics/', include('analytics.urls')),
 ]

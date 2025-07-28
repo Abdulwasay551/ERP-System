@@ -14,6 +14,45 @@ from accounting.models import Account
 
 # Create your views here.
 
+@login_required
+def sales_dashboard(request):
+    """Sales module dashboard with key metrics and quick access"""
+    company = request.user.company
+    
+    # Key metrics
+    total_products = Product.objects.filter(company=company, is_active=True).count()
+    total_quotations = Quotation.objects.filter(company=company).count()
+    pending_quotations = Quotation.objects.filter(company=company, status='draft').count()
+    total_sales_orders = SalesOrder.objects.filter(company=company).count()
+    
+    # Monthly statistics
+    current_month = timezone.now().replace(day=1)
+    monthly_quotations = Quotation.objects.filter(
+        company=company, 
+        created_at__gte=current_month
+    ).count()
+    
+    monthly_sales = SalesOrder.objects.filter(
+        company=company, 
+        created_at__gte=current_month
+    ).aggregate(total=Sum('total'))['total'] or 0
+    
+    # Recent activities
+    recent_quotations = Quotation.objects.filter(company=company).order_by('-created_at')[:5]
+    recent_orders = SalesOrder.objects.filter(company=company).order_by('-created_at')[:5]
+    
+    context = {
+        'total_products': total_products,
+        'total_quotations': total_quotations,
+        'pending_quotations': pending_quotations,
+        'total_sales_orders': total_sales_orders,
+        'monthly_quotations': monthly_quotations,
+        'monthly_sales': monthly_sales,
+        'recent_quotations': recent_quotations,
+        'recent_orders': recent_orders,
+    }
+    return render(request, 'sales/dashboard.html', context)
+
 class ProductPageView(LoginRequiredMixin, TemplateView):
     template_name = 'sales/product_list.html'
     

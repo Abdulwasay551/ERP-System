@@ -1,0 +1,524 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Purchase Return | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .return-form-card {
+        background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
+        border: 1px solid #fecaca;
+        transition: all 0.3s ease;
+    }
+
+    .return-item-selector {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+    }
+
+    .return-item-selector:hover {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+
+    .return-item-selector.selected {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+
+    .return-reason-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .return-reason-card:hover {
+        border-color: #ef4444;
+        background-color: #fef2f2;
+    }
+
+    .return-reason-card.selected {
+        border-color: #ef4444;
+        background-color: #fee2e2;
+    }
+
+    .form-input-enhanced {
+        border: 2px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        transition: border-color 0.3s ease;
+    }
+
+    .form-input-enhanced:focus {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+
+    .file-upload-area {
+        border: 2px dashed #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .file-upload-area:hover {
+        border-color: #ef4444;
+        background-color: #fef2f2;
+    }
+
+    .summary-card {
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        border: 1px solid #f87171;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="return-form-card rounded-2xl p-6 mb-8">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Create Purchase Return</h1>
+                    <p class="text-gray-600">Return defective or unwanted items to supplier</p>
+                </div>
+                <div class="text-right">
+                    <span class="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                        Draft Return
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <form id="returnForm" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <!-- Step 1: GRN Selection -->
+            <div class="return-form-card rounded-2xl p-6 mb-8">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">
+                    <span class="inline-flex items-center justify-center w-8 h-8 bg-red-100 text-red-600 rounded-full text-sm font-bold mr-3">1</span>
+                    Select GRN
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Goods Receipt Note <span class="text-red-500">*</span>
+                        </label>
+                        <select name="grn" id="grn-select" class="form-input-enhanced w-full" required onchange="loadGRNItems()">
+                            <option value="">Select GRN</option>
+                            {% for grn in available_grns %}
+                            <option value="{{ grn.id }}" 
+                                    data-supplier="{{ grn.purchase_order.supplier.name }}"
+                                    data-po="{{ grn.purchase_order.po_number }}"
+                                    data-date="{{ grn.received_date|date:'Y-m-d' }}">
+                                {{ grn.grn_number }} - {{ grn.purchase_order.supplier.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div id="grn-details" class="hidden">
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="font-semibold text-gray-900 mb-2">GRN Details</h4>
+                            <div class="space-y-1 text-sm text-gray-600">
+                                <p><strong>Supplier:</strong> <span id="supplier-name"></span></p>
+                                <p><strong>PO Number:</strong> <span id="po-number"></span></p>
+                                <p><strong>Received Date:</strong> <span id="received-date"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Return Reason -->
+            <div class="return-form-card rounded-2xl p-6 mb-8">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">
+                    <span class="inline-flex items-center justify-center w-8 h-8 bg-red-100 text-red-600 rounded-full text-sm font-bold mr-3">2</span>
+                    Return Reason
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <div class="return-reason-card" onclick="selectReason('defective')">
+                        <input type="radio" name="return_type" value="defective" class="hidden" id="reason-defective">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-exclamation-triangle text-red-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-900">Defective Items</h4>
+                                <p class="text-sm text-gray-600">Items not working properly</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="return-reason-card" onclick="selectReason('damaged')">
+                        <input type="radio" name="return_type" value="damaged" class="hidden" id="reason-damaged">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-broken-image text-orange-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-900">Damaged in Transit</h4>
+                                <p class="text-sm text-gray-600">Items damaged during shipping</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="return-reason-card" onclick="selectReason('wrong_item')">
+                        <input type="radio" name="return_type" value="wrong_item" class="hidden" id="reason-wrong_item">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-exchange-alt text-blue-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-900">Wrong Item</h4>
+                                <p class="text-sm text-gray-600">Incorrect item received</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="return-reason-card" onclick="selectReason('excess')">
+                        <input type="radio" name="return_type" value="excess" class="hidden" id="reason-excess">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-plus-circle text-green-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-900">Excess Quantity</h4>
+                                <p class="text-sm text-gray-600">More than ordered quantity</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="return-reason-card" onclick="selectReason('quality_issue')">
+                        <input type="radio" name="return_type" value="quality_issue" class="hidden" id="reason-quality_issue">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-clipboard-check text-purple-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-900">Quality Issue</h4>
+                                <p class="text-sm text-gray-600">Failed quality inspection</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Detailed Reason <span class="text-red-500">*</span>
+                    </label>
+                    <textarea name="reason" class="form-input-enhanced w-full" rows="3" required
+                              placeholder="Provide detailed explanation for the return..."></textarea>
+                </div>
+            </div>
+
+            <!-- Step 3: Item Selection -->
+            <div id="items-section" class="return-form-card rounded-2xl p-6 mb-8" style="display: none;">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">
+                    <span class="inline-flex items-center justify-center w-8 h-8 bg-red-100 text-red-600 rounded-full text-sm font-bold mr-3">3</span>
+                    Select Items to Return
+                </h2>
+                
+                <div id="available-items" class="space-y-4">
+                    <!-- Items will be loaded via JavaScript -->
+                </div>
+                
+                <div class="mt-6 p-4 bg-yellow-50 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-info-circle text-yellow-600 mr-2"></i>
+                        <p class="text-sm text-yellow-800">
+                            Select the items you want to return and specify the return quantity and condition.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Documentation -->
+            <div class="return-form-card rounded-2xl p-6 mb-8">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">
+                    <span class="inline-flex items-center justify-center w-8 h-8 bg-red-100 text-red-600 rounded-full text-sm font-bold mr-3">4</span>
+                    Documentation
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quality Report</label>
+                        <div class="file-upload-area">
+                            <input type="file" name="quality_report" class="hidden" id="quality-report" 
+                                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onchange="handleFileUpload('quality-report')">
+                            <label for="quality-report" class="cursor-pointer">
+                                <i class="fas fa-file-upload text-2xl text-gray-400 mb-2"></i>
+                                <p class="text-gray-600">Upload Quality Report</p>
+                                <p class="text-xs text-gray-500">PDF, DOC, or Image files</p>
+                            </label>
+                            <div id="quality-report-preview" class="mt-2"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Photos of Items</label>
+                        <div class="file-upload-area">
+                            <input type="file" name="photos_returned_items" class="hidden" id="item-photos" 
+                                   accept="image/*" multiple onchange="handleFileUpload('item-photos')">
+                            <label for="item-photos" class="cursor-pointer">
+                                <i class="fas fa-camera text-2xl text-gray-400 mb-2"></i>
+                                <p class="text-gray-600">Upload Photos</p>
+                                <p class="text-xs text-gray-500">Multiple images allowed</p>
+                            </label>
+                            <div id="item-photos-preview" class="mt-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 5: Return Summary -->
+            <div id="return-summary" class="summary-card rounded-2xl p-6 mb-8" style="display: none;">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">
+                    <span class="inline-flex items-center justify-center w-8 h-8 bg-red-100 text-red-600 rounded-full text-sm font-bold mr-3">5</span>
+                    Return Summary
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-red-600" id="total-items">0</div>
+                        <div class="text-sm text-gray-600">Items to Return</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-red-600" id="total-quantity">0</div>
+                        <div class="text-sm text-gray-600">Total Quantity</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-red-600" id="total-value">$0.00</div>
+                        <div class="text-sm text-gray-600">Total Value</div>
+                    </div>
+                </div>
+                
+                <div class="space-y-2">
+                    <div class="flex items-center">
+                        <input type="checkbox" name="replacement_requested" value="1" class="form-checkbox text-red-600">
+                        <label class="ml-2 text-sm text-gray-700">Request replacement items</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" name="refund_requested" value="1" class="form-checkbox text-red-600">
+                        <label class="ml-2 text-sm text-gray-700">Request refund</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" name="credit_note_requested" value="1" class="form-checkbox text-red-600">
+                        <label class="ml-2 text-sm text-gray-700">Request credit note</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-end gap-4">
+                <a href="{% url 'purchase:returns_ui' %}" 
+                   class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                    Cancel
+                </a>
+                <button type="button" onclick="saveDraft()"
+                        class="px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">
+                    Save as Draft
+                </button>
+                <button type="submit" 
+                        class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                    Submit Return Request
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function loadGRNItems() {
+    const grnSelect = document.getElementById('grn-select');
+    const selectedOption = grnSelect.options[grnSelect.selectedIndex];
+    
+    if (selectedOption.value) {
+        // Show GRN details
+        document.getElementById('grn-details').classList.remove('hidden');
+        document.getElementById('supplier-name').textContent = selectedOption.dataset.supplier;
+        document.getElementById('po-number').textContent = selectedOption.dataset.po;
+        document.getElementById('received-date').textContent = new Date(selectedOption.dataset.date).toLocaleDateString();
+        
+        // Load items via AJAX
+        fetch(`/purchase/grn/${selectedOption.value}/items/`)
+            .then(response => response.json())
+            .then(data => {
+                displayGRNItems(data.items);
+                document.getElementById('items-section').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error loading GRN items:', error);
+            });
+    } else {
+        document.getElementById('grn-details').classList.add('hidden');
+        document.getElementById('items-section').style.display = 'none';
+    }
+}
+
+function displayGRNItems(items) {
+    const container = document.getElementById('available-items');
+    container.innerHTML = '';
+
+    items.forEach((item, index) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'return-item-selector p-4';
+        itemDiv.innerHTML = `
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <input type="checkbox" name="include_item_${item.id}" value="1" 
+                           class="form-checkbox text-red-600 mr-4" 
+                           onchange="toggleItemSelection(${item.id}, this.checked)">
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-gray-900">${item.product_name}</h4>
+                        <p class="text-gray-600 text-sm">SKU: ${item.product_sku}</p>
+                        <p class="text-gray-600 text-sm">
+                            Received: ${item.received_quantity} ${item.unit} • 
+                            Available: ${item.available_quantity} ${item.unit}
+                        </p>
+                    </div>
+                </div>
+                <div id="item-controls-${item.id}" class="flex items-center gap-4" style="display: none;">
+                    <div>
+                        <label class="block text-sm text-gray-700">Return Qty</label>
+                        <input type="number" name="return_quantity_${item.id}" 
+                               class="form-input w-24" min="1" max="${item.available_quantity}" 
+                               step="0.01" onchange="updateSummary()">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-700">Condition</label>
+                        <select name="condition_${item.id}" class="form-select">
+                            <option value="good">Good</option>
+                            <option value="damaged">Damaged</option>
+                            <option value="defective">Defective</option>
+                            <option value="expired">Expired</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-700">Unit Price</label>
+                        <span class="text-sm font-medium">$${item.unit_price}</span>
+                        <input type="hidden" name="unit_price_${item.id}" value="${item.unit_price}">
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(itemDiv);
+    });
+}
+
+function toggleItemSelection(itemId, isSelected) {
+    const controls = document.getElementById(`item-controls-${itemId}`);
+    const itemDiv = controls.closest('.return-item-selector');
+    
+    if (isSelected) {
+        controls.style.display = 'flex';
+        itemDiv.classList.add('selected');
+    } else {
+        controls.style.display = 'none';
+        itemDiv.classList.remove('selected');
+    }
+    
+    updateSummary();
+}
+
+function selectReason(reasonType) {
+    // Remove selected class from all cards
+    document.querySelectorAll('.return-reason-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Add selected class to clicked card
+    event.currentTarget.classList.add('selected');
+    
+    // Select the radio button
+    document.getElementById(`reason-${reasonType}`).checked = true;
+}
+
+function updateSummary() {
+    const selectedItems = document.querySelectorAll('input[name^="include_item_"]:checked');
+    let totalItems = 0;
+    let totalQuantity = 0;
+    let totalValue = 0;
+
+    selectedItems.forEach(checkbox => {
+        const itemId = checkbox.name.replace('include_item_', '');
+        const quantityInput = document.querySelector(`input[name="return_quantity_${itemId}"]`);
+        const unitPriceInput = document.querySelector(`input[name="unit_price_${itemId}"]`);
+        
+        if (quantityInput && quantityInput.value && unitPriceInput) {
+            const quantity = parseFloat(quantityInput.value) || 0;
+            const unitPrice = parseFloat(unitPriceInput.value) || 0;
+            
+            totalItems++;
+            totalQuantity += quantity;
+            totalValue += quantity * unitPrice;
+        }
+    });
+
+    document.getElementById('total-items').textContent = totalItems;
+    document.getElementById('total-quantity').textContent = totalQuantity.toFixed(2);
+    document.getElementById('total-value').textContent = `$${totalValue.toFixed(2)}`;
+    
+    // Show summary if items are selected
+    if (totalItems > 0) {
+        document.getElementById('return-summary').style.display = 'block';
+    } else {
+        document.getElementById('return-summary').style.display = 'none';
+    }
+}
+
+function handleFileUpload(inputId) {
+    const input = document.getElementById(inputId);
+    const preview = document.getElementById(`${inputId}-preview`);
+    
+    preview.innerHTML = '';
+    
+    for (let i = 0; i < input.files.length; i++) {
+        const file = input.files[i];
+        const fileDiv = document.createElement('div');
+        fileDiv.className = 'flex items-center text-sm text-gray-600 mt-1';
+        fileDiv.innerHTML = `
+            <i class="fas fa-file mr-2"></i>
+            <span>${file.name}</span>
+        `;
+        preview.appendChild(fileDiv);
+    }
+}
+
+function saveDraft() {
+    const form = document.getElementById('returnForm');
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'action';
+    hiddenInput.value = 'save_draft';
+    form.appendChild(hiddenInput);
+    form.submit();
+}
+
+// Form validation
+document.getElementById('returnForm').addEventListener('submit', function(e) {
+    const selectedItems = document.querySelectorAll('input[name^="include_item_"]:checked');
+    
+    if (selectedItems.length === 0) {
+        e.preventDefault();
+        alert('Please select at least one item to return.');
+        return;
+    }
+    
+    const returnType = document.querySelector('input[name="return_type"]:checked');
+    if (!returnType) {
+        e.preventDefault();
+        alert('Please select a return reason.');
+        return;
+    }
+});
+</script>
+{% endblock %}

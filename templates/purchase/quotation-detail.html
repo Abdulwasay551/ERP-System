@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+{% block title %}Quotation Details | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .quotation-header {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+    .item-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(37, 99, 235, 0.05));
+        border: 1px solid rgba(59, 130, 246, 0.1);
+        transition: all 0.3s ease;
+    }
+    .item-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    }
+    .uom-badge {
+        background: rgba(99, 102, 241, 0.1);
+        color: #6366f1;
+        padding: 3px 10px;
+        border-radius: 15px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    .price-highlight {
+        background: linear-gradient(135deg, #10b981, #059669);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700;
+    }
+    .status-approved {
+        background-color: #d1fae5;
+        color: #059669;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .calculation-box {
+        background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1));
+        border: 1px solid rgba(251, 191, 36, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Quotation Details</h1>
+                <p class="text-gray-600">View detailed quotation information with UOM breakdown</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'purchase:quotations_ui' %}" class="bg-gray-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to Quotations
+                </a>
+                <button class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Download PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- Quotation Header -->
+        <div class="quotation-header rounded-2xl shadow-lg p-6 mb-8">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">QUO-2024-002</h2>
+                    <p class="text-lg text-gray-700">Global Supply Co - Office Equipment</p>
+                    <p class="text-sm text-gray-600 mt-1">RFQ Reference: RFQ-2024-002</p>
+                </div>
+                <div class="text-right">
+                    <span class="status-approved">Approved</span>
+                    <div class="text-3xl price-highlight mt-2">$52,400</div>
+                    <div class="text-sm text-gray-500">Total Value</div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div>
+                    <p class="text-sm text-gray-500">Quotation Date</p>
+                    <p class="font-medium">Dec 18, 2024</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Valid Until</p>
+                    <p class="font-medium">Jan 15, 2025</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Delivery Time</p>
+                    <p class="font-medium">14 Days</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Payment Terms</p>
+                    <p class="font-medium">Net 30</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supplier Information -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">Supplier Information</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-gray-700 mb-2">Contact Details</h4>
+                    <div class="space-y-1 text-sm">
+                        <p><strong>Company:</strong> Global Supply Co</p>
+                        <p><strong>Contact Person:</strong> John Mitchell</p>
+                        <p><strong>Email:</strong> john.mitchell@globalsupply.com</p>
+                        <p><strong>Phone:</strong> +1 (555) 234-5678</p>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-medium text-gray-700 mb-2">Business Details</h4>
+                    <div class="space-y-1 text-sm">
+                        <p><strong>Tax ID:</strong> 123-45-6789</p>
+                        <p><strong>Rating:</strong> 4.6/5 ⭐</p>
+                        <p><strong>Previous Orders:</strong> 23</p>
+                        <p><strong>Reliability:</strong> 98%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Items Breakdown -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <h3 class="text-xl font-bold text-gray-900 mb-6">Items & UOM Breakdown</h3>
+            
+            <div class="space-y-6">
+                <!-- Item 1 -->
+                <div class="item-card rounded-lg p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h4 class="text-lg font-bold text-gray-900">Laptop Computers</h4>
+                            <p class="text-gray-600">Dell OptiPlex 7090 - Business Grade</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-900">$35,000</div>
+                            <div class="text-sm text-gray-500">Subtotal</div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Quantity Requested</p>
+                            <p class="font-medium">10 Units</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Quoted UOM</p>
+                            <span class="uom-badge">Unit (Individual)</span>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Unit Price</p>
+                            <p class="font-medium text-green-600">$3,500.00</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Lead Time</p>
+                            <p class="font-medium">7-10 Days</p>
+                        </div>
+                    </div>
+
+                    <!-- UOM Calculation -->
+                    <div class="calculation-box rounded-lg p-4">
+                        <h5 class="font-medium text-amber-900 mb-2">UOM Calculation</h5>
+                        <div class="text-sm text-amber-800 space-y-1">
+                            <div>Base Unit: Individual laptop</div>
+                            <div>Supplier Packaging: Individual units (no bulk discount)</div>
+                            <div>Final Unit Cost: $3,500.00 per laptop</div>
+                            <div><strong>Total: 10 units × $3,500.00 = $35,000.00</strong></div>
+                        </div>
+                    </div>
+
+                    <!-- Specifications -->
+                    <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                        <h5 class="font-medium text-gray-900 mb-2">Specifications</h5>
+                        <div class="text-sm text-gray-700 space-y-1">
+                            <div>• Intel Core i7-11700 processor</div>
+                            <div>• 16GB DDR4 RAM</div>
+                            <div>• 512GB NVMe SSD</div>
+                            <div>• Windows 11 Pro</div>
+                            <div>• 3-year warranty included</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Item 2 -->
+                <div class="item-card rounded-lg p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h4 class="text-lg font-bold text-gray-900">Office Chairs</h4>
+                            <p class="text-gray-600">Ergonomic Executive Chairs</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-900">$7,500</div>
+                            <div class="text-sm text-gray-500">Subtotal</div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Quantity Requested</p>
+                            <p class="font-medium">15 Pieces</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Quoted UOM</p>
+                            <span class="uom-badge">Set (5 chairs)</span>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Set Price</p>
+                            <p class="font-medium text-green-600">$2,500.00</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Lead Time</p>
+                            <p class="font-medium">14 Days</p>
+                        </div>
+                    </div>
+
+                    <!-- UOM Calculation -->
+                    <div class="calculation-box rounded-lg p-4">
+                        <h5 class="font-medium text-amber-900 mb-2">UOM Calculation</h5>
+                        <div class="text-sm text-amber-800 space-y-1">
+                            <div>Base Unit: Individual chair</div>
+                            <div>Supplier Packaging: Sets of 5 chairs</div>
+                            <div>Required: 15 chairs = 3 sets</div>
+                            <div>Unit Cost: $2,500 ÷ 5 = $500.00 per chair</div>
+                            <div><strong>Total: 3 sets × $2,500.00 = $7,500.00</strong></div>
+                        </div>
+                    </div>
+
+                    <!-- Specifications -->
+                    <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                        <h5 class="font-medium text-gray-900 mb-2">Specifications</h5>
+                        <div class="text-sm text-gray-700 space-y-1">
+                            <div>• Adjustable height and tilt</div>
+                            <div>• Lumbar support</div>
+                            <div>• Premium leather upholstery</div>
+                            <div>• 360° swivel</div>
+                            <div>• 5-year warranty</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Items Summary -->
+                <div class="item-card rounded-lg p-6">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h4 class="text-lg font-bold text-gray-900">6 Additional Items</h4>
+                            <p class="text-gray-600">Monitors, keyboards, mice, etc.</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-900">$9,900</div>
+                            <div class="text-sm text-gray-500">Subtotal</div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                            + Show detailed breakdown
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Totals -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">Price Breakdown</h3>
+            <div class="space-y-3">
+                <div class="flex justify-between text-lg">
+                    <span>Subtotal</span>
+                    <span>$52,400</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Shipping & Handling</span>
+                    <span>$950</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Tax (8.5%)</span>
+                    <span>$4,454</span>
+                </div>
+                <div class="border-t pt-3 flex justify-between text-xl font-bold">
+                    <span>Total Amount</span>
+                    <span class="price-highlight">$57,804</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terms & Conditions -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">Terms & Conditions</h3>
+            <div class="space-y-2 text-sm text-gray-700">
+                <p>• Payment Terms: Net 30 days from delivery date</p>
+                <p>• Delivery: FOB destination, freight prepaid</p>
+                <p>• Warranty: All items include manufacturer warranty</p>
+                <p>• Returns: 30-day return policy for defective items</p>
+                <p>• Price Valid: Until January 15, 2025</p>
+                <p>• Installation: Basic setup included at no extra charge</p>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-4 justify-center">
+            <button class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                Approve Quotation
+            </button>
+            <a href="{% url 'purchase:quotation_to_po' 2 %}" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+                Create Purchase Order
+            </a>
+            <button class="bg-gray-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                Reject Quotation
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

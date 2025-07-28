@@ -1,12 +1,7 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
-from .models import ProductCategory, StockItem, StockMovement, Warehouse, StockAlert
-
-@admin.register(ProductCategory)
-class ProductCategoryAdmin(ModelAdmin):
-    list_display = ('name', 'company', 'parent', 'is_active', 'created_at')
-    search_fields = ('name', 'description')
-    list_filter = ('company', 'is_active')
+from .models import StockItem, StockMovement, Warehouse, StockAlert
+from products.models import ProductCategory
 
 @admin.register(Warehouse)
 class WarehouseAdmin(ModelAdmin):

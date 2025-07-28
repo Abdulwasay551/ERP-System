@@ -1,0 +1,89 @@
+{% load static %}
+<!-- Purchase Module Sidebar -->
+<div class="sidebar-content">
+    <!-- Logo/Back Section -->
+    <div class="sidebar-logo p-4 border-b border-white/20">
+        <div class="flex items-center space-x-3 min-h-[3rem]">
+            <a href="{% url 'dashboard' %}" class="w-12 h-12 bg-white/20 backdrop-blur-md hover:bg-white/30 rounded-full flex items-center justify-center transition-all flex-shrink-0 border border-white/30">
+                <i class="fas fa-arrow-left text-white text-base"></i>
+            </a>
+            <span class="text-xl font-bold sidebar-text whitespace-nowrap text-white">Purchase</span>
+        </div>
+    </div>
+
+    <!-- Navigation Items -->
+    <nav class="sidebar-nav flex-1 py-4 space-y-2 mt-2">
+        <!-- Dashboard -->
+        <a href="{% url 'purchase:dashboard' %}" class="sidebar-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <i class="fas fa-tachometer-alt sidebar-icon"></i>
+            <span class="sidebar-text">Dashboard</span>
+        </a>
+
+        <!-- Requisitions (moved up) -->
+        <a href="{% url 'purchase:requisitions_ui' %}" class="sidebar-item {% if 'requisition' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-file-alt sidebar-icon"></i>
+            <span class="sidebar-text">Requisitions</span>
+        </a>
+
+        <!-- RFQ -->
+        <a href="{% url 'purchase:rfq_ui' %}" class="sidebar-item {% if 'rfq' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-question-circle sidebar-icon"></i>
+            <span class="sidebar-text">RFQ</span>
+        </a>
+
+        <!-- Quotations -->
+        <a href="{% url 'purchase:quotations_ui' %}" class="sidebar-item {% if 'quotation' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-file-contract sidebar-icon"></i>
+            <span class="sidebar-text">Quotations</span>
+        </a>
+
+        <!-- Purchase Orders -->
+        <a href="{% url 'purchase:purchaseorders_ui' %}" class="sidebar-item {% if 'purchaseorder' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-shopping-cart sidebar-icon"></i>
+            <span class="sidebar-text">Purchase Orders</span>
+        </a>
+
+        <!-- Goods Receipt Note -->
+        <a href="{% url 'purchase:grns_ui' %}" class="sidebar-item {% if 'grn' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-truck sidebar-icon"></i>
+            <span class="sidebar-text">Goods Receipt</span>
+        </a>
+
+        <!-- Purchase Returns -->
+        <a href="{% url 'purchase:returns_ui' %}" class="sidebar-item {% if 'return' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-undo sidebar-icon"></i>
+            <span class="sidebar-text">Returns</span>
+        </a>
+
+        <!-- Quality Assurance -->
+        <a href="{% url 'purchase:quality_assurance' %}" class="sidebar-item {% if 'quality' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-shield-alt sidebar-icon"></i>
+            <span class="sidebar-text">Quality Assurance</span>
+        </a>
+
+        <!-- Purchase Invoices/Bills -->
+        <a href="{% url 'purchase:bills_ui' %}" class="sidebar-item {% if 'bill' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-file-invoice sidebar-icon"></i>
+            <span class="sidebar-text">Bills/Invoices</span>
+        </a>
+
+        <!-- Payments -->
+        <a href="{% url 'purchase:payments_ui' %}" class="sidebar-item {% if 'payment' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-credit-card sidebar-icon"></i>
+            <span class="sidebar-text">Payments</span>
+        </a>
+
+        <!-- Suppliers -->
+        <a href="{% url 'purchase:suppliers_ui' %}" class="sidebar-item {% if 'supplier' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-building sidebar-icon"></i>
+            <span class="sidebar-text">Suppliers</span>
+        </a>
+
+        <!-- Reports -->
+        <a href="#" class="sidebar-item text-gray-400">
+            <i class="fas fa-chart-pie sidebar-icon"></i>
+            <span class="sidebar-text">Reports</span>
+            <span class="text-xs text-gray-500 sidebar-text ml-2">(Coming Soon)</span>
+        </a>
+    </nav>
+</div>

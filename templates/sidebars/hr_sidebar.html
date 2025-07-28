@@ -1,0 +1,88 @@
+{% load static %}
+
+<div class="sidebar-content">
+    <!-- Logo -->
+    <div class="sidebar-logo p-6">
+        <a href="{% url 'dashboard' %}" class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur">
+                <img src="{% static 'logo.png' %}" alt="FutureERP Logo" class="w-8 h-8" style="border-radius: 50%;">
+            </div>
+            <span class="sidebar-text text-xl font-bold text-white">FutureERP</span>
+        </a>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav ">
+        <!-- Back to Dashboard -->
+        <a href="{% url 'dashboard' %}" class="sidebar-item bg-white/20 border border-white/20 mb-4">
+            <span class="sidebar-icon">
+                <i class="fas fa-arrow-left"></i>
+            </span>
+            <span class="sidebar-text">Back to Dashboard</span>
+        </a>
+
+        <!-- HR Dashboard -->
+        <a href="{% url 'hr_dashboard' %}" class="sidebar-item">
+            <span class="sidebar-icon">
+                <i class="fas fa-tachometer-alt"></i>
+            </span>
+            <span class="sidebar-text">HR Dashboard</span>
+        </a>
+
+        <!-- Employee Management -->
+        <div class="sidebar-section mb-4">
+            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Employee Management</h3>
+            <a href="{% url 'hr_employees_ui' %}" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-users"></i>
+                </span>
+                <span class="sidebar-text">Employees</span>
+            </a>
+            <a href="{% url 'hr_employees_add' %}" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-user-plus"></i>
+                </span>
+                <span class="sidebar-text">Add Employee</span>
+            </a>
+        </div>
+
+        <!-- Attendance & Time -->
+        <div class="sidebar-section mb-4">
+            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Attendance & Time</h3>
+            <a href="{% url 'hr_attendance_ui' %}" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-clock"></i>
+                </span>
+                <span class="sidebar-text">Attendance</span>
+            </a>
+            <a href="{% url 'hr_leaves_ui' %}" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </span>
+                <span class="sidebar-text">Leave Management</span>
+            </a>
+        </div>
+
+        <!-- Payroll -->
+        <div class="sidebar-section mb-4">
+            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Payroll</h3>
+            <a href="{% url 'hr_payroll_ui' %}" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-money-bill-wave"></i>
+                </span>
+                <span class="sidebar-text">Payroll</span>
+            </a>
+        </div>
+
+        <!-- Reports -->
+        <div class="sidebar-section">
+            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Reports</h3>
+            <a href="{% url 'hr_reports_ui' %}" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-chart-bar"></i>
+                </span>
+                <span class="sidebar-text">HR Reports</span>
+            </a>
+        </div>
+    </nav>
+</div>

@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+{% block title %}Supplier Quotations | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .quotation-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(6, 95, 70, 0.08));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        backdrop-filter: blur(10px);
+    }
+    .quotation-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 40px rgba(16, 185, 129, 0.15);
+        border-color: rgba(16, 185, 129, 0.3);
+    }
+    .best-quote {
+        background: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(245, 158, 11, 0.12));
+        border: 2px solid rgba(251, 191, 36, 0.4);
+        box-shadow: 0 8px 32px rgba(251, 191, 36, 0.2);
+    }
+    .best-quote:hover {
+        box-shadow: 0 20px 40px rgba(251, 191, 36, 0.25);
+    }
+    .uom-badge {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(79, 70, 229, 0.15));
+        color: #6366f1;
+        padding: 4px 10px;
+        border-radius: 16px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+    .price-highlight {
+        background: linear-gradient(135deg, #10b981, #059669);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 800;
+        font-size: 1.75rem;
+    }
+    .stats-card {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all 0.3s ease;
+    }
+    .stats-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    .filter-card {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85));
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    .item-detail-card {
+        background: linear-gradient(135deg, rgba(249, 250, 251, 0.8), rgba(243, 244, 246, 0.8));
+        border: 1px solid rgba(229, 231, 235, 0.5);
+        transition: all 0.3s ease;
+    }
+    .item-detail-card:hover {
+        background: linear-gradient(135deg, rgba(243, 244, 246, 0.9), rgba(229, 231, 235, 0.9));
+        transform: translateX(4px);
+    }
+    .action-btn {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        font-weight: 600;
+        letter-spacing: 0.025em;
+    }
+    .action-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .discount-badge {
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 0.7rem;
+    }
+    .min-qty-badge {
+        background: linear-gradient(135deg, rgba(251, 146, 60, 0.15), rgba(249, 115, 22, 0.15));
+        border: 1px solid rgba(251, 146, 60, 0.3);
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Supplier Quotations</h1>
+                <p class="text-gray-600">Compare and manage supplier quotations with Purchase Requisition integration</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'purchase:quotation_add' %}" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Add Quotation
+                </a>
+                <a href="{% url 'purchase:quotation_compare' %}" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    Compare All
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="stats-card rounded-2xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-blue-600 mb-1">{{ quotations.paginator.count|default:0 }}</div>
+                <div class="text-gray-600 font-medium">Total Quotations</div>
+            </div>
+            <div class="stats-card rounded-2xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-green-600 mb-1">{{ quotations|length }}</div>
+                <div class="text-gray-600 font-medium">Showing Results</div>
+            </div>
+            <div class="stats-card rounded-2xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-purple-600 mb-1">{{ suppliers.count|default:0 }}</div>
+                <div class="text-gray-600 font-medium">Active Suppliers</div>
+            </div>
+            <div class="stats-card rounded-2xl shadow-lg p-6 text-center">
+                <div class="text-3xl font-bold text-orange-600 mb-1">{{ quotations.paginator.num_pages|default:1 }}</div>
+                <div class="text-gray-600 font-medium">Pages</div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-card rounded-2xl shadow-lg p-6 mb-8">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" name="search" value="{{ search }}" placeholder="Search quotation number, supplier..." 
+                           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Supplier</label>
+                    <select name="supplier_id" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                        <option value="">All Suppliers</option>
+                        {% for supplier in suppliers %}
+                        <option value="{{ supplier.id }}" {% if supplier_id == supplier.id|stringformat:"s" %}selected{% endif %}>
+                            {{ supplier.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select name="status" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                        <option value="">All Statuses</option>
+                        {% for status_value, status_label in status_choices %}
+                        <option value="{{ status_value }}" {% if status == status_value %}selected{% endif %}>
+                            {{ status_label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">RFQ</label>
+                    <input type="text" name="rfq" placeholder="RFQ number..." 
+                           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                </div>
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 transition-colors">
+                        Filter
+                    </button>
+                    <a href="{% url 'purchase:quotations_ui' %}" class="bg-gray-600 text-white p-3 rounded-lg hover:bg-gray-700 transition-colors">
+                        Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Quotations List -->
+        <div class="grid gap-6">
+            {% for quotation in quotations %}
+            <div class="quotation-card rounded-2xl shadow-lg p-6 {% if quotation.status == 'accepted' %}best-quote{% endif %}">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold text-gray-900">{{ quotation.quotation_number }}</h3>
+                            <p class="text-gray-600">{{ quotation.supplier.name }}</p>
+                            {% if quotation.rfq %}
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">RFQ: {{ quotation.rfq.rfq_number }}</span>
+                                    {% if quotation.rfq.purchase_requisition %}
+                                        <a href="{% url 'purchase:requisition_detail' quotation.rfq.purchase_requisition.id %}" 
+                                           class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full hover:bg-purple-200 transition-colors">
+                                            PR: {{ quotation.rfq.purchase_requisition.pr_number }}
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        {% if quotation.status == 'accepted' %}
+                            <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">Best Quote</span>
+                        {% endif %}
+                        <span class="inline-block px-3 py-1 text-sm font-medium rounded-full
+                            {% if quotation.status == 'draft' %}bg-gray-100 text-gray-800
+                            {% elif quotation.status == 'submitted' %}bg-yellow-100 text-yellow-800
+                            {% elif quotation.status == 'accepted' %}bg-green-100 text-green-800
+                            {% elif quotation.status == 'rejected' %}bg-red-100 text-red-800
+                            {% elif quotation.status == 'expired' %}bg-orange-100 text-orange-800
+                            {% endif %}">
+                            {{ quotation.get_status_display }}
+                        </span>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold price-highlight">${{ quotation.total_amount|floatformat:2 }}</div>
+                            <div class="text-sm text-gray-500">Total Value</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                    <div>
+                        <p class="text-sm text-gray-500">Quotation Date</p>
+                        <p class="font-medium">{{ quotation.quotation_date|date:"M d, Y" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Valid Until</p>
+                        <p class="font-medium">{{ quotation.valid_until|date:"M d, Y" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Items</p>
+                        <p class="font-medium">{{ quotation.items.count }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Delivery Time</p>
+                        <p class="font-medium">{{ quotation.delivery_time_days }} days</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Discount/Rebate</p>
+                        <p class="font-medium">
+                            {% if quotation.discount_type == 'percentage' and quotation.discount_percentage > 0 %}
+                                {% if quotation.discount_application == 'add' %}
+                                    <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">{{ quotation.discount_percentage }}% Rebate/Fee</span>
+                                {% else %}
+                                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">{{ quotation.discount_percentage }}% Off</span>
+                                {% endif %}
+                            {% elif quotation.discount_type == 'fixed_amount' and quotation.discount_amount > 0 %}
+                                {% if quotation.discount_application == 'add' %}
+                                    <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">${{ quotation.discount_amount|floatformat:2 }} Rebate/Fee</span>
+                                {% else %}
+                                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">${{ quotation.discount_amount|floatformat:2 }} Discount</span>
+                                {% endif %}
+                            {% elif quotation.discount_type == 'quantity_based' %}
+                                {% if quotation.discount_application == 'add' %}
+                                    <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">Qty-Based Rebate/Fee</span>
+                                {% else %}
+                                    <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">Qty-Based Discount</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-gray-500">None</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Items with UOM -->
+                <div class="item-detail-card rounded-lg p-4 mb-4">
+                    <h4 class="font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        Quoted Items
+                    </h4>
+                    <div class="space-y-3">
+                        {% for item in quotation.items.all|slice:":3" %}
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <div class="flex-1">
+                                <span class="font-medium text-gray-900">{{ item.product.name }}</span>
+                                <div class="flex flex-wrap gap-2 mt-2">
+                                    {% if item.quoted_uom %}
+                                        <span class="uom-badge">{{ item.quoted_uom.name }} ({{ item.quoted_uom.abbreviation }})</span>
+                                        {% if item.package_qty > 1 %}
+                                            <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full">{{ item.package_qty }} units/{{ item.quoted_uom.abbreviation }}</span>
+                                        {% endif %}
+                                    {% endif %}
+                                    
+                                    {% if item.minimum_order_qty %}
+                                        <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
+                                            Min Order: {{ item.minimum_order_qty }}
+                                        </span>
+                                    {% endif %}
+                                    
+                                    {% if item.item_discount_type == 'percentage' and item.item_discount_percentage > 0 %}
+                                        {% if item.item_discount_application == 'add' %}
+                                            <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">{{ item.item_discount_percentage }}% rebate/fee</span>
+                                        {% else %}
+                                            <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">{{ item.item_discount_percentage }}% off</span>
+                                        {% endif %}
+                                    {% elif item.item_discount_type == 'fixed_amount' and item.item_discount_amount > 0 %}
+                                        {% if item.item_discount_application == 'add' %}
+                                            <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">${{ item.item_discount_amount|floatformat:2 }} rebate/fee</span>
+                                        {% else %}
+                                            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">${{ item.item_discount_amount|floatformat:2 }} off</span>
+                                        {% endif %}
+                                    {% elif item.item_discount_type == 'quantity_based' %}
+                                        {% if item.item_discount_application == 'add' %}
+                                            <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">Qty Rebate/Fee</span>
+                                        {% else %}
+                                            <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">Qty Discount</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                                
+                                {% if item.specifications %}
+                                    <p class="text-xs text-gray-600 mt-1 italic">{{ item.specifications|truncatechars:60 }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="text-right ml-4">
+                                <div class="font-bold text-lg text-gray-900">${{ item.unit_price|floatformat:2 }}/{{ item.quoted_uom.abbreviation|default:"unit" }}</div>
+                                <div class="text-sm text-gray-500">Qty: {{ item.quantity }}</div>
+                                {% if item.package_qty > 1 %}
+                                    <div class="text-xs text-green-600">${{ item.base_unit_price|floatformat:2 }}/base unit</div>
+                                {% endif %}
+                                <div class="text-sm font-semibold text-green-700 mt-1">Total: ${{ item.total_amount|floatformat:2 }}</div>
+                                
+                                {% if item.lead_time_days %}
+                                    <div class="text-xs text-blue-600 mt-1">Lead: {{ item.lead_time_days }} days</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if quotation.items.count > 3 %}
+                            <div class="text-sm text-blue-600 font-medium cursor-pointer hover:text-blue-800">
+                                + Show {{ quotation.items.count|add:"-3" }} more items
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Terms & Actions -->
+                <div class="flex justify-between items-center pt-4 border-t">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        {% if quotation.payment_terms %}
+                        <div>
+                            <span class="text-gray-500">Payment:</span>
+                            <span class="font-medium">{{ quotation.payment_terms }}</span>
+                        </div>
+                        {% endif %}
+                        {% if quotation.delivery_terms %}
+                        <div>
+                            <span class="text-gray-500">Delivery:</span>
+                            <span class="font-medium">{{ quotation.delivery_terms }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="flex gap-3">
+                        <a href="{% url 'purchase:quotation_detail' quotation.id %}" class="action-btn bg-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            View Details
+                        </a>
+                        {% if quotation.status == 'submitted' and perms.purchase.change_supplierquotation %}
+                        <form method="POST" action="{% url 'purchase:quotation_approve' quotation.id %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="action-btn bg-green-100 text-green-700 px-4 py-2 rounded-lg hover:bg-green-200 transition-colors">
+                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                Accept Quote
+                            </button>
+                        </form>
+                        {% endif %}
+                        {% if quotation.status == 'accepted' %}
+                        <a href="{% url 'purchase:quotation_to_po' quotation.id %}" class="action-btn bg-purple-100 text-purple-700 px-4 py-2 rounded-lg hover:bg-purple-200 transition-colors">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Create PO
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-12">
+                <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No supplier quotations found</h3>
+                <p class="text-gray-500 mb-4">Start by creating your first supplier quotation or sending an RFQ to suppliers</p>
+                <div class="flex gap-4 justify-center">
+                    <a href="{% url 'purchase:quotation_add' %}" class="bg-green-600 text-white px-6 py-3 rounded-2xl hover:bg-green-700 transition-colors">
+                        Create Quotation
+                    </a>
+                    <a href="{% url 'purchase:rfq_add' %}" class="bg-blue-600 text-white px-6 py-3 rounded-2xl hover:bg-blue-700 transition-colors">
+                        Create RFQ
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if quotations.has_other_pages %}
+        <div class="flex justify-center mt-8">
+            <nav class="flex space-x-2">
+                {% if quotations.has_previous %}
+                    <a href="?page={{ quotations.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if supplier_id %}&supplier_id={{ supplier_id }}{% endif %}" 
+                       class="px-3 py-2 text-sm text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Previous</a>
+                {% endif %}
+                
+                <span class="px-3 py-2 text-sm text-white bg-green-600 border border-green-600 rounded-lg">
+                    Page {{ quotations.number }} of {{ quotations.paginator.num_pages }}
+                </span>
+                
+                {% if quotations.has_next %}
+                    <a href="?page={{ quotations.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if supplier_id %}&supplier_id={{ supplier_id }}{% endif %}" 
+                       class="px-3 py-2 text-sm text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Next</a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Purchase Returns | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .return-card {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1));
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        transition: all 0.3s ease;
+    }
+
+    .return-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(239, 68, 68, 0.15);
+    }
+
+    .return-form-card {
+        background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
+        border: 1px solid #fecaca;
+    }
+
+    .return-item-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+    }
+
+    .return-item-card:hover {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-draft { background-color: #f3f4f6; color: #374151; }
+    .status-pending { background-color: #fef3c7; color: #92400e; }
+    .status-approved { background-color: #d1fae5; color: #065f46; }
+    .status-shipped { background-color: #dbeafe; color: #1e40af; }
+    .status-completed { background-color: #e0e7ff; color: #3730a3; }
+    .status-cancelled { background-color: #fee2e2; color: #991b1b; }
+
+    .return-reason-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+    }
+
+    .reason-defective { background: #fef2f2; color: #dc2626; }
+    .reason-damaged { background: #fefbeb; color: #d97706; }
+    .reason-wrong { background: #eff6ff; color: #2563eb; }
+    .reason-excess { background: #f0fdf4; color: #16a34a; }
+    .reason-quality { background: #fdf4ff; color: #c026d3; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Purchase Returns</h1>
+                <p class="text-gray-600">Manage returns to suppliers for defective or unwanted items</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'purchase:return_add' %}" 
+                   class="action-btn bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    New Return
+                </a>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card-modern mb-8">
+            <form method="GET" class="flex flex-wrap gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select name="status" class="form-select rounded-lg border-gray-300">
+                        <option value="">All Status</option>
+                        <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
+                        <option value="pending_approval" {% if status_filter == 'pending_approval' %}selected{% endif %}>Pending Approval</option>
+                        <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+                        <option value="shipped" {% if status_filter == 'shipped' %}selected{% endif %}>Shipped</option>
+                        <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                        <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Return Type</label>
+                    <select name="return_type" class="form-select rounded-lg border-gray-300">
+                        <option value="">All Types</option>
+                        <option value="defective" {% if return_type_filter == 'defective' %}selected{% endif %}>Defective Items</option>
+                        <option value="damaged" {% if return_type_filter == 'damaged' %}selected{% endif %}>Damaged in Transit</option>
+                        <option value="wrong_item" {% if return_type_filter == 'wrong_item' %}selected{% endif %}>Wrong Item</option>
+                        <option value="excess" {% if return_type_filter == 'excess' %}selected{% endif %}>Excess Quantity</option>
+                        <option value="quality_issue" {% if return_type_filter == 'quality_issue' %}selected{% endif %}>Quality Issue</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" name="search" value="{{ search_query }}" 
+                           placeholder="Search return number, supplier..." 
+                           class="form-input rounded-lg border-gray-300">
+                </div>
+                <button type="submit" class="btn-primary">Filter</button>
+                <a href="{% url 'purchase:returns_ui' %}" class="btn-secondary">Clear</a>
+            </form>
+        </div>
+
+        <!-- Returns List -->
+        <div class="grid grid-cols-1 gap-6">
+            {% for return in returns %}
+            <div class="return-card rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                        <div class="return-reason-icon reason-{{ return.return_type }}">
+                            {% if return.return_type == 'defective' %}
+                                <i class="fas fa-exclamation-triangle"></i>
+                            {% elif return.return_type == 'damaged' %}
+                                <i class="fas fa-broken-image"></i>
+                            {% elif return.return_type == 'wrong_item' %}
+                                <i class="fas fa-exchange-alt"></i>
+                            {% elif return.return_type == 'excess' %}
+                                <i class="fas fa-plus-circle"></i>
+                            {% else %}
+                                <i class="fas fa-clipboard-check"></i>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold text-gray-900">{{ return.return_number }}</h3>
+                            <p class="text-gray-600">
+                                {{ return.supplier.name }} • {{ return.get_return_type_display }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="status-badge status-{{ return.status }}">{{ return.get_status_display }}</span>
+                        <div class="flex gap-2">
+                            <a href="{% url 'purchase:return_detail' return.id %}" class="btn-sm btn-primary">View</a>
+                            {% if return.status == 'draft' %}
+                            <button onclick="editReturn({{ return.id }})" class="btn-sm btn-secondary">Edit</button>
+                            {% endif %}
+                            {% if return.status == 'pending_approval' and perms.purchase.approve_return %}
+                            <button onclick="approveReturn({{ return.id }})" class="btn-sm bg-green-600 text-white">Approve</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div>
+                        <p class="text-sm text-gray-500">Return Date</p>
+                        <p class="font-medium">{{ return.return_date|date:"M d, Y" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Total Amount</p>
+                        <p class="font-medium text-red-600">${{ return.total_amount }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Items Count</p>
+                        <p class="font-medium">{{ return.items.count }} item{{ return.items.count|pluralize }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Created By</p>
+                        <p class="font-medium">{{ return.created_by.get_full_name|default:return.created_by.username }}</p>
+                    </div>
+                </div>
+
+                <!-- Return Items Preview -->
+                <div class="border-t pt-4">
+                    <p class="text-sm font-medium text-gray-700 mb-2">Return Items:</p>
+                    <div class="flex flex-wrap gap-2">
+                        {% for item in return.items.all|slice:":3" %}
+                        <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm">
+                            {{ item.grn_item.product.name }} ({{ item.return_quantity }})
+                        </span>
+                        {% endfor %}
+                        {% if return.items.count > 3 %}
+                        <span class="px-2 py-1 bg-gray-200 text-gray-600 rounded text-sm">
+                            +{{ return.items.count|add:"-3" }} more
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if return.reason %}
+                <div class="border-t pt-4 mt-4">
+                    <p class="text-sm font-medium text-gray-700">Reason:</p>
+                    <p class="text-gray-600 text-sm">{{ return.reason|truncatewords:20 }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="flex justify-center mt-8">
+            <nav class="flex items-center gap-2">
+                {% if page_obj.has_previous %}
+                <a href="?page=1" class="px-3 py-2 text-gray-500 hover:text-gray-700">First</a>
+                <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 text-gray-500 hover:text-gray-700">Previous</a>
+                {% endif %}
+                
+                <span class="px-3 py-2 text-gray-900 font-medium">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+                
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 text-gray-500 hover:text-gray-700">Next</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}" class="px-3 py-2 text-gray-500 hover:text-gray-700">Last</a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function editReturn(returnId) {
+    window.location.href = `/purchase/returns/${returnId}/edit/`;
+}
+
+function approveReturn(returnId) {
+    if (confirm('Are you sure you want to approve this return?')) {
+        fetch(`/purchase/returns/${returnId}/approve/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            }
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error approving return');
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

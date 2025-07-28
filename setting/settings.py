@@ -80,6 +80,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'analytics', 
+    'products',
 ]
 
 MIDDLEWARE = [
@@ -394,32 +395,67 @@ UNFOLD = {
                 "icon": "account_balance",
                 "collapsible": True,
                 "items": [
+                    # Chart of Accounts
                     {"title": "Accounts", "icon": "account_tree", "link": reverse_lazy("admin:accounting_account_changelist")},
                     {"title": "Account Categories", "icon": "category", "link": reverse_lazy("admin:accounting_accountcategory_changelist")},
                     {"title": "Account Groups", "icon": "group_work", "link": reverse_lazy("admin:accounting_accountgroup_changelist")},
+                    {"separator": True},
+                    
+                    # Journal Management
                     {"title": "Journals", "icon": "book", "link": reverse_lazy("admin:accounting_journal_changelist")},
                     {"title": "Journal Entries", "icon": "edit_note", "link": reverse_lazy("admin:accounting_journalentry_changelist")},
                     {"title": "Journal Items", "icon": "notes", "link": reverse_lazy("admin:accounting_journalitem_changelist")},
+                    {"title": "Recurring Journals", "icon": "repeat", "link": reverse_lazy("admin:accounting_recurringjournal_changelist")},
+                    {"separator": True},
+                    
+                    # Payables & Receivables
                     {"title": "Payables", "icon": "money_off", "link": reverse_lazy("admin:accounting_accountpayable_changelist")},
                     {"title": "Receivables", "icon": "attach_money", "link": reverse_lazy("admin:accounting_accountreceivable_changelist")},
+                    {"separator": True},
+                    
+                    # Banking
                     {"title": "Bank Accounts", "icon": "account_balance_wallet", "link": reverse_lazy("admin:accounting_bankaccount_changelist")},
                     {"title": "Bank Reconciliations", "icon": "compare_arrows", "link": reverse_lazy("admin:accounting_bankreconciliation_changelist")},
+                    {"separator": True},
+                    
+                    # Configuration & Settings
                     {"title": "Tax Configs", "icon": "percent", "link": reverse_lazy("admin:accounting_taxconfig_changelist")},
                     {"title": "Currencies", "icon": "currency_exchange", "link": reverse_lazy("admin:accounting_currency_changelist")},
+                    {"separator": True},
+                    
+                    # Reporting & Auditing
                     {"title": "Financial Statements", "icon": "bar_chart", "link": reverse_lazy("admin:accounting_financialstatement_changelist")},
                     {"title": "Audit Logs", "icon": "history", "link": reverse_lazy("admin:accounting_accountingauditlog_changelist")},
-                    {"title": "Recurring Journals", "icon": "repeat", "link": reverse_lazy("admin:accounting_recurringjournal_changelist")},
                 ],
             },
             {
-                "title": "CRM",
+                "title": "CRM & Partners",
                 "icon": "contact_page",
                 "collapsible": True,
                 "items": [
+                    # Core Partner Management
+                    {"title": "Partners", "icon": "people", "link": reverse_lazy("admin:crm_partner_changelist")},
+                    {"separator": True},
+                    
+                    # Customer Management
                     {"title": "Customers", "icon": "person", "link": reverse_lazy("admin:crm_customer_changelist")},
                     {"title": "Leads", "icon": "emoji_objects", "link": reverse_lazy("admin:crm_lead_changelist")},
                     {"title": "Opportunities", "icon": "star", "link": reverse_lazy("admin:crm_opportunity_changelist")},
+                    {"separator": True},
+                    
+                    # Communication
                     {"title": "Communication Logs", "icon": "chat", "link": reverse_lazy("admin:crm_communicationlog_changelist")},
+                ],
+            },
+            {
+                "title": "Products",
+                "icon": "inventory",
+                "collapsible": True,
+                "items": [
+                    # Product Management
+                    {"title": "Products", "icon": "inventory_2", "link": reverse_lazy("admin:products_product_changelist")},
+                    {"title": "Product Categories", "icon": "category", "link": reverse_lazy("admin:products_productcategory_changelist")},
+                    {"title": "Product Variants", "icon": "tune", "link": reverse_lazy("admin:products_productvariant_changelist")},
                 ],
             },
             {
@@ -427,11 +463,19 @@ UNFOLD = {
                 "icon": "shopping_cart",
                 "collapsible": True,
                 "items": [
-                    {"title": "Products", "icon": "inventory", "link": reverse_lazy("admin:sales_product_changelist")},
                     {"title": "Taxes", "icon": "percent", "link": reverse_lazy("admin:sales_tax_changelist")},
+                    {
+                        "separator": True,
+                        "title": "Sales Process",
+                    },
                     {"title": "Quotations", "icon": "description", "link": reverse_lazy("admin:sales_quotation_changelist")},
+                    {"title": "Quotation Items", "icon": "list", "link": reverse_lazy("admin:sales_quotationitem_changelist")},
                     {"title": "Sales Orders", "icon": "receipt", "link": reverse_lazy("admin:sales_salesorder_changelist")},
-                    {"title": "Sales Order Items", "icon": "list", "link": reverse_lazy("admin:sales_salesorderitem_changelist")},
+                    {"title": "Sales Order Items", "icon": "format_list_numbered", "link": reverse_lazy("admin:sales_salesorderitem_changelist")},
+                    {
+                        "separator": True,
+                        "title": "Invoicing & Payments",
+                    },
                     {"title": "Invoices", "icon": "request_quote", "link": reverse_lazy("admin:sales_invoice_changelist")},
                     {"title": "Payments", "icon": "payments", "link": reverse_lazy("admin:sales_payment_changelist")},
                 ],
@@ -442,10 +486,48 @@ UNFOLD = {
                 "collapsible": True,
                 "items": [
                     {"title": "Suppliers", "icon": "local_shipping", "link": reverse_lazy("admin:purchase_supplier_changelist")},
-                    {"title": "Purchase Orders", "icon": "assignment", "link": reverse_lazy("admin:purchase_purchaseorder_changelist")},
-                    {"title": "Purchase Order Items", "icon": "list_alt", "link": reverse_lazy("admin:purchase_purchaseorderitem_changelist")},
-                    {"title": "Bills", "icon": "receipt_long", "link": reverse_lazy("admin:purchase_bill_changelist")},
-                    {"title": "Payments", "icon": "payments", "link": reverse_lazy("admin:purchase_purchasepayment_changelist")},
+                    {"title": "Tax & Charges Templates", "icon": "percent", "link": reverse_lazy("admin:purchase_taxchargestemplate_changelist")},
+                    {
+                        "separator": True,
+                        "title": "Purchase Requisitions",
+                    },
+                    {"title": "Purchase Requisitions", "icon": "assignment", "link": reverse_lazy("admin:purchase_purchaserequisition_changelist")},
+                    {"title": "Requisition Items", "icon": "list_alt", "link": reverse_lazy("admin:purchase_purchaserequisitionitem_changelist")},
+                    {
+                        "separator": True,
+                        "title": "RFQ & Quotations",
+                    },
+                    {"title": "Request For Quotations", "icon": "help_outline", "link": reverse_lazy("admin:purchase_requestforquotation_changelist")},
+                    {"title": "RFQ Items", "icon": "format_list_bulleted", "link": reverse_lazy("admin:purchase_rfqitem_changelist")},
+                    {"title": "Supplier Quotations", "icon": "request_quote", "link": reverse_lazy("admin:purchase_supplierquotation_changelist")},
+                    {"title": "Quotation Items", "icon": "receipt_long", "link": reverse_lazy("admin:purchase_supplierquotationitem_changelist")},
+                    {
+                        "separator": True,
+                        "title": "Purchase Orders",
+                    },
+                    {"title": "Purchase Orders", "icon": "shopping_cart", "link": reverse_lazy("admin:purchase_purchaseorder_changelist")},
+                    {"title": "Purchase Order Items", "icon": "list", "link": reverse_lazy("admin:purchase_purchaseorderitem_changelist")},
+                    {"title": "Order Tax & Charges", "icon": "calculate", "link": reverse_lazy("admin:purchase_purchaseordertaxcharge_changelist")},
+                    {
+                        "separator": True,
+                        "title": "Goods Receipt",
+                    },
+                    {"title": "Goods Receipt Notes", "icon": "inventory", "link": reverse_lazy("admin:purchase_goodsreceiptnote_changelist")},
+                    {"title": "GRN Items", "icon": "checklist", "link": reverse_lazy("admin:purchase_grnitem_changelist")},
+                    {
+                        "separator": True,
+                        "title": "Bills & Payments",
+                    },
+                    {"title": "Purchase Bills", "icon": "receipt", "link": reverse_lazy("admin:purchase_bill_changelist")},
+                    {"title": "Bill Items", "icon": "format_list_numbered", "link": reverse_lazy("admin:purchase_billitem_changelist")},
+                    {"title": "Purchase Payments", "icon": "payments", "link": reverse_lazy("admin:purchase_purchasepayment_changelist")},
+                    {
+                        "separator": True,
+                        "title": "Returns & Approvals",
+                    },
+                    {"title": "Purchase Returns", "icon": "keyboard_return", "link": reverse_lazy("admin:purchase_purchasereturn_changelist")},
+                    {"title": "Return Items", "icon": "undo", "link": reverse_lazy("admin:purchase_purchasereturnitem_changelist")},
+                    {"title": "Purchase Approvals", "icon": "approval", "link": reverse_lazy("admin:purchase_purchaseapproval_changelist")},
                 ],
             },
             {
@@ -453,10 +535,16 @@ UNFOLD = {
                 "icon": "warehouse",
                 "collapsible": True,
                 "items": [
-                    {"title": "Product Categories", "icon": "category", "link": reverse_lazy("admin:inventory_productcategory_changelist")},
+                    # Setup & Configuration
                     {"title": "Warehouses", "icon": "store", "link": reverse_lazy("admin:inventory_warehouse_changelist")},
+                    {"separator": True},
+                    
+                    # Stock Management
                     {"title": "Stock Items", "icon": "inventory_2", "link": reverse_lazy("admin:inventory_stockitem_changelist")},
                     {"title": "Stock Movements", "icon": "swap_horiz", "link": reverse_lazy("admin:inventory_stockmovement_changelist")},
+                    {"separator": True},
+                    
+                    # Alerts & Monitoring
                     {"title": "Stock Alerts", "icon": "notification_important", "link": reverse_lazy("admin:inventory_stockalert_changelist")},
                 ],
             },
@@ -465,11 +553,22 @@ UNFOLD = {
                 "icon": "badge",
                 "collapsible": True,
                 "items": [
+                    # Employee Management
                     {"title": "Employees", "icon": "person", "link": reverse_lazy("admin:hr_employee_changelist")},
+                    {"title": "Contractors", "icon": "engineering", "link": reverse_lazy("admin:hr_contractor_changelist")},
+                    {"separator": True},
+                    
+                    # Time & Attendance
                     {"title": "Attendance", "icon": "event_available", "link": reverse_lazy("admin:hr_attendance_changelist")},
                     {"title": "Leaves", "icon": "beach_access", "link": reverse_lazy("admin:hr_leave_changelist")},
+                    {"separator": True},
+                    
+                    # Payroll
                     {"title": "Payrolls", "icon": "payments", "link": reverse_lazy("admin:hr_payroll_changelist")},
                     {"title": "Payslips", "icon": "receipt", "link": reverse_lazy("admin:hr_payslip_changelist")},
+                    {"separator": True},
+                    
+                    # Reporting
                     {"title": "HR Reports", "icon": "bar_chart", "link": reverse_lazy("admin:hr_hrreport_changelist")},
                 ],
             },
@@ -478,9 +577,17 @@ UNFOLD = {
                 "icon": "assignment",
                 "collapsible": True,
                 "items": [
+                    # Project Setup
                     {"title": "Projects", "icon": "work", "link": reverse_lazy("admin:project_mgmt_project_changelist")},
+                    {"title": "Project Contractors", "icon": "groups", "link": reverse_lazy("admin:project_mgmt_projectcontractor_changelist")},
+                    {"separator": True},
+                    
+                    # Task Management & Tracking
                     {"title": "Tasks", "icon": "task", "link": reverse_lazy("admin:project_mgmt_task_changelist")},
                     {"title": "Time Entries", "icon": "timer", "link": reverse_lazy("admin:project_mgmt_timeentry_changelist")},
+                    {"separator": True},
+                    
+                    # Reporting
                     {"title": "Project Reports", "icon": "bar_chart", "link": reverse_lazy("admin:project_mgmt_projectreport_changelist")},
                 ],
             },
@@ -489,10 +596,19 @@ UNFOLD = {
                 "icon": "precision_manufacturing",
                 "collapsible": True,
                 "items": [
+                    # Bill of Materials
                     {"title": "Bill of Materials", "icon": "layers", "link": reverse_lazy("admin:manufacturing_billofmaterials_changelist")},
                     {"title": "BOM Items", "icon": "list", "link": reverse_lazy("admin:manufacturing_billofmaterialsitem_changelist")},
+                    {"separator": True},
+                    
+                    # Production Management
                     {"title": "Work Orders", "icon": "build", "link": reverse_lazy("admin:manufacturing_workorder_changelist")},
                     {"title": "Production Plans", "icon": "event_note", "link": reverse_lazy("admin:manufacturing_productionplan_changelist")},
+                    {"separator": True},
+                    
+                    # Subcontracting
+                    {"title": "Subcontractors", "icon": "handshake", "link": reverse_lazy("admin:manufacturing_subcontractor_changelist")},
+                    {"title": "Subcontract Work Orders", "icon": "assignment_turned_in", "link": reverse_lazy("admin:manufacturing_subcontractworkorder_changelist")},
                 ],
             },
         ],

@@ -2,11 +2,17 @@ from django.db import models
 from user_auth.models import Company, User
 from crm.models import Customer
 from accounting.models import Account
+from products.models import Product  # Import centralized Product model
 
 # Create your models here.
 
-class Product(models.Model):
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='products')
+# Legacy Product model - keeping for backward compatibility but deprecated
+class LegacyProduct(models.Model):
+    """
+    DEPRECATED: This model is kept for backward compatibility only.
+    Use products.Product instead.
+    """
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='legacy_products')
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     sku = models.CharField(max_length=100, blank=True)
@@ -18,6 +24,10 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        db_table = 'sales_product'  # Keep the original table name
+
 
 class Tax(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='taxes')

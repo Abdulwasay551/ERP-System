@@ -15,6 +15,41 @@ from accounting.models import Account
 
 # Create your views here.
 
+@login_required
+def crm_dashboard(request):
+    """CRM module dashboard with key metrics and quick access"""
+    company = request.user.company
+    
+    # Key metrics
+    total_customers = Customer.objects.filter(company=company).count()
+    total_leads = Lead.objects.filter(company=company).count()
+    total_opportunities = Opportunity.objects.filter(company=company).count()
+    active_opportunities = Opportunity.objects.filter(company=company, stage__in=['prospecting', 'qualification', 'proposal']).count()
+    
+    # Monthly statistics
+    current_month = timezone.now().replace(day=1)
+    new_customers_this_month = Customer.objects.filter(
+        company=company, 
+        created_at__gte=current_month
+    ).count()
+    
+    # Recent activities
+    recent_customers = Customer.objects.filter(company=company).order_by('-created_at')[:5]
+    recent_leads = Lead.objects.filter(company=company).order_by('-created_at')[:5]
+    recent_opportunities = Opportunity.objects.filter(company=company).order_by('-created_at')[:5]
+    
+    context = {
+        'total_customers': total_customers,
+        'total_leads': total_leads,
+        'total_opportunities': total_opportunities,
+        'active_opportunities': active_opportunities,
+        'new_customers_this_month': new_customers_this_month,
+        'recent_customers': recent_customers,
+        'recent_leads': recent_leads,
+        'recent_opportunities': recent_opportunities,
+    }
+    return render(request, 'crm/dashboard.html', context)
+
 class CustomerListView(LoginRequiredMixin, ListView):
     model = Customer
     template_name = 'crm/customer_list.html'

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
-from .models import BillOfMaterials, BillOfMaterialsItem, WorkOrder, ProductionPlan
+from .models import BillOfMaterials, BillOfMaterialsItem, WorkOrder, ProductionPlan, Subcontractor, SubcontractWorkOrder
 
 @admin.register(BillOfMaterials)
 class BillOfMaterialsAdmin(ModelAdmin):
@@ -25,3 +25,41 @@ class ProductionPlanAdmin(ModelAdmin):
     list_display = ('name', 'company', 'start_date', 'end_date', 'status', 'created_by')
     search_fields = ('name', 'status')
     list_filter = ('company', 'status')
+
+@admin.register(Subcontractor)
+class SubcontractorAdmin(ModelAdmin):
+    list_display = ('partner', 'company', 'specialization', 'capacity', 'quality_rating', 'delivery_rating', 'lead_time_days', 'is_active')
+    search_fields = ('partner__name', 'specialization', 'capacity')
+    list_filter = ('company', 'is_active')
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('partner', 'company', 'specialization', 'capacity')
+        }),
+        ('Performance Metrics', {
+            'fields': ('quality_rating', 'delivery_rating', 'lead_time_days')
+        }),
+        ('Status', {
+            'fields': ('is_active',)
+        })
+    )
+
+@admin.register(SubcontractWorkOrder)
+class SubcontractWorkOrderAdmin(ModelAdmin):
+    list_display = ('work_order', 'subcontractor', 'product', 'quantity', 'unit_cost', 'total_cost', 'status', 'start_date', 'due_date')
+    search_fields = ('work_order__id', 'subcontractor__partner__name', 'product__name')
+    list_filter = ('subcontractor', 'status')
+    fieldsets = (
+        ('Work Order Details', {
+            'fields': ('work_order', 'subcontractor', 'product', 'quantity')
+        }),
+        ('Costing', {
+            'fields': ('unit_cost', 'total_cost')
+        }),
+        ('Timeline', {
+            'fields': ('start_date', 'due_date', 'status')
+        }),
+        ('Notes', {
+            'fields': ('notes',),
+            'classes': ('collapse',)
+        })
+    )

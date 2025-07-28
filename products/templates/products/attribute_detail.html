@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ attribute.name }} - Attribute Details | FutureERP{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">{{ attribute.name }}</h1>
+                <p class="text-gray-600">{{ attribute.description|default:"Product attribute details" }}</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'products:attribute_update' attribute.id %}" class="action-btn bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    Edit Attribute
+                </a>
+                <a href="{% url 'products:attribute_list' %}" class="action-btn bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                    </svg>
+                    Back to Attributes
+                </a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Attribute Information -->
+            <div class="lg:col-span-2">
+                <div class="card-modern rounded-2xl p-6 mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Attribute Information</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                            <p class="text-gray-900">{{ attribute.name }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                {{ attribute.get_attribute_type_display }}
+                            </span>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Required</label>
+                            <span class="inline-flex items-center">
+                                {% if attribute.is_required %}
+                                    <svg class="w-5 h-5 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span class="text-green-700">Yes</span>
+                                {% else %}
+                                    <svg class="w-5 h-5 text-gray-400 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span class="text-gray-500">No</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Created</label>
+                            <p class="text-gray-900">{{ attribute.created_at|date:"M d, Y" }}</p>
+                        </div>
+                        {% if attribute.description %}
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <p class="text-gray-900">{{ attribute.description }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Attribute Values -->
+                <div class="card-modern rounded-2xl p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-gray-900">Attribute Values</h2>
+                        <span class="text-sm text-gray-600">{{ attribute.attributevalue_set.count }} value{{ attribute.attributevalue_set.count|pluralize }}</span>
+                    </div>
+                    
+                    {% if attribute.attributevalue_set.exists %}
+                    <div class="space-y-3">
+                        {% for value in attribute.attributevalue_set.all %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span class="text-gray-900">{{ value.value }}</span>
+                            <div class="text-sm text-gray-500">
+                                Used in {{ value.productattribute_set.count }} product{{ value.productattribute_set.count|pluralize }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-8">
+                        <svg class="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                        </svg>
+                        <p class="text-gray-600">No values defined for this attribute</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Usage Statistics -->
+                <div class="card-modern rounded-2xl p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Usage Statistics</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Products Using:</span>
+                            <span class="text-2xl font-bold text-green-600">{{ attribute.productattribute_set.count }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Total Values:</span>
+                            <span class="text-2xl font-bold text-blue-600">{{ attribute.attributevalue_set.count }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Products -->
+                {% if recent_products %}
+                <div class="card-modern rounded-2xl p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Products Using This Attribute</h3>
+                    <div class="space-y-3">
+                        {% for product in recent_products %}
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <a href="{% url 'products:detail' product.id %}" class="text-blue-600 hover:text-blue-800 font-medium">
+                                    {{ product.name|truncatechars:30 }}
+                                </a>
+                                <p class="text-xs text-gray-500">{{ product.sku }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-200">
+                        <a href="{% url 'products:list' %}?attribute={{ attribute.id }}" class="text-blue-600 hover:text-blue-800 text-sm">
+                            View all products →
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Actions -->
+                <div class="card-modern rounded-2xl p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
+                    <div class="space-y-3">
+                        <a href="{% url 'products:attribute_update' attribute.id %}" class="block w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-center">
+                            Edit Attribute
+                        </a>
+                        <button onclick="deleteAttribute()" class="block w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                            Delete Attribute
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full">
+            <div class="text-center">
+                <svg class="w-12 h-12 mx-auto text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Delete Attribute</h3>
+                <p class="text-gray-600 mb-6">Are you sure you want to delete "{{ attribute.name }}"? This will remove it from all products and cannot be undone.</p>
+                <div class="flex gap-3">
+                    <button onclick="closeDeleteModal()" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors">
+                        Cancel
+                    </button>
+                    <button id="confirmDelete" class="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function deleteAttribute() {
+    document.getElementById('deleteModal').classList.remove('hidden');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+}
+
+document.getElementById('confirmDelete').addEventListener('click', function() {
+    fetch(`{% url 'products:attribute_delete' attribute.id %}`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => {
+        if (response.ok) {
+            window.location.href = '{% url "products:attribute_list" %}';
+        } else {
+            alert('Error deleting attribute');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error deleting attribute');
+    });
+});
+
+// Close modal when clicking outside
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeDeleteModal();
+    }
+});
+</script>
+{% endblock %}

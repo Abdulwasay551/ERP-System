@@ -1,0 +1,389 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ form_title|default:"Create Vendor Bill" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .bill-form-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+    }
+
+    .bill-form-card:hover {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .hover-lift {
+        transition: all 0.3s ease;
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .item-row {
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 1rem;
+    }
+
+    .calculation-summary {
+        background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+        border: 1px solid #0284c7;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-red-600 to-pink-600 rounded-2xl shadow-xl p-8 mb-8 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold mb-2">{{ form_title|default:"Create Vendor Bill" }}</h1>
+                    <p class="text-red-100">Record and process vendor invoices for payment</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-2xl font-bold">Bill #{{ bill_number|default:"[Auto Generated]" }}</div>
+                    <div class="text-red-200">{{ today|date:"F d, Y" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="space-y-8">
+            {% csrf_token %}
+            
+            <!-- Vendor & Basic Information -->
+            <div class="bill-form-card rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Bill Information</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Vendor/Supplier *</label>
+                        <select name="supplier" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                            <option value="">Select Vendor</option>
+                            {% for supplier in suppliers %}
+                            <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Select the vendor who sent this bill</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Vendor Invoice Number *</label>
+                        <input type="text" 
+                               name="vendor_invoice_number" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+                               required
+                               placeholder="Vendor's invoice/bill number">
+                        <p class="text-xs text-gray-500 mt-1">Invoice number from vendor document</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Bill Date *</label>
+                        <input type="date" 
+                               name="bill_date" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+                               required
+                               value="{{ today|date:'Y-m-d' }}">
+                        <p class="text-xs text-gray-500 mt-1">Date on vendor's invoice</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Due Date *</label>
+                        <input type="date" 
+                               name="due_date" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+                               required
+                               min="{{ today|date:'Y-m-d' }}">
+                        <p class="text-xs text-gray-500 mt-1">Payment due date as per vendor terms</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Purchase Order Reference</label>
+                        <select name="purchase_order" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select PO (if applicable)</option>
+                            {% for po in purchase_orders %}
+                            <option value="{{ po.id }}">{{ po.po_number }} - {{ po.supplier.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Link to corresponding purchase order</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Payment Terms</label>
+                        <select name="payment_terms" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="net_30">Net 30 Days</option>
+                            <option value="net_15">Net 15 Days</option>
+                            <option value="net_45">Net 45 Days</option>
+                            <option value="net_60">Net 60 Days</option>
+                            <option value="immediate">Immediate</option>
+                            <option value="advance">Advance Payment</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Payment terms for this bill</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bill Documents -->
+            <div class="bill-form-card rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Supporting Documents</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Vendor Invoice/Bill *</label>
+                        <input type="file" 
+                               name="invoice_document" 
+                               accept=".pdf,.doc,.docx,.jpg,.png" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 file-input"
+                               onchange="validateFileSize(this, 'invoice-error')" 
+                               required>
+                        <p class="text-xs text-gray-500 mt-1">Upload vendor's original invoice - Max 32MB</p>
+                        <div id="invoice-error" class="text-red-500 text-xs mt-1 hidden"></div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Delivery Receipt/GRN</label>
+                        <input type="file" 
+                               name="delivery_receipt" 
+                               accept=".pdf,.doc,.docx,.jpg,.png" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 file-input"
+                               onchange="validateFileSize(this, 'receipt-error')">
+                        <p class="text-xs text-gray-500 mt-1">Goods receipt note or delivery confirmation - Max 32MB</p>
+                        <div id="receipt-error" class="text-red-500 text-xs mt-1 hidden"></div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Supporting Documents</label>
+                        <input type="file" 
+                               name="supporting_documents" 
+                               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.png" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 file-input"
+                               onchange="validateFileSize(this, 'supporting-error')" 
+                               multiple>
+                        <p class="text-xs text-gray-500 mt-1">Additional supporting files - Max 32MB each</p>
+                        <div id="supporting-error" class="text-red-500 text-xs mt-1 hidden"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bill Items -->
+            <div class="bill-form-card rounded-2xl shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">Bill Items</h3>
+                    <button type="button" id="addItemBtn" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-lg hover-lift">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Add Item
+                    </button>
+                </div>
+
+                <div id="itemsContainer" class="space-y-4">
+                    <!-- Items will be added here dynamically -->
+                </div>
+
+                <!-- Bill Summary -->
+                <div class="calculation-summary rounded-lg p-4 mt-6">
+                    <h4 class="font-bold text-gray-900 mb-4">Bill Summary</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Subtotal</label>
+                            <input type="number" id="subtotal" name="subtotal" class="w-full p-2 border border-gray-300 rounded-lg bg-gray-50" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tax Amount</label>
+                            <input type="number" id="tax_amount" name="tax_amount" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" step="0.01" min="0" placeholder="Enter tax amount">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Discount</label>
+                            <input type="number" id="discount" name="discount" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" step="0.01" min="0" placeholder="Enter discount">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Total Amount</label>
+                            <input type="number" id="total_amount" name="total_amount" class="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 font-bold text-lg" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Information -->
+            <div class="bill-form-card rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Additional Information</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Department/Cost Center</label>
+                        <select name="department" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select Department</option>
+                            <option value="IT">Information Technology</option>
+                            <option value="HR">Human Resources</option>
+                            <option value="Finance">Finance & Accounting</option>
+                            <option value="Operations">Operations</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Production">Production</option>
+                            <option value="Maintenance">Maintenance</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Department to charge this expense</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Project/Budget Code</label>
+                        <input type="text" 
+                               name="project_code" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+                               placeholder="e.g., PROJ-2024-001">
+                        <p class="text-xs text-gray-500 mt-1">Project or budget code for expense allocation</p>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Notes/Description</label>
+                    <textarea name="notes" 
+                              rows="4" 
+                              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+                              placeholder="Any additional notes about this bill, special conditions, or payment instructions"></textarea>
+                    <p class="text-xs text-gray-500 mt-1">Additional information about this bill</p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-4 justify-center">
+                <button type="button" onclick="history.back()" class="bg-gray-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                    Cancel
+                </button>
+                <button type="submit" name="action" value="save_draft" class="bg-gradient-to-r from-yellow-600 to-orange-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a.997.997 0 01-.707.293H7a4 4 0 01-4-4V7a4 4 0 014-4z"></path>
+                    </svg>
+                    Save as Draft
+                </button>
+                <button type="submit" name="action" value="submit" class="bg-gradient-to-r from-red-600 to-pink-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Submit Bill
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const addItemBtn = document.getElementById('addItemBtn');
+    const itemsContainer = document.getElementById('itemsContainer');
+    let itemCount = 0;
+    
+    // File size validation function
+    window.validateFileSize = function(input, errorElementId) {
+        const files = input.files;
+        const errorElement = document.getElementById(errorElementId);
+        const maxSize = 32 * 1024 * 1024; // 32MB in bytes
+        let hasError = false;
+        
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            if (file.size > maxSize) {
+                errorElement.textContent = `File "${file.name}" (${(file.size / (1024 * 1024)).toFixed(2)}MB) exceeds maximum limit of 32MB`;
+                errorElement.classList.remove('hidden');
+                input.value = ''; // Clear the input
+                input.classList.add('border-red-500');
+                hasError = true;
+                break;
+            }
+        }
+        
+        if (!hasError) {
+            errorElement.classList.add('hidden');
+            input.classList.remove('border-red-500');
+        }
+    };
+
+    // Add item function
+    addItemBtn.addEventListener('click', addItem);
+    
+    function addItem() {
+        itemCount++;
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'item-row rounded-lg p-4';
+        itemDiv.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Item Description *</label>
+                    <input type="text" name="item_descriptions[]" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Item name/description" required>
+                    <p class="text-xs text-gray-500 mt-1">Description as per vendor invoice</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
+                    <input type="number" name="quantities[]" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 quantity-input" step="0.01" min="0" required onchange="calculateRowTotal(this)">
+                    <p class="text-xs text-gray-500 mt-1">Quantity billed</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Unit Price *</label>
+                    <input type="number" name="unit_prices[]" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 price-input" step="0.01" min="0" required onchange="calculateRowTotal(this)">
+                    <p class="text-xs text-gray-500 mt-1">Price per unit</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Line Total</label>
+                    <input type="number" name="line_totals[]" class="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 line-total" readonly>
+                    <p class="text-xs text-gray-500 mt-1">Calculated automatically</p>
+                </div>
+                <div class="flex items-end">
+                    <button type="button" class="w-full bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 transition-colors" onclick="removeItem(this)">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        Remove
+                    </button>
+                </div>
+            </div>
+        `;
+        itemsContainer.appendChild(itemDiv);
+        calculateSubtotal();
+    }
+    
+    window.removeItem = function(btn) {
+        btn.closest('.item-row').remove();
+        calculateSubtotal();
+    };
+
+    // Calculate row total
+    window.calculateRowTotal = function(input) {
+        const row = input.closest('.item-row');
+        const quantity = parseFloat(row.querySelector('.quantity-input').value) || 0;
+        const price = parseFloat(row.querySelector('.price-input').value) || 0;
+        const lineTotal = quantity * price;
+        row.querySelector('.line-total').value = lineTotal.toFixed(2);
+        calculateSubtotal();
+    };
+
+    // Calculate subtotal and total
+    function calculateSubtotal() {
+        const lineTotals = document.querySelectorAll('.line-total');
+        let subtotal = 0;
+        lineTotals.forEach(input => {
+            subtotal += parseFloat(input.value) || 0;
+        });
+        
+        document.getElementById('subtotal').value = subtotal.toFixed(2);
+        calculateTotal();
+    }
+
+    function calculateTotal() {
+        const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
+        const taxAmount = parseFloat(document.getElementById('tax_amount').value) || 0;
+        const discount = parseFloat(document.getElementById('discount').value) || 0;
+        const total = subtotal + taxAmount - discount;
+        document.getElementById('total_amount').value = total.toFixed(2);
+    }
+
+    // Event listeners for tax and discount
+    document.getElementById('tax_amount').addEventListener('input', calculateTotal);
+    document.getElementById('discount').addEventListener('input', calculateTotal);
+    
+    // Add first item by default
+    addItem();
+});
+</script>
+{% endblock %}

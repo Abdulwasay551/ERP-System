@@ -1,0 +1,412 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ form_title|default:"Create Payment" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payment-form-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+    }
+
+    .payment-form-card:hover {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .hover-lift {
+        transition: all 0.3s ease;
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .bill-summary {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border: 1px solid #f59e0b;
+    }
+
+    .payment-method-card {
+        border: 2px solid #e2e8f0;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .payment-method-card.selected {
+        border-color: #3b82f6;
+        background-color: #eff6ff;
+    }
+
+    .amount-display {
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        border: 1px solid #10b981;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-xl p-8 mb-8 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold mb-2">{{ form_title|default:"Create Payment" }}</h1>
+                    <p class="text-indigo-100">Process payment to vendors for approved bills</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-2xl font-bold">Payment #{{ payment_number|default:"[Auto Generated]" }}</div>
+                    <div class="text-indigo-200">{{ today|date:"F d, Y" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="space-y-8">
+            {% csrf_token %}
+            
+            <!-- Bill Selection -->
+            <div class="payment-form-card rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Select Bill for Payment</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Vendor *</label>
+                        <select name="vendor" id="vendorSelect" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                            <option value="">Select Vendor</option>
+                            {% for supplier in suppliers %}
+                            <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Select vendor to view their pending bills</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Pending Bill *</label>
+                        <select name="bill" id="billSelect" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required disabled>
+                            <option value="">Select Bill</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Choose which bill to pay</p>
+                    </div>
+                </div>
+
+                <!-- Bill Summary (will be populated when bill is selected) -->
+                <div id="billSummary" class="bill-summary rounded-lg p-4 mt-6 hidden">
+                    <h4 class="font-bold text-gray-900 mb-3">Bill Summary</h4>
+                    <div id="billDetails" class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                        <!-- Bill details will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Details -->
+            <div class="payment-form-card rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Payment Information</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Payment Date *</label>
+                        <input type="date" 
+                               name="payment_date" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+                               required
+                               value="{{ today|date:'Y-m-d' }}">
+                        <p class="text-xs text-gray-500 mt-1">Date when payment is being made</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Payment Amount *</label>
+                        <input type="number" 
+                               name="payment_amount" 
+                               id="paymentAmount"
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+                               step="0.01" 
+                               min="0" 
+                               required>
+                        <p class="text-xs text-gray-500 mt-1">Amount being paid (can be partial)</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Payment Type</label>
+                        <select name="payment_type" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="full">Full Payment</option>
+                            <option value="partial">Partial Payment</option>
+                            <option value="advance">Advance Payment</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Type of payment being made</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="payment-form-card rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Payment Method</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <label class="payment-method-card rounded-lg p-4 cursor-pointer">
+                        <input type="radio" name="payment_method" value="bank_transfer" class="sr-only peer" checked>
+                        <div class="text-center peer-checked:text-blue-600">
+                            <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                            </svg>
+                            <h4 class="font-medium">Bank Transfer</h4>
+                            <p class="text-xs text-gray-500">Electronic transfer</p>
+                        </div>
+                    </label>
+                    
+                    <label class="payment-method-card rounded-lg p-4 cursor-pointer">
+                        <input type="radio" name="payment_method" value="check" class="sr-only peer">
+                        <div class="text-center peer-checked:text-blue-600">
+                            <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <h4 class="font-medium">Check</h4>
+                            <p class="text-xs text-gray-500">Physical check</p>
+                        </div>
+                    </label>
+                    
+                    <label class="payment-method-card rounded-lg p-4 cursor-pointer">
+                        <input type="radio" name="payment_method" value="cash" class="sr-only peer">
+                        <div class="text-center peer-checked:text-blue-600">
+                            <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                            <h4 class="font-medium">Cash</h4>
+                            <p class="text-xs text-gray-500">Cash payment</p>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Payment Method Details -->
+                <div id="bankTransferDetails" class="payment-method-details">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Bank Account</label>
+                            <select name="bank_account" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="">Select Bank Account</option>
+                                <option value="main_account">Main Operating Account</option>
+                                <option value="payroll_account">Payroll Account</option>
+                                <option value="petty_cash">Petty Cash Account</option>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Account from which payment will be made</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Reference Number</label>
+                            <input type="text" 
+                                   name="reference_number" 
+                                   class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+                                   placeholder="Transaction reference number">
+                            <p class="text-xs text-gray-500 mt-1">Bank transaction reference or check number</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Supporting Documents -->
+            <div class="payment-form-card rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Supporting Documents</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Payment Receipt/Confirmation</label>
+                        <input type="file" 
+                               name="payment_receipt" 
+                               accept=".pdf,.doc,.docx,.jpg,.png" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 file-input"
+                               onchange="validateFileSize(this, 'receipt-error')">
+                        <p class="text-xs text-gray-500 mt-1">Bank confirmation or payment receipt - Max 32MB</p>
+                        <div id="receipt-error" class="text-red-500 text-xs mt-1 hidden"></div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Authorization Documents</label>
+                        <input type="file" 
+                               name="authorization_docs" 
+                               accept=".pdf,.doc,.docx,.jpg,.png" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 file-input"
+                               onchange="validateFileSize(this, 'auth-error')" 
+                               multiple>
+                        <p class="text-xs text-gray-500 mt-1">Payment authorization/approval docs - Max 32MB each</p>
+                        <div id="auth-error" class="text-red-500 text-xs mt-1 hidden"></div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Other Documents</label>
+                        <input type="file" 
+                               name="other_documents" 
+                               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.png" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 file-input"
+                               onchange="validateFileSize(this, 'other-error')" 
+                               multiple>
+                        <p class="text-xs text-gray-500 mt-1">Additional supporting files - Max 32MB each</p>
+                        <div id="other-error" class="text-red-500 text-xs mt-1 hidden"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Summary -->
+            <div class="amount-display rounded-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-4">Payment Summary</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600">Bill Amount</p>
+                        <p class="text-2xl font-bold text-gray-900" id="billAmountDisplay">$0.00</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600">Payment Amount</p>
+                        <p class="text-2xl font-bold text-green-600" id="paymentAmountDisplay">$0.00</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600">Remaining Balance</p>
+                        <p class="text-2xl font-bold text-orange-600" id="remainingBalanceDisplay">$0.00</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="payment-form-card rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Additional Information</h3>
+                
+                <div class="mt-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Payment Notes</label>
+                    <textarea name="notes" 
+                              rows="4" 
+                              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+                              placeholder="Any additional notes about this payment, special instructions, or payment conditions"></textarea>
+                    <p class="text-xs text-gray-500 mt-1">Additional information about this payment</p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-4 justify-center">
+                <button type="button" onclick="history.back()" class="bg-gray-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                    Cancel
+                </button>
+                <button type="submit" name="action" value="save_draft" class="bg-gradient-to-r from-yellow-600 to-orange-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a.997.997 0 01-.707.293H7a4 4 0 01-4-4V7a4 4 0 014-4z"></path>
+                    </svg>
+                    Save as Draft
+                </button>
+                <button type="submit" name="action" value="process" class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    Process Payment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // File size validation function
+    window.validateFileSize = function(input, errorElementId) {
+        const files = input.files;
+        const errorElement = document.getElementById(errorElementId);
+        const maxSize = 32 * 1024 * 1024; // 32MB in bytes
+        let hasError = false;
+        
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            if (file.size > maxSize) {
+                errorElement.textContent = `File "${file.name}" (${(file.size / (1024 * 1024)).toFixed(2)}MB) exceeds maximum limit of 32MB`;
+                errorElement.classList.remove('hidden');
+                input.value = ''; // Clear the input
+                input.classList.add('border-red-500');
+                hasError = true;
+                break;
+            }
+        }
+        
+        if (!hasError) {
+            errorElement.classList.add('hidden');
+            input.classList.remove('border-red-500');
+        }
+    };
+
+    // Payment method selection
+    const paymentMethodCards = document.querySelectorAll('.payment-method-card');
+    paymentMethodCards.forEach(card => {
+        card.addEventListener('click', function() {
+            // Remove selected class from all cards
+            paymentMethodCards.forEach(c => c.classList.remove('selected'));
+            // Add selected class to clicked card
+            this.classList.add('selected');
+            // Check the radio button
+            this.querySelector('input[type="radio"]').checked = true;
+        });
+    });
+
+    // Amount calculations
+    const paymentAmountInput = document.getElementById('paymentAmount');
+    const paymentAmountDisplay = document.getElementById('paymentAmountDisplay');
+    const billAmountDisplay = document.getElementById('billAmountDisplay');
+    const remainingBalanceDisplay = document.getElementById('remainingBalanceDisplay');
+    
+    let billAmount = 0;
+    
+    paymentAmountInput.addEventListener('input', function() {
+        const paymentAmount = parseFloat(this.value) || 0;
+        paymentAmountDisplay.textContent = `$${paymentAmount.toFixed(2)}`;
+        
+        const remainingBalance = billAmount - paymentAmount;
+        remainingBalanceDisplay.textContent = `$${remainingBalance.toFixed(2)}`;
+    });
+
+    // Vendor and bill selection
+    const vendorSelect = document.getElementById('vendorSelect');
+    const billSelect = document.getElementById('billSelect');
+    const billSummary = document.getElementById('billSummary');
+    
+    vendorSelect.addEventListener('change', function() {
+        const vendorId = this.value;
+        if (vendorId) {
+            billSelect.disabled = false;
+            // In a real application, this would fetch bills via AJAX
+            billSelect.innerHTML = `
+                <option value="">Select Bill</option>
+                <option value="1" data-amount="5000.00" data-number="INV-2024-001" data-date="2024-01-15">INV-2024-001 - $5,000.00 (Due: Jan 15, 2024)</option>
+                <option value="2" data-amount="3200.50" data-number="INV-2024-002" data-date="2024-01-20">INV-2024-002 - $3,200.50 (Due: Jan 20, 2024)</option>
+            `;
+        } else {
+            billSelect.disabled = true;
+            billSelect.innerHTML = '<option value="">Select Bill</option>';
+            billSummary.classList.add('hidden');
+        }
+    });
+    
+    billSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.value) {
+            billAmount = parseFloat(selectedOption.dataset.amount);
+            billAmountDisplay.textContent = `$${billAmount.toFixed(2)}`;
+            paymentAmountInput.value = billAmount.toFixed(2);
+            paymentAmountInput.dispatchEvent(new Event('input'));
+            
+            document.getElementById('billDetails').innerHTML = `
+                <div>
+                    <p class="font-medium text-gray-700">Bill Number</p>
+                    <p class="text-gray-900">${selectedOption.dataset.number}</p>
+                </div>
+                <div>
+                    <p class="font-medium text-gray-700">Amount</p>
+                    <p class="text-gray-900">$${billAmount.toFixed(2)}</p>
+                </div>
+                <div>
+                    <p class="font-medium text-gray-700">Due Date</p>
+                    <p class="text-gray-900">${selectedOption.dataset.date}</p>
+                </div>
+                <div>
+                    <p class="font-medium text-gray-700">Status</p>
+                    <p class="text-orange-600">Pending Payment</p>
+                </div>
+            `;
+            
+            billSummary.classList.remove('hidden');
+        } else {
+            billSummary.classList.add('hidden');
+        }
+    });
+});
+</script>
+{% endblock %}

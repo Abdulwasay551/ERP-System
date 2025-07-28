@@ -1,0 +1,88 @@
+{% load static %}
+<!-- Main Dashboard Sidebar -->
+<div class="sidebar-content">
+    <!-- Logo Section -->
+    <div class="sidebar-logo p-4 border-b border-white/20">
+        <div class="flex items-center space-x-3 min-h-[3rem]">
+            <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center flex-shrink-0 border border-white/30">
+                <img src="{% static 'logo.png' %}" alt="FutureERP Logo" class="w-10 h-10 rounded-full object-cover">
+            </div>
+            <span class="text-xl font-bold sidebar-text whitespace-nowrap text-white">FutureERP</span>
+        </div>
+    </div>
+
+    <!-- Navigation Items -->
+    <nav class="sidebar-nav flex-1 py-4 space-y-2 mt-2">
+        <!-- Home -->
+        <a href="/" class="sidebar-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <i class="fas fa-home sidebar-icon"></i>
+            <span class="sidebar-text">Home</span>
+        </a>
+
+        <!-- Dashboard -->
+        <a href="{% url 'dashboard' %}" class="sidebar-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <i class="fas fa-tachometer-alt sidebar-icon"></i>
+            <span class="sidebar-text">Dashboard</span>
+        </a>
+
+        <!-- Purchase -->
+        <a href="{% url 'purchase:dashboard' %}" class="sidebar-item {% if 'purchase' in request.resolver_match.app_name %}active{% endif %}">
+            <i class="fas fa-shopping-cart sidebar-icon"></i>
+            <span class="sidebar-text">Purchase</span>
+        </a>
+
+        <!-- Products -->
+        <a href="{% url 'products:dashboard' %}" class="sidebar-item {% if 'products' in request.resolver_match.app_name %}active{% endif %}">
+            <i class="fas fa-box-open sidebar-icon"></i>
+            <span class="sidebar-text">Products</span>
+        </a>
+
+        <!-- Sales -->
+        <a href="/sales/dashboard-ui/" class="sidebar-item {% if 'sales' in request.resolver_match.app_name %}active{% endif %}">
+            <i class="fas fa-chart-line sidebar-icon"></i>
+            <span class="sidebar-text">Sales</span>
+        </a>
+
+        <!-- Inventory -->
+        <a href="/inventory/dashboard-ui/" class="sidebar-item {% if 'inventory' in request.resolver_match.app_name %}active{% endif %}">
+            <i class="fas fa-warehouse sidebar-icon"></i>
+            <span class="sidebar-text">Inventory</span>
+        </a>
+
+        <!-- CRM -->
+        <a href="/crm/dashboard-ui/" class="sidebar-item {% if 'crm' in request.resolver_match.app_name %}active{% endif %}">
+            <i class="fas fa-users sidebar-icon"></i>
+            <span class="sidebar-text">CRM</span>
+        </a>
+
+        <!-- HR -->
+        <a href="/hr/dashboard-ui/" class="sidebar-item {% if 'hr' in request.resolver_match.app_name %}active{% endif %}">
+            <i class="fas fa-user-tie sidebar-icon"></i>
+            <span class="sidebar-text">HR</span>
+        </a>
+
+        <!-- Accounting -->
+        <a href="/accounting/dashboard-ui/" class="sidebar-item {% if 'accounting' in request.resolver_match.app_name %}active{% endif %}">
+            <i class="fas fa-calculator sidebar-icon"></i>
+            <span class="sidebar-text">Accounting</span>
+        </a>
+
+        <!-- Manufacturing -->
+        <a href="/manufacturing/dashboard-ui/" class="sidebar-item {% if 'manufacturing' in request.resolver_match.app_name %}active{% endif %}">
+            <i class="fas fa-cogs sidebar-icon"></i>
+            <span class="sidebar-text">Manufacturing</span>
+        </a>
+
+        <!-- Projects -->
+        <a href="/project_mgmt/dashboard-ui/" class="sidebar-item {% if 'project_mgmt' in request.resolver_match.app_name %}active{% endif %}">
+            <i class="fas fa-project-diagram sidebar-icon"></i>
+            <span class="sidebar-text">Projects</span>
+        </a>
+
+        <!-- Analytics -->
+        <a href="/analytics/dashboard-ui/" class="sidebar-item {% if 'analytics' in request.resolver_match.app_name %}active{% endif %}">
+            <i class="fas fa-chart-bar sidebar-icon"></i>
+            <span class="sidebar-text">Analytics</span>
+        </a>
+    </nav>
+</div>

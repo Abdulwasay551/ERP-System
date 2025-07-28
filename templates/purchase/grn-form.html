@@ -1,0 +1,856 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ form_title|default:"Create Goods Receipt Note" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .grn-form-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+    }
+
+    .grn-form-card:hover {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .item-row {
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .item-row:hover {
+        background: #f0f9ff;
+        border-color: #3b82f6;
+    }
+
+    .tracking-section {
+        background: #fef3c7;
+        border: 1px solid #f59e0b;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .po-mode {
+        background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+        border: 2px solid #10b981;
+    }
+
+    .manual-mode {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border: 2px solid #f59e0b;
+    }
+
+    .mode-toggle {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .mode-toggle:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3);
+    }
+
+    .add-item-btn {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .add-item-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+    }
+
+    .remove-item-btn {
+        background: #ef4444;
+        color: white;
+        border: none;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .remove-item-btn:hover {
+        background: #dc2626;
+        transform: scale(1.1);
+    }
+
+    .toggle-tracking-btn {
+        background: #8b5cf6;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-size: 0.75rem;
+    }
+
+    .tracking-item {
+        background: #fef3c7;
+        border: 1px solid #f59e0b;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl shadow-xl p-8 mb-8 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold mb-2">{{ form_title|default:"Create Goods Receipt Note" }}</h1>
+                    <p class="text-green-100">Record receipt of goods with optional purchase order integration</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-2xl font-bold">GRN #{{ grn_number|default:"[Auto Generated]" }}</div>
+                    <div class="text-green-200">{{ today|date:"F d, Y" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="space-y-8">
+            {% csrf_token %}
+            
+            <!-- Mode Selection -->
+            <div class="grn-form-card rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Receipt Mode</h3>
+                
+                <div class="flex space-x-4 mb-6">
+                    <button type="button" id="po-mode-btn" class="mode-toggle active" onclick="toggleMode('po')">
+                        <i class="fas fa-file-invoice mr-2"></i>
+                        From Purchase Order
+                    </button>
+                    <button type="button" id="manual-mode-btn" class="mode-toggle" onclick="toggleMode('manual')">
+                        <i class="fas fa-edit mr-2"></i>
+                        Manual Entry
+                    </button>
+                </div>
+
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+                    <div id="po-mode-description" class="mode-description">
+                        <p class="text-blue-700">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Select a purchase order to load items automatically. You can adjust quantities and add tracking information.
+                        </p>
+                    </div>
+                    <div id="manual-mode-description" class="mode-description hidden">
+                        <p class="text-amber-700">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Create a GRN without a purchase order. You'll need to manually add all items and details.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Basic Information -->
+            <div class="grn-form-card rounded-2xl shadow-lg p-6" id="basic-info-section">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Receipt Information</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Purchase Order Selection (PO Mode) -->
+                    <div id="po-selection" class="po-mode-field">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Purchase Order</label>
+                        <select name="purchase_order" id="purchase_order_select" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" onchange="loadPOItems()">
+                            <option value="">Select Purchase Order</option>
+                            {% for po in purchase_orders %}
+                            <option value="{{ po.id }}" 
+                                    data-supplier="{{ po.supplier.name }}"
+                                    data-supplier-id="{{ po.supplier.id }}"
+                                    data-po-number="{{ po.po_number }}">
+                                {{ po.po_number }} - {{ po.supplier.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Items will be loaded automatically from selected PO</p>
+                    </div>
+
+                    <!-- Supplier Selection (Manual Mode) -->
+                    <div id="supplier-selection" class="manual-mode-field hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Supplier *</label>
+                        <select name="supplier" id="supplier_select" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                            <option value="">Select Supplier</option>
+                            {% for supplier in suppliers %}
+                            <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Select the supplier for this receipt</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Receipt Date *</label>
+                        <input type="date" 
+                               name="receipt_date" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" 
+                               required
+                               value="{{ today|date:'Y-m-d' }}">
+                        <p class="text-xs text-gray-500 mt-1">Date when goods were actually received</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Warehouse *</label>
+                        <select name="warehouse" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" required>
+                            <option value="">Select Warehouse</option>
+                            {% for warehouse in warehouses %}
+                            <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Receiving warehouse</p>
+                    </div>
+                </div>
+
+                <!-- Additional Receipt Details -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Vehicle Number</label>
+                        <input type="text" 
+                               name="vehicle_number" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                               placeholder="ABC-123">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Gate Entry Number</label>
+                        <input type="text" 
+                               name="gate_entry_number" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                               placeholder="GE-001">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Supplier Delivery Note</label>
+                        <input type="text" 
+                               name="supplier_delivery_note" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                               placeholder="DN-123">
+                    </div>
+                </div>
+
+                <!-- Transport Details -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Transporter</label>
+                        <input type="text" 
+                               name="transporter" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                               placeholder="Transport Company Name">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Driver Name</label>
+                        <input type="text" 
+                               name="driver_name" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                               placeholder="Driver Name">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Driver Phone</label>
+                        <input type="tel" 
+                               name="driver_phone" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                               placeholder="+92-300-1234567">
+                    </div>
+                </div>
+
+                <!-- Quality Inspection -->
+                <div class="mt-6">
+                    <div class="flex items-center">
+                        <input type="checkbox" 
+                               name="requires_quality_inspection" 
+                               id="quality_inspection_checkbox"
+                               class="mr-3 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                               checked>
+                        <label for="quality_inspection_checkbox" class="text-sm font-medium text-gray-700">
+                            Requires Quality Inspection
+                        </label>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Check if received items need quality inspection before acceptance</p>
+                </div>
+            </div>
+
+            <!-- Items Section -->
+            <div class="grn-form-card rounded-2xl shadow-lg p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">Receipt Items</h3>
+                    <button type="button" id="add-manual-item-btn" class="add-item-btn manual-mode-field hidden" onclick="addManualItem()">
+                        <i class="fas fa-plus mr-2"></i>
+                        Add Item
+                    </button>
+                </div>
+
+                <!-- Items from PO (PO Mode) -->
+                <div id="po-items-section" class="po-mode-field">
+                    <div id="po-items-container">
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-box-open text-4xl mb-4"></i>
+                            <p>Select a purchase order to load items</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manual Items (Manual Mode) -->
+                <div id="manual-items-section" class="manual-mode-field hidden">
+                    <div id="manual-items-container">
+                        <!-- Manual items will be added here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Document Uploads -->
+            <div class="grn-form-card rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Document Uploads</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Delivery Challan</label>
+                        <input type="file" 
+                               name="delivery_challan" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                               accept=".pdf,.jpg,.jpeg,.png">
+                        <p class="text-xs text-gray-500 mt-1">Supplier delivery challan document</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Packing List</label>
+                        <input type="file" 
+                               name="packing_list" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                               accept=".pdf,.jpg,.jpeg,.png">
+                        <p class="text-xs text-gray-500 mt-1">Detailed packing list</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quality Certificates</label>
+                        <input type="file" 
+                               name="quality_certificates" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                               accept=".pdf,.jpg,.jpeg,.png">
+                        <p class="text-xs text-gray-500 mt-1">Quality certificates from supplier</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Photos of Received Goods</label>
+                        <input type="file" 
+                               name="photos_received_goods" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                               accept=".jpg,.jpeg,.png"
+                               multiple>
+                        <p class="text-xs text-gray-500 mt-1">Photos of received goods for documentation</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="grn-form-card rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Additional Notes</h3>
+                
+                <textarea name="notes" 
+                          rows="4" 
+                          class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                          placeholder="Any additional notes about the receipt..."></textarea>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-end space-x-4">
+                <a href="{% url 'purchase:grns_ui' %}" 
+                   class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all">
+                    <i class="fas fa-save mr-2"></i>
+                    Create GRN
+                </button>
+            </div>
+        </form>
+    </div>
+</div> 
+                              
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentMode = 'po';
+let itemCounter = 0;
+let trackingCounter = 0;
+
+// Mode switching functionality
+function toggleMode(mode) {
+    currentMode = mode;
+    const poModeBtn = document.getElementById('po-mode-btn');
+    const manualModeBtn = document.getElementById('manual-mode-btn');
+    const poFields = document.querySelectorAll('.po-mode-field');
+    const manualFields = document.querySelectorAll('.manual-mode-field');
+    const poDescription = document.getElementById('po-mode-description');
+    const manualDescription = document.getElementById('manual-mode-description');
+
+    if (mode === 'po') {
+        poModeBtn.classList.add('active');
+        manualModeBtn.classList.remove('active');
+        poFields.forEach(field => field.classList.remove('hidden'));
+        manualFields.forEach(field => field.classList.add('hidden'));
+        poDescription.classList.remove('hidden');
+        manualDescription.classList.add('hidden');
+        
+        // Clear manual items
+        document.getElementById('manual-items-container').innerHTML = '';
+        itemCounter = 0;
+    } else {
+        manualModeBtn.classList.add('active');
+        poModeBtn.classList.remove('active');
+        manualFields.forEach(field => field.classList.remove('hidden'));
+        poFields.forEach(field => field.classList.add('hidden'));
+        manualDescription.classList.remove('hidden');
+        poDescription.classList.add('hidden');
+        
+        // Clear PO selection and items
+        document.getElementById('purchase_order_select').value = '';
+        document.getElementById('po-items-container').innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-edit text-4xl mb-4"></i>
+                <p>Add items manually by clicking "Add Item" button</p>
+            </div>
+        `;
+        
+        // Add first manual item
+        addManualItem();
+    }
+}
+
+// Load PO items when PO is selected
+async function loadPOItems() {
+    const poSelect = document.getElementById('purchase_order_select');
+    const selectedOption = poSelect.options[poSelect.selectedIndex];
+    const container = document.getElementById('po-items-container');
+    
+    if (!poSelect.value) {
+        container.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-box-open text-4xl mb-4"></i>
+                <p>Select a purchase order to load items</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Set supplier from PO
+    const supplierName = selectedOption.dataset.supplier;
+    const supplierDisplay = document.createElement('div');
+    supplierDisplay.className = 'bg-green-50 border border-green-200 rounded-lg p-4 mb-4';
+    supplierDisplay.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-building text-green-600 mr-2"></i>
+            <span class="font-medium text-green-800">Supplier: ${supplierName}</span>
+        </div>
+    `;
+
+    try {
+        // Fetch PO items via AJAX
+        const response = await fetch(`/purchase/ajax/get-po-items/?po_id=${poSelect.value}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                let itemsHtml = '';
+                data.items.forEach((item, index) => {
+                    itemsHtml += createPOItemRow(item, index);
+                });
+
+                container.innerHTML = supplierDisplay.outerHTML + itemsHtml;
+            } else {
+                container.innerHTML = `<div class="text-red-500 text-center py-4">${data.error}</div>`;
+            }
+        } else {
+            container.innerHTML = `<div class="text-red-500 text-center py-4">Error loading PO items</div>`;
+        }
+    } catch (error) {
+        console.error('Error loading PO items:', error);
+        container.innerHTML = `<div class="text-red-500 text-center py-4">Error loading PO items</div>`;
+    }
+}
+
+// Create PO item row
+function createPOItemRow(item, index) {
+    return `
+        <div class="item-row rounded-lg p-4" id="po-item-${index}">
+            <input type="hidden" name="po_item_ids[]" value="${item.id}">
+            
+            <div class="grid grid-cols-12 gap-4 items-start">
+                <!-- Product Info -->
+                <div class="col-span-3">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Product</label>
+                    <div class="text-sm font-medium text-gray-900">${item.product_name}</div>
+                    <div class="text-xs text-gray-500">${item.product_code || ''}</div>
+                    <input type="hidden" name="po_products[]" value="${item.product_id}">
+                </div>
+                
+                <!-- Ordered Quantity -->
+                <div class="col-span-2">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Ordered</label>
+                    <div class="text-sm text-gray-600">${item.ordered_quantity} ${item.uom}</div>
+                    <input type="hidden" name="po_ordered_quantities[]" value="${item.ordered_quantity}">
+                </div>
+                
+                <!-- Received Quantity -->
+                <div class="col-span-2">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Received Qty *</label>
+                    <input type="number" 
+                           name="po_received_quantities[]" 
+                           class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-green-500"
+                           step="0.01"
+                           min="0"
+                           max="${item.pending_quantity}"
+                           value="${item.pending_quantity}"
+                           required>
+                    <div class="text-xs text-gray-500">Max: ${item.pending_quantity}</div>
+                </div>
+                
+                <!-- Tracking Toggle -->
+                <div class="col-span-1">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Tracking</label>
+                    <button type="button" 
+                            class="toggle-tracking-btn" 
+                            onclick="togglePOTracking(${index})"
+                            id="tracking-toggle-${index}">
+                        <i class="fas fa-barcode"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Additional Item Details -->
+            <div class="grid grid-cols-3 gap-4 mt-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Expiry Date</label>
+                    <input type="date" 
+                           name="po_expiry_dates[]" 
+                           class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-green-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Batch Number</label>
+                    <input type="text" 
+                           name="po_batch_numbers[]" 
+                           class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-green-500"
+                           placeholder="Batch/Lot number">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Storage Location</label>
+                    <input type="text" 
+                           name="po_storage_locations[]" 
+                           class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-green-500"
+                           placeholder="Shelf/Bin location">
+                </div>
+            </div>
+            
+            <!-- Tracking Items Section -->
+            <div id="po-tracking-section-${index}" class="tracking-section hidden mt-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h5 class="font-medium text-gray-900">Individual Item Tracking</h5>
+                    <button type="button" 
+                            class="add-item-btn text-sm" 
+                            onclick="addPOTrackingItem(${index})">
+                        <i class="fas fa-plus mr-1"></i>
+                        Add Tracking
+                    </button>
+                </div>
+                <div id="po-tracking-items-${index}">
+                    <!-- Tracking items will be added here -->
+                </div>
+            </div>
+            
+            <!-- Item Notes -->
+            <div class="mt-4">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Notes</label>
+                <textarea name="po_item_notes[]" 
+                          rows="2" 
+                          class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-green-500"
+                          placeholder="Any notes about this item..."></textarea>
+            </div>
+        </div>
+    `;
+}
+
+// Add manual item
+function addManualItem() {
+    const container = document.getElementById('manual-items-container');
+    const itemHtml = createManualItemRow(itemCounter);
+    
+    if (itemCounter === 0) {
+        container.innerHTML = itemHtml;
+    } else {
+        container.insertAdjacentHTML('beforeend', itemHtml);
+    }
+    
+    itemCounter++;
+}
+
+// Create manual item row
+function createManualItemRow(index) {
+    return `
+        <div class="item-row rounded-lg p-4" id="manual-item-${index}">
+            <div class="grid grid-cols-12 gap-4 items-start">
+                <!-- Product Selection -->
+                <div class="col-span-3">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Product *</label>
+                    <select name="manual_products[]" 
+                            class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-green-500" 
+                            required>
+                        <option value="">Select Product</option>
+                        {% for product in products %}
+                        <option value="{{ product.id }}" 
+                                data-name="{{ product.name }}"
+                                data-tracking="{{ product.tracking_method|default:'none' }}">
+                            {{ product.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Received Quantity -->
+                <div class="col-span-2">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Received Qty *</label>
+                    <input type="number" 
+                           name="manual_received_quantities[]" 
+                           class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-green-500"
+                           step="0.01"
+                           min="0"
+                           onchange="updateManualItemTotal(${index})"
+                           required>
+                </div>
+                
+                <!-- UOM -->
+                <div class="col-span-2">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">UOM *</label>
+                    <select name="manual_uoms[]" 
+                            class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-green-500" 
+                            required>
+                        <option value="">Select UOM</option>
+                        {% for uom in uoms %}
+                        <option value="{{ uom.id }}">{{ uom.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Remove Button -->
+                <div class="col-span-1">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">&nbsp;</label>
+                    <button type="button" 
+                            class="remove-item-btn" 
+                            onclick="removeManualItem(${index})"
+                            title="Remove Item">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Additional Item Details -->
+            <div class="grid grid-cols-3 gap-4 mt-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Expiry Date</label>
+                    <input type="date" 
+                           name="manual_expiry_dates[]" 
+                           class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-green-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Batch Number</label>
+                    <input type="text" 
+                           name="manual_batch_numbers[]" 
+                           class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-green-500"
+                           placeholder="Batch/Lot number">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Storage Location</label>
+                    <input type="text" 
+                           name="manual_storage_locations[]" 
+                           class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-green-500"
+                           placeholder="Shelf/Bin location">
+                </div>
+            </div>
+            
+            <!-- Tracking Section -->
+            <div class="tracking-section mt-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h5 class="font-medium text-gray-900">Individual Item Tracking</h5>
+                    <button type="button" 
+                            class="add-item-btn text-sm" 
+                            onclick="addManualTrackingItem(${index})">
+                        <i class="fas fa-plus mr-1"></i>
+                        Add Tracking
+                    </button>
+                </div>
+                <div id="manual-tracking-items-${index}">
+                    <!-- Tracking items will be added here -->
+                </div>
+            </div>
+            
+            <!-- Item Notes -->
+            <div class="mt-4">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Notes</label>
+                <textarea name="manual_item_notes[]" 
+                          rows="2" 
+                          class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-green-500"
+                          placeholder="Any notes about this item..."></textarea>
+            </div>
+        </div>
+    `;
+}
+
+// Remove manual item
+function removeManualItem(index) {
+    const itemElement = document.getElementById(`manual-item-${index}`);
+    if (itemElement) {
+        itemElement.remove();
+    }
+}
+
+// Toggle PO tracking
+function togglePOTracking(index) {
+    const trackingSection = document.getElementById(`po-tracking-section-${index}`);
+    const toggleBtn = document.getElementById(`tracking-toggle-${index}`);
+    
+    if (trackingSection.classList.contains('hidden')) {
+        trackingSection.classList.remove('hidden');
+        toggleBtn.classList.add('bg-green-500');
+        toggleBtn.innerHTML = '<i class="fas fa-barcode"></i>';
+    } else {
+        trackingSection.classList.add('hidden');
+        toggleBtn.classList.remove('bg-green-500');
+        toggleBtn.innerHTML = '<i class="fas fa-barcode"></i>';
+    }
+}
+
+// Add PO tracking item
+function addPOTrackingItem(itemIndex) {
+    const container = document.getElementById(`po-tracking-items-${itemIndex}`);
+    const trackingHtml = createTrackingItemRow(itemIndex, trackingCounter, 'po');
+    container.insertAdjacentHTML('beforeend', trackingHtml);
+    trackingCounter++;
+}
+
+// Add manual tracking item
+function addManualTrackingItem(itemIndex) {
+    const container = document.getElementById(`manual-tracking-items-${itemIndex}`);
+    const trackingHtml = createTrackingItemRow(itemIndex, trackingCounter, 'manual');
+    container.insertAdjacentHTML('beforeend', trackingHtml);
+    trackingCounter++;
+}
+
+// Create tracking item row
+function createTrackingItemRow(itemIndex, trackingIndex, mode) {
+    return `
+        <div class="tracking-item" id="${mode}-tracking-${itemIndex}-${trackingIndex}">
+            <div class="grid grid-cols-12 gap-2 items-center">
+                <div class="col-span-3">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Tracking Type</label>
+                    <select name="${mode}_tracking_types[]" class="w-full p-1 border rounded text-xs">
+                        <option value="serial">Serial Number</option>
+                        <option value="imei">IMEI</option>
+                        <option value="barcode">Barcode</option>
+                        <option value="batch">Batch/Lot</option>
+                    </select>
+                </div>
+                <div class="col-span-3">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Tracking Number</label>
+                    <input type="text" 
+                           name="${mode}_tracking_numbers[]" 
+                           class="w-full p-1 border rounded text-xs"
+                           placeholder="Enter tracking number">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Condition</label>
+                    <select name="${mode}_tracking_conditions[]" class="w-full p-1 border rounded text-xs">
+                        <option value="new">New</option>
+                        <option value="good">Good</option>
+                        <option value="damaged">Damaged</option>
+                        <option value="defective">Defective</option>
+                    </select>
+                </div>
+                <div class="col-span-3">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Notes</label>
+                    <input type="text" 
+                           name="${mode}_tracking_notes[]" 
+                           class="w-full p-1 border rounded text-xs"
+                           placeholder="Condition notes">
+                </div>
+                <div class="col-span-1">
+                    <button type="button" 
+                            class="remove-item-btn text-xs" 
+                            onclick="removeTrackingItem('${mode}-tracking-${itemIndex}-${trackingIndex}')"
+                            title="Remove">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Remove tracking item
+function removeTrackingItem(trackingId) {
+    const trackingElement = document.getElementById(trackingId);
+    if (trackingElement) {
+        trackingElement.remove();
+    }
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    // Set initial mode
+    toggleMode('po');
+    
+    // Add event listeners
+    document.getElementById('purchase_order_select').addEventListener('change', loadPOItems);
+});
+
+// Form validation before submit
+document.querySelector('form').addEventListener('submit', function(e) {
+    const mode = currentMode;
+    let isValid = true;
+    let errorMessage = '';
+
+    if (mode === 'po') {
+        const poSelect = document.getElementById('purchase_order_select');
+        if (!poSelect.value) {
+            isValid = false;
+            errorMessage = 'Please select a purchase order.';
+        }
+    } else {
+        const supplierSelect = document.getElementById('supplier_select');
+        if (!supplierSelect.value) {
+            isValid = false;
+            errorMessage = 'Please select a supplier.';
+        }
+        
+        const manualItems = document.querySelectorAll('#manual-items-container .item-row');
+        if (manualItems.length === 0) {
+            isValid = false;
+            errorMessage = 'Please add at least one item.';
+        }
+    }
+
+    if (!isValid) {
+        e.preventDefault();
+        alert(errorMessage);
+        return false;
+    }
+});
+</script>
+{% endblock %}

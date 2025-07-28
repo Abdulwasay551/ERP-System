@@ -1,6 +1,7 @@
 from django.db import models
 from user_auth.models import Company, User
-from sales.models import Product
+from products.models import Product  # Import centralized Product model
+from crm.models import Partner  # Import centralized Partner model
 from accounting.models import Account
 
 class BillOfMaterials(models.Model):
@@ -60,3 +61,52 @@ class ProductionPlan(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.start_date} - {self.end_date})"
+
+class Subcontractor(models.Model):
+    """Subcontractor model that links to centralized Partner for outsourced manufacturing"""
+    # Link to centralized Partner
+    partner = models.OneToOneField(Partner, on_delete=models.CASCADE, related_name='subcontractor_profile')
+    
+    # Subcontractor-specific fields
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='subcontractors')
+    specialization = models.CharField(max_length=255, blank=True, help_text="Manufacturing specialization")
+    capacity = models.CharField(max_length=255, blank=True, help_text="Production capacity")
+    quality_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0, help_text="Quality rating 0-10")
+    delivery_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0, help_text="Delivery rating 0-10")
+    lead_time_days = models.IntegerField(default=0, help_text="Average lead time in days")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Subcontractor: {self.partner.name}"
+
+    def save(self, *args, **kwargs):
+        # Ensure partner is marked as vendor/supplier
+        if self.partner:
+            self.partner.is_vendor = True
+            self.partner.save()
+        super().save(*args, **kwargs)
+
+class SubcontractWorkOrder(models.Model):
+    """Work orders outsourced to subcontractors"""
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='subcontract_work_orders')
+    work_order = models.ForeignKey(WorkOrder, on_delete=models.CASCADE, related_name='subcontracts')
+    subcontractor = models.ForeignKey(Subcontractor, on_delete=models.CASCADE, related_name='work_orders')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.DecimalField(max_digits=12, decimal_places=2)
+    unit_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_cost = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    start_date = models.DateField(null=True, blank=True)
+    due_date = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=50, default='Planned')
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        self.total_cost = self.quantity * self.unit_cost
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Subcontract: {self.product.name} to {self.subcontractor.partner.name}"

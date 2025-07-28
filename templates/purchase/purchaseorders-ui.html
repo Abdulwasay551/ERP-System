@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Purchase Management | FutureERP{% endblock %}
+{% block title %}Purchase Orders | FutureERP{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -7,31 +7,50 @@
         background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
         border: 1px solid rgba(16, 185, 129, 0.2);
     }
+    .po-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        transition: all 0.3s ease;
+    }
+    .po-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+    }
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .status-draft { background-color: #f3f4f6; color: #6b7280; }
+    .status-pending_approval { background-color: #fef3c7; color: #d97706; }
+    .status-approved { background-color: #d1fae5; color: #059669; }
+    .status-sent_to_supplier { background-color: #dbeafe; color: #2563eb; }
+    .status-acknowledged { background-color: #e0e7ff; color: #4338ca; }
+    .status-partially_received { background-color: #fed7d7; color: #be185d; }
+    .status-fully_received { background-color: #d1fae5; color: #047857; }
+    .status-cancelled { background-color: #fecaca; color: #dc2626; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="pt-24 pb-8">
-    <div class="max-w-7xl mx-auto px-6">
+    <div class="mx-auto px-8">
         <!-- Header -->
         <div class="flex justify-between items-center mb-8">
             <div>
-                <h1 class="text-4xl font-bold accounting-highlight mb-2">Purchase Management</h1>
-                <p class="text-gray-600">Manage suppliers, purchase orders, and vendor bills</p>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Purchase Orders</h1>
+                <p class="text-gray-600">Manage purchase orders and supplier relationships</p>
             </div>
             <div class="flex gap-4">
-                <button id="addSupplierBtn" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
-                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    Add Supplier
-                </button>
-                <button id="addPurchaseOrderBtn" class="action-btn bg-gradient-to-r from-purple-500 to-pink-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                <a href="{% url 'purchase:purchaseorders_add' %}" class="action-btn bg-gradient-to-r from-purple-500 to-pink-600 text-white px-6 py-3 rounded-2xl hover-lift">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                     </svg>
                     New Purchase Order
-                </button>
+                </a>
             </div>
         </div>
 
@@ -42,565 +61,163 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 <div>
-                    <h3 class="text-lg font-semibold text-green-800">Chart of Accounts Integration</h3>
-                    <p class="text-green-700">Purchases automatically post: <strong>Dr. COGS/Inventory</strong> | <strong>Cr. Accounts Payable (Vendor)</strong></p>
+                    <h3 class="text-lg font-semibold text-green-800">Flexible Purchase Order System</h3>
+                    <p class="text-green-700">Purchase orders support optional quotation reference with flexible item management, comprehensive discount system, and documentation-only tracking</p>
                 </div>
             </div>
         </div>
 
-        <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div class="stat-card p-6 rounded-2xl">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">Total Suppliers</p>
-                        <p class="text-3xl font-bold text-green-800" id="totalSuppliers">0</p>
-                    </div>
-                    <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <div class="stat-card p-6 rounded-2xl">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">Purchase Orders</p>
-                        <p class="text-3xl font-bold text-blue-800" id="totalPurchaseOrders">0</p>
-                    </div>
-                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <div class="stat-card p-6 rounded-2xl">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">Pending Bills</p>
-                        <p class="text-3xl font-bold text-orange-800" id="pendingBills">0</p>
-                    </div>
-                    <div class="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <div class="stat-card p-6 rounded-2xl">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">Total Payables</p>
-                        <p class="text-3xl font-bold text-purple-800" id="totalPayables">₨0</p>
-                    </div>
-                    <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tab Navigation -->
-        <div class="bg-white rounded-2xl shadow-lg mb-8">
-            <nav class="flex space-x-8 px-8 py-4" aria-label="Tabs">
-                <button id="suppliersTab" class="tab-btn active whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
-                    Suppliers
-                </button>
-                <button id="purchaseOrdersTab" class="tab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
-                    Purchase Orders
-                </button>
-                <button id="billsTab" class="tab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
-                    Bills & Payments
-                </button>
-            </nav>
-        </div>
-
-        <!-- Suppliers Tab Content -->
-        <div id="suppliersContent" class="tab-content">
-            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full">
-                        <thead class="bg-gradient-to-r from-green-50 to-emerald-50">
-                            <tr>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Supplier</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Contact</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Payable Account</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Outstanding</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="suppliersTableBody" class="bg-white divide-y divide-gray-100">
-                            <!-- Suppliers will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Purchase Orders Tab Content -->
-        <div id="purchaseOrdersContent" class="tab-content hidden">
-            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full">
-                        <thead class="bg-gradient-to-r from-blue-50 to-indigo-50">
-                            <tr>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-blue-800 uppercase tracking-wider">PO Number</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-blue-800 uppercase tracking-wider">Supplier</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-blue-800 uppercase tracking-wider">Date</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-blue-800 uppercase tracking-wider">Amount</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-blue-800 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-blue-800 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="purchaseOrdersTableBody" class="bg-white divide-y divide-gray-100">
-                            <!-- Purchase orders will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bills Tab Content -->
-        <div id="billsContent" class="tab-content hidden">
-            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full">
-                        <thead class="bg-gradient-to-r from-orange-50 to-red-50">
-                            <tr>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-orange-800 uppercase tracking-wider">Bill Number</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-orange-800 uppercase tracking-wider">Supplier</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-orange-800 uppercase tracking-wider">Due Date</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-orange-800 uppercase tracking-wider">Amount</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-orange-800 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-orange-800 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="billsTableBody" class="bg-white divide-y divide-gray-100">
-                            <!-- Bills will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Supplier Modal -->
-<div id="supplierModal" class="modal-overlay fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl">
-        <div class="p-8">
-            <div class="flex justify-between items-center mb-6">
-                <h2 id="supplierModalTitle" class="text-2xl font-bold text-green-800">Add Supplier</h2>
-                <button id="closeSupplierModalBtn" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
-            </div>
-
-            <form id="supplierForm" class="space-y-6">
-                {% csrf_token %}
-                <input type="hidden" id="supplierId" name="id">
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Supplier Name</label>
-                        <input type="text" id="supplierName" name="name" required
-                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Contact Person</label>
-                        <input type="text" id="contactPerson" name="contact_person"
-                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                        <input type="email" id="supplierEmail" name="email"
-                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                        <input type="tel" id="supplierPhone" name="phone"
-                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                    </div>
-                </div>
-
+        <!-- Filters -->
+        <div class="card-modern mb-8">
+            <form method="GET" class="flex flex-wrap gap-4 items-end">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                    <textarea id="supplierAddress" name="address" rows="3"
-                              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"></textarea>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Payable Account</label>
-                    <select id="payableAccount" name="payable_account"
-                            class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                        <option value="">Select Payable Account</option>
-                        <!-- Options will be populated via API -->
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select name="status" class="form-select rounded-lg border-gray-300">
+                        <option value="">All Status</option>
+                        {% for status_code, status_name in status_choices %}
+                        <option value="{{ status_code }}" {% if status_filter == status_code %}selected{% endif %}>
+                            {{ status_name }}
+                        </option>
+                        {% endfor %}
                     </select>
                 </div>
-
-                <div id="supplierFormError" class="text-red-600 text-sm hidden"></div>
-
-                <div class="flex gap-4">
-                    <button type="submit" class="flex-1 quick-action-btn text-white py-3 rounded-xl font-medium">
-                        Save Supplier
-                    </button>
-                    <button type="button" id="cancelSupplierBtn" class="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">
-                        Cancel
-                    </button>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" name="search" value="{{ search_query }}" placeholder="Search PO number, supplier..." 
+                           class="form-input rounded-lg border-gray-300">
                 </div>
+                <button type="submit" class="btn-primary">Filter</button>
+                <a href="{% url 'purchase:purchaseorders_ui' %}" class="btn-secondary">Clear</a>
             </form>
         </div>
-    </div>
-</div>
-{% endblock %}
 
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    let suppliers = [];
-    let purchaseOrders = [];
-    let bills = [];
-    let payableAccounts = [];
-
-    // Tab functionality
-    const tabs = {
-        suppliers: { btn: 'suppliersTab', content: 'suppliersContent' },
-        orders: { btn: 'purchaseOrdersTab', content: 'purchaseOrdersContent' },
-        bills: { btn: 'billsTab', content: 'billsContent' }
-    };
-
-    function switchTab(activeTab) {
-        Object.keys(tabs).forEach(tab => {
-            const btn = document.getElementById(tabs[tab].btn);
-            const content = document.getElementById(tabs[tab].content);
-            
-            if (tab === activeTab) {
-                btn.classList.add('active', 'border-green-500', 'text-green-600');
-                btn.classList.remove('border-transparent', 'text-gray-500');
-                content.classList.remove('hidden');
-            } else {
-                btn.classList.remove('active', 'border-green-500', 'text-green-600');
-                btn.classList.add('border-transparent', 'text-gray-500');
-                content.classList.add('hidden');
-            }
-        });
-    }
-
-    // Event listeners for tabs
-    document.getElementById('suppliersTab').addEventListener('click', () => {
-        switchTab('suppliers');
-        loadSuppliers();
-    });
-    
-    document.getElementById('purchaseOrdersTab').addEventListener('click', () => {
-        switchTab('orders');
-        loadPurchaseOrders();
-    });
-    
-    document.getElementById('billsTab').addEventListener('click', () => {
-        switchTab('bills');
-        loadBills();
-    });
-
-    // Modal functionality
-    const supplierModal = document.getElementById('supplierModal');
-    const addSupplierBtn = document.getElementById('addSupplierBtn');
-    const closeSupplierModalBtn = document.getElementById('closeSupplierModalBtn');
-    const cancelSupplierBtn = document.getElementById('cancelSupplierBtn');
-    const supplierForm = document.getElementById('supplierForm');
-
-    addSupplierBtn.addEventListener('click', openSupplierModal);
-    closeSupplierModalBtn.addEventListener('click', closeSupplierModal);
-    cancelSupplierBtn.addEventListener('click', closeSupplierModal);
-    supplierForm.addEventListener('submit', handleSupplierSubmit);
-
-    function openSupplierModal() {
-        document.getElementById('supplierModalTitle').textContent = 'Add Supplier';
-        supplierForm.reset();
-        document.getElementById('supplierId').value = '';
-        supplierModal.classList.remove('hidden');
-    }
-
-    function closeSupplierModal() {
-        supplierModal.classList.add('hidden');
-        document.getElementById('supplierFormError').classList.add('hidden');
-    }
-
-    // API Functions
-    async function loadSuppliers() {
-        try {
-            const response = await fetch('/api/purchase/suppliers/', {
-                headers: { 'Authorization': 'Token ' + getAuthToken() }
-            });
-            if (response.ok) {
-                suppliers = await response.json();
-                renderSuppliers();
-                updateStatistics();
-            }
-        } catch (error) {
-            console.error('Error loading suppliers:', error);
-        }
-    }
-
-    async function loadPayableAccounts() {
-        try {
-            const response = await fetch('/api/accounting/accounts/?account_type=Payable', {
-                headers: { 'Authorization': 'Token ' + getAuthToken() }
-            });
-            if (response.ok) {
-                payableAccounts = await response.json();
-                populatePayableAccountSelect();
-            }
-        } catch (error) {
-            console.error('Error loading payable accounts:', error);
-        }
-    }
-
-    function populatePayableAccountSelect() {
-        const select = document.getElementById('payableAccount');
-        select.innerHTML = '<option value="">Select Payable Account</option>';
-        payableAccounts.forEach(account => {
-            select.innerHTML += `<option value="${account.id}">${account.code} - ${account.name}</option>`;
-        });
-    }
-
-    async function loadPurchaseOrders() {
-        try {
-            const response = await fetch('/api/purchase/orders/', {
-                headers: { 'Authorization': 'Token ' + getAuthToken() }
-            });
-            if (response.ok) {
-                purchaseOrders = await response.json();
-                renderPurchaseOrders();
-            }
-        } catch (error) {
-            console.error('Error loading purchase orders:', error);
-        }
-    }
-
-    async function loadBills() {
-        try {
-            const response = await fetch('/api/purchase/bills/', {
-                headers: { 'Authorization': 'Token ' + getAuthToken() }
-            });
-            if (response.ok) {
-                bills = await response.json();
-                renderBills();
-            }
-        } catch (error) {
-            console.error('Error loading bills:', error);
-        }
-    }
-
-    // Render functions
-    function renderSuppliers() {
-        const tbody = document.getElementById('suppliersTableBody');
-        if (suppliers.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">No suppliers found</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = suppliers.map(supplier => `
-            <tr class="hover:bg-green-50 transition-colors duration-200">
-                <td class="px-6 py-4">
+        <!-- Purchase Orders List -->
+        <div class="grid grid-cols-1 gap-6">
+            {% for order in purchaseorders %}
+            <div class="po-card rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center">
-                        <div class="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-500 rounded-xl flex items-center justify-center text-white font-bold text-sm mr-4">
-                            ${supplier.name.substring(0, 2).toUpperCase()}
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
                         </div>
                         <div>
-                            <div class="font-semibold text-gray-900">${supplier.name}</div>
-                            <div class="text-sm text-gray-500">${supplier.contact_person || 'No contact'}</div>
+                            <h3 class="text-xl font-semibold text-gray-900">{{ order.po_number|default:order.id }}</h3>
+                            <p class="text-gray-600">{{ order.supplier.name }} • {{ order.created_by.get_full_name|default:order.created_by.username }}</p>
                         </div>
                     </div>
-                </td>
-                <td class="px-6 py-4">
-                    <div class="text-sm text-gray-900">${supplier.email || 'No email'}</div>
-                    <div class="text-sm text-gray-500">${supplier.phone || 'No phone'}</div>
-                </td>
-                <td class="px-6 py-4">
-                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                        ${supplier.payable_account_name || 'No Account'}
-                    </span>
-                </td>
-                <td class="px-6 py-4">
-                    <div class="text-sm text-gray-900">₨${parseFloat(supplier.outstanding || 0).toLocaleString()}</div>
-                </td>
-                <td class="px-6 py-4">
-                    <div class="flex space-x-2">
-                        <button onclick="editSupplier(${supplier.id})" class="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded-lg">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                            </svg>
-                        </button>
-                        <button onclick="deleteSupplier(${supplier.id})" class="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded-lg">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                            </svg>
-                        </button>
+                    <div class="flex items-center gap-4">
+                        <span class="status-badge status-{{ order.status }}">{{ order.get_status_display }}</span>
+                        <div class="flex gap-2">
+                            <a href="{% url 'purchase:purchase_order_detail' order.id %}" class="btn-sm btn-primary">View</a>
+                            {% if order.status == 'pending_approval' and perms.purchase.approve_purchase_order %}
+                            <form method="POST" action="{% url 'purchase:purchase_order_approve' order.id %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-sm btn-success">Approve</button>
+                            </form>
+                            {% endif %}
+                            {% if order.status == 'draft' %}
+                            <a href="{% url 'purchase:purchase_order_edit' order.id %}" class="btn-sm btn-secondary">Edit</a>
+                            {% endif %}
+                        </div>
                     </div>
-                </td>
-            </tr>
-        `).join('');
-    }
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                    <div>
+                        <p class="text-sm text-gray-500">Order Date</p>
+                        <p class="font-medium">{{ order.order_date|date:"M d, Y" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Expected Delivery</p>
+                        <p class="font-medium">{{ order.expected_delivery_date|date:"M d, Y"|default:"Not set" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Items</p>
+                        <p class="font-medium">{{ order.items.count }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Quotation Reference</p>
+                        <p class="font-medium">
+                            {% if order.supplier_quotation %}
+                                Quote #{{ order.supplier_quotation.quotation_number }}
+                            {% else %}
+                                <span class="text-gray-400">No quotation</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Total Amount</p>
+                        <p class="font-medium">${{ order.total_amount|floatformat:2 }}</p>
+                    </div>
+                </div>
+                
+                {% if order.notes %}
+                <div class="border-t pt-4">
+                    <p class="text-sm text-gray-500 mb-1">Notes</p>
+                    <p class="text-gray-700">{{ order.notes|truncatewords:20 }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div class="text-center py-12">
+                <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No purchase orders found</h3>
+                <p class="text-gray-500 mb-4">Start by creating your first purchase order</p>
+                <a href="{% url 'purchase:purchaseorders_add' %}" class="btn-primary">Create Purchase Order</a>
+            </div>
+            {% endfor %}
+        </div>
 
-    function renderPurchaseOrders() {
-        const tbody = document.getElementById('purchaseOrdersTableBody');
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">Purchase orders feature coming soon</td></tr>';
-    }
-
-    function renderBills() {
-        const tbody = document.getElementById('billsTableBody');
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">Bills feature coming soon</td></tr>';
-    }
-
-    function updateStatistics() {
-        document.getElementById('totalSuppliers').textContent = suppliers.length;
-        document.getElementById('totalPurchaseOrders').textContent = purchaseOrders.length;
-        document.getElementById('pendingBills').textContent = bills.length;
-        
-        const totalPayables = suppliers.reduce((sum, supplier) => sum + parseFloat(supplier.outstanding || 0), 0);
-        document.getElementById('totalPayables').textContent = '₨' + totalPayables.toLocaleString();
-    }
-
-    // Form handler
-    async function handleSupplierSubmit(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(supplierForm);
-        const supplierData = {
-            name: formData.get('name'),
-            contact_person: formData.get('contact_person'),
-            email: formData.get('email'),
-            phone: formData.get('phone'),
-            address: formData.get('address'),
-            payable_account: formData.get('payable_account') || null
-        };
-
-        const id = formData.get('id');
-        const isEdit = !!id;
-        if (isEdit) supplierData.id = parseInt(id);
-
-        try {
-            const url = isEdit ? `/api/purchase/suppliers/${id}/` : '/api/purchase/suppliers/';
-            const method = isEdit ? 'PUT' : 'POST';
-            
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Authorization': 'Token ' + getAuthToken(),
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCSRFToken()
-                },
-                body: JSON.stringify(supplierData)
-            });
-
-            if (response.ok) {
-                closeSupplierModal();
-                loadSuppliers();
-                showSuccess(isEdit ? 'Supplier updated successfully' : 'Supplier added successfully');
-            } else {
-                const errorData = await response.json();
-                showError(errorData.message || 'Failed to save supplier');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            showError('Error saving supplier');
-        }
-    }
-
-    // Global functions
-    window.editSupplier = function(id) {
-        const supplier = suppliers.find(s => s.id === id);
-        if (!supplier) return;
-
-        document.getElementById('supplierModalTitle').textContent = 'Edit Supplier';
-        document.getElementById('supplierId').value = supplier.id;
-        document.getElementById('supplierName').value = supplier.name;
-        document.getElementById('contactPerson').value = supplier.contact_person || '';
-        document.getElementById('supplierEmail').value = supplier.email || '';
-        document.getElementById('supplierPhone').value = supplier.phone || '';
-        document.getElementById('supplierAddress').value = supplier.address || '';
-        document.getElementById('payableAccount').value = supplier.payable_account || '';
-        
-        supplierModal.classList.remove('hidden');
-    };
-
-    window.deleteSupplier = async function(id) {
-        if (!confirm('Are you sure you want to delete this supplier?')) return;
-
-        try {
-            const response = await fetch(`/api/purchase/suppliers/${id}/`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': 'Token ' + getAuthToken(),
-                    'X-CSRFToken': getCSRFToken()
-                }
-            });
-
-            if (response.ok) {
-                loadSuppliers();
-                showSuccess('Supplier deleted successfully');
-            } else {
-                showError('Failed to delete supplier');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            showError('Error deleting supplier');
-        }
-    };
-
-    // Utility functions
-    function getAuthToken() {
-        return localStorage.getItem('auth_token') || '';
-    }
-
-    function getCSRFToken() {
-        return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
-    }
-
-    function showError(message) {
-        const errorDiv = document.getElementById('supplierFormError');
-        errorDiv.textContent = message;
-        errorDiv.classList.remove('hidden');
-        setTimeout(() => errorDiv.classList.add('hidden'), 5000);
-    }
-
-    function showSuccess(message) {
-        const toast = document.createElement('div');
-        toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-        toast.textContent = message;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    }
-
-    // Initialize
-    loadSuppliers();
-    loadPayableAccounts();
-});
-</script>
+        <!-- Pagination -->
+        {% if purchaseorders.has_other_pages %}
+        <div class="mt-8 flex justify-center">
+            <nav class="flex space-x-2">
+                {% if purchaseorders.has_previous %}
+                    <a href="?page={{ purchaseorders.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                       class="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">Previous</a>
+                {% endif %}
+                
+                <span class="px-3 py-2 text-sm bg-blue-600 text-white rounded-md">
+                    Page {{ purchaseorders.number }} of {{ purchaseorders.paginator.num_pages }}
+                </span>
+                
+                {% if purchaseorders.has_next %}
+                    <a href="?page={{ purchaseorders.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                       class="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">Next</a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
 
 <style>
-.tab-btn.active {
-    border-color: #10b981;
-    color: #10b981;
+.status-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
 }
-.tab-btn {
-    border-color: transparent;
-    color: #6b7280;
-    transition: all 0.3s ease;
+.status-draft { background-color: #f3f4f6; color: #6b7280; }
+.status-pending_approval { background-color: #fef3c7; color: #d97706; }
+.status-approved { background-color: #d1fae5; color: #059669; }
+.status-sent_to_supplier { background-color: #dbeafe; color: #2563eb; }
+.status-partially_received { background-color: #fed7aa; color: #ea580c; }
+.status-fully_received { background-color: #bbf7d0; color: #059669; }
+.status-cancelled { background-color: #fee2e2; color: #dc2626; }
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.375rem;
 }
-.tab-btn:hover {
-    color: #10b981;
-}
+.btn-primary { background-color: #3b82f6; color: white; }
+.btn-secondary { background-color: #6b7280; color: white; }
+.btn-success { background-color: #10b981; color: white; }
+.btn-danger { background-color: #ef4444; color: white; }
 </style>
 {% endblock %}

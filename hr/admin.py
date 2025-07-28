@@ -1,12 +1,46 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
-from .models import Employee, Attendance, Leave, Payroll, Payslip, HRReport
+from .models import Employee, Contractor, Attendance, Leave, Payroll, Payslip, HRReport
 
 @admin.register(Employee)
 class EmployeeAdmin(ModelAdmin):
-    list_display = ('first_name', 'last_name', 'company', 'email', 'phone', 'position', 'department', 'is_active')
-    search_fields = ('first_name', 'last_name', 'email', 'phone', 'position', 'department')
+    list_display = ('employee_id', 'first_name', 'last_name', 'company', 'email', 'phone', 'position', 'department', 'is_active')
+    search_fields = ('employee_id', 'first_name', 'last_name', 'email', 'phone', 'position', 'department')
     list_filter = ('company', 'department', 'is_active')
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('employee_id', 'first_name', 'last_name', 'email', 'phone', 'company')
+        }),
+        ('Employment Details', {
+            'fields': ('position', 'department', 'date_joined', 'salary', 'is_active')
+        }),
+        ('User & Partner Links', {
+            'fields': ('user', 'partner'),
+            'classes': ('collapse',)
+        }),
+        ('Additional Information', {
+            'fields': ('address',),
+            'classes': ('collapse',)
+        })
+    )
+
+@admin.register(Contractor)
+class ContractorAdmin(ModelAdmin):
+    list_display = ('contractor_id', 'partner', 'company', 'contract_type', 'hourly_rate', 'contract_amount', 'is_active')
+    search_fields = ('contractor_id', 'partner__name', 'skills')
+    list_filter = ('company', 'contract_type', 'is_active')
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('contractor_id', 'partner', 'company')
+        }),
+        ('Contract Details', {
+            'fields': ('contract_type', 'hourly_rate', 'contract_amount', 'contract_start_date', 'contract_end_date')
+        }),
+        ('Additional Information', {
+            'fields': ('skills', 'is_active'),
+            'classes': ('collapse',)
+        })
+    )
 
 @admin.register(Attendance)
 class AttendanceAdmin(ModelAdmin):

@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ product.name }} | Products{% endblock %}
+
+{% block extra_css %}
+<style>
+    .product-detail-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .status-active { background-color: #d1fae5; color: #059669; }
+    .status-inactive { background-color: #fee2e2; color: #dc2626; }
+    .flag-badge {
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-right: 4px;
+    }
+    .flag-saleable { background-color: #dcfce7; color: #15803d; }
+    .flag-purchasable { background-color: #dbeafe; color: #1d4ed8; }
+    .flag-manufacturable { background-color: #fef3c7; color: #d97706; }
+    .flag-stockable { background-color: #f0f9ff; color: #0284c7; }
+    .flag-variant { background-color: #f3f4f6; color: #374151; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">{{ product.name }}</h1>
+                <p class="text-gray-600">SKU: <code>{{ product.sku }}</code> • {{ product.get_product_type_display }}</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'products:update' product.id %}" class="action-btn bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    Edit Product
+                </a>
+                <a href="{% url 'products:list' %}" class="action-btn bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to List
+                </a>
+            </div>
+        </div>
+
+        <!-- Product Details -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Information -->
+            <div class="lg:col-span-2">
+                <div class="product-detail-card rounded-2xl p-8 mb-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Product Information</h2>
+                        <span class="status-badge status-{{ product.is_active|yesno:'active,inactive' }}">
+                            {{ product.is_active|yesno:'Active,Inactive' }}
+                        </span>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Product Name</label>
+                            <p class="text-lg font-semibold text-gray-900">{{ product.name }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">SKU</label>
+                            <p class="text-lg font-mono text-gray-900">{{ product.sku }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                            <p class="text-lg text-gray-900">{{ product.category.name|default:"No Category" }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Product Type</label>
+                            <p class="text-lg text-gray-900">{{ product.get_product_type_display }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tracking Method</label>
+                            <p class="text-lg text-gray-900">{{ product.get_tracking_method_display }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Product Flags</label>
+                            <div>
+                                {% if product.is_saleable %}<span class="flag-badge flag-saleable">Saleable</span>{% endif %}
+                                {% if product.is_purchasable %}<span class="flag-badge flag-purchasable">Purchasable</span>{% endif %}
+                                {% if product.is_manufacturable %}<span class="flag-badge flag-manufacturable">Manufacturable</span>{% endif %}
+                                {% if product.is_stockable %}<span class="flag-badge flag-stockable">Stockable</span>{% endif %}
+                                {% if product.is_variant %}<span class="flag-badge flag-variant">Variant</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if product.description %}
+                    <div class="mt-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <p class="text-gray-700">{{ product.description }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Pricing & Stock -->
+            <div class="space-y-8">
+                <!-- Pricing Information -->
+                <div class="product-detail-card rounded-2xl p-6">
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">Pricing</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Cost Price</label>
+                            <p class="text-2xl font-bold text-gray-600">${{ product.cost_price|floatformat:2 }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Selling Price</label>
+                            <p class="text-3xl font-bold text-green-600">${{ product.selling_price|floatformat:2 }}</p>
+                        </div>
+                        {% if product.cost_price and product.selling_price %}
+                        <div class="pt-4 border-t">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Profit Margin</label>
+                            {% widthratio product.selling_price|add:product.cost_price|floatformat:"-2"|add:"-"|add:product.cost_price product.selling_price 100 as margin %}
+                            <p class="text-lg font-semibold text-blue-600">{{ margin|floatformat:1 }}%</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Stock Information -->
+                {% if product.is_stockable %}
+                <div class="product-detail-card rounded-2xl p-6">
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">Stock Information</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Minimum Stock</label>
+                            <p class="text-xl font-semibold text-orange-600">{{ product.minimum_stock|default:"Not Set" }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Current Stock</label>
+                            <p class="text-xl font-semibold text-blue-600">{{ product.current_stock|default:"0" }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Quick Actions -->
+                <div class="product-detail-card rounded-2xl p-6">
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <a href="{% url 'products:duplicate' product.id %}" class="w-full btn-secondary flex items-center justify-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                            Duplicate Product
+                        </a>
+                        {% if product.product_type == 'variable' %}
+                        <a href="{% url 'products:variant_list_by_product' product.id %}" class="w-full btn-primary flex items-center justify-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                            </svg>
+                            Manage Variants
+                        </a>
+                        {% endif %}
+                        {% if product.is_stockable %}
+                        <a href="{% url 'products:tracking_list_by_product' product.id %}" class="w-full btn-primary flex items-center justify-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                            View Tracking
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Variants Section -->
+        {% if product.product_type == 'variable' and product.variants.all %}
+        <div class="mt-12">
+            <div class="product-detail-card rounded-2xl p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">Product Variants</h2>
+                    <a href="{% url 'products:variant_create' product.id %}" class="btn-primary">
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Add Variant
+                    </a>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {% for variant in product.variants.all %}
+                    <div class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">{{ variant.name }}</h3>
+                            <span class="status-badge status-{{ variant.is_active|yesno:'active,inactive' }}">
+                                {{ variant.is_active|yesno:'Active,Inactive' }}
+                            </span>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-sm text-gray-500">SKU</p>
+                                <p class="font-mono text-sm">{{ variant.sku }}</p>
+                            </div>
+                            {% if variant.size %}
+                            <div>
+                                <p class="text-sm text-gray-500">Size</p>
+                                <p class="text-sm">{{ variant.size }}</p>
+                            </div>
+                            {% endif %}
+                            {% if variant.color %}
+                            <div>
+                                <p class="text-sm text-gray-500">Color</p>
+                                <p class="text-sm">{{ variant.color }}</p>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <p class="text-sm text-gray-500">Price</p>
+                                <p class="text-lg font-semibold text-green-600">${{ variant.selling_price|floatformat:2 }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 pt-4 border-t flex gap-2">
+                            <a href="{% url 'products:variant_detail' variant.id %}" class="btn-sm btn-primary flex-1 text-center">View</a>
+                            <a href="{% url 'products:variant_update' variant.id %}" class="btn-sm btn-secondary flex-1 text-center">Edit</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.375rem;
+}
+.btn-primary { background-color: #10b981; color: white; border: none; }
+.btn-secondary { background-color: #6b7280; color: white; border: none; }
+</style>
+{% endblock %}

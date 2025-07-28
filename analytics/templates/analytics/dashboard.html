@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Analytics Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.css">
+<style>
+    .analytics-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease-in-out;
+    }
+    .analytics-card:hover {
+        transform: translateY(-2px);
+    }
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    .metric-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    .chart-container {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        height: 400px;
+    }
+    .recent-activity {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .activity-item {
+        padding: 1rem;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+    }
+    .report-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1 text-gray-800">Analytics Dashboard</h1>
+            <p class="text-muted">Comprehensive business insights and metrics</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary btn-sm" onclick="refreshDashboard()">
+                <i class="fas fa-sync-alt me-1"></i> Refresh
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="exportReport()">
+                <i class="fas fa-download me-1"></i> Export Report
+            </button>
+        </div>
+    </div>
+
+    <!-- Key Metrics Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="analytics-card">
+                <div class="metric-value">{{ total_sales|floatformat:0 }}</div>
+                <div class="metric-label">
+                    <i class="fas fa-shopping-cart me-1"></i>
+                    Total Sales Orders
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="analytics-card">
+                <div class="metric-value">${{ total_revenue|floatformat:0 }}</div>
+                <div class="metric-label">
+                    <i class="fas fa-dollar-sign me-1"></i>
+                    Total Revenue
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="analytics-card">
+                <div class="metric-value">{{ total_inventory|floatformat:0 }}</div>
+                <div class="metric-label">
+                    <i class="fas fa-boxes me-1"></i>
+                    Inventory Items
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="analytics-card">
+                <div class="metric-value">{{ total_employees|floatformat:0 }}</div>
+                <div class="metric-label">
+                    <i class="fas fa-users me-1"></i>
+                    Total Employees
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="analytics-card">
+                <div class="metric-value">{{ total_customers|floatformat:0 }}</div>
+                <div class="metric-label">
+                    <i class="fas fa-user-friends me-1"></i>
+                    Active Customers
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="analytics-card">
+                <div class="metric-value">{{ total_accounts|floatformat:0 }}</div>
+                <div class="metric-label">
+                    <i class="fas fa-calculator me-1"></i>
+                    Chart of Accounts
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts and Reports Row -->
+    <div class="row g-3 mb-4">
+        <!-- Sales Trend Chart -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="chart-container">
+                <h5 class="mb-3">Sales Trend Analysis</h5>
+                <canvas id="salesTrendChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="recent-activity">
+                <h5 class="mb-3">Recent Sales Activity</h5>
+                {% if recent_sales %}
+                    {% for sale in recent_sales %}
+                    <div class="activity-item">
+                        <div class="d-flex align-items-center">
+                            <div class="activity-icon bg-success text-white">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold">Sale #{{ sale.id }}</div>
+                                <div class="small text-muted">{{ sale.created_at|date:"M d, Y" }}</div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold">${{ sale.total_amount|default:"0"|floatformat:2 }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No recent sales activity</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Reports Row -->
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="report-section">
+                <h5 class="mb-3">
+                    <i class="fas fa-chart-bar me-2 text-primary"></i>
+                    Sales Reports
+                </h5>
+                <p class="text-muted mb-3">Analyze sales performance and trends</p>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'analytics:sales_reports_ui' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-arrow-right me-1"></i> View Sales Reports
+                    </a>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="generateSalesReport()">
+                        <i class="fas fa-file-pdf me-1"></i> Generate PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="report-section">
+                <h5 class="mb-3">
+                    <i class="fas fa-calculator me-2 text-success"></i>
+                    Financial Reports
+                </h5>
+                <p class="text-muted mb-3">Track financial performance and accounts</p>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'analytics:financial_reports_ui' %}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-arrow-right me-1"></i> View Financial Reports
+                    </a>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="generateFinancialReport()">
+                        <i class="fas fa-file-excel me-1"></i> Generate Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="report-section">
+                <h5 class="mb-3">
+                    <i class="fas fa-boxes me-2 text-info"></i>
+                    Inventory Reports
+                </h5>
+                <p class="text-muted mb-3">Monitor inventory levels and movements</p>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'analytics:inventory_reports_ui' %}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-arrow-right me-1"></i> View Inventory Reports
+                    </a>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="generateInventoryReport()">
+                        <i class="fas fa-file-csv me-1"></i> Generate CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-warning mt-3">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Notice:</strong> {{ error }}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+    // Sample data for charts
+    const salesData = {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        datasets: [{
+            label: 'Sales',
+            data: [12, 19, 3, 5, 2, 3],
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.1
+        }]
+    };
+
+    // Initialize charts
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('salesTrendChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: salesData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Monthly Sales Trend'
+                    }
+                }
+            }
+        });
+    });
+
+    // Dashboard functions
+    function refreshDashboard() {
+        window.location.reload();
+    }
+
+    function exportReport() {
+        alert('Export functionality will be implemented soon!');
+    }
+
+    function generateSalesReport() {
+        alert('Sales report generation will be implemented soon!');
+    }
+
+    function generateFinancialReport() {
+        alert('Financial report generation will be implemented soon!');
+    }
+
+    function generateInventoryReport() {
+        alert('Inventory report generation will be implemented soon!');
+    }
+</script>
+{% endblock %}

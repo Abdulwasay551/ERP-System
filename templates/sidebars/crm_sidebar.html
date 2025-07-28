@@ -1,0 +1,73 @@
+{% load static %}
+        <!-- Logo/Back Section -->
+    <div class="sidebar-logo p-4 border-b border-white/20">
+        <div class="flex items-center space-x-3 min-h-[3rem]">
+            <a href="{% url 'dashboard' %}" class="w-12 h-12 bg-white/20 backdrop-blur-md hover:bg-white/30 rounded-full flex items-center justify-center transition-all flex-shrink-0 border border-white/30">
+                <i class="fas fa-arrow-left text-white text-base"></i>
+            </a>
+            <span class="text-xl font-bold sidebar-text whitespace-nowrap text-white">CRM</span>
+        </div>
+    </div>
+<!-- CRM Module Sidebar -->
+<div class="sidebar-content mt-2">
+    <!-- Logo/Back Section -->
+    <div class="sidebar-logo p-4 border-b border-gray-700">
+        <div class="flex items-center space-x-3 min-h-[3rem]">
+            <a href="{% url 'dashboard' %}" class="w-12 h-12 bg-gray-600 hover:bg-gray-500 rounded-full flex items-center justify-center transition-colors flex-shrink-0">
+                <i class="fas fa-arrow-left text-white text-base"></i>
+            </a>
+            <span class="text-xl font-bold sidebar-text whitespace-nowrap">CRM</span>
+        </div>
+    </div>
+
+    <!-- Navigation Items -->
+    <nav class="sidebar-nav flex-1 py-4 space-y-2">
+        <!-- Dashboard -->
+        <a href="/crm/dashboard-ui/" class="sidebar-item">
+            <i class="fas fa-tachometer-alt sidebar-icon"></i>
+            <span class="sidebar-text">Dashboard</span>
+        </a>
+
+        <!-- Customers -->
+        <a href="/crm/customers-ui/" class="sidebar-item">
+            <i class="fas fa-user-friends sidebar-icon"></i>
+            <span class="sidebar-text">Customers</span>
+        </a>
+
+        <!-- Leads -->
+        <a href="/crm/leads-ui/" class="sidebar-item">
+            <i class="fas fa-user-plus sidebar-icon"></i>
+            <span class="sidebar-text">Leads</span>
+        </a>
+
+        <!-- Opportunities -->
+        <a href="/crm/opportunities-ui/" class="sidebar-item">
+            <i class="fas fa-bullseye sidebar-icon"></i>
+            <span class="sidebar-text">Opportunities</span>
+        </a>
+
+        <!-- Communications -->
+        <a href="/crm/communications-ui/" class="sidebar-item">
+            <i class="fas fa-comments sidebar-icon"></i>
+            <span class="sidebar-text">Communications</span>
+        </a>
+
+        <!-- Activities -->
+        <a href="/crm/activities-ui/" class="sidebar-item">
+            <i class="fas fa-calendar-check sidebar-icon"></i>
+            <span class="sidebar-text">Activities</span>
+        </a>
+
+        <!-- Campaigns -->
+        <a href="/crm/campaigns-ui/" class="sidebar-item">
+            <i class="fas fa-megaphone sidebar-icon"></i>
+            <span class="sidebar-text">Campaigns</span>
+        </a>
+
+        <!-- Reports -->
+        <a href="/analytics/crm-reports-ui/" class="sidebar-item">
+            <i class="fas fa-chart-pie sidebar-icon"></i>
+            <span class="sidebar-text">CRM Reports</span>
+        </a>
+    </nav>
+</div>

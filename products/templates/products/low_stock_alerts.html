@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Low Stock Alerts | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .alert-card {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(185, 28, 28, 0.1));
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        transition: all 0.3s ease;
+    }
+    .alert-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(239, 68, 68, 0.15);
+    }
+    .warning-card {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.1));
+        border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+    .stock-level-bar {
+        background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981);
+        height: 6px;
+        border-radius: 3px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Low Stock Alerts</h1>
+                <p class="text-gray-600">Monitor and manage products with low inventory levels</p>
+            </div>
+            <div class="flex gap-4">
+                <button class="action-btn bg-gradient-to-r from-yellow-500 to-orange-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4 19h10v-1a3 3 0 00-3-3H7a3 3 0 00-3 3v1zM6 10a3 3 0 116 0v8H6v-8z"></path>
+                    </svg>
+                    Send Alerts
+                </button>
+                <a href="{% url 'products:inventory_reports' %}" class="action-btn bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012-2z"></path>
+                    </svg>
+                    Reports
+                </a>
+            </div>
+        </div>
+
+        <!-- Alert Summary -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="alert-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ critical_items|length }}</h3>
+                        <p class="text-gray-600">Critical Stock</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="warning-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ low_stock_items|length }}</h3>
+                        <p class="text-gray-600">Low Stock</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-modern rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ total_out_of_stock }}</h3>
+                        <p class="text-gray-600">Out of Stock</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-modern rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ adequate_stock_items|length }}</h3>
+                        <p class="text-gray-600">Adequate Stock</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card-modern rounded-2xl p-6 mb-8">
+            <form method="get" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Search Product</label>
+                        <input type="text" name="search" value="{{ request.GET.search }}" 
+                               placeholder="Search by name or SKU..."
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                        <select name="category" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            <option value="">All Categories</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"s" %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Alert Level</label>
+                        <select name="alert_level" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            <option value="">All Levels</option>
+                            <option value="critical" {% if request.GET.alert_level == 'critical' %}selected{% endif %}>Critical</option>
+                            <option value="low" {% if request.GET.alert_level == 'low' %}selected{% endif %}>Low Stock</option>
+                            <option value="out_of_stock" {% if request.GET.alert_level == 'out_of_stock' %}selected{% endif %}>Out of Stock</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all">
+                            Apply Filters
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Critical Alerts -->
+        {% if critical_items %}
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-red-600 mb-4 flex items-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                Critical Stock Alerts
+            </h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {% for item in critical_items %}
+                <div class="alert-card rounded-2xl p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-1">{{ item.product.name }}</h3>
+                            <p class="text-sm text-gray-600">SKU: {{ item.product.sku }}</p>
+                            <p class="text-sm text-gray-600">Category: {{ item.product.category.name|default:"No Category" }}</p>
+                        </div>
+                        <span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Critical</span>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-700">Current Stock:</span>
+                            <span class="text-lg font-bold text-red-600">{{ item.quantity_on_hand }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-700">Minimum Level:</span>
+                            <span class="text-sm text-gray-900">{{ item.product.minimum_stock_level|default:"Not Set" }}</span>
+                        </div>
+                        
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-red-500 h-2 rounded-full" 
+                                 style="width: {% if item.product.minimum_stock_level %}{% widthratio item.quantity_on_hand item.product.minimum_stock_level 100 %}%{% else %}0%{% endif %}"></div>
+                        </div>
+                        
+                        <div class="flex gap-2 mt-4">
+                            <button class="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors">
+                                Reorder Now
+                            </button>
+                            <a href="{% url 'products:detail' item.product.id %}" class="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-700 transition-colors text-center">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Low Stock Items -->
+        {% if low_stock_items %}
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-yellow-600 mb-4 flex items-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Low Stock Items
+            </h2>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {% for item in low_stock_items %}
+                <div class="warning-card rounded-2xl p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-1">{{ item.product.name }}</h3>
+                            <p class="text-sm text-gray-600">SKU: {{ item.product.sku }}</p>
+                        </div>
+                        <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Low Stock</span>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Current:</span>
+                            <span class="font-medium">{{ item.quantity_on_hand }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Minimum:</span>
+                            <span class="font-medium">{{ item.product.minimum_stock_level|default:"Not Set" }}</span>
+                        </div>
+                        
+                        <div class="w-full bg-gray-200 rounded-full h-2 mt-3">
+                            <div class="bg-yellow-500 h-2 rounded-full" 
+                                 style="width: {% if item.product.minimum_stock_level %}{% widthratio item.quantity_on_hand item.product.minimum_stock_level 100 %}%{% else %}0%{% endif %}"></div>
+                        </div>
+                        
+                        <div class="flex gap-2 mt-4">
+                            <button class="flex-1 bg-yellow-600 text-white px-3 py-2 rounded-lg text-xs hover:bg-yellow-700 transition-colors">
+                                Reorder
+                            </button>
+                            <a href="{% url 'products:detail' item.product.id %}" class="flex-1 bg-gray-600 text-white px-3 py-2 rounded-lg text-xs hover:bg-gray-700 transition-colors text-center">
+                                Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="flex justify-center mt-8">
+            <nav class="flex items-center space-x-2">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.alert_level %}&alert_level={{ request.GET.alert_level }}{% endif %}" 
+                       class="px-3 py-2 text-sm text-gray-600 hover:text-green-600 transition-colors">First</a>
+                    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.alert_level %}&alert_level={{ request.GET.alert_level }}{% endif %}" 
+                       class="px-3 py-2 text-sm text-gray-600 hover:text-green-600 transition-colors">Previous</a>
+                {% endif %}
+
+                <span class="px-4 py-2 text-sm font-medium text-gray-900 bg-green-50 border border-green-200 rounded-lg">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.alert_level %}&alert_level={{ request.GET.alert_level }}{% endif %}" 
+                       class="px-3 py-2 text-sm text-gray-600 hover:text-green-600 transition-colors">Next</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.alert_level %}&alert_level={{ request.GET.alert_level }}{% endif %}" 
+                       class="px-3 py-2 text-sm text-gray-600 hover:text-green-600 transition-colors">Last</a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+
+        {% if not critical_items and not low_stock_items %}
+        <div class="text-center py-12">
+            <svg class="w-24 h-24 mx-auto text-green-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">All Stock Levels Are Good!</h3>
+            <p class="text-gray-600">No products requiring immediate attention for restocking.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

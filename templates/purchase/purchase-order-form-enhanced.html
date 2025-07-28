@@ -1,0 +1,546 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title|default:"Create Purchase Order" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .po-form-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+        border-radius: 1rem;
+    }
+
+    .po-form-card:hover {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .discount-section {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border: 2px solid #0ea5e9;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin: 1rem 0;
+    }
+
+    .item-row {
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .item-row:hover {
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+
+    .discount-field {
+        display: none;
+    }
+
+    .discount-field.active {
+        display: block;
+    }
+
+    .quotation-optional {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border: 2px solid #f59e0b;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .btn-add-item {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border: none;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-add-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-remove-item {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        border: none;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .btn-remove-item:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .status-optional {
+        background-color: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-required {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+
+    .supplier-info {
+        background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+        border: 2px solid #8b5cf6;
+        border-radius: 1rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .form-help {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let itemCount = 0;
+
+    // Discount type change handler
+    function handleDiscountTypeChange() {
+        const discountType = document.getElementById('discount_type');
+        const fields = document.querySelectorAll('.discount-field');
+        
+        if (discountType) {
+            fields.forEach(field => field.classList.remove('active'));
+            
+            const selectedType = discountType.value;
+            if (selectedType === 'percentage') {
+                document.querySelector('.percentage-field').classList.add('active');
+            } else if (selectedType === 'fixed_amount') {
+                document.querySelector('.amount-field').classList.add('active');
+            } else if (selectedType === 'quantity_based') {
+                document.querySelectorAll('.quantity-field').forEach(field => 
+                    field.classList.add('active')
+                );
+            }
+        }
+    }
+
+    // Item discount type change handler
+    function handleItemDiscountTypeChange(selectElement) {
+        const itemRow = selectElement.closest('.item-row');
+        const fields = itemRow.querySelectorAll('.item-discount-field');
+        
+        fields.forEach(field => field.classList.remove('active'));
+        
+        const selectedType = selectElement.value;
+        if (selectedType === 'percentage') {
+            itemRow.querySelector('.item-percentage-field').classList.add('active');
+        } else if (selectedType === 'fixed_amount') {
+            itemRow.querySelector('.item-amount-field').classList.add('active');
+        } else if (selectedType === 'quantity_based') {
+            itemRow.querySelectorAll('.item-quantity-field').forEach(field => 
+                field.classList.add('active')
+            );
+        }
+    }
+
+    // Load quotation data
+    function loadQuotationData() {
+        const quotationSelect = document.getElementById('quotation_select');
+        if (quotationSelect && quotationSelect.value) {
+            fetch(`/purchase/api/quotation/${quotationSelect.value}/`)
+                .then(response => response.json())
+                .then(data => {
+                    // Pre-fill supplier
+                    const supplierSelect = document.getElementById('id_supplier');
+                    if (supplierSelect) {
+                        supplierSelect.value = data.supplier_id;
+                    }
+                    
+                    // Pre-fill terms
+                    document.getElementById('id_delivery_terms').value = data.delivery_terms || '';
+                    document.getElementById('id_payment_terms').value = data.payment_terms || '';
+                    
+                    // Clear existing items
+                    const itemsContainer = document.getElementById('items-container');
+                    itemsContainer.innerHTML = '';
+                    itemCount = 0;
+                    
+                    // Add quotation items
+                    data.items.forEach(item => {
+                        addItemRow(item);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading quotation data:', error);
+                });
+        }
+    }
+
+    // Add item row
+    function addItemRow(itemData = null) {
+        itemCount++;
+        const container = document.getElementById('items-container');
+        
+        const itemRow = document.createElement('div');
+        itemRow.className = 'item-row';
+        itemRow.innerHTML = `
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">Product <span class="text-danger">*</span></label>
+                    <select name="products[]" class="form-control" required>
+                        <option value="">Select Product</option>
+                        {% for product in products %}
+                        <option value="{{ product.id }}" ${itemData && itemData.product_id == {{ product.id }} ? 'selected' : ''}>
+                            {{ product.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Quantity <span class="text-danger">*</span></label>
+                    <input type="number" name="quantities[]" class="form-control" step="0.01" 
+                           value="${itemData ? itemData.quantity : ''}" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Unit Price <span class="text-danger">*</span></label>
+                    <input type="number" name="unit_prices[]" class="form-control" step="0.01" 
+                           value="${itemData ? itemData.unit_price : ''}" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">UOM</label>
+                    <select name="uoms[]" class="form-control">
+                        <option value="">Select UOM</option>
+                        {% for uom in uoms %}
+                        <option value="{{ uom.id }}">{{ uom.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Min Qty</label>
+                    <input type="number" name="minimum_order_qtys[]" class="form-control" step="0.01" 
+                           value="${itemData ? itemData.minimum_order_qty || 1 : 1}">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="button" class="btn btn-remove-item w-100" onclick="removeItemRow(this)">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Item Discount Section -->
+            <div class="discount-section mt-3">
+                <h6><i class="fas fa-percentage text-blue-600"></i> Item Discount/Rebate</h6>
+                <div class="row">
+                    <div class="col-md-3">
+                        <label class="form-label">Discount Type</label>
+                        <select name="item_discount_types[]" class="form-control item-discount-type" 
+                                onchange="handleItemDiscountTypeChange(this)">
+                            <option value="percentage">Percentage</option>
+                            <option value="fixed_amount">Fixed Amount</option>
+                            <option value="quantity_based">Quantity Based</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Percentage</label>
+                        <input type="number" name="item_discount_percentages[]" 
+                               class="form-control item-discount-field item-percentage-field active" step="0.01" 
+                               value="${itemData ? itemData.item_discount_percentage || 0 : 0}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Amount</label>
+                        <input type="number" name="item_discount_amounts[]" 
+                               class="form-control item-discount-field item-amount-field" step="0.01" 
+                               value="${itemData ? itemData.item_discount_amount || 0 : 0}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Min Qty</label>
+                        <input type="number" name="item_qty_discount_mins[]" 
+                               class="form-control item-discount-field item-quantity-field" step="0.01" 
+                               value="${itemData ? itemData.item_qty_discount_min || 0 : 0}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Rate %</label>
+                        <input type="number" name="item_qty_discount_rates[]" 
+                               class="form-control item-discount-field item-quantity-field" step="0.01" 
+                               value="${itemData ? itemData.item_qty_discount_rate || 0 : 0}">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">Application</label>
+                        <select name="item_discount_applications[]" class="form-control">
+                            <option value="subtract">Discount</option>
+                            <option value="add">Rebate/Fee</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <input type="hidden" name="quotation_items[]" value="${itemData ? itemData.id || '' : ''}">
+        `;
+        
+        container.appendChild(itemRow);
+    }
+
+    // Remove item row
+    window.removeItemRow = function(button) {
+        const itemRow = button.closest('.item-row');
+        itemRow.remove();
+    };
+
+    // Initialize
+    document.getElementById('discount_type').addEventListener('change', handleDiscountTypeChange);
+    document.getElementById('add-item-btn').addEventListener('click', () => addItemRow());
+    
+    // Load quotation if selected
+    const quotationSelect = document.getElementById('quotation_select');
+    if (quotationSelect) {
+        quotationSelect.addEventListener('change', loadQuotationData);
+    }
+
+    // Initialize discount fields
+    handleDiscountTypeChange();
+    
+    // Add initial item row if no items
+    if (document.querySelectorAll('.item-row').length === 0) {
+        addItemRow();
+    }
+
+    // Global functions
+    window.handleItemDiscountTypeChange = handleItemDiscountTypeChange;
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl p-8 mb-8 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold mb-2">{{ title|default:"Create Purchase Order" }}</h1>
+                    <p class="text-blue-100">Create purchase order with optional quotation reference and flexible item management</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-2xl font-bold">PO #[Auto Generated]</div>
+                    <div class="text-blue-200">{{ today|date:"F d, Y" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="space-y-8">
+            {% csrf_token %}
+            
+            <!-- Optional Quotation Selection -->
+            <div class="quotation-optional">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-info-circle text-amber-600 mr-3"></i>
+                    <h3 class="text-lg font-bold text-amber-800">Quotation Reference</h3>
+                    <span class="status-badge status-optional ml-3">Optional</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-amber-800 mb-2">Reference Quotation</label>
+                        <select id="quotation_select" class="w-full p-3 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500">
+                            <option value="">Select Quotation (Optional)</option>
+                            {% for quotation in quotations %}
+                            <option value="{{ quotation.id }}" 
+                                    {% if quotation_id == quotation.id|stringformat:"s" %}selected{% endif %}>
+                                {{ quotation.quotation_number }} - {{ quotation.supplier.name }} ({{ quotation.total_amount }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-help">If selected, supplier and items will be pre-filled but can be modified</div>
+                    </div>
+                    <div class="bg-amber-50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-amber-800 mb-2">Note:</h4>
+                        <ul class="text-sm text-amber-700 space-y-1">
+                            <li>• Quotation is optional - you can create PO without it</li>
+                            <li>• Items from quotation can be modified or removed</li>
+                            <li>• You can add additional items not in quotation</li>
+                            <li>• All fields remain editable regardless of quotation</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Basic Information -->
+            <div class="po-form-card p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">
+                    <i class="fas fa-info-circle text-blue-600 mr-2"></i>Basic Information
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        {{ form.supplier.label_tag }}
+                        {{ form.supplier }}
+                        <div class="form-help">{{ form.supplier.help_text }}</div>
+                    </div>
+                    <div>
+                        {{ form.warehouse.label_tag }}
+                        {{ form.warehouse }}
+                        <div class="form-help">{{ form.warehouse.help_text }}</div>
+                    </div>
+                    <div>
+                        {{ form.expected_delivery_date.label_tag }}
+                        {{ form.expected_delivery_date }}
+                        <div class="form-help">{{ form.expected_delivery_date.help_text }}</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div>
+                        {{ form.delivery_terms.label_tag }}
+                        {{ form.delivery_terms }}
+                        <div class="form-help">{{ form.delivery_terms.help_text }}</div>
+                    </div>
+                    <div>
+                        {{ form.payment_terms.label_tag }}
+                        {{ form.payment_terms }}
+                        <div class="form-help">{{ form.payment_terms.help_text }}</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div>
+                        {{ form.purchase_requisition.label_tag }}
+                        {{ form.purchase_requisition }}
+                        <div class="form-help">{{ form.purchase_requisition.help_text }}</div>
+                    </div>
+                    <div>
+                        {{ form.supplier_quotation.label_tag }}
+                        {{ form.supplier_quotation }}
+                        <div class="form-help">{{ form.supplier_quotation.help_text }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items Section -->
+            <div class="po-form-card p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">
+                        <i class="fas fa-list text-green-600 mr-2"></i>Order Items
+                    </h3>
+                    <button type="button" id="add-item-btn" class="btn-add-item">
+                        <i class="fas fa-plus mr-2"></i>Add Item
+                    </button>
+                </div>
+                
+                <div id="items-container">
+                    <!-- Items will be added dynamically -->
+                </div>
+            </div>
+
+            <!-- Order Discount Section -->
+            <div class="discount-section">
+                <h3 class="text-xl font-bold text-blue-900 mb-6">
+                    <i class="fas fa-percentage text-blue-600 mr-2"></i>Order Level Discount/Rebate
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                    <div>
+                        {{ form.discount_type.label_tag }}
+                        {{ form.discount_type }}
+                        <div class="form-help">{{ form.discount_type.help_text }}</div>
+                    </div>
+                    <div class="discount-field percentage-field">
+                        {{ form.discount_percentage.label_tag }}
+                        {{ form.discount_percentage }}
+                        <div class="form-help">{{ form.discount_percentage.help_text }}</div>
+                    </div>
+                    <div class="discount-field amount-field">
+                        {{ form.discount_amount.label_tag }}
+                        {{ form.discount_amount }}
+                        <div class="form-help">{{ form.discount_amount.help_text }}</div>
+                    </div>
+                    <div class="discount-field quantity-field">
+                        {{ form.quantity_discount_min_qty.label_tag }}
+                        {{ form.quantity_discount_min_qty }}
+                        <div class="form-help">{{ form.quantity_discount_min_qty.help_text }}</div>
+                    </div>
+                    <div class="discount-field quantity-field">
+                        {{ form.quantity_discount_rate.label_tag }}
+                        {{ form.quantity_discount_rate }}
+                        <div class="form-help">{{ form.quantity_discount_rate.help_text }}</div>
+                    </div>
+                    <div>
+                        {{ form.discount_application.label_tag }}
+                        {{ form.discount_application }}
+                        <div class="form-help">{{ form.discount_application.help_text }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terms and Documents -->
+            <div class="po-form-card p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">
+                    <i class="fas fa-file-contract text-purple-600 mr-2"></i>Terms & Documents
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        {{ form.notes.label_tag }}
+                        {{ form.notes }}
+                        <div class="form-help">{{ form.notes.help_text }}</div>
+                    </div>
+                    <div>
+                        {{ form.terms_conditions.label_tag }}
+                        {{ form.terms_conditions }}
+                        <div class="form-help">{{ form.terms_conditions.help_text }}</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div>
+                        {{ form.purchase_order_document.label_tag }}
+                        {{ form.purchase_order_document }}
+                        <div class="form-help">{{ form.purchase_order_document.help_text }}</div>
+                    </div>
+                    <div>
+                        {{ form.supplier_agreement.label_tag }}
+                        {{ form.supplier_agreement }}
+                        <div class="form-help">{{ form.supplier_agreement.help_text }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-between items-center">
+                <a href="{% url 'purchase:purchaseorders_ui' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Purchase Orders
+                </a>
+                
+                <div class="space-x-4">
+                    <button type="submit" name="status" value="draft" class="btn btn-outline-primary">
+                        <i class="fas fa-save mr-2"></i>Save as Draft
+                    </button>
+                    <button type="submit" name="status" value="pending_approval" class="btn btn-primary">
+                        <i class="fas fa-check mr-2"></i>Submit for Approval
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

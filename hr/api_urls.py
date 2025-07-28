@@ -1,8 +1,9 @@
 from rest_framework.routers import DefaultRouter
-from .api_views import EmployeeViewSet, AttendanceViewSet, LeaveViewSet, PayrollViewSet, PayslipViewSet, HRReportViewSet
+from .api_views import EmployeeViewSet, ContractorViewSet, AttendanceViewSet, LeaveViewSet, PayrollViewSet, PayslipViewSet, HRReportViewSet
 
 router = DefaultRouter()
 router.register(r'employees', EmployeeViewSet, basename='employee')
+router.register(r'contractors', ContractorViewSet, basename='contractor')
 router.register(r'attendance', AttendanceViewSet, basename='attendance')
 router.register(r'leaves', LeaveViewSet, basename='leave')
 router.register(r'payrolls', PayrollViewSet, basename='payroll')

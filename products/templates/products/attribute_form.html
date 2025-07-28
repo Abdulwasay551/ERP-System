@@ -1,0 +1,345 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if object %}Edit {{ object.name }}{% else %}Create Attribute{% endif %} | Product Attributes{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8 max-w-4xl">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">
+                    {% if object %}Edit Attribute{% else %}Create Attribute{% endif %}
+                </h1>
+                <p class="text-gray-600">
+                    {% if object %}Update attribute information{% else %}Add a new product attribute{% endif %}
+                </p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'products:attribute_list' %}" class="action-btn bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to Attributes
+                </a>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="form-card rounded-2xl p-8">
+            <form method="post" class="space-y-8">
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Attribute Name *</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.name.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Attribute Type *</label>
+                            {{ form.attribute_type }}
+                            {% if form.attribute_type.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.attribute_type.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.description.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                    <p class="mt-1 text-sm text-gray-500">Optional description for the attribute</p>
+                </div>
+
+                <!-- Options -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Options</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            {{ form.is_required }}
+                            <label for="{{ form.is_required.id_for_label }}" class="ml-2 block text-sm text-gray-700">
+                                Required Attribute
+                            </label>
+                        </div>
+                        {% if form.is_required.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.is_required.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <p class="text-sm text-gray-500">Required attributes must be specified for all products</p>
+                        
+                        <div class="flex items-center">
+                            {{ form.is_filterable }}
+                            <label for="{{ form.is_filterable.id_for_label }}" class="ml-2 block text-sm text-gray-700">
+                                Filterable Attribute
+                            </label>
+                        </div>
+                        {% if form.is_filterable.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.is_filterable.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <p class="text-sm text-gray-500">Filterable attributes can be used to search and filter products</p>
+                        
+                        <div class="flex items-center">
+                            {{ form.is_active }}
+                            <label for="{{ form.is_active.id_for_label }}" class="ml-2 block text-sm text-gray-700">
+                                Active Attribute
+                            </label>
+                        </div>
+                        {% if form.is_active.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.is_active.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <p class="text-sm text-gray-500">Only active attributes are available for product assignment</p>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end gap-4 pt-6 border-t">
+                    <a href="{% url 'products:attribute_list' %}" class="btn-secondary">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn-primary">
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        {% if object %}Update Attribute{% else %}Create Attribute{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Help Section -->
+        <div class="mt-8 bg-blue-50 border border-blue-200 rounded-2xl p-6">
+            <h3 class="text-lg font-semibold text-blue-900 mb-3">Attribute Types</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-semibold text-blue-900 mb-2">Text-based:</h4>
+                    <ul class="text-sm text-blue-800 space-y-1">
+                        <li><strong>Text:</strong> Short text values (e.g., Brand, Model)</li>
+                        <li><strong>Textarea:</strong> Long text descriptions</li>
+                        <li><strong>Select:</strong> Predefined options (e.g., Size: S, M, L, XL)</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-blue-900 mb-2">Data types:</h4>
+                    <ul class="text-sm text-blue-800 space-y-1">
+                        <li><strong>Number:</strong> Numeric values (e.g., Weight, Dimensions)</li>
+                        <li><strong>Boolean:</strong> Yes/No options (e.g., Waterproof)</li>
+                        <li><strong>Date:</strong> Date values (e.g., Expiry Date)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Value Management -->
+        {% if object and object.attribute_type == 'select' %}
+        <div class="mt-8 form-card rounded-2xl p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Attribute Values</h3>
+            <p class="text-gray-600 mb-4">Manage predefined values for this select attribute.</p>
+            
+            <div class="space-y-4">
+                <div class="flex gap-4">
+                    <input type="text" id="new-value" placeholder="Enter new value" 
+                           class="form-input flex-1 rounded-lg border-gray-300">
+                    <button type="button" id="add-value" class="btn-primary">
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Add Value
+                    </button>
+                </div>
+                
+                <div id="attribute-values" class="space-y-2">
+                    <!-- Values will be loaded here -->
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add proper styling to form fields
+    const inputs = document.querySelectorAll('input[type="text"], textarea, select');
+    inputs.forEach(input => {
+        input.classList.add('form-input', 'rounded-lg', 'border-gray-300', 'shadow-sm', 'focus:border-green-500', 'focus:ring-green-500');
+    });
+    
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.classList.add('form-check-input', 'rounded', 'border-gray-300', 'text-green-600', 'focus:ring-green-500');
+    });
+
+    // Attribute value management
+    {% if object and object.attribute_type == 'select' %}
+    const newValueInput = document.getElementById('new-value');
+    const addValueBtn = document.getElementById('add-value');
+    const valuesContainer = document.getElementById('attribute-values');
+    
+    // Load existing values
+    loadAttributeValues();
+    
+    if (addValueBtn && newValueInput) {
+        addValueBtn.addEventListener('click', function() {
+            const value = newValueInput.value.trim();
+            if (!value) {
+                alert('Please enter a value.');
+                return;
+            }
+            
+            addAttributeValue(value);
+        });
+        
+        newValueInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addValueBtn.click();
+            }
+        });
+    }
+    
+    function loadAttributeValues() {
+        fetch(`/products/attributes/{{ object.id }}/values/`)
+            .then(response => response.json())
+            .then(data => {
+                valuesContainer.innerHTML = '';
+                data.values.forEach(value => {
+                    addValueToDOM(value);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading values:', error);
+            });
+    }
+    
+    function addAttributeValue(value) {
+        fetch(`/products/attributes/{{ object.id }}/values/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ value: value })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                addValueToDOM(data.value);
+                newValueInput.value = '';
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    }
+    
+    function addValueToDOM(value) {
+        const valueElement = document.createElement('div');
+        valueElement.className = 'flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200';
+        valueElement.innerHTML = `
+            <span class="text-gray-900">${value.value}</span>
+            <button type="button" class="text-red-600 hover:text-red-700" onclick="removeAttributeValue(${value.id}, this)">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+            </button>
+        `;
+        valuesContainer.appendChild(valueElement);
+    }
+    
+    window.removeAttributeValue = function(valueId, button) {
+        if (confirm('Remove this value?')) {
+            fetch(`/products/attributes/{{ object.id }}/values/${valueId}/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    button.closest('.flex').remove();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error);
+            });
+        }
+    };
+    {% endif %}
+});
+</script>
+
+<style>
+.btn-primary {
+    background-color: #10b981;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.btn-primary:hover {
+    background-color: #059669;
+}
+.btn-secondary {
+    background-color: #6b7280;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.btn-secondary:hover {
+    background-color: #4b5563;
+}
+.form-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,358 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Product Tracking Units - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .tracking-table {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .tracking-number {
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        color: #495057;
+    }
+    
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+    
+    .expiry-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+    
+    .expired {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .expiring-soon {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    
+    .fresh {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .product-info {
+        display: flex;
+        align-items: center;
+    }
+    
+    .product-image {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 4px;
+        margin-right: 10px;
+    }
+    
+    .search-highlight {
+        background-color: #fff3cd;
+        padding: 1px 3px;
+        border-radius: 2px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-list mr-2"></i>Product Tracking Units</h2>
+                <div class="btn-group">
+                    <a href="{% url 'products:tracking_dashboard' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-chart-line mr-1"></i>Dashboard
+                    </a>
+                    <a href="{% url 'products:tracking_add' %}" class="btn btn-success">
+                        <i class="fas fa-plus mr-1"></i>Add Tracking Unit
+                    </a>
+                    <a href="{% url 'products:bulk_tracking_import' %}" class="btn btn-info">
+                        <i class="fas fa-upload mr-1"></i>Bulk Import
+                    </a>
+                    <a href="{% url 'products:expiry_alerts' %}" class="btn btn-warning">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>Expiry Alerts
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row">
+        <div class="col-12">
+            <div class="filter-card">
+                <form method="get" id="filterForm">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="search">Search:</label>
+                            <input type="text" name="search" class="form-control" placeholder="Search tracking numbers, products..." value="{{ request.GET.search }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="product">Product:</label>
+                            <select name="product" class="form-control">
+                                <option value="">All Products</option>
+                                {% for product in products %}
+                                <option value="{{ product.id }}" {% if request.GET.product == product.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ product.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="status">Status:</label>
+                            <select name="status" class="form-control">
+                                <option value="">All Status</option>
+                                {% for value, label in status_choices %}
+                                <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="warehouse">Warehouse:</label>
+                            <select name="warehouse" class="form-control">
+                                <option value="">All Warehouses</option>
+                                {% for warehouse in warehouses %}
+                                <option value="{{ warehouse.id }}" {% if request.GET.warehouse == warehouse.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ warehouse.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="tracking_type">Tracking Type:</label>
+                            <select name="tracking_type" class="form-control">
+                                <option value="">All Types</option>
+                                {% for value, label in tracking_types %}
+                                <option value="{{ value }}" {% if request.GET.tracking_type == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <label for="expiry">Expiry:</label>
+                            <select name="expiry" class="form-control">
+                                <option value="">All</option>
+                                <option value="expired" {% if request.GET.expiry == 'expired' %}selected{% endif %}>Expired</option>
+                                <option value="expiring_soon" {% if request.GET.expiry == 'expiring_soon' %}selected{% endif %}>Expiring Soon</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search mr-1"></i>Filter
+                            </button>
+                            <a href="{% url 'products:tracking_list' %}" class="btn btn-secondary ml-2">
+                                <i class="fas fa-times mr-1"></i>Clear
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card tracking-table">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-barcode mr-2"></i>Tracking Units
+                            <span class="badge badge-primary ml-2">{{ page_obj.paginator.count }} total</span>
+                        </h5>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary" onclick="exportToCSV()">
+                                <i class="fas fa-download mr-1"></i>Export CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if page_obj %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Tracking Number</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Warehouse</th>
+                                        <th>Expiry Date</th>
+                                        <th>Quality Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for tracking_unit in page_obj %}
+                                    <tr>
+                                        <td>
+                                            <div class="product-info">
+                                                {% if tracking_unit.product.image %}
+                                                    <img src="{{ tracking_unit.product.image.url }}" alt="{{ tracking_unit.product.name }}" class="product-image">
+                                                {% else %}
+                                                    <div class="product-image bg-light d-flex align-items-center justify-content-center">
+                                                        <i class="fas fa-box text-muted"></i>
+                                                    </div>
+                                                {% endif %}
+                                                <div>
+                                                    <strong>{{ tracking_unit.product.name }}</strong><br>
+                                                    <small class="text-muted">{{ tracking_unit.product.sku }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="tracking-number">{{ tracking_unit.get_tracking_value }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-info">{{ tracking_unit.product.get_tracking_method_display }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{{ tracking_unit.get_status_color }}">
+                                                {{ tracking_unit.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if tracking_unit.current_warehouse %}
+                                                {{ tracking_unit.current_warehouse.name }}
+                                            {% else %}
+                                                <span class="text-muted">Not assigned</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if tracking_unit.expiry_date %}
+                                                <span class="expiry-badge {% if tracking_unit.is_expired %}expired{% elif tracking_unit.is_expiring_soon %}expiring-soon{% else %}fresh{% endif %}">
+                                                    {{ tracking_unit.expiry_date|date:"M j, Y" }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{{ tracking_unit.get_quality_status_color }}">
+                                                {{ tracking_unit.get_quality_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'products:tracking_detail' tracking_unit.pk %}" class="btn btn-outline-primary" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'products:tracking_edit' tracking_unit.pk %}" class="btn btn-outline-secondary" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if page_obj.has_other_pages %}
+                        <div class="card-footer">
+                            <nav aria-label="Tracking units pagination">
+                                <ul class="pagination justify-content-center mb-0">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">&laquo; Previous</a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% for num in page_obj.paginator.page_range %}
+                                        {% if page_obj.number == num %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">Next &raquo;</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-barcode fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No tracking units found</h5>
+                            <p class="text-muted">No tracking units match your current filters.</p>
+                            <a href="{% url 'products:tracking_add' %}" class="btn btn-primary">
+                                <i class="fas fa-plus mr-1"></i>Add Tracking Unit
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Auto-submit form on filter change
+    $('#filterForm select').change(function() {
+        $('#filterForm').submit();
+    });
+    
+    // Add search functionality with debounce
+    let searchTimeout;
+    $('input[name="search"]').on('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() {
+            $('#filterForm').submit();
+        }, 500);
+    });
+});
+
+function exportToCSV() {
+    // Get current filters
+    const params = new URLSearchParams(window.location.search);
+    params.set('export', 'csv');
+    
+    // Create download link
+    const link = document.createElement('a');
+    link.href = '{% url "products:tracking_list" %}?' + params.toString();
+    link.download = 'tracking_units.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+{% endblock %}

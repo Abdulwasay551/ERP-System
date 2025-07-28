@@ -1,0 +1,412 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Quality Inspection | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .inspection-form-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+        border: 1px solid #bfdbfe;
+        transition: all 0.3s ease;
+    }
+
+    .inspection-form-card:hover {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .hover-lift {
+        transition: all 0.3s ease;
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .quality-parameter-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+    }
+
+    .quality-parameter-card:hover {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+
+    .inspection-type-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .type-incoming { background-color: #dbeafe; color: #1e40af; }
+    .type-in-process { background-color: #fef3c7; color: #92400e; }
+    .type-final { background-color: #d1fae5; color: #065f46; }
+    .type-random { background-color: #f3e8ff; color: #7c3aed; }
+
+    .priority-high { background-color: #fee2e2; color: #991b1b; }
+    .priority-medium { background-color: #fef3c7; color: #92400e; }
+    .priority-low { background-color: #d1fae5; color: #065f46; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl p-8 mb-8 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold mb-2">Create Quality Inspection</h1>
+                    <p class="text-blue-100">Set up quality inspection parameters for goods receipt</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-2xl font-bold">Inspection #{{ inspection_number|default:"[Auto Generated]" }}</div>
+                    <div class="text-blue-200">{{ today|date:"F d, Y" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="space-y-8">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div class="inspection-form-card rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Inspection Details</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Source GRN *</label>
+                        <select name="grn" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                            <option value="">Select GRN</option>
+                            {% for grn in available_grns %}
+                            <option value="{{ grn.id }}">
+                                {{ grn.grn_number }} - {{ grn.purchase_order.supplier.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Select GRN for quality inspection</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Inspection Type *</label>
+                        <select name="inspection_type" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                            <option value="">Select Type</option>
+                            <option value="incoming">Incoming Inspection</option>
+                            <option value="in_process">In-Process Inspection</option>
+                            <option value="final">Final Inspection</option>
+                            <option value="random">Random Inspection</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Type of quality inspection</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Inspection Date *</label>
+                        <input type="date" 
+                               name="inspection_date" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+                               required
+                               value="{{ today|date:'Y-m-d' }}">
+                        <p class="text-xs text-gray-500 mt-1">When inspection will be conducted</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Inspector *</label>
+                        <select name="inspector" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                            <option value="">Select Inspector</option>
+                            {% for inspector in inspectors %}
+                            <option value="{{ inspector.id }}">{{ inspector.get_full_name|default:inspector.username }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Assigned quality inspector</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Priority Level</label>
+                        <select name="priority" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="low">Low Priority</option>
+                            <option value="medium" selected>Medium Priority</option>
+                            <option value="high">High Priority</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Inspection urgency level</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quality Parameters -->
+            <div class="inspection-form-card rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Quality Parameters</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="quality-parameter-card p-4">
+                        <div class="flex items-center mb-3">
+                            <input type="checkbox" name="visual_inspection" value="1" class="form-checkbox text-blue-600 mr-3">
+                            <h4 class="font-semibold text-gray-900">Visual Inspection</h4>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-3">Check appearance, surface finish, color, and overall condition</p>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="visual_parameters" value="appearance" class="form-checkbox text-blue-600 mr-2">
+                                <span class="text-sm text-gray-700">Overall Appearance</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="visual_parameters" value="surface_finish" class="form-checkbox text-blue-600 mr-2">
+                                <span class="text-sm text-gray-700">Surface Finish</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="visual_parameters" value="color_match" class="form-checkbox text-blue-600 mr-2">
+                                <span class="text-sm text-gray-700">Color Match</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="quality-parameter-card p-4">
+                        <div class="flex items-center mb-3">
+                            <input type="checkbox" name="dimensional_check" value="1" class="form-checkbox text-blue-600 mr-3">
+                            <h4 class="font-semibold text-gray-900">Dimensional Check</h4>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-3">Verify dimensions, measurements, and tolerances</p>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="dimensional_parameters" value="length" class="form-checkbox text-blue-600 mr-2">
+                                <span class="text-sm text-gray-700">Length Measurement</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="dimensional_parameters" value="width" class="form-checkbox text-blue-600 mr-2">
+                                <span class="text-sm text-gray-700">Width Measurement</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="dimensional_parameters" value="thickness" class="form-checkbox text-blue-600 mr-2">
+                                <span class="text-sm text-gray-700">Thickness/Height</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="quality-parameter-card p-4">
+                        <div class="flex items-center mb-3">
+                            <input type="checkbox" name="functional_test" value="1" class="form-checkbox text-blue-600 mr-3">
+                            <h4 class="font-semibold text-gray-900">Functional Test</h4>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-3">Test functionality, performance, and operational capabilities</p>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="functional_parameters" value="performance" class="form-checkbox text-blue-600 mr-2">
+                                <span class="text-sm text-gray-700">Performance Test</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="functional_parameters" value="durability" class="form-checkbox text-blue-600 mr-2">
+                                <span class="text-sm text-gray-700">Durability Test</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="functional_parameters" value="operation" class="form-checkbox text-blue-600 mr-2">
+                                <span class="text-sm text-gray-700">Operational Test</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="quality-parameter-card p-4">
+                        <div class="flex items-center mb-3">
+                            <input type="checkbox" name="material_test" value="1" class="form-checkbox text-blue-600 mr-3">
+                            <h4 class="font-semibold text-gray-900">Material Test</h4>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-3">Verify material quality, composition, and properties</p>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="material_parameters" value="composition" class="form-checkbox text-blue-600 mr-2">
+                                <span class="text-sm text-gray-700">Material Composition</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="material_parameters" value="strength" class="form-checkbox text-blue-600 mr-2">
+                                <span class="text-sm text-gray-700">Strength Test</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="material_parameters" value="chemical" class="form-checkbox text-blue-600 mr-2">
+                                <span class="text-sm text-gray-700">Chemical Analysis</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sample Size and Methods -->
+            <div class="inspection-form-card rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Sampling and Methods</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Sample Size (%)</label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <label class="flex items-center">
+                                <input type="radio" name="sample_size" value="5" class="form-radio text-blue-600">
+                                <span class="ml-2 text-sm text-gray-700">5% Sample</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="sample_size" value="10" class="form-radio text-blue-600">
+                                <span class="ml-2 text-sm text-gray-700">10% Sample</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="sample_size" value="25" class="form-radio text-blue-600">
+                                <span class="ml-2 text-sm text-gray-700">25% Sample</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="sample_size" value="50" class="form-radio text-blue-600">
+                                <span class="ml-2 text-sm text-gray-700">50% Sample</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="sample_size" value="100" class="form-radio text-blue-600" checked>
+                                <span class="ml-2 text-sm text-gray-700">100% Inspection</span>
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">Percentage of items to be inspected</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Sampling Method</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="sampling_method" value="random" class="form-radio text-blue-600" checked>
+                                <span class="ml-2 text-sm text-gray-700">Random Sampling</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="sampling_method" value="systematic" class="form-radio text-blue-600">
+                                <span class="ml-2 text-sm text-gray-700">Systematic Sampling</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="sampling_method" value="batch" class="form-radio text-blue-600">
+                                <span class="ml-2 text-sm text-gray-700">Batch Sampling</span>
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">Method for selecting items to inspect</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acceptance Criteria -->
+            <div class="inspection-form-card rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Acceptance Criteria</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Minimum Pass Rate (%)</label>
+                        <input type="number" 
+                               name="min_pass_rate" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+                               min="0" 
+                               max="100" 
+                               value="95">
+                        <p class="text-xs text-gray-500 mt-1">Minimum acceptable pass rate</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Critical Defect Tolerance</label>
+                        <select name="critical_tolerance" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="0">Zero Tolerance</option>
+                            <option value="1">1 Defect Allowed</option>
+                            <option value="2">2 Defects Allowed</option>
+                            <option value="5">5% Tolerance</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Tolerance for critical defects</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Action on Failure</label>
+                        <select name="failure_action" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="reject_all">Reject Entire Batch</option>
+                            <option value="quarantine">Quarantine for Review</option>
+                            <option value="conditional">Conditional Acceptance</option>
+                            <option value="return">Return to Supplier</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Action if inspection fails</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Information -->
+            <div class="inspection-form-card rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Additional Information</h3>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Special Instructions</label>
+                    <textarea name="special_instructions" 
+                              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+                              rows="4" 
+                              placeholder="Any special requirements, testing conditions, or specific instructions for the inspector..."></textarea>
+                    <p class="text-xs text-gray-500 mt-1">Detailed instructions for conducting the inspection</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Reference Standards</label>
+                        <input type="text" 
+                               name="reference_standards" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+                               placeholder="ISO 9001, ASTM standards, etc.">
+                        <p class="text-xs text-gray-500 mt-1">Applicable quality standards</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Testing Equipment Required</label>
+                        <input type="text" 
+                               name="equipment_required" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+                               placeholder="Calipers, microscope, tensile tester, etc.">
+                        <p class="text-xs text-gray-500 mt-1">Required testing equipment</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-4 justify-center">
+                <button type="button" onclick="history.back()" class="bg-gray-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                    Cancel
+                </button>
+                <button type="submit" name="action" value="save_draft" class="bg-gradient-to-r from-yellow-600 to-orange-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a.997.997 0 01-.707.293H7a4 4 0 01-4-4V7a4 4 0 014-4z"></path>
+                    </svg>
+                    Save as Draft
+                </button>
+                <button type="submit" name="action" value="create" class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Create Inspection
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-select related parameters when main category is checked
+    const mainCheckboxes = ['visual_inspection', 'dimensional_check', 'functional_test', 'material_test'];
+    
+    mainCheckboxes.forEach(checkboxName => {
+        const mainCheckbox = document.querySelector(`input[name="${checkboxName}"]`);
+        const relatedCheckboxes = document.querySelectorAll(`input[name="${checkboxName.replace('_inspection', '_parameters').replace('_check', '_parameters').replace('_test', '_parameters')}"]`);
+        
+        if (mainCheckbox) {
+            mainCheckbox.addEventListener('change', function() {
+                relatedCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                    checkbox.disabled = !this.checked;
+                });
+            });
+        }
+    });
+
+    // Validate form before submission
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const selectedParameters = document.querySelectorAll('input[name$="_inspection"]:checked, input[name$="_check"]:checked, input[name$="_test"]:checked');
+        
+        if (selectedParameters.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one quality parameter for inspection.');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

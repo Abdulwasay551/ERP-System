@@ -1,0 +1,318 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if object %}Edit {{ object.name }}{% else %}Create Variant{% endif %} | Product Variants{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8 max-w-4xl">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">
+                    {% if object %}Edit Variant{% else %}Create Variant{% endif %}
+                </h1>
+                <p class="text-gray-600">
+                    {% if object %}Update variant information{% else %}Add a new product variant{% endif %}
+                    {% if product %} for {{ product.name }}{% endif %}
+                </p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% if product %}{% url 'products:variant_list_by_product' product.id %}{% else %}{% url 'products:variant_list' %}{% endif %}" 
+                   class="action-btn bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to Variants
+                </a>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="form-card rounded-2xl p-8">
+            <form method="post" class="space-y-8">
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Variant Name *</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.name.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">SKU</label>
+                            {{ form.sku }}
+                            {% if form.sku.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.sku.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            <p class="mt-1 text-sm text-gray-500">Leave empty to auto-generate</p>
+                        </div>
+
+                        {% if not object %}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Parent Product *</label>
+                            {{ form.product }}
+                            {% if form.product.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.product.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Variant Attributes -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Variant Attributes</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Size</label>
+                            {{ form.size }}
+                            {% if form.size.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.size.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Color</label>
+                            {{ form.color }}
+                            {% if form.color.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.color.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Material</label>
+                            {{ form.material }}
+                            {% if form.material.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.material.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pricing Information -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Pricing</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Cost Price</label>
+                            {{ form.cost_price }}
+                            {% if form.cost_price.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.cost_price.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Selling Price *</label>
+                            {{ form.selling_price }}
+                            {% if form.selling_price.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.selling_price.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stock Information -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Stock Management</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Minimum Stock Level</label>
+                            {{ form.minimum_stock }}
+                            {% if form.minimum_stock.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.minimum_stock.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            <p class="mt-1 text-sm text-gray-500">Alert threshold for low stock</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Options -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Options</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            {{ form.is_active }}
+                            <label for="{{ form.is_active.id_for_label }}" class="ml-2 block text-sm text-gray-700">
+                                Active Variant
+                            </label>
+                        </div>
+                        {% if form.is_active.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.is_active.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="flex items-center">
+                            {{ form.default_for_product }}
+                            <label for="{{ form.default_for_product.id_for_label }}" class="ml-2 block text-sm text-gray-700">
+                                Default Variant for Product
+                            </label>
+                        </div>
+                        {% if form.default_for_product.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.default_for_product.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <p class="text-sm text-gray-500">The default variant shown when viewing the product</p>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end gap-4 pt-6 border-t">
+                    <a href="{% if product %}{% url 'products:variant_list_by_product' product.id %}{% else %}{% url 'products:variant_list' %}{% endif %}" 
+                       class="btn-secondary">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn-primary">
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        {% if object %}Update Variant{% else %}Create Variant{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Help Section -->
+        <div class="mt-8 bg-blue-50 border border-blue-200 rounded-2xl p-6">
+            <h3 class="text-lg font-semibold text-blue-900 mb-3">Variant Guidelines</h3>
+            <ul class="text-sm text-blue-800 space-y-2">
+                <li class="flex items-start">
+                    <svg class="w-4 h-4 text-blue-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    Use descriptive names that include variant attributes (e.g., "Red Large T-Shirt")
+                </li>
+                <li class="flex items-start">
+                    <svg class="w-4 h-4 text-blue-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    Set one variant as default for the parent product
+                </li>
+                <li class="flex items-start">
+                    <svg class="w-4 h-4 text-blue-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    Each variant can have different pricing and stock levels
+                </li>
+                <li class="flex items-start">
+                    <svg class="w-4 h-4 text-blue-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    SKU will be auto-generated if left empty based on parent product
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add proper styling to form fields
+    const inputs = document.querySelectorAll('input[type="text"], input[type="number"], textarea, select');
+    inputs.forEach(input => {
+        input.classList.add('form-input', 'rounded-lg', 'border-gray-300', 'shadow-sm', 'focus:border-green-500', 'focus:ring-green-500');
+    });
+    
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.classList.add('form-check-input', 'rounded', 'border-gray-300', 'text-green-600', 'focus:ring-green-500');
+    });
+
+    // Auto-generate variant name based on attributes
+    const sizeField = document.querySelector('input[name="size"]');
+    const colorField = document.querySelector('input[name="color"]');
+    const materialField = document.querySelector('input[name="material"]');
+    const nameField = document.querySelector('input[name="name"]');
+
+    function updateVariantName() {
+        if (!nameField.value || nameField.value.includes('Variant')) {
+            const parts = [];
+            if (colorField && colorField.value) parts.push(colorField.value);
+            if (sizeField && sizeField.value) parts.push(sizeField.value);
+            if (materialField && materialField.value) parts.push(materialField.value);
+            
+            if (parts.length > 0) {
+                nameField.value = parts.join(' ') + ' Variant';
+            }
+        }
+    }
+
+    if (sizeField) sizeField.addEventListener('blur', updateVariantName);
+    if (colorField) colorField.addEventListener('blur', updateVariantName);
+    if (materialField) materialField.addEventListener('blur', updateVariantName);
+});
+</script>
+
+<style>
+.btn-primary {
+    background-color: #10b981;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.btn-primary:hover {
+    background-color: #059669;
+}
+.btn-secondary {
+    background-color: #6b7280;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.btn-secondary:hover {
+    background-color: #4b5563;
+}
+.form-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

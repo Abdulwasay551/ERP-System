@@ -1,0 +1,83 @@
+{% load static %}
+
+<div class="sidebar-content">
+    <!-- Logo -->
+    <div class="sidebar-logo p-6">
+        <a href="{% url 'dashboard' %}" class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur">
+                <img src="{% static 'logo.png' %}" alt="FutureERP Logo" class="w-8 h-8" style="border-radius: 50%;">
+            </div>
+            <span class="sidebar-text text-xl font-bold text-white">FutureERP</span>
+        </a>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav mt-2">
+        <!-- Back to Dashboard -->
+        <a href="{% url 'dashboard' %}" class="sidebar-item bg-white/20 border border-white/20 mb-4">
+            <span class="sidebar-icon">
+                <i class="fas fa-arrow-left"></i>
+            </span>
+            <span class="sidebar-text">Back to Dashboard</span>
+        </a>
+
+        <!-- Accounting Dashboard -->
+        <a href="{% url 'accounting:accounting_dashboard' %}" class="sidebar-item">
+            <span class="sidebar-icon">
+                <i class="fas fa-tachometer-alt"></i>
+            </span>
+            <span class="sidebar-text">Accounting Dashboard</span>
+        </a>
+
+        <!-- Chart of Accounts -->
+        <div class="sidebar-section mb-4">
+            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Chart of Accounts</h3>
+            <a href="{% url 'accounting:accounting_accounts_ui' %}" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-list-alt"></i>
+                </span>
+                <span class="sidebar-text">All Accounts</span>
+            </a>
+            <a href="{% url 'accounting:accounting_accounts_add' %}" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-plus-circle"></i>
+                </span>
+                <span class="sidebar-text">Add Account</span>
+            </a>
+        </div>
+
+        <!-- Journal Entries -->
+        <div class="sidebar-section mb-4">
+            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Journal Entries</h3>
+            <a href="{% url 'accounting:accounting_journals_ui' %}" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-book"></i>
+                </span>
+                <span class="sidebar-text">Journal Entries</span>
+            </a>
+            <a href="{% url 'accounting:accounting_ledger_ui' %}" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-file-invoice"></i>
+                </span>
+                <span class="sidebar-text">General Ledger</span>
+            </a>
+        </div>
+
+        <!-- Financial Reports -->
+        <div class="sidebar-section mb-4">
+            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Financial Reports</h3>
+            <a href="{% url 'accounting:accounting_trial_balance_ui' %}" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-balance-scale"></i>
+                </span>
+                <span class="sidebar-text">Trial Balance</span>
+            </a>
+            <a href="{% url 'accounting:accounting_reports_ui' %}" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-chart-line"></i>
+                </span>
+                <span class="sidebar-text">Financial Reports</span>
+            </a>
+        </div>
+    </nav>
+</div>

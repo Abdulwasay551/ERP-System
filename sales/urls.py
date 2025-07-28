@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    ProductPageView, TaxPageView, QuotationPageView, SalesOrderPageView, InvoicePageView,
+    sales_dashboard, ProductPageView, TaxPageView, QuotationPageView, SalesOrderPageView, InvoicePageView,
     products_ui, products_add, products_edit, products_delete,
     taxes_add, taxes_edit, taxes_delete,
     quotations_add, quotations_edit, quotations_delete,
@@ -10,6 +10,10 @@ from .views import (
 )
 
 urlpatterns = [
+    # Dashboard
+    path('dashboard/', sales_dashboard, name='sales_dashboard'),
+    path('dashboard-ui/', sales_dashboard, name='sales_dashboard_ui'),
+    
     # Product URLs
     path('products/', ProductPageView.as_view(), name='sales_products'),
     path('products-ui/', products_ui, name='sales_products_ui'),

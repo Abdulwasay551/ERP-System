@@ -1,221 +1,396 @@
 {% extends "base.html" %}
-{% block title %}Payment Management | ERP System{% endblock %}
+{% block title %}Purchase Payments | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payment-card {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(67, 56, 202, 0.1));
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        transition: all 0.3s ease;
+    }
+    .payment-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(99, 102, 241, 0.15);
+    }
+    .cash-flow-integration {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<!-- COA Integration Notice -->
-<div class="mt-16 p-8">
-    <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-6">
-        <div class="flex items-center">
-            <svg class="w-5 h-5 text-emerald-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-            </svg>
-            <span class="text-emerald-800 font-medium">Chart of Accounts Integration:</span>
-            <span class="text-emerald-700 ml-2">Payments automatically post: Dr. Accounts Payable | Cr. Bank/Cash</span>
-        </div>
-    </div>
-
-    <!-- Page Header -->
-    <div class="flex justify-between items-center mb-8">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900">Payment Management</h1>
-            <p class="text-gray-600 mt-2">Process supplier payments and manage cash flow</p>
-        </div>
-        <button id="addPaymentBtn" class="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-6 py-3 rounded-lg hover:from-emerald-700 hover:to-emerald-800 transition-all duration-200 shadow-md">
-            <i class="fas fa-plus mr-2"></i>Record Payment
-        </button>
-    </div>
-
-    <!-- Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-green-100">Payments Today</p>
-                    <p class="text-3xl font-bold" id="paymentsToday">₨0</p>
-                </div>
-                <svg class="w-12 h-12 text-green-200" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-                </svg>
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Purchase Payments</h1>
+                <p class="text-gray-600">Track and manage payments to suppliers</p>
             </div>
-        </div>
-
-        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-blue-100">Payments This Month</p>
-                    <p class="text-3xl font-bold">₨0</p>
-                </div>
-                <svg class="w-12 h-12 text-blue-200" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"/>
-                </svg>
-            </div>
-        </div>
-
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-purple-100">Pending Payments</p>
-                    <p class="text-3xl font-bold">₨0</p>
-                </div>
-                <svg class="w-12 h-12 text-purple-200" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-            </div>
-        </div>
-
-        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-orange-100">Average Payment Time</p>
-                    <p class="text-3xl font-bold">25<span class="text-lg">days</span></p>
-                </div>
-                <svg class="w-12 h-12 text-orange-200" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tab Navigation -->
-    <div class="bg-white rounded-lg shadow-md mb-6">
-        <div class="border-b border-gray-200">
-            <nav class="-mb-px flex space-x-8 px-6">
-                <button class="tab-btn border-b-2 border-emerald-500 text-emerald-600 py-4 px-1 text-sm font-medium" data-tab="payments">
-                    <i class="fas fa-credit-card mr-2"></i>Payments
+            <div class="flex gap-4">
+                <button id="addPaymentBtn" class="action-btn bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z"></path>
+                    </svg>
+                    Record Payment
                 </button>
-                <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 text-sm font-medium" data-tab="scheduled">
-                    <i class="fas fa-calendar-alt mr-2"></i>Scheduled Payments
-                </button>
-                <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 text-sm font-medium" data-tab="batches">
-                    <i class="fas fa-layer-group mr-2"></i>Batch Payments
-                </button>
+            </div>
+        </div>
+
+        <!-- Cash Flow Integration Notice -->
+        <div class="cash-flow-integration rounded-2xl p-6 mb-8">
+            <div class="flex items-center">
+                <svg class="w-6 h-6 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                    <h3 class="text-lg font-semibold text-green-800">Chart of Accounts & Cash Flow Integration</h3>
+                    <p class="text-green-700">Payments automatically post: <strong>Dr. Accounts Payable (Supplier)</strong> | <strong>Cr. Cash/Bank Account</strong></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="card-modern p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Total Paid This Month</p>
+                        <p class="text-2xl font-bold text-indigo-600">${{ total_paid_this_month|floatformat:2 }}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="card-modern p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Pending Payments</p>
+                        <p class="text-2xl font-bold text-orange-600">{{ pending_payments_count }}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="card-modern p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Outstanding Balance</p>
+                        <p class="text-2xl font-bold text-red-600">${{ outstanding_balance|floatformat:2 }}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="card-modern p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Average Payment Time</p>
+                        <p class="text-2xl font-bold text-blue-600">{{ avg_payment_days|floatformat:0 }} days</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card-modern mb-8">
+            <form method="GET" class="flex flex-wrap gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select name="status" class="form-select rounded-lg border-gray-300">
+                        <option value="">All Status</option>
+                        {% for status_code, status_name in status_choices %}
+                        <option value="{{ status_code }}" {% if status_filter == status_code %}selected{% endif %}>
+                            {{ status_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                    <select name="payment_method" class="form-select rounded-lg border-gray-300">
+                        <option value="">All Methods</option>
+                        <option value="cash" {% if payment_method_filter == 'cash' %}selected{% endif %}>Cash</option>
+                        <option value="check" {% if payment_method_filter == 'check' %}selected{% endif %}>Check</option>
+                        <option value="bank_transfer" {% if payment_method_filter == 'bank_transfer' %}selected{% endif %}>Bank Transfer</option>
+                        <option value="credit_card" {% if payment_method_filter == 'credit_card' %}selected{% endif %}>Credit Card</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" name="search" value="{{ search_query }}" placeholder="Search payment number, supplier..." 
+                           class="form-input rounded-lg border-gray-300">
+                </div>
+                <button type="submit" class="btn-primary">Filter</button>
+                <a href="{% url 'purchase:payments_ui' %}" class="btn-secondary">Clear</a>
+            </form>
+        </div>
+
+        <!-- Payments List -->
+        <div class="grid grid-cols-1 gap-6">
+            {% for payment in payments %}
+            <div class="payment-card rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mr-4">
+                            <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold text-gray-900">Payment #{{ payment.payment_number|default:payment.id }}</h3>
+                            <p class="text-gray-600">
+                                To: {{ payment.supplier.name }} • 
+                                {% if payment.bill %}Invoice: {{ payment.bill.bill_number|default:payment.bill.id }}{% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="status-badge status-{{ payment.status }}">{{ payment.get_status_display }}</span>
+                        <div class="flex gap-2">
+                            <a href="{% url 'purchase:payment_detail' payment.id %}" class="btn-sm btn-primary">View</a>
+                            {% if payment.status == 'pending' %}
+                            <button onclick="processPayment({{ payment.id }})" class="btn-sm btn-success">Process</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                    <div>
+                        <p class="text-sm text-gray-500">Payment Date</p>
+                        <p class="font-medium">{{ payment.payment_date|date:"M d, Y" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Amount</p>
+                        <p class="font-medium text-green-600">${{ payment.amount|floatformat:2 }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Payment Method</p>
+                        <p class="font-medium capitalize">{{ payment.payment_method|default:"Not specified" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Reference</p>
+                        <p class="font-medium">{{ payment.reference_number|default:"N/A" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Processed By</p>
+                        <p class="font-medium">{{ payment.created_by.get_full_name|default:payment.created_by.username }}</p>
+                    </div>
+                </div>
+                
+                {% if payment.notes %}
+                <div class="border-t pt-4">
+                    <p class="text-sm text-gray-500 mb-1">Notes</p>
+                    <p class="text-gray-700">{{ payment.notes|truncatewords:20 }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div class="text-center py-12">
+                <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z"></path>
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No payments found</h3>
+                <p class="text-gray-500 mb-4">Start by recording your first payment</p>
+                <button id="addPaymentBtn2" class="btn-primary">Record Payment</button>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if payments.has_other_pages %}
+        <div class="mt-8 flex justify-center">
+            <nav class="flex space-x-2">
+                {% if payments.has_previous %}
+                    <a href="?page={{ payments.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if payment_method_filter %}&payment_method={{ payment_method_filter }}{% endif %}" 
+                       class="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">Previous</a>
+                {% endif %}
+                
+                <span class="px-3 py-2 text-sm bg-indigo-600 text-white rounded-md">
+                    Page {{ payments.number }} of {{ payments.paginator.num_pages }}
+                </span>
+                
+                {% if payments.has_next %}
+                    <a href="?page={{ payments.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if payment_method_filter %}&payment_method={{ payment_method_filter }}{% endif %}" 
+                       class="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">Next</a>
+                {% endif %}
             </nav>
         </div>
+        {% endif %}
     </div>
+</div>
 
-    <!-- Payments Tab -->
-    <div id="payments-tab" class="tab-content bg-white rounded-lg shadow-md p-6">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-medium text-gray-900">Payment History</h3>
-            <div class="flex space-x-3">
-                <select class="px-3 py-2 border border-gray-300 rounded-md text-sm">
-                    <option>All Methods</option>
-                    <option>Bank Transfer</option>
-                    <option>Check</option>
-                    <option>Cash</option>
-                    <option>Credit Card</option>
-                </select>
-                <input type="date" class="px-3 py-2 border border-gray-300 rounded-md text-sm">
+<!-- Add Payment Modal -->
+<div id="addPaymentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold">Record Payment</h3>
+                    <button id="closeAddPaymentModal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
             </div>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment #</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    <tr>
-                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
-                            <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                            </svg>
-                            <h3 class="mt-2 text-sm font-medium text-gray-900">No payments</h3>
-                            <p class="mt-1 text-sm text-gray-500">Get started by recording your first payment.</p>
-                            <div class="mt-6">
-                                <button type="button" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700">
-                                    <i class="fas fa-plus mr-2"></i>Record Payment
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
 
-    <!-- Scheduled Payments Tab -->
-    <div id="scheduled-tab" class="tab-content hidden bg-white rounded-lg shadow-md p-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Scheduled Payments</h3>
-        <div class="text-center py-8 text-gray-500">
-            <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
-            <p class="mt-2">No scheduled payments. Set up automatic payments for regular suppliers.</p>
-        </div>
-    </div>
+            <form method="POST" action="{% url 'purchase:payment_add' %}" class="p-6 space-y-6">
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Supplier *</label>
+                        <select name="supplier_id" required class="form-select w-full rounded-lg border-gray-300" onchange="loadSupplierInvoices(this.value)">
+                            <option value="">Select Supplier</option>
+                            {% for supplier in suppliers %}
+                            <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Invoice</label>
+                        <select name="bill_id" id="billSelect" class="form-select w-full rounded-lg border-gray-300">
+                            <option value="">Select Invoice (Optional)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Payment Date *</label>
+                        <input type="date" name="payment_date" value="{% now 'Y-m-d' %}" required class="form-input w-full rounded-lg border-gray-300">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Amount *</label>
+                        <input type="number" name="amount" step="0.01" min="0" required class="form-input w-full rounded-lg border-gray-300" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method *</label>
+                        <select name="payment_method" required class="form-select w-full rounded-lg border-gray-300">
+                            <option value="">Select Method</option>
+                            <option value="cash">Cash</option>
+                            <option value="check">Check</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                            <option value="credit_card">Credit Card</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Reference Number</label>
+                        <input type="text" name="reference_number" class="form-input w-full rounded-lg border-gray-300" placeholder="Check #, Transaction ID, etc.">
+                    </div>
+                </div>
 
-    <!-- Batch Payments Tab -->
-    <div id="batches-tab" class="tab-content hidden bg-white rounded-lg shadow-md p-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Batch Payment Processing</h3>
-        <div class="text-center py-8 text-gray-500">
-            <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-            </svg>
-            <p class="mt-2">Process multiple payments at once for efficiency.</p>
-            <button class="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
-                Create Batch Payment
-            </button>
-        </div>
-    </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                    <textarea name="notes" rows="3" class="form-textarea w-full rounded-lg border-gray-300" placeholder="Payment notes"></textarea>
+                </div>
 
-    <!-- Quick Actions -->
-    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <button class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors text-center">
-            <i class="fas fa-university mr-2"></i>Bank Reconciliation
-        </button>
-        <button class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors text-center">
-            <i class="fas fa-chart-line mr-2"></i>Cash Flow Report
-        </button>
-        <button class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors text-center">
-            <i class="fas fa-file-export mr-2"></i>Export to Bank
-        </button>
-    </div>
-
-    <!-- COA Integration Info -->
-    <div class="mt-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-        <div class="text-sm text-emerald-800">
-            <strong>Accounting Impact:</strong> Recording payments creates: <strong>Dr. Accounts Payable - [Supplier]</strong> | <strong>Cr. Bank Account (or Cash Account)</strong>
+                <div class="flex justify-end gap-4 pt-6 border-t">
+                    <button type="button" id="cancelAddPayment" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Record Payment</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
-{% endblock %}
-
-{% block extra_js %}
 <script>
-// Tab functionality
 document.addEventListener('DOMContentLoaded', function() {
-    const tabButtons = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
-    
-    tabButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const targetTab = this.getAttribute('data-tab');
-            
-            // Remove active classes
-            tabButtons.forEach(btn => {
-                btn.classList.remove('border-emerald-500', 'text-emerald-600');
-                btn.classList.add('border-transparent', 'text-gray-500');
-            });
-            
-            tabContents.forEach(content => {
-                content.classList.add('hidden');
-            });
-            
-            // Add active classes
-            this.classList.remove('border-transparent', 'text-gray-500');
-            this.classList.add('border-emerald-500', 'text-emerald-600');
-            
-            document.getElementById(targetTab + '-tab').classList.remove('hidden');
+    const addPaymentModal = document.getElementById('addPaymentModal');
+    const addPaymentBtns = document.querySelectorAll('#addPaymentBtn, #addPaymentBtn2');
+    const closeAddPaymentModal = document.getElementById('closeAddPaymentModal');
+    const cancelAddPayment = document.getElementById('cancelAddPayment');
+    const billSelect = document.getElementById('billSelect');
+
+    // Open modal
+    addPaymentBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            addPaymentModal.classList.remove('hidden');
         });
     });
+
+    // Close modal
+    closeAddPaymentModal.addEventListener('click', function() {
+        addPaymentModal.classList.add('hidden');
+    });
+    
+    cancelAddPayment.addEventListener('click', function() {
+        addPaymentModal.classList.add('hidden');
+    });
+
+    window.loadSupplierInvoices = function(supplierId) {
+        billSelect.innerHTML = '<option value="">Loading...</option>';
+        
+        if (!supplierId) {
+            billSelect.innerHTML = '<option value="">Select Invoice (Optional)</option>';
+            return;
+        }
+        
+        // In a real implementation, you would fetch invoices via AJAX
+        setTimeout(() => {
+            billSelect.innerHTML = `
+                <option value="">Select Invoice (Optional)</option>
+                <option value="1">Invoice #001 - $1,250.00 (Outstanding: $1,250.00)</option>
+                <option value="2">Invoice #002 - $875.50 (Outstanding: $500.00)</option>
+            `;
+        }, 500);
+    };
+    
+    window.processPayment = function(id) {
+        if (confirm('Are you sure you want to process this payment?')) {
+            // Process payment via form submission or AJAX
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/purchase/payments/' + id + '/process/';
+            
+            const csrf = document.createElement('input');
+            csrf.type = 'hidden';
+            csrf.name = 'csrfmiddlewaretoken';
+            csrf.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            form.appendChild(csrf);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    };
 });
 </script>
+
+<style>
+.status-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+.status-pending { background-color: #fef3c7; color: #d97706; }
+.status-processing { background-color: #dbeafe; color: #2563eb; }
+.status-completed { background-color: #d1fae5; color: #059669; }
+.status-failed { background-color: #fee2e2; color: #dc2626; }
+.status-cancelled { background-color: #f3f4f6; color: #6b7280; }
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.375rem;
+}
+.btn-primary { background-color: #3b82f6; color: white; }
+.btn-secondary { background-color: #6b7280; color: white; }
+.btn-success { background-color: #10b981; color: white; }
+</style>
 {% endblock %}

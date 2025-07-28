@@ -1,0 +1,428 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Chart of Accounts | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .account-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        transition: all 0.3s ease;
+    }
+    .account-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
+    }
+    .account-type-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+    .type-asset { background-color: #dbeafe; color: #1e40af; }
+    .type-liability { background-color: #fed7d7; color: #dc2626; }
+    .type-equity { background-color: #e0e7ff; color: #6366f1; }
+    .type-revenue { background-color: #dcfce7; color: #16a34a; }
+    .type-expense { background-color: #fef3c7; color: #d97706; }
+    .filter-section {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(6, 95, 70, 0.05));
+        border: 1px solid rgba(16, 185, 129, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Chart of Accounts</h1>
+                <p class="text-gray-600">Manage your accounting structure and account categories</p>
+            </div>
+            <div class="flex gap-4">
+                <button class="action-btn bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl hover-lift" onclick="openCreateModal()">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Add Account
+                </button>
+                <button class="action-btn bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-2xl hover-lift" onclick="exportAccounts()">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                    </svg>
+                    Export
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="filter-section rounded-2xl p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" id="searchInput" placeholder="Search accounts..." 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Account Type</label>
+                    <select id="typeFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        <option value="">All Types</option>
+                        <option value="asset">Asset</option>
+                        <option value="liability">Liability</option>
+                        <option value="equity">Equity</option>
+                        <option value="revenue">Revenue</option>
+                        <option value="expense">Expense</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select id="statusFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Group</label>
+                    <select id="groupFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        <option value="">All Groups</option>
+                        {% for group in account_groups %}
+                        <option value="{{ group.id }}">{{ group.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button onclick="clearFilters()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                        Clear Filters
+                    </button>
+                </div>
+                <div class="flex items-end">
+                    <button onclick="applyFilters()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accounts Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" id="accountsGrid">
+            {% for account in accounts %}
+            <div class="account-card rounded-2xl p-6 account-item" data-type="{{ account.type|lower }}" data-status="{% if account.is_active %}active{% else %}inactive{% endif %}" data-group="{{ account.group.id|default:'' }}">
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="account-type-badge type-{{ account.type|lower }}">
+                                {{ account.get_type_display }}
+                            </span>
+                            {% if account.is_active %}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                Active
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">
+                                Inactive
+                            </span>
+                            {% endif %}
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900">{{ account.name }}</h3>
+                        <p class="text-sm text-gray-600">{{ account.account_number }}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="editAccount({{ account.id }})" class="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                        </button>
+                        <button onclick="deleteAccount({{ account.id }})" class="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Current Balance:</span>
+                        <span class="font-bold text-lg {% if account.balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            ${{ account.balance|floatformat:2 }}
+                        </span>
+                    </div>
+
+                    {% if account.group %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Group:</span>
+                        <span class="text-sm font-medium text-gray-900">{{ account.group.name }}</span>
+                    </div>
+                    {% endif %}
+
+                    {% if account.description %}
+                    <div>
+                        <span class="text-sm text-gray-600">Description:</span>
+                        <p class="text-sm text-gray-900 mt-1">{{ account.description|truncatechars:100 }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="flex justify-between items-center text-sm text-gray-500">
+                        <span>Created: {{ account.created_at|date:"M d, Y" }}</span>
+                        <span>Updated: {{ account.updated_at|date:"M d, Y" }}</span>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <div class="flex gap-2">
+                        <button onclick="viewTransactions({{ account.id }})" class="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors">
+                            View Transactions
+                        </button>
+                        <button onclick="createJournalEntry({{ account.id }})" class="flex-1 px-3 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors">
+                            New Entry
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full text-center py-12">
+                <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+                <h3 class="text-xl font-medium text-gray-900 mb-2">No accounts found</h3>
+                <p class="text-gray-500 mb-6">Create your first account to get started with your chart of accounts.</p>
+                <button onclick="openCreateModal()" class="btn-primary">Create First Account</button>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Load More Button -->
+        {% if accounts.has_next %}
+        <div class="text-center mt-8">
+            <button onclick="loadMoreAccounts()" class="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                Load More Accounts
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Create/Edit Account Modal -->
+<div id="accountModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md">
+            <div class="flex items-center justify-between mb-6">
+                <h3 id="modalTitle" class="text-xl font-bold text-gray-900">Create Account</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="accountForm" onsubmit="saveAccount(event)">
+                <input type="hidden" id="accountId" value="">
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Account Name *</label>
+                        <input type="text" id="accountName" required 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Account Number *</label>
+                        <input type="text" id="accountNumber" required 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Account Type *</label>
+                        <select id="accountType" required 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            <option value="">Select Type</option>
+                            <option value="asset">Asset</option>
+                            <option value="liability">Liability</option>
+                            <option value="equity">Equity</option>
+                            <option value="revenue">Revenue</option>
+                            <option value="expense">Expense</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Group</label>
+                        <select id="accountGroup" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            <option value="">No Group</option>
+                            {% for group in account_groups %}
+                            <option value="{{ group.id }}">{{ group.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <textarea id="accountDescription" rows="3" 
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"></textarea>
+                    </div>
+
+                    <div class="flex items-center">
+                        <input type="checkbox" id="accountActive" checked 
+                               class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
+                        <label for="accountActive" class="ml-2 block text-sm text-gray-900">Active</label>
+                    </div>
+                </div>
+
+                <div class="flex gap-4 mt-6">
+                    <button type="button" onclick="closeModal()" 
+                            class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        Save Account
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Modal Functions
+function openCreateModal() {
+    document.getElementById('modalTitle').textContent = 'Create Account';
+    document.getElementById('accountForm').reset();
+    document.getElementById('accountId').value = '';
+    document.getElementById('accountModal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('accountModal').classList.add('hidden');
+}
+
+function editAccount(accountId) {
+    // Fetch account data and populate modal
+    document.getElementById('modalTitle').textContent = 'Edit Account';
+    document.getElementById('accountId').value = accountId;
+    // TODO: Fetch and populate account data
+    document.getElementById('accountModal').classList.remove('hidden');
+}
+
+function saveAccount(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const accountId = document.getElementById('accountId').value;
+    
+    // TODO: Implement AJAX save
+    console.log('Saving account:', {
+        id: accountId,
+        name: document.getElementById('accountName').value,
+        number: document.getElementById('accountNumber').value,
+        type: document.getElementById('accountType').value,
+        group: document.getElementById('accountGroup').value,
+        description: document.getElementById('accountDescription').value,
+        active: document.getElementById('accountActive').checked
+    });
+    
+    closeModal();
+    // Refresh the page or update the grid
+    location.reload();
+}
+
+function deleteAccount(accountId) {
+    if (confirm('Are you sure you want to delete this account?')) {
+        // TODO: Implement AJAX delete
+        console.log('Deleting account:', accountId);
+        location.reload();
+    }
+}
+
+// Filter Functions
+function applyFilters() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const type = document.getElementById('typeFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    const group = document.getElementById('groupFilter').value;
+    
+    const accounts = document.querySelectorAll('.account-item');
+    
+    accounts.forEach(account => {
+        const accountName = account.querySelector('h3').textContent.toLowerCase();
+        const accountType = account.dataset.type;
+        const accountStatus = account.dataset.status;
+        const accountGroup = account.dataset.group;
+        
+        const matchesSearch = !search || accountName.includes(search);
+        const matchesType = !type || accountType === type;
+        const matchesStatus = !status || accountStatus === status;
+        const matchesGroup = !group || accountGroup === group;
+        
+        if (matchesSearch && matchesType && matchesStatus && matchesGroup) {
+            account.style.display = 'block';
+        } else {
+            account.style.display = 'none';
+        }
+    });
+}
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('typeFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('groupFilter').value = '';
+    
+    const accounts = document.querySelectorAll('.account-item');
+    accounts.forEach(account => {
+        account.style.display = 'block';
+    });
+}
+
+// Other Functions
+function viewTransactions(accountId) {
+    window.location.href = `/accounting/transactions/?account=${accountId}`;
+}
+
+function createJournalEntry(accountId) {
+    window.location.href = `/accounting/journal/?account=${accountId}`;
+}
+
+function exportAccounts() {
+    window.open('/accounting/accounts/export/', '_blank');
+}
+
+function loadMoreAccounts() {
+    // TODO: Implement pagination
+    console.log('Loading more accounts...');
+}
+
+// Search as you type
+document.getElementById('searchInput').addEventListener('input', applyFilters);
+document.getElementById('typeFilter').addEventListener('change', applyFilters);
+document.getElementById('statusFilter').addEventListener('change', applyFilters);
+document.getElementById('groupFilter').addEventListener('change', applyFilters);
+
+// Close modal when clicking outside
+document.getElementById('accountModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeModal();
+    }
+});
+</script>
+
+<style>
+.btn-primary {
+    background-color: #10b981;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.btn-primary:hover {
+    background-color: #059669;
+}
+</style>
+{% endblock %}

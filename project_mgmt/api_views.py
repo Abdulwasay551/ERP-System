@@ -1,6 +1,6 @@
 from rest_framework import viewsets, permissions
-from .models import Project, Task, TimeEntry, ProjectReport
-from .serializers import ProjectSerializer, TaskSerializer, TimeEntrySerializer, ProjectReportSerializer
+from .models import Project, Task, TimeEntry, ProjectReport, ProjectContractor
+from .serializers import ProjectSerializer, TaskSerializer, TimeEntrySerializer, ProjectReportSerializer, ProjectContractorSerializer
 
 class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
@@ -24,4 +24,10 @@ class ProjectReportViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectReportSerializer
     permission_classes = [permissions.IsAuthenticated]
     def get_queryset(self):
-        return ProjectReport.objects.filter(project__company=self.request.user.company) 
+        return ProjectReport.objects.filter(project__company=self.request.user.company)
+
+class ProjectContractorViewSet(viewsets.ModelViewSet):
+    serializer_class = ProjectContractorSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        return ProjectContractor.objects.filter(company=self.request.user.company) 

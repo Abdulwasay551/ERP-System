@@ -1,6 +1,6 @@
 from rest_framework import viewsets, permissions
-from .models import BillOfMaterials, BillOfMaterialsItem, WorkOrder, ProductionPlan
-from .serializers import BillOfMaterialsSerializer, BillOfMaterialsItemSerializer, WorkOrderSerializer, ProductionPlanSerializer
+from .models import BillOfMaterials, BillOfMaterialsItem, WorkOrder, ProductionPlan, Subcontractor, SubcontractWorkOrder
+from .serializers import BillOfMaterialsSerializer, BillOfMaterialsItemSerializer, WorkOrderSerializer, ProductionPlanSerializer, SubcontractorSerializer, SubcontractWorkOrderSerializer
 
 class BillOfMaterialsViewSet(viewsets.ModelViewSet):
     serializer_class = BillOfMaterialsSerializer
@@ -24,4 +24,16 @@ class ProductionPlanViewSet(viewsets.ModelViewSet):
     serializer_class = ProductionPlanSerializer
     permission_classes = [permissions.IsAuthenticated]
     def get_queryset(self):
-        return ProductionPlan.objects.filter(company=self.request.user.company) 
+        return ProductionPlan.objects.filter(company=self.request.user.company)
+
+class SubcontractorViewSet(viewsets.ModelViewSet):
+    serializer_class = SubcontractorSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        return Subcontractor.objects.filter(company=self.request.user.company)
+
+class SubcontractWorkOrderViewSet(viewsets.ModelViewSet):
+    serializer_class = SubcontractWorkOrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        return SubcontractWorkOrder.objects.filter(company=self.request.user.company) 

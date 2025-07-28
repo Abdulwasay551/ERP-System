@@ -1,10 +1,17 @@
 from django.db import models
 from user_auth.models import Company, User
+from crm.models import Partner  # Import centralized Partner model
 from accounting.models import Account
 
 class Employee(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='employees')
     user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='employee_profile')
+    
+    # Optional link to centralized Partner for consistency (useful for contractors, vendors, etc.)
+    partner = models.OneToOneField(Partner, on_delete=models.SET_NULL, null=True, blank=True, related_name='employee_profile')
+    
+    # Employee-specific fields
+    employee_id = models.CharField(max_length=50, unique=True, blank=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     email = models.EmailField(blank=True)
@@ -13,12 +20,58 @@ class Employee(models.Model):
     position = models.CharField(max_length=100, blank=True)
     department = models.CharField(max_length=100, blank=True)
     date_joined = models.DateField(null=True, blank=True)
+    salary = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+
+    def save(self, *args, **kwargs):
+        # Auto-generate employee ID if not provided
+        if not self.employee_id:
+            self.employee_id = f"EMP{self.pk or Employee.objects.count() + 1:04d}"
+        super().save(*args, **kwargs)
+
+class Contractor(models.Model):
+    """Contractor model that links to centralized Partner for external workers"""
+    CONTRACT_TYPE_CHOICES = [
+        ('hourly', 'Hourly'),
+        ('project', 'Project Based'),
+        ('monthly', 'Monthly'),
+        ('yearly', 'Yearly'),
+    ]
+    
+    # Link to centralized Partner
+    partner = models.OneToOneField(Partner, on_delete=models.CASCADE, related_name='contractor_profile')
+    
+    # Contractor-specific fields
+    contractor_id = models.CharField(max_length=50, unique=True, blank=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='contractors')
+    contract_type = models.CharField(max_length=50, choices=CONTRACT_TYPE_CHOICES, default='hourly')
+    hourly_rate = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    contract_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    contract_start_date = models.DateField(null=True, blank=True)
+    contract_end_date = models.DateField(null=True, blank=True)
+    skills = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Contractor: {self.partner.name}"
+
+    def save(self, *args, **kwargs):
+        # Auto-generate contractor ID if not provided
+        if not self.contractor_id:
+            self.contractor_id = f"CONT{self.pk or Contractor.objects.count() + 1:04d}"
+        
+        # Ensure partner is marked as contractor/vendor
+        if self.partner:
+            self.partner.is_vendor = True
+            self.partner.save()
+        super().save(*args, **kwargs)
 
 class Attendance(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='attendances')

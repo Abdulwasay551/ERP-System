@@ -69,19 +69,194 @@
             background-clip: text;
         }
 
-        /* Sidebar Styles */
+        /* Dynamic Sidebar Styles - Matching Index Page Design */
         .sidebar {
-            transition: transform 0.3s ease-in-out;
-            background: linear-gradient(180deg, #065f46, #047857, #059669);
-            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 16rem;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            z-index: 40;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(16, 185, 129, 0.3);
         }
         
         .sidebar.collapsed {
-            transform: translateX(-100%);
+            width: 4rem;
+        }
+        
+        .sidebar-content {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding-bottom: 4rem; /* Add space for toggle button */
+            position: relative;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+        }
+        
+        .sidebar-logo {
+            flex-shrink: 0;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.15);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 0 1rem 2rem 1rem; /* Add bottom padding */
+        }
+        
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+            margin-bottom: 0.25rem;
+            position: relative;
+            white-space: nowrap;
+            backdrop-filter: blur(10px);
+        }
+        
+        .sidebar-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+        }
+        
+        .sidebar-item.active {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 4px 16px rgba(255, 255, 255, 0.3);
+        }
+        
+        .sidebar-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: #ffffff;
+            border-radius: 0 4px 4px 0;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+        
+        .sidebar-icon {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+            text-align: center;
+            min-width: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .sidebar-text {
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .sidebar.collapsed .sidebar-text {
+            opacity: 0;
+            width: 0;
+            margin: 0;
+            overflow: hidden;
+        }
+        
+        .sidebar.collapsed .sidebar-icon {
+            margin-right: 0;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .sidebar.collapsed .sidebar-item {
+            justify-content: center;
+            padding: 0.75rem 0.5rem;
+        }
+        
+        .sidebar.collapsed .sidebar-logo .flex {
+            justify-content: center;
+        }
+        
+        .sidebar.collapsed .sidebar-logo span {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+            margin: 0;
+        }
+        
+        .sidebar.collapsed .sidebar-logo a,
+        .sidebar.collapsed .sidebar-logo > div:first-child {
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        /* Hide sub-heading text when collapsed */
+        .sidebar.collapsed .sidebar-nav h6,
+        .sidebar.collapsed .sidebar-nav .text-xs {
+            display: none;
+        }
+        
+        .sidebar.collapsed .sidebar-nav div:has(h6) {
+            display: none;
+        }
+        
+        .sidebar-toggle {
+            position: absolute;
+            bottom: 1.5rem;
+            right: 0rem;
+            background: linear-gradient(135deg, #ffffff, #f0f9ff);
+            color: #047857;
+            border: none;
+            border-radius: 12px;
+            width: 100%;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+            box-shadow: 0 4px 16px rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .sidebar-toggle:hover {
+            background: linear-gradient(135deg, #f0f9ff, #ffffff);
+            transform: scale(1.05);
+            box-shadow: 0 6px 24px rgba(255, 255, 255, 0.4);
+        }
+        
+        .sidebar.collapsed .sidebar-toggle {
+            right: 1rem;
+            transform: rotate(180deg);
+            border-radius: 50%;
+            width: 2rem;
+            height: 2rem;
+            background: linear-gradient(135deg, #ffffff, #f0f9ff);
+        }
+        
+        .sidebar.collapsed .sidebar-toggle:hover {
+            transform: rotate(180deg) scale(1.1);
         }
         
         .sidebar-overlay {
-            transition: opacity 0.3s ease-in-out;
+            transition: opacity 0.3s ease;
         }
         
         .sidebar-overlay.hidden {
@@ -89,31 +264,26 @@
             pointer-events: none;
         }
         
-        .submenu {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-in-out;
+        .main-content {
+            margin-left: 16rem;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        .submenu.expanded {
-            max-height: 500px;
+        .main-content.collapsed {
+            margin-left: 4rem;
         }
         
-        .sidebar-item {
-            transition: all 0.2s ease;
-        }
-        
-        .sidebar-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateX(4px);
-        }
-        
-        .sidebar-item.active {
-            background: rgba(255, 255, 255, 0.15);
-            border-right: 3px solid #34d399;
-        }
-          @media (max-width: 768px) {
-            .main-content {
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content,
+            .main-content.collapsed {
                 margin-left: 0 !important;
             }
         }
@@ -137,6 +307,21 @@
             transform: scale(1.05);
         }
 
+        /* Card styling for purchase module */
+        .card-modern {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(240, 253, 244, 0.8));
+            border: 1px solid rgba(16, 185, 129, 0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .card-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.1);
+        }
+
         .coa-integration {
             background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
             border: 1px solid rgba(16, 185, 129, 0.2);
@@ -150,6 +335,51 @@
         .stat-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(16, 185, 129, 0.15);
+        }
+
+        /* Form styling */
+        .form-input, .form-select, .form-textarea {
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        /* Button styles */
+        .btn-primary {
+            background-color: #10b981;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #059669;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: #6b7280;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background-color: #4b5563;
+            transform: translateY(-1px);
         }
 
         .table-row:hover {
@@ -197,181 +427,38 @@
 
 </head>
 <body class="bg-gray-50 overflow-x-hidden">
-    <!-- Sidebar -->
-    <div id="sidebar" class="sidebar fixed left-0 top-0 w-80 h-full z-40 text-white overflow-y-auto">
-        <div class="p-6">
-            <!-- Logo Section -->
-            <div class="flex items-center space-x-3 mb-8">
-                <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                    <img src="{% static 'logo.png' %}" alt="FutureERP Logo" class="w-8 h-8 rounded-full">
-                </div>
-                <span class="text-xl font-bold">FutureERP</span>
-            </div>
-
-            <!-- Navigation Menu -->
-            <nav class="space-y-2">
-                <!-- Dashboard -->
-                <a href="{% url 'dashboard' %}" class="sidebar-item flex items-center space-x-3 p-3 rounded-lg">
-                    <i class="fas fa-home w-5"></i>
-                    <span>Dashboard</span>
-                </a>                <!-- Sales Management -->
-                <div class="sidebar-group">
-                    <button onclick="toggleSubmenu('sales-menu')" class="sidebar-item w-full flex items-center justify-between p-3 rounded-lg">
-                        <div class="flex items-center space-x-3">
-                            <i class="fas fa-chart-line w-5"></i>
-                            <span>Sales</span>
-                        </div>
-                        <i class="fas fa-chevron-down transition-transform" id="sales-icon"></i>
-                    </button>
-                    <div id="sales-menu" class="submenu ml-8 space-y-1">
-                        <a href="/sales/products-ui/" class="sidebar-item block p-2 rounded">Products</a>
-                        <a href="/sales/quotations-ui/" class="sidebar-item block p-2 rounded">Quotations</a>
-                        <a href="/sales/salesorders-ui/" class="sidebar-item block p-2 rounded">Sales Orders</a>
-                        <a href="/sales/invoices-ui/" class="sidebar-item block p-2 rounded">Invoices</a>
-                        <a href="/sales/taxes-ui/" class="sidebar-item block p-2 rounded">Taxes</a>
-                    </div>
-                </div>
-
-                <!-- Purchase Management -->
-                <div class="sidebar-group">
-                    <button onclick="toggleSubmenu('purchase-menu')" class="sidebar-item w-full flex items-center justify-between p-3 rounded-lg">
-                        <div class="flex items-center space-x-3">
-                            <i class="fas fa-shopping-cart w-5"></i>
-                            <span>Purchase</span>
-                        </div>
-                        <i class="fas fa-chevron-down transition-transform" id="purchase-icon"></i>
-                    </button>
-                    <div id="purchase-menu" class="submenu ml-8 space-y-1">
-                        <a href="/purchase/purchaseorders-ui/" class="sidebar-item block p-2 rounded">Purchase Orders</a>
-                        <a href="/purchase/suppliers-ui/" class="sidebar-item block p-2 rounded">Suppliers</a>
-                        <a href="/purchase/bills-ui/" class="sidebar-item block p-2 rounded">Bills</a>
-                        <a href="/purchase/payments-ui/" class="sidebar-item block p-2 rounded">Payments</a>
-                    </div>
-                </div>
-
-                <!-- Inventory Management -->
-                <div class="sidebar-group">
-                    <button onclick="toggleSubmenu('inventory-menu')" class="sidebar-item w-full flex items-center justify-between p-3 rounded-lg">
-                        <div class="flex items-center space-x-3">
-                            <i class="fas fa-warehouse w-5"></i>
-                            <span>Inventory</span>
-                        </div>
-                        <i class="fas fa-chevron-down transition-transform" id="inventory-icon"></i>
-                    </button>
-                    <div id="inventory-menu" class="submenu ml-8 space-y-1">
-                        <a href="/inventory/stockitems-ui/" class="sidebar-item block p-2 rounded">Stock Items</a>
-                        <a href="/inventory/warehouses-ui/" class="sidebar-item block p-2 rounded">Warehouses</a>
-                        <a href="/inventory/movements-ui/" class="sidebar-item block p-2 rounded">Stock Movements</a>
-                        <a href="/inventory/alerts-ui/" class="sidebar-item block p-2 rounded">Stock Alerts</a>
-                        <a href="/inventory/categories-ui/" class="sidebar-item block p-2 rounded">Categories</a>
-                    </div>
-                </div>
-
-                <!-- CRM -->
-                <div class="sidebar-group">
-                    <button onclick="toggleSubmenu('crm-menu')" class="sidebar-item w-full flex items-center justify-between p-3 rounded-lg">
-                        <div class="flex items-center space-x-3">
-                            <i class="fas fa-users w-5"></i>
-                            <span>CRM</span>
-                        </div>
-                        <i class="fas fa-chevron-down transition-transform" id="crm-icon"></i>
-                    </button>
-                    <div id="crm-menu" class="submenu ml-8 space-y-1">
-                        <a href="/crm/customers-ui/" class="sidebar-item block p-2 rounded">Customers</a>
-                        <a href="/crm/leads-ui/" class="sidebar-item block p-2 rounded">Leads</a>
-                        <a href="/crm/opportunities-ui/" class="sidebar-item block p-2 rounded">Opportunities</a>
-                        <a href="/crm/communications-ui/" class="sidebar-item block p-2 rounded">Communications</a>
-                    </div>
-                </div>
-
-                <!-- HR Management -->
-                <div class="sidebar-group">
-                    <button onclick="toggleSubmenu('hr-menu')" class="sidebar-item w-full flex items-center justify-between p-3 rounded-lg">
-                        <div class="flex items-center space-x-3">
-                            <i class="fas fa-user-tie w-5"></i>
-                            <span>HR</span>
-                        </div>
-                        <i class="fas fa-chevron-down transition-transform" id="hr-icon"></i>
-                    </button>
-                    <div id="hr-menu" class="submenu ml-8 space-y-1">
-                        <a href="/hr/employees-ui/" class="sidebar-item block p-2 rounded">Employees</a>
-                        <a href="/hr/attendance-ui/" class="sidebar-item block p-2 rounded">Attendance</a>
-                        <a href="/hr/payroll-ui/" class="sidebar-item block p-2 rounded">Payroll</a>
-                        <a href="/hr/leaves-ui/" class="sidebar-item block p-2 rounded">Leave Management</a>
-                        <a href="/hr/reports-ui/" class="sidebar-item block p-2 rounded">HR Reports</a>
-                    </div>
-                </div>
-
-                <!-- Accounting -->
-                <div class="sidebar-group">
-                    <button onclick="toggleSubmenu('accounting-menu')" class="sidebar-item w-full flex items-center justify-between p-3 rounded-lg">
-                        <div class="flex items-center space-x-3">
-                            <i class="fas fa-calculator w-5"></i>
-                            <span>Accounting</span>
-                        </div>
-                        <i class="fas fa-chevron-down transition-transform" id="accounting-icon"></i>
-                    </button>
-                    <div id="accounting-menu" class="submenu ml-8 space-y-1">
-                        <a href="/accounting/accounts-ui/" class="sidebar-item block p-2 rounded">Chart of Accounts</a>
-                        <a href="/accounting/journals-ui/" class="sidebar-item block p-2 rounded">Journal Entries</a>
-                        <a href="/accounting/ledger-ui/" class="sidebar-item block p-2 rounded">General Ledger</a>
-                        <a href="/accounting/trial-balance-ui/" class="sidebar-item block p-2 rounded">Trial Balance</a>
-                        <a href="/accounting/reports-ui/" class="sidebar-item block p-2 rounded">Financial Reports</a>
-                    </div>
-                </div>
-
-                <!-- Manufacturing -->
-                <div class="sidebar-group">
-                    <button onclick="toggleSubmenu('manufacturing-menu')" class="sidebar-item w-full flex items-center justify-between p-3 rounded-lg">
-                        <div class="flex items-center space-x-3">
-                            <i class="fas fa-cogs w-5"></i>
-                            <span>Manufacturing</span>
-                        </div>
-                        <i class="fas fa-chevron-down transition-transform" id="manufacturing-icon"></i>
-                    </button>
-                    <div id="manufacturing-menu" class="submenu ml-8 space-y-1">
-                        <a href="/manufacturing/boms-ui/" class="sidebar-item block p-2 rounded">Bill of Materials</a>
-                        <a href="/manufacturing/workorders-ui/" class="sidebar-item block p-2 rounded">Work Orders</a>
-                        <a href="/manufacturing/production-ui/" class="sidebar-item block p-2 rounded">Production</a>
-                        <a href="/manufacturing/quality-ui/" class="sidebar-item block p-2 rounded">Quality Control</a>
-                    </div>
-                </div>
-
-                <!-- Project Management -->
-                <div class="sidebar-group">
-                    <button onclick="toggleSubmenu('project-menu')" class="sidebar-item w-full flex items-center justify-between p-3 rounded-lg">
-                        <div class="flex items-center space-x-3">
-                            <i class="fas fa-project-diagram w-5"></i>
-                            <span>Projects</span>
-                        </div>
-                        <i class="fas fa-chevron-down transition-transform" id="project-icon"></i>
-                    </button>
-                    <div id="project-menu" class="submenu ml-8 space-y-1">
-                        <a href="/project_mgmt/projects-ui/" class="sidebar-item block p-2 rounded">Projects</a>
-                        <a href="/project_mgmt/tasks-ui/" class="sidebar-item block p-2 rounded">Tasks</a>
-                        <a href="/project_mgmt/timesheets-ui/" class="sidebar-item block p-2 rounded">Timesheets</a>
-                        <a href="/project_mgmt/reports-ui/" class="sidebar-item block p-2 rounded">Project Reports</a>
-                    </div>
-                </div>
-
-                <!-- Analytics -->
-                <div class="sidebar-group">
-                    <button onclick="toggleSubmenu('analytics-menu')" class="sidebar-item w-full flex items-center justify-between p-3 rounded-lg">
-                        <div class="flex items-center space-x-3">
-                            <i class="fas fa-chart-bar w-5"></i>
-                            <span>Analytics</span>
-                        </div>
-                        <i class="fas fa-chevron-down transition-transform" id="analytics-icon"></i>
-                    </button>
-                    <div id="analytics-menu" class="submenu ml-8 space-y-1">
-                        <a href="/analytics/dashboard-ui/" class="sidebar-item block p-2 rounded">Analytics Dashboard</a>
-                        <a href="/analytics/sales-reports-ui/" class="sidebar-item block p-2 rounded">Sales Reports</a>
-                        <a href="/analytics/financial-reports-ui/" class="sidebar-item block p-2 rounded">Financial Reports</a>
-                        <a href="/analytics/inventory-reports-ui/" class="sidebar-item block p-2 rounded">Inventory Reports</a>
-                    </div>
-                </div>
-            </nav>
-        </div>
+    <!-- Dynamic Sidebar -->
+    <div id="sidebar" class="sidebar bg-green-900">
+        {% load static %}
+        
+        {% if '/purchase/' in request.path %}
+            {% include 'sidebars/purchase_sidebar.html' %}
+        {% elif '/products/' in request.path %}
+            {% include 'sidebars/products_sidebar.html' %}
+        {% elif '/sales/' in request.path %}
+            {% include 'sidebars/sales_sidebar.html' %}
+        {% elif '/inventory/' in request.path %}
+            {% include 'sidebars/inventory_sidebar.html' %}
+        {% elif '/crm/' in request.path %}
+            {% include 'sidebars/crm_sidebar.html' %}
+        {% elif '/hr/' in request.path %}
+            {% include 'sidebars/hr_sidebar.html' %}
+        {% elif '/accounting/' in request.path %}
+            {% include 'sidebars/accounting_sidebar.html' %}
+        {% elif '/manufacturing/' in request.path %}
+            {% include 'sidebars/manufacturing_sidebar.html' %}
+        {% elif '/project_mgmt/' in request.path %}
+            {% include 'sidebars/project_sidebar.html' %}
+        {% elif '/analytics/' in request.path %}
+            {% include 'sidebars/analytics_sidebar.html' %}
+        {% else %}
+            {% include 'sidebars/main_sidebar.html' %}
+        {% endif %}
+        
+        <!-- Collapse Toggle Button -->
+        <button id="sidebar-toggle" class="sidebar-toggle">
+            <i class="fas fa-chevron-left text-xs"></i>
+        </button>
     </div>
 
     <!-- Sidebar Overlay for Mobile -->
@@ -380,11 +467,13 @@
     <!-- Header Navigation -->
     <nav class="relative glass-effect w-full z-20 px-6 py-4">
         <div class="max-w-7xl mx-auto flex items-center justify-between">
-            <!-- Menu Toggle Button -->
+            <!-- Logo and Title -->
             <div class="flex items-center space-x-4">
-                <button id="menu-toggle" class="text-green-800 hover:text-green-600 p-2 rounded-lg">
+                <!-- Mobile Menu Button -->
+                <button id="mobile-menu-toggle" class="md:hidden text-green-800 hover:text-green-600 p-2 rounded-lg">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
+                
                 <a href='/' class="flex items-center space-x-3">
                     <div class="w-10 h-10 bg-gradient-to-r from-green-500/10 to-emerald-600/10 rounded-full outset-0 flex items-center justify-center pulse-green">
                         <img src="{% static 'logo.png' %}" alt="FutureERP Logo" class="w-10 h-10 mask-radial-at-bottom" style="filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.5));border-radius: 50%;">
@@ -393,11 +482,6 @@
                 </a>
             </div>
             
-            <div class="hidden lg:flex items-center space-x-8">
-                <a href="{% url 'dashboard' %}" class="text-black hover:text-black/50 font-medium">Dashboard</a>
-                <a href="/analytics/dashboard-ui/" class="text-black hover:text-black/50 font-medium">Reports</a>
-                <a href="{% url 'dashboard' %}" class="text-black hover:text-black/50 font-medium">Settings</a>
-            </div>
             
             {% if user.is_authenticated %}
             <div class="flex items-center space-x-4">
@@ -415,7 +499,7 @@
     </nav>
 
     <!-- Main Content -->
-    <div class="main-content transition-all duration-300 ml-80">
+    <div id="main-content" class="main-content">
         {% block content %}{% endblock %}
     </div>    <!-- Footer -->
     <footer class="bg-green-900 text-white py-12">
@@ -469,58 +553,44 @@
     </footer>
 
     <script>
-        // Sidebar functionality
+        // Dynamic Sidebar functionality
         const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const mainContent = document.getElementById('main-content');
         const sidebarOverlay = document.getElementById('sidebar-overlay');
-        const menuToggle = document.getElementById('menu-toggle');
-        const mainContent = document.querySelector('.main-content');
 
-        function toggleSidebar() {
-            sidebar.classList.toggle('collapsed');
-            sidebarOverlay.classList.toggle('hidden');
-            
-            if (sidebar.classList.contains('collapsed')) {
-                mainContent.style.marginLeft = '0';
+        // Initialize sidebar state
+        let isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+
+        function updateSidebarState() {
+            if (isCollapsed) {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('collapsed');
+                sidebarToggle.innerHTML = '<i class="fas fa-chevron-right text-xs"></i>';
             } else {
-                if (window.innerWidth >= 768) {
-                    mainContent.style.marginLeft = '320px';
-                }
+                sidebar.classList.remove('collapsed');
+                mainContent.classList.remove('collapsed');
+                sidebarToggle.innerHTML = '<i class="fas fa-chevron-left text-xs"></i>';
             }
         }
 
-        // Toggle sidebar on menu button click
-        menuToggle.addEventListener('click', toggleSidebar);
+        function toggleSidebar() {
+            isCollapsed = !isCollapsed;
+            localStorage.setItem('sidebarCollapsed', isCollapsed);
+            updateSidebarState();
+        }
 
-        // Close sidebar when clicking overlay
-        sidebarOverlay.addEventListener('click', () => {
-            sidebar.classList.add('collapsed');
-            sidebarOverlay.classList.add('hidden');
-            if (window.innerWidth >= 768) {
-                mainContent.style.marginLeft = '0';
-            }
-        });
+        // Toggle sidebar on button click
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', toggleSidebar);
+        }
 
-        // Handle submenu toggles
-        function toggleSubmenu(menuId) {
-            const menu = document.getElementById(menuId);
-            const icon = document.getElementById(menuId.replace('-menu', '-icon'));
-            
-            menu.classList.toggle('expanded');
-            icon.classList.toggle('rotate-180');
-            
-            // Close other submenus
-            const allMenus = document.querySelectorAll('.submenu');
-            const allIcons = document.querySelectorAll('.fa-chevron-down');
-            
-            allMenus.forEach(otherMenu => {
-                if (otherMenu.id !== menuId && otherMenu.classList.contains('expanded')) {
-                    otherMenu.classList.remove('expanded');
-                }
-            });
-            
-            allIcons.forEach(otherIcon => {
-                if (otherIcon.id !== icon.id && otherIcon.classList.contains('rotate-180')) {
-                    otherIcon.classList.remove('rotate-180');
+        // Handle mobile sidebar overlay
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', () => {
+                if (window.innerWidth < 768) {
+                    sidebar.classList.remove('open');
+                    sidebarOverlay.classList.add('hidden');
                 }
             });
         }
@@ -528,12 +598,17 @@
         // Handle responsive behavior
         function handleResize() {
             if (window.innerWidth < 768) {
-                sidebar.classList.add('collapsed');
-                sidebarOverlay.classList.add('hidden');
-                mainContent.style.marginLeft = '0';
+                // Mobile behavior
+                sidebar.classList.remove('collapsed');
+                mainContent.classList.remove('collapsed');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.add('hidden');
+                }
             } else {
-                if (!sidebar.classList.contains('collapsed')) {
-                    mainContent.style.marginLeft = '320px';
+                // Desktop behavior
+                updateSidebarState();
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.add('hidden');
                 }
             }
         }
@@ -544,35 +619,56 @@
             const sidebarItems = document.querySelectorAll('.sidebar-item');
             
             sidebarItems.forEach(item => {
-                if (item.href && currentPath.includes(item.getAttribute('href'))) {
+                item.classList.remove('active');
+                if (item.href && currentPath === item.getAttribute('href')) {
                     item.classList.add('active');
-                    
-                    // Expand parent submenu if needed
-                    const parentSubmenu = item.closest('.submenu');
-                    if (parentSubmenu) {
-                        parentSubmenu.classList.add('expanded');
-                        const parentButton = parentSubmenu.previousElementSibling;
-                        const icon = parentButton.querySelector('.fa-chevron-down');
-                        if (icon) {
-                            icon.classList.add('rotate-180');
-                        }
-                    }
                 }
             });
         }
 
-        // Initialize
-        window.addEventListener('resize', handleResize);
+        // Mobile menu toggle for responsive design
+        function toggleMobileSidebar() {
+            if (window.innerWidth < 768) {
+                sidebar.classList.toggle('open');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.toggle('hidden');
+                }
+            }
+        }
+
+        // Add mobile menu button functionality if needed
+        const mobileMenuBtn = document.getElementById('mobile-menu-toggle');
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', toggleMobileSidebar);
+        }
+
+        // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
-            handleResize();
+            updateSidebarState();
             setActiveMenuItem();
+            handleResize();
         });
 
-        // Escape key to close sidebar
+        // Handle window resize
+        window.addEventListener('resize', handleResize);
+
+        // Escape key to close mobile sidebar
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !sidebar.classList.contains('collapsed')) {
-                toggleSidebar();
+            if (e.key === 'Escape' && window.innerWidth < 768) {
+                sidebar.classList.remove('open');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.add('hidden');
+                }
             }
+        });
+
+        // Add smooth transitions
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add transition classes after initial load to prevent flash
+            setTimeout(() => {
+                sidebar.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                mainContent.style.transition = 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+            }, 100);
         });
     </script>
 

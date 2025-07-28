@@ -1,0 +1,567 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{% if tracking_unit %}Edit{% else %}Add{% endif %} Tracking Unit - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: white;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .tracking-preview {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .tracking-number-display {
+        font-family: 'Courier New', monospace;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    
+    .form-section {
+        margin-bottom: 30px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #007bff;
+    }
+    
+    .form-section h5 {
+        color: #007bff;
+        margin-bottom: 15px;
+    }
+    
+    .tracking-field {
+        display: none;
+    }
+    
+    .tracking-field.active {
+        display: block;
+    }
+    
+    .field-help {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+    
+    .required-indicator {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    
+    .btn-save {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        color: white;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: transform 0.2s ease;
+    }
+    
+    .btn-save:hover {
+        transform: translateY(-2px);
+        color: white;
+    }
+    
+    .product-info-card {
+        background: #e3f2fd;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .tracking-type-info {
+        background: #fff3e0;
+        border-radius: 8px;
+        padding: 15px;
+        margin: 15px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-{% if tracking_unit %}edit{% else %}plus{% endif %} mr-2"></i>
+                    {% if tracking_unit %}Edit Tracking Unit{% else %}Add New Tracking Unit{% endif %}
+                </h2>
+                <a href="{% if tracking_unit %}{% url 'products:tracking_detail' tracking_unit.pk %}{% else %}{% url 'products:tracking_list' %}{% endif %}" 
+                   class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left mr-1"></i>Back
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="form-card">
+                <form method="post" id="trackingForm">
+                    {% csrf_token %}
+                    
+                    <!-- Product Selection -->
+                    <div class="form-section">
+                        <h5><i class="fas fa-box mr-2"></i>Product Information</h5>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.product.id_for_label }}">
+                                Product <span class="required-indicator">*</span>
+                            </label>
+                            {{ form.product|add_class:"form-control" }}
+                            {% if form.product.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.product.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="field-help">Select the product to create tracking unit for</div>
+                        </div>
+                        
+                        <!-- Product Info Display -->
+                        <div id="productInfo" class="product-info-card" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h6 id="productName"></h6>
+                                    <div class="small text-muted">
+                                        <span>SKU: <span id="productSku"></span></span> |
+                                        <span>Tracking: <span id="productTracking"></span></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-right">
+                                    <img id="productImage" src="" alt="" class="img-thumbnail" style="max-width: 80px; display: none;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tracking Type Info -->
+                        <div id="trackingTypeInfo" class="tracking-type-info" style="display: none;">
+                            <h6><i class="fas fa-info-circle mr-2"></i>Tracking Configuration</h6>
+                            <div id="trackingTypeDetails"></div>
+                        </div>
+                    </div>
+
+                    <!-- Tracking Numbers -->
+                    <div class="form-section">
+                        <h5><i class="fas fa-barcode mr-2"></i>Tracking Information</h5>
+                        
+                        <!-- Serial Number -->
+                        <div class="form-group tracking-field" id="serialField">
+                            <label for="{{ form.serial_number.id_for_label }}">
+                                Serial Number <span class="required-indicator">*</span>
+                            </label>
+                            {{ form.serial_number|add_class:"form-control" }}
+                            {% if form.serial_number.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.serial_number.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="field-help">Enter the unique serial number for this item</div>
+                        </div>
+
+                        <!-- IMEI Number -->
+                        <div class="form-group tracking-field" id="imeiField">
+                            <label for="{{ form.imei_number.id_for_label }}">
+                                IMEI Number <span class="required-indicator">*</span>
+                            </label>
+                            {{ form.imei_number|add_class:"form-control" }}
+                            {% if form.imei_number.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.imei_number.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="field-help">Enter the 15-digit IMEI number</div>
+                        </div>
+
+                        <!-- Barcode -->
+                        <div class="form-group tracking-field" id="barcodeField">
+                            <label for="{{ form.barcode.id_for_label }}">
+                                Barcode <span class="required-indicator">*</span>
+                            </label>
+                            {{ form.barcode|add_class:"form-control" }}
+                            {% if form.barcode.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.barcode.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="field-help">Enter or scan the barcode</div>
+                        </div>
+
+                        <!-- Batch Number -->
+                        <div class="form-group tracking-field" id="batchField">
+                            <label for="{{ form.batch_number.id_for_label }}">
+                                Batch Number <span class="required-indicator">*</span>
+                            </label>
+                            {{ form.batch_number|add_class:"form-control" }}
+                            {% if form.batch_number.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.batch_number.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="field-help">Enter the batch/lot number</div>
+                        </div>
+                    </div>
+
+                    <!-- Status and Quality -->
+                    <div class="form-section">
+                        <h5><i class="fas fa-check-circle mr-2"></i>Status Information</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.status.id_for_label }}">Status</label>
+                                    {{ form.status|add_class:"form-control" }}
+                                    {% if form.status.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.status.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.quality_status.id_for_label }}">Quality Status</label>
+                                    {{ form.quality_status|add_class:"form-control" }}
+                                    {% if form.quality_status.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.quality_status.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location -->
+                    <div class="form-section">
+                        <h5><i class="fas fa-map-marker-alt mr-2"></i>Location Information</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.current_warehouse.id_for_label }}">Current Warehouse</label>
+                                    {{ form.current_warehouse|add_class:"form-control" }}
+                                    {% if form.current_warehouse.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.current_warehouse.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.supplier.id_for_label }}">Supplier</label>
+                                    {{ form.supplier|add_class:"form-control" }}
+                                    {% if form.supplier.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.supplier.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.location_details.id_for_label }}">Location Details</label>
+                            {{ form.location_details|add_class:"form-control" }}
+                            {% if form.location_details.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.location_details.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="field-help">Additional location information (shelf, bin, etc.)</div>
+                        </div>
+                    </div>
+
+                    <!-- Dates -->
+                    <div class="form-section">
+                        <h5><i class="fas fa-calendar mr-2"></i>Date Information</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.manufacture_date.id_for_label }}">Manufacture Date</label>
+                                    {{ form.manufacture_date|add_class:"form-control" }}
+                                    {% if form.manufacture_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.manufacture_date.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.expiry_date.id_for_label }}">Expiry Date</label>
+                                    {{ form.expiry_date|add_class:"form-control" }}
+                                    {% if form.expiry_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.expiry_date.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.received_date.id_for_label }}">Received Date</label>
+                                    {{ form.received_date|add_class:"form-control" }}
+                                    {% if form.received_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.received_date.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Information -->
+                    <div class="form-section">
+                        <h5><i class="fas fa-info mr-2"></i>Additional Information</h5>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.notes.id_for_label }}">Notes</label>
+                            {{ form.notes|add_class:"form-control" }}
+                            {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.notes.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="field-help">Any additional notes or comments</div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="text-right">
+                        <a href="{% if tracking_unit %}{% url 'products:tracking_detail' tracking_unit.pk %}{% else %}{% url 'products:tracking_list' %}{% endif %}" 
+                           class="btn btn-secondary mr-2">Cancel</a>
+                        <button type="submit" class="btn btn-save">
+                            <i class="fas fa-save mr-1"></i>
+                            {% if tracking_unit %}Update{% else %}Create{% endif %} Tracking Unit
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="col-md-4">
+            <div class="tracking-preview">
+                <h5><i class="fas fa-eye mr-2"></i>Preview</h5>
+                <div id="trackingPreview">
+                    <div class="tracking-number-display" id="previewNumber">---</div>
+                    <div id="previewType">Select a product to see tracking preview</div>
+                </div>
+            </div>
+
+            <!-- Help Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-question-circle mr-2"></i>Tracking Help</h6>
+                </div>
+                <div class="card-body">
+                    <div class="small">
+                        <p><strong>Serial Tracking:</strong> Each item has a unique serial number</p>
+                        <p><strong>IMEI Tracking:</strong> For mobile devices and electronics</p>
+                        <p><strong>Barcode Tracking:</strong> Use existing barcodes or generate new ones</p>
+                        <p><strong>Batch Tracking:</strong> Group items by manufacturing batch</p>
+                        <hr>
+                        <p><strong>Quality Status:</strong></p>
+                        <ul class="mb-0">
+                            <li>Passed: Item passed quality checks</li>
+                            <li>Failed: Item failed quality checks</li>
+                            <li>Pending: Awaiting quality inspection</li>
+                            <li>Quarantine: Item is quarantined</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize form
+    initializeForm();
+    
+    // Product selection change handler
+    $('#{{ form.product.id_for_label }}').change(function() {
+        const productId = $(this).val();
+        if (productId) {
+            loadProductInfo(productId);
+        } else {
+            hideProductInfo();
+        }
+    });
+    
+    // Tracking number input handlers
+    $('.tracking-field input').on('input', function() {
+        updatePreview();
+    });
+    
+    // Auto-calculate expiry date if manufacture date and shelf life are available
+    $('#{{ form.manufacture_date.id_for_label }}').change(function() {
+        calculateExpiryDate();
+    });
+});
+
+function initializeForm() {
+    // Hide all tracking fields initially
+    $('.tracking-field').removeClass('active');
+    
+    // If editing existing tracking unit, show appropriate field
+    {% if tracking_unit %}
+        const trackingMethod = '{{ tracking_unit.product.tracking_method }}';
+        showTrackingField(trackingMethod);
+        updatePreview();
+    {% endif %}
+    
+    // Initialize date pickers
+    $('input[type="date"]').each(function() {
+        if (!$(this).val()) {
+            $(this).val(new Date().toISOString().split('T')[0]);
+        }
+    });
+}
+
+function loadProductInfo(productId) {
+    $.ajax({
+        url: '{% url "products:ajax_product_tracking_info" %}',
+        data: { product_id: productId },
+        dataType: 'json',
+        success: function(data) {
+            if (data.success) {
+                showProductInfo(data);
+                showTrackingField(data.tracking_method);
+                updateTrackingTypeInfo(data);
+                updatePreview();
+            } else {
+                alert('Error loading product information: ' + data.error);
+            }
+        },
+        error: function() {
+            alert('Error loading product information');
+        }
+    });
+}
+
+function showProductInfo(data) {
+    $('#productName').text(data.product_name || 'N/A');
+    $('#productSku').text(data.product_sku || 'N/A');
+    $('#productTracking').text(data.tracking_method_display || 'N/A');
+    
+    if (data.product_image) {
+        $('#productImage').attr('src', data.product_image).show();
+    } else {
+        $('#productImage').hide();
+    }
+    
+    $('#productInfo').show();
+}
+
+function hideProductInfo() {
+    $('#productInfo').hide();
+    $('#trackingTypeInfo').hide();
+    $('.tracking-field').removeClass('active');
+    updatePreview();
+}
+
+function showTrackingField(trackingMethod) {
+    // Hide all tracking fields
+    $('.tracking-field').removeClass('active');
+    
+    // Show the appropriate field
+    switch(trackingMethod) {
+        case 'serial':
+            $('#serialField').addClass('active');
+            break;
+        case 'imei':
+            $('#imeiField').addClass('active');
+            break;
+        case 'barcode':
+            $('#barcodeField').addClass('active');
+            break;
+        case 'batch':
+            $('#batchField').addClass('active');
+            break;
+    }
+}
+
+function updateTrackingTypeInfo(data) {
+    let html = '<ul class="mb-0">';
+    html += `<li>Tracking Method: <strong>${data.tracking_method_display}</strong></li>`;
+    
+    if (data.requires_individual_tracking) {
+        html += '<li>Requires individual tracking</li>';
+    }
+    if (data.requires_expiry_tracking) {
+        html += '<li>Requires expiry date tracking</li>';
+    }
+    if (data.requires_batch_tracking) {
+        html += '<li>Requires batch tracking</li>';
+    }
+    if (data.shelf_life_days) {
+        html += `<li>Shelf life: ${data.shelf_life_days} days</li>`;
+    }
+    
+    html += '</ul>';
+    
+    $('#trackingTypeDetails').html(html);
+    $('#trackingTypeInfo').show();
+}
+
+function updatePreview() {
+    const activeField = $('.tracking-field.active input');
+    if (activeField.length > 0) {
+        const value = activeField.val() || '---';
+        const method = $('#{{ form.product.id_for_label }} option:selected').text();
+        
+        $('#previewNumber').text(value);
+        $('#previewType').text(method ? `${method} Tracking` : 'Select a product');
+    } else {
+        $('#previewNumber').text('---');
+        $('#previewType').text('Select a product to see tracking preview');
+    }
+}
+
+function calculateExpiryDate() {
+    const manufactureDate = $('#{{ form.manufacture_date.id_for_label }}').val();
+    const productId = $('#{{ form.product.id_for_label }}').val();
+    
+    if (manufactureDate && productId) {
+        // This would typically fetch shelf life from the product
+        // For now, we'll implement a simple 30-day default
+        const expiryDate = new Date(manufactureDate);
+        expiryDate.setDate(expiryDate.getDate() + 30); // Default 30 days
+        
+        $('#{{ form.expiry_date.id_for_label }}').val(expiryDate.toISOString().split('T')[0]);
+    }
+}
+
+// Form validation
+$('#trackingForm').submit(function(e) {
+    const activeField = $('.tracking-field.active input');
+    if (activeField.length > 0 && !activeField.val()) {
+        e.preventDefault();
+        alert('Please enter the tracking number');
+        activeField.focus();
+        return false;
+    }
+});
+</script>
+{% endblock %}

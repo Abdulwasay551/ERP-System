@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 from .views import (
-    CustomerPageView, LeadPageView, OpportunityPageView, CommunicationLogPageView,
+    crm_dashboard, CustomerPageView, LeadPageView, OpportunityPageView, CommunicationLogPageView,
     customers_ui, customers_add, customers_edit, customers_delete,
     leads_add, leads_edit, leads_delete,
     opportunities_add, opportunities_edit, opportunities_delete,
@@ -9,6 +9,10 @@ from .views import (
 )
 
 urlpatterns = [
+    # Dashboard
+    path('dashboard/', crm_dashboard, name='crm_dashboard'),
+    path('dashboard-ui/', crm_dashboard, name='crm_dashboard_ui'),
+    
     # Legacy Customer URLs (keeping for compatibility)
     path('customers/', views.CustomerListView.as_view(), name='customer_list'),
     path('customers/add/', views.CustomerCreateView.as_view(), name='customer_add'),

@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quality Assurance | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .qa-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        transition: all 0.3s ease;
+    }
+
+    .qa-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+    }
+
+    .inspection-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+        border: 1px solid #bfdbfe;
+    }
+
+    .test-item-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+    }
+
+    .test-item-card:hover {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+
+    .quality-status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-pending { background-color: #fef3c7; color: #92400e; }
+    .status-in-progress { background-color: #dbeafe; color: #1e40af; }
+    .status-passed { background-color: #d1fae5; color: #065f46; }
+    .status-failed { background-color: #fee2e2; color: #991b1b; }
+    .status-quarantined { background-color: #f3e8ff; color: #7c3aed; }
+
+    .test-result {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .test-pass { background-color: #dcfce7; color: #166534; }
+    .test-fail { background-color: #fee2e2; color: #991b1b; }
+    .test-na { background-color: #f3f4f6; color: #374151; }
+
+    .quality-metrics {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        border: 1px solid #cbd5e1;
+    }
+
+    .inspection-form {
+        background: #ffffff;
+        border: 2px solid #e5e7eb;
+        border-radius: 1rem;
+    }
+
+    .inspection-form:focus-within {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Quality Assurance</h1>
+                <p class="text-gray-600">Manage quality inspections and ensure product standards</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'purchase:quality_inspection_conduct' %}" 
+                   class="action-btn bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    New Inspection
+                </a>
+            </div>
+        </div>
+
+        <!-- Quality Metrics Dashboard -->
+        <div class="quality-metrics rounded-2xl p-6 mb-8">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Quality Overview</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-blue-600">{{ total_inspections }}</div>
+                    <div class="text-sm text-gray-600">Total Inspections</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-green-600">{{ passed_inspections }}%</div>
+                    <div class="text-sm text-gray-600">Pass Rate</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-red-600">{{ failed_inspections }}</div>
+                    <div class="text-sm text-gray-600">Failed Items</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-purple-600">{{ quarantined_items }}</div>
+                    <div class="text-sm text-gray-600">Quarantined</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card-modern mb-8">
+            <form method="GET" class="flex flex-wrap gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select name="status" class="form-select rounded-lg border-gray-300">
+                        <option value="">All Status</option>
+                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>In Progress</option>
+                        <option value="passed" {% if status_filter == 'passed' %}selected{% endif %}>Passed</option>
+                        <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+                        <option value="quarantined" {% if status_filter == 'quarantined' %}selected{% endif %}>Quarantined</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Inspection Type</label>
+                    <select name="inspection_type" class="form-select rounded-lg border-gray-300">
+                        <option value="">All Types</option>
+                        <option value="incoming" {% if type_filter == 'incoming' %}selected{% endif %}>Incoming</option>
+                        <option value="in_process" {% if type_filter == 'in_process' %}selected{% endif %}>In-Process</option>
+                        <option value="final" {% if type_filter == 'final' %}selected{% endif %}>Final</option>
+                        <option value="random" {% if type_filter == 'random' %}selected{% endif %}>Random</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" name="search" value="{{ search_query }}" 
+                           placeholder="Search inspection number, product..." 
+                           class="form-input rounded-lg border-gray-300">
+                </div>
+                <button type="submit" class="btn-primary">Filter</button>
+                <a href="{% url 'purchase:quality_assurance' %}" class="btn-secondary">Clear</a>
+            </form>
+        </div>
+
+        <!-- Inspections List -->
+        <div class="grid grid-cols-1 gap-6">
+            {% for inspection in inspections %}
+            <div class="qa-card rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold text-gray-900">{{ inspection.inspection_number }}</h3>
+                            <p class="text-gray-600">
+                                GRN: {{ inspection.grn.grn_number }} • {{ inspection.get_inspection_type_display }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="quality-status-badge status-{{ inspection.status }}">
+                            {{ inspection.get_status_display }}
+                        </span>
+                        <div class="flex gap-2">
+                            <a href="{% url 'purchase:quality_detail' inspection.id %}" class="btn-sm btn-primary">View</a>
+                            {% if inspection.status == 'pending' %}
+                            <button onclick="startInspection({{ inspection.id }})" class="btn-sm bg-blue-600 text-white">Start</button>
+                            {% endif %}
+                            {% if inspection.status == 'in_progress' %}
+                            <button onclick="completeInspection({{ inspection.id }})" class="btn-sm bg-green-600 text-white">Complete</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div>
+                        <p class="text-sm text-gray-500">Inspection Date</p>
+                        <p class="font-medium">{{ inspection.inspection_date|date:"M d, Y" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Inspector</p>
+                        <p class="font-medium">{{ inspection.inspector.get_full_name|default:inspection.inspector.username }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Items Tested</p>
+                        <p class="font-medium">{{ inspection.results.count }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Pass Rate</p>
+                        <p class="font-medium {% if inspection.pass_rate >= 95 %}text-green-600{% elif inspection.pass_rate >= 80 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                            {{ inspection.pass_rate|default:"0" }}%
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Test Results Preview -->
+                {% if inspection.results.exists %}
+                <div class="border-t pt-4">
+                    <p class="text-sm font-medium text-gray-700 mb-3">Test Results:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {% for result in inspection.results.all|slice:":3" %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div>
+                                <p class="font-medium text-gray-900">{{ result.grn_item.product.name }}</p>
+                                <p class="text-sm text-gray-600">Qty: {{ result.tested_quantity }}</p>
+                            </div>
+                            <span class="test-result {% if result.result == 'pass' %}test-pass{% elif result.result == 'fail' %}test-fail{% else %}test-na{% endif %}">
+                                {{ result.get_result_display }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if inspection.results.count > 3 %}
+                    <p class="text-sm text-gray-500 mt-2">+{{ inspection.results.count|add:"-3" }} more results</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if inspection.notes %}
+                <div class="border-t pt-4 mt-4">
+                    <p class="text-sm font-medium text-gray-700">Notes:</p>
+                    <p class="text-gray-600 text-sm">{{ inspection.notes|truncatewords:20 }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="flex justify-center mt-8">
+            <nav class="flex items-center gap-2">
+                {% if page_obj.has_previous %}
+                <a href="?page=1" class="px-3 py-2 text-gray-500 hover:text-gray-700">First</a>
+                <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 text-gray-500 hover:text-gray-700">Previous</a>
+                {% endif %}
+                
+                <span class="px-3 py-2 text-gray-900 font-medium">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+                
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 text-gray-500 hover:text-gray-700">Next</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}" class="px-3 py-2 text-gray-500 hover:text-gray-700">Last</a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function startInspection(inspectionId) {
+    if (confirm('Start this quality inspection?')) {
+        window.location.href = `/purchase/quality/${inspectionId}/conduct/`;
+    }
+}
+
+function completeInspection(inspectionId) {
+    if (confirm('Mark this inspection as complete?')) {
+        fetch(`/purchase/quality/${inspectionId}/complete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            }
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error completing inspection');
+            }
+        });
+    }
+}
+
+function generateQAReport() {
+    window.open('/purchase/quality/report/', '_blank');
+}
+
+function exportInspections() {
+    window.open('/purchase/quality/export/', '_blank');
+}
+</script>
+{% endblock %}

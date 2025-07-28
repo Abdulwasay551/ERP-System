@@ -1,0 +1,809 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title|default:"Create Supplier Quotation" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .quotation-form-card {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        backdrop-filter: blur(10px);
+    }
+
+    .quotation-form-card:hover {
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+        transform: translateY(-3px);
+        border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .hover-lift {
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
+
+    .item-row {
+        background: linear-gradient(135deg, rgba(247, 250, 252, 0.8), rgba(241, 245, 249, 0.8));
+        border: 1px solid rgba(226, 232, 240, 0.6);
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(5px);
+    }
+
+    .item-row:hover {
+        background: linear-gradient(135deg, rgba(241, 245, 249, 0.9), rgba(226, 232, 240, 0.9));
+        border-color: rgba(16, 185, 129, 0.4);
+        transform: translateX(4px);
+    }
+
+    .help-text {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+        font-weight: 500;
+    }
+
+    .required-field::after {
+        content: " *";
+        color: #ef4444;
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+
+    .form-section {
+        margin-bottom: 2.5rem;
+    }
+
+    .section-header {
+        border-bottom: 3px solid #e5e7eb;
+        padding-bottom: 0.75rem;
+        margin-bottom: 2rem;
+        position: relative;
+    }
+
+    .section-header::after {
+        content: '';
+        position: absolute;
+        bottom: -3px;
+        left: 0;
+        width: 60px;
+        height: 3px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        border-radius: 2px;
+    }
+
+    .rfq-badge {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        padding: 0.4rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .pr-link {
+        background: linear-gradient(135deg, #6366f1, #4f46e5);
+        color: white;
+        padding: 0.4rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .pr-link:hover {
+        transform: scale(1.05) translateY(-2px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .discount-selector {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 2px solid rgba(16, 185, 129, 0.3);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+
+    .min-qty-field {
+        background: linear-gradient(135deg, rgba(251, 146, 60, 0.1), rgba(249, 115, 22, 0.1));
+        border: 2px solid rgba(251, 146, 60, 0.3);
+        border-radius: 8px;
+        padding: 0.75rem;
+    }
+
+    .form-input {
+        transition: all 0.3s ease;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 0.75rem;
+    }
+
+    .form-input:focus {
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        transform: translateY(-1px);
+    }
+
+    .submit-btn {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+
+    .submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+        background: linear-gradient(135deg, #059669, #047857);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header with Back Button -->
+        <div class="bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl shadow-xl p-8 mb-8 text-white">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <button onclick="history.back()" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 rounded-lg transition-all cursor-pointer">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </button>
+                    <div>
+                        <h1 class="text-3xl font-bold mb-2">{{ title|default:"Create Supplier Quotation" }}</h1>
+                        <p class="text-green-100">Record and compare supplier quotations with detailed pricing</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    {% if quotation %}
+                        <div class="text-2xl font-bold">{{ quotation.quotation_number }}</div>
+                    {% else %}
+                        <div class="text-2xl font-bold">[Auto Generated]</div>
+                    {% endif %}
+                    <div class="text-green-200">{{ today|date:"F d, Y" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Messages -->
+        {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Form Errors -->
+        {% if form.errors %}
+            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+                <h4 class="font-bold">Please correct the following errors:</h4>
+                <ul class="list-disc list-inside mt-2">
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                            <li>{{ field|title }}: {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" class="space-y-8">
+            {% csrf_token %}
+            
+            <!-- RFQ & Basic Information -->
+            <div class="quotation-form-card rounded-2xl shadow-lg p-6 form-section">
+                <div class="section-header">
+                    <h3 class="text-xl font-bold text-gray-900">Quotation Details</h3>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2 required-field">RFQ Reference</label>
+                        {{ form.rfq }}
+                        <div class="help-text">{{ form.rfq.help_text }}</div>
+                        {% if rfq %}
+                            <div class="mt-2">
+                                <span class="rfq-badge">{{ rfq.rfq_number }}</span>
+                                {% if rfq.purchase_requisition %}
+                                    <a href="{% url 'purchase:requisition_detail' rfq.purchase_requisition.id %}" class="pr-link ml-2">
+                                        PR: {{ rfq.purchase_requisition.pr_number }}
+                                    </a>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        {% if form.rfq.errors %}
+                            <div class="text-red-500 text-sm mt-1">{{ form.rfq.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Supplier</label>
+                        {{ form.supplier }}
+                        <div class="help-text">{{ form.supplier.help_text }}</div>
+                        {% if form.supplier.errors %}
+                            <div class="text-red-500 text-sm mt-1">{{ form.supplier.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Quotation Number</label>
+                        {{ form.quotation_number }}
+                        <div class="help-text">{{ form.quotation_number.help_text }}</div>
+                        {% if form.quotation_number.errors %}
+                            <div class="text-red-500 text-sm mt-1">{{ form.quotation_number.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Quotation Date</label>
+                        {{ form.quotation_date }}
+                        <div class="help-text">{{ form.quotation_date.help_text }}</div>
+                        {% if form.quotation_date.errors %}
+                            <div class="text-red-500 text-sm mt-1">{{ form.quotation_date.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2 required-field">Valid Until</label>
+                        {{ form.valid_until }}
+                        <div class="help-text">{{ form.valid_until.help_text }}</div>
+                        {% if form.valid_until.errors %}
+                            <div class="text-red-500 text-sm mt-1">{{ form.valid_until.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terms & Conditions -->
+            <div class="quotation-form-card rounded-2xl shadow-lg p-6 form-section">
+                <div class="section-header">
+                    <h3 class="text-xl font-bold text-gray-900">Terms & Delivery</h3>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Payment Terms</label>
+                        {{ form.payment_terms }}
+                        <div class="help-text">{{ form.payment_terms.help_text }}</div>
+                        {% if form.payment_terms.errors %}
+                            <div class="text-red-500 text-sm mt-1">{{ form.payment_terms.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Delivery Terms</label>
+                        {{ form.delivery_terms }}
+                        <div class="help-text">{{ form.delivery_terms.help_text }}</div>
+                        {% if form.delivery_terms.errors %}
+                            <div class="text-red-500 text-sm mt-1">{{ form.delivery_terms.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Delivery Time (Days)</label>
+                        {{ form.delivery_time_days }}
+                        <div class="help-text">{{ form.delivery_time_days.help_text }}</div>
+                        {% if form.delivery_time_days.errors %}
+                            <div class="text-red-500 text-sm mt-1">{{ form.delivery_time_days.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Discount Information -->
+            <div class="quotation-form-card rounded-2xl shadow-lg p-6 form-section">
+                <div class="section-header">
+                    <h3 class="text-xl font-bold text-gray-900">Discount & Pricing</h3>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Discount Type</label>
+                        {{ form.discount_type }}
+                        <div class="help-text">{{ form.discount_type.help_text }}</div>
+                        {% if form.discount_type.errors %}
+                            <div class="text-red-500 text-sm mt-1">{{ form.discount_type.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Application</label>
+                        {{ form.discount_application }}
+                        <div class="help-text">{{ form.discount_application.help_text }}</div>
+                        {% if form.discount_application.errors %}
+                            <div class="text-red-500 text-sm mt-1">{{ form.discount_application.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Discount Percentage</label>
+                        {{ form.discount_percentage }}
+                        <div class="help-text">{{ form.discount_percentage.help_text }}</div>
+                        {% if form.discount_percentage.errors %}
+                            <div class="text-red-500 text-sm mt-1">{{ form.discount_percentage.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Discount Amount</label>
+                        {{ form.discount_amount }}
+                        <div class="help-text">{{ form.discount_amount.help_text }}</div>
+                        {% if form.discount_amount.errors %}
+                            <div class="text-red-500 text-sm mt-1">{{ form.discount_amount.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Supporting Documents -->
+            <div class="quotation-form-card rounded-2xl shadow-lg p-6 form-section">
+                <div class="section-header">
+                    <h3 class="text-xl font-bold text-gray-900">Supporting Documents</h3>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quotation Document</label>
+                        {{ form.quotation_document }}
+                        <div class="help-text">{{ form.quotation_document.help_text }}</div>
+                        <div id="quotation-doc-error" class="text-red-500 text-xs mt-1 hidden"></div>
+                        {% if form.quotation_document.errors %}
+                            <div class="text-red-500 text-sm mt-1">{{ form.quotation_document.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Price List</label>
+                        {{ form.price_list }}
+                        <div class="help-text">{{ form.price_list.help_text }}</div>
+                        <div id="price-list-error" class="text-red-500 text-xs mt-1 hidden"></div>
+                        {% if form.price_list.errors %}
+                            <div class="text-red-500 text-sm mt-1">{{ form.price_list.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Technical Brochure</label>
+                        {{ form.technical_brochure }}
+                        <div class="help-text">{{ form.technical_brochure.help_text }}</div>
+                        <div id="brochure-error" class="text-red-500 text-xs mt-1 hidden"></div>
+                        {% if form.technical_brochure.errors %}
+                            <div class="text-red-500 text-sm mt-1">{{ form.technical_brochure.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Certificates & Compliance</label>
+                        {{ form.certificate_documents }}
+                        <div class="help-text">{{ form.certificate_documents.help_text }}</div>
+                        <div id="certificates-error" class="text-red-500 text-xs mt-1 hidden"></div>
+                        {% if form.certificate_documents.errors %}
+                            <div class="text-red-500 text-sm mt-1">{{ form.certificate_documents.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items Section -->
+            <div class="quotation-form-card rounded-2xl shadow-lg p-6 form-section">
+                <div class="section-header flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-900">Quoted Items</h3>
+                    <div class="flex gap-2">
+                        {% if rfq %}
+                        <button type="button" id="loadRFQItemsBtn" class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg hover-lift">
+                            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                            </svg>
+                            Load RFQ Items
+                        </button>
+                        {% endif %}
+                        <button type="button" id="addItemBtn" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-lg hover-lift">
+                            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Add Item
+                        </button>
+                    </div>
+                </div>
+
+                <div id="itemsContainer" class="space-y-4">
+                    <!-- Items will be added here dynamically -->
+                </div>
+
+                <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                    <div class="flex justify-between items-center">
+                        <span class="text-lg font-medium">Total Quotation Value:</span>
+                        <span id="totalAmount" class="text-2xl font-bold text-green-600">$0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="quotation-form-card rounded-2xl shadow-lg p-6 form-section">
+                <div class="section-header">
+                    <h3 class="text-xl font-bold text-gray-900">Additional Notes</h3>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Notes & Comments</label>
+                    {{ form.notes }}
+                    <div class="help-text">{{ form.notes.help_text }}</div>
+                    {% if form.notes.errors %}
+                        <div class="text-red-500 text-sm mt-1">{{ form.notes.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-4 justify-center">
+                <button type="button" onclick="history.back()" class="bg-gray-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Cancel
+                </button>
+                <button type="submit" name="action" value="save_draft" class="bg-gradient-to-r from-yellow-600 to-orange-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a.997.997 0 01-.707.293H7a4 4 0 01-4-4V7a4 4 0 014-4z"></path>
+                    </svg>
+                    Save as Draft
+                </button>
+                <button type="submit" name="action" value="submit" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                    Submit Quotation
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const addItemBtn = document.getElementById('addItemBtn');
+    const loadRFQItemsBtn = document.getElementById('loadRFQItemsBtn');
+    const itemsContainer = document.getElementById('itemsContainer');
+    let itemCount = 0;
+    
+    // File size validation function
+    window.validateFileSize = function(input, errorElementId) {
+        const file = input.files[0];
+        const errorElement = document.getElementById(errorElementId);
+        const maxSize = 32 * 1024 * 1024; // 32MB in bytes
+        
+        if (file && file.size > maxSize) {
+            errorElement.textContent = `File "${file.name}" (${(file.size / (1024 * 1024)).toFixed(2)}MB) exceeds maximum limit of 32MB`;
+            errorElement.classList.remove('hidden');
+            input.value = ''; // Clear the input
+            input.classList.add('border-red-500');
+        } else {
+            errorElement.classList.add('hidden');
+            input.classList.remove('border-red-500');
+        }
+    };
+    
+    // Products and UOM data
+    const products = [
+        {% for product in products %}
+        {id: {{ product.id }}, name: "{{ product.name|escapejs }}", price: {{ product.sale_price|default:0 }}},
+        {% endfor %}
+    ];
+    
+    const uomOptions = [
+        {% for uom in uoms %}
+        {id: {{ uom.id }}, name: "{{ uom.name|escapejs }}", abbreviation: "{{ uom.abbreviation|escapejs }}"},
+        {% endfor %}
+    ];
+
+    // RFQ Items data (if available)
+    {% if rfq %}
+    const rfqItems = [
+        {% for item in rfq.items.all %}
+        {
+            id: {{ item.id }},
+            product_id: {{ item.product.id }},
+            product_name: "{{ item.product.name|escapejs }}",
+            quantity: {{ item.quantity }},
+            specifications: "{{ item.specifications|escapejs }}",
+            priority: "{{ item.priority }}"
+        },
+        {% endfor %}
+    ];
+    {% else %}
+    const rfqItems = [];
+    {% endif %}
+
+    // Add item function
+    addItemBtn.addEventListener('click', addItem);
+    
+    // Load RFQ items function
+    if (loadRFQItemsBtn) {
+        loadRFQItemsBtn.addEventListener('click', loadRFQItems);
+    }
+    
+    function addItem(itemData = null) {
+        itemCount++;
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'item-row rounded-lg p-4';
+        itemDiv.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1 required-field">Product</label>
+                    <select name="products[]" class="form-input w-full" required>
+                        <option value="">Select Product</option>
+                        ${products.map(p => `<option value="${p.id}" ${itemData && itemData.product_id == p.id ? 'selected' : ''} data-price="${p.price}">${p.name}</option>`).join('')}
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Select the product being quoted</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1 required-field">Quantity</label>
+                    <input type="number" name="quantities[]" class="form-input w-full" 
+                           step="0.01" min="0" value="${itemData ? itemData.quantity : ''}" required 
+                           onchange="calculateTotal(); validateMinimumQuantity(this)" 
+                           onblur="validateMinimumQuantity(this)">
+                    <p class="text-xs text-gray-500 mt-1">Quoted quantity</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1 required-field">Unit Price</label>
+                    <input type="number" name="unit_prices[]" class="form-input w-full" 
+                           step="0.01" min="0" required onchange="calculateTotal()">
+                    <p class="text-xs text-gray-500 mt-1">Price per unit</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">UOM</label>
+                    <select name="uoms[]" class="form-input w-full">
+                        <option value="">Select UOM</option>
+                        ${uomOptions.map(u => `<option value="${u.id}">${u.name} (${u.abbreviation})</option>`).join('')}
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Unit of measurement</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Package Qty</label>
+                    <input type="number" name="package_qtys[]" class="form-input w-full" 
+                           step="0.01" min="1" value="1">
+                    <p class="text-xs text-gray-500 mt-1">Units per package</p>
+                </div>
+                <div class="flex items-end">
+                    <button type="button" class="w-full bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 transition-colors" onclick="removeItem(this)">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        Remove
+                    </button>
+                </div>
+                
+                <!-- Minimum Quantity Requirement -->
+                <div class="md:col-span-6">
+                    <div class="min-qty-field">
+                        <label class="block text-sm font-medium text-orange-800 mb-2">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                            Minimum Order Quantity Required by Supplier
+                        </label>
+                        <input type="number" name="minimum_order_qtys[]" class="form-input w-full" 
+                               step="0.01" min="0" value="${itemData ? itemData.minimum_order_qty : ''}" 
+                               placeholder="e.g., 100 (Cannot order below this quantity)">
+                        <p class="text-xs text-orange-700 mt-1 font-medium">Supplier's minimum order requirement for this item</p>
+                    </div>
+                </div>
+                
+                <!-- Discount Configuration -->
+                <div class="md:col-span-6">
+                    <div class="discount-selector">
+                        <label class="block text-sm font-medium text-green-800 mb-3">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z"></path>
+                            </svg>
+                            Item Discount Configuration
+                        </label>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Discount Type</label>
+                                <select name="item_discount_types[]" class="form-input w-full text-sm" onchange="toggleDiscountFields(this)">
+                                    <option value="none">No Discount</option>
+                                    <option value="percentage">Percentage</option>
+                                    <option value="fixed_amount">Fixed Amount</option>
+                                    <option value="quantity_based">Quantity Based</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Application</label>
+                                <select name="item_discount_applications[]" class="form-input w-full text-sm">
+                                    <option value="subtract">Discount (Subtract)</option>
+                                    <option value="add">Rebate/Fee (Add)</option>
+                                </select>
+                            </div>
+                            <div class="discount-field percentage-field" style="display: none;">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Percentage (%)</label>
+                                <input type="number" name="item_discount_percentages[]" class="form-input w-full text-sm" 
+                                       step="0.01" min="0" max="100" value="0" onchange="calculateTotal()">
+                            </div>
+                            <div class="discount-field fixed-amount-field" style="display: none;">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Amount ($)</label>
+                                <input type="number" name="item_discount_amounts[]" class="form-input w-full text-sm" 
+                                       step="0.01" min="0" value="0" onchange="calculateTotal()">
+                            </div>
+                            <div class="discount-field quantity-based-field" style="display: none;">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">Min Qty</label>
+                                        <input type="number" name="quantity_break_points[]" class="form-input w-full text-sm" 
+                                               step="1" min="1" placeholder="50">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">Rate (%)</label>
+                                        <input type="number" name="quantity_discount_percentages[]" class="form-input w-full text-sm" 
+                                               step="0.01" min="0" max="100" value="0" onchange="calculateTotal()">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-green-700 mt-2 font-medium">Configure discounts (subtract from total) or rebates/fees (add to total) for this item</p>
+                    </div>
+                </div>
+                
+                <div class="md:col-span-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Days</label>
+                        <input type="number" name="delivery_days[]" class="form-input w-full" 
+                               min="0" value="0">
+                        <p class="text-xs text-gray-500 mt-1">Delivery time for this item</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Specifications</label>
+                        <input type="text" name="specifications[]" class="form-input w-full" 
+                               value="${itemData ? itemData.specifications : ''}" placeholder="Enter specifications">
+                        <p class="text-xs text-gray-500 mt-1">Product specifications from supplier</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        itemsContainer.appendChild(itemDiv);
+        calculateTotal();
+    }
+    
+    function loadRFQItems() {
+        // Clear existing items
+        itemsContainer.innerHTML = '';
+        itemCount = 0;
+        
+        // Add items from RFQ
+        rfqItems.forEach(item => {
+            addItem(item);
+        });
+        
+        if (rfqItems.length === 0) {
+            alert('No items found in the selected RFQ');
+            addItem(); // Add at least one empty item
+        }
+    }
+    
+    window.removeItem = function(btn) {
+        btn.closest('.item-row').remove();
+        calculateTotal();
+    };
+    
+    window.toggleDiscountFields = function(selectElement) {
+        const row = selectElement.closest('.item-row');
+        const discountFields = row.querySelectorAll('.discount-field');
+        
+        // Hide all discount fields
+        discountFields.forEach(field => {
+            field.style.display = 'none';
+            // Clear values in hidden fields
+            const inputs = field.querySelectorAll('input');
+            inputs.forEach(input => input.value = '0');
+        });
+        
+        // Show relevant discount field
+        const selectedType = selectElement.value;
+        if (selectedType !== 'none') {
+            const targetField = row.querySelector(`.${selectedType}-field`);
+            if (targetField) {
+                targetField.style.display = 'block';
+            }
+        }
+        
+        calculateTotal();
+    };
+    
+    window.calculateTotal = function() {
+        let total = 0;
+        const rows = document.querySelectorAll('.item-row');
+        
+        rows.forEach(row => {
+            const quantity = parseFloat(row.querySelector('input[name="quantities[]"]').value) || 0;
+            const unitPrice = parseFloat(row.querySelector('input[name="unit_prices[]"]').value) || 0;
+            const packageQty = parseFloat(row.querySelector('input[name="package_qtys[]"]').value) || 1;
+            
+            // Get discount type and application
+            const discountType = row.querySelector('select[name="item_discount_types[]"]').value;
+            const discountApplication = row.querySelector('select[name="item_discount_applications[]"]').value || 'subtract';
+            let discountAmount = 0;
+            
+            switch (discountType) {
+                case 'percentage':
+                    const percentageDiscount = parseFloat(row.querySelector('input[name="item_discount_percentages[]"]').value) || 0;
+                    discountAmount = (quantity * unitPrice) * (percentageDiscount / 100);
+                    break;
+                case 'fixed_amount':
+                    discountAmount = parseFloat(row.querySelector('input[name="item_discount_amounts[]"]').value) || 0;
+                    break;
+                case 'quantity_based':
+                    const breakPoint = parseFloat(row.querySelector('input[name="quantity_break_points[]"]').value) || 0;
+                    const qtyDiscountPercent = parseFloat(row.querySelector('input[name="quantity_discount_percentages[]"]').value) || 0;
+                    if (quantity >= breakPoint && breakPoint > 0) {
+                        discountAmount = (quantity * unitPrice) * (qtyDiscountPercent / 100);
+                    }
+                    break;
+            }
+            
+            // Apply discount or rebate based on application type
+            let lineTotal;
+            if (discountApplication === 'add') {
+                lineTotal = (quantity * unitPrice) + discountAmount; // Rebate/Fee (add to total)
+            } else {
+                lineTotal = (quantity * unitPrice) - discountAmount; // Discount (subtract from total)
+            }
+            
+            total += Math.max(0, lineTotal); // Ensure non-negative
+        });
+        
+        document.getElementById('totalAmount').textContent = `$${total.toFixed(2)}`;
+    };
+    
+    window.validateMinimumQuantity = function(quantityInput) {
+        const row = quantityInput.closest('.item-row');
+        const minQtyInput = row.querySelector('input[name="minimum_order_qtys[]"]');
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const minQty = parseFloat(minQtyInput.value) || 0;
+        
+        if (minQty > 0 && quantity < minQty) {
+            quantityInput.setCustomValidity(`Quantity must be at least ${minQty} units (supplier minimum requirement)`);
+            quantityInput.reportValidity();
+        } else {
+            quantityInput.setCustomValidity('');
+        }
+    };
+    
+    // Add first item by default if no RFQ is selected
+    {% if not rfq %}
+    addItem();
+    {% endif %}
+
+    // Set up file validation
+    document.querySelector('input[name="quotation_document"]').addEventListener('change', function() {
+        validateFileSize(this, 'quotation-doc-error');
+    });
+    
+    document.querySelector('input[name="price_list"]').addEventListener('change', function() {
+        validateFileSize(this, 'price-list-error');
+    });
+    
+    document.querySelector('input[name="technical_brochure"]').addEventListener('change', function() {
+        validateFileSize(this, 'brochure-error');
+    });
+    
+    document.querySelector('input[name="certificate_documents"]').addEventListener('change', function() {
+        validateFileSize(this, 'certificates-error');
+    });
+});
+</script>
+{% endblock %}

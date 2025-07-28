@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+{% block title %}Create RFQ | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+    .uom-selector {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+    .product-row {
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(209, 213, 219, 0.5);
+        transition: all 0.3s ease;
+    }
+    .product-row:hover {
+        background: rgba(255, 255, 255, 1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .uom-info {
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Create Request for Quotation</h1>
+                <p class="text-gray-600">Send RFQ to suppliers with UOM specifications</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'purchase:rfq_ui' %}" class="bg-gray-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to RFQs
+                </a>
+            </div>
+        </div>
+
+        <form method="post" class="space-y-8">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div class="form-section rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">
+                    <svg class="w-6 h-6 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    RFQ Details
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">RFQ Number</label>
+                        <input type="text" name="rfq_number" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+                               value="RFQ-2024-{{ 'now'|date:'mdHis' }}" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                        <select name="department" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                            <option value="">Select Department</option>
+                            <option value="manufacturing">Manufacturing</option>
+                            <option value="inventory">Inventory</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="office">Office</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Response Deadline</label>
+                        <input type="date" name="response_deadline" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                        <select name="priority" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                            <option value="normal">Normal</option>
+                            <option value="urgent">Urgent</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea name="description" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                              placeholder="Describe the requirements, specifications, and any special instructions..."></textarea>
+                </div>
+            </div>
+
+            <!-- Supplier Selection -->
+            <div class="form-section rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">
+                    <svg class="w-6 h-6 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    Select Suppliers
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white rounded-lg p-4 border-2 border-gray-200 hover:border-blue-400 cursor-pointer">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="suppliers" value="1" class="mr-3 text-blue-600">
+                            <div>
+                                <div class="font-medium">Acme Corporation</div>
+                                <div class="text-sm text-gray-600">Steel & Industrial Materials</div>
+                                <div class="text-xs text-green-600">Rating: 4.8/5</div>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4 border-2 border-gray-200 hover:border-blue-400 cursor-pointer">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="suppliers" value="2" class="mr-3 text-blue-600">
+                            <div>
+                                <div class="font-medium">Global Supply Co</div>
+                                <div class="text-sm text-gray-600">Office & Equipment</div>
+                                <div class="text-xs text-green-600">Rating: 4.6/5</div>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4 border-2 border-gray-200 hover:border-blue-400 cursor-pointer">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="suppliers" value="3" class="mr-3 text-blue-600">
+                            <div>
+                                <div class="font-medium">TechParts Inc</div>
+                                <div class="text-sm text-gray-600">Mechanical Components</div>
+                                <div class="text-xs text-green-600">Rating: 4.7/5</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products & UOM Requirements -->
+            <div class="form-section rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">
+                    <svg class="w-6 h-6 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
+                    Products & UOM Requirements
+                </h3>
+
+                <!-- UOM Information -->
+                <div class="uom-info rounded-lg p-4 mb-6">
+                    <h4 class="font-medium text-indigo-900 mb-2">UOM Specification Guide</h4>
+                    <div class="text-sm text-indigo-700 space-y-1">
+                        <div>• Specify your preferred UOM for each product</div>
+                        <div>• Suppliers can quote in their packaging (packets, boxes, bulk)</div>
+                        <div>• System will automatically convert to comparable unit prices</div>
+                        <div>• Example: You need 100 balloons → Supplier A quotes per 10-pack, Supplier B per 50-box</div>
+                    </div>
+                </div>
+                
+                <div id="product-lines">
+                    <!-- Product Line 1 -->
+                    <div class="product-row rounded-lg p-4 mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Product</label>
+                                <select name="products[0][product_id]" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                                    <option value="">Select Product</option>
+                                    <option value="1">Steel Rods (20mm)</option>
+                                    <option value="2">Industrial Bearings</option>
+                                    <option value="3">Hydraulic Pumps</option>
+                                    <option value="4">Office Chairs</option>
+                                    <option value="5">Laptop Computers</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Quantity Needed</label>
+                                <input type="number" name="products[0][quantity]" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+                                       placeholder="100" min="1" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Preferred UOM</label>
+                                <select name="products[0][preferred_uom]" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                                    <option value="">Select UOM</option>
+                                    <option value="piece">Piece</option>
+                                    <option value="unit">Unit</option>
+                                    <option value="meter">Meter</option>
+                                    <option value="kilogram">Kilogram</option>
+                                    <option value="liter">Liter</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Required By</label>
+                                <input type="date" name="products[0][required_date]" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                            </div>
+                            <div class="flex items-end">
+                                <button type="button" class="w-full bg-red-100 text-red-700 p-3 rounded-lg hover:bg-red-200 transition-colors" onclick="removeProductLine(this)">
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Specifications</label>
+                            <textarea name="products[0][specifications]" rows="2" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                      placeholder="Detailed specifications, quality requirements, certifications needed..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-center">
+                    <button type="button" onclick="addProductLine()" class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Add Another Product
+                    </button>
+                </div>
+            </div>
+
+            <!-- UOM Conversion Example -->
+            <div class="uom-selector rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-4">
+                    <svg class="w-6 h-6 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                    </svg>
+                    UOM Conversion Preview
+                </h3>
+                <div class="bg-white rounded-lg p-4">
+                    <div class="text-sm text-gray-700 space-y-2">
+                        <div><strong>Your Request:</strong> 100 pieces of balloons</div>
+                        <div><strong>Supplier A might quote:</strong> $25 per packet (10 balloons) = $2.50 per balloon</div>
+                        <div><strong>Supplier B might quote:</strong> $110 per box (50 balloons) = $2.20 per balloon</div>
+                        <div><strong>System will show:</strong> Supplier B offers better unit price</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-4 justify-center">
+                <button type="submit" name="action" value="draft" class="bg-gray-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                    Save as Draft
+                </button>
+                <button type="submit" name="action" value="send" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                    Send to Suppliers
+                </button>
+                <button type="button" onclick="previewRFQ()" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-2xl hover-lift">
+                    Preview RFQ
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let productLineCount = 1;
+
+function addProductLine() {
+    const container = document.getElementById('product-lines');
+    const newLine = document.createElement('div');
+    newLine.className = 'product-row rounded-lg p-4 mb-4';
+    newLine.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Product</label>
+                <select name="products[${productLineCount}][product_id]" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                    <option value="">Select Product</option>
+                    <option value="1">Steel Rods (20mm)</option>
+                    <option value="2">Industrial Bearings</option>
+                    <option value="3">Hydraulic Pumps</option>
+                    <option value="4">Office Chairs</option>
+                    <option value="5">Laptop Computers</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Quantity Needed</label>
+                <input type="number" name="products[${productLineCount}][quantity]" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+                       placeholder="100" min="1" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Preferred UOM</label>
+                <select name="products[${productLineCount}][preferred_uom]" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                    <option value="">Select UOM</option>
+                    <option value="piece">Piece</option>
+                    <option value="unit">Unit</option>
+                    <option value="meter">Meter</option>
+                    <option value="kilogram">Kilogram</option>
+                    <option value="liter">Liter</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Required By</label>
+                <input type="date" name="products[${productLineCount}][required_date]" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+            </div>
+            <div class="flex items-end">
+                <button type="button" class="w-full bg-red-100 text-red-700 p-3 rounded-lg hover:bg-red-200 transition-colors" onclick="removeProductLine(this)">
+                    Remove
+                </button>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Specifications</label>
+            <textarea name="products[${productLineCount}][specifications]" rows="2" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="Detailed specifications, quality requirements, certifications needed..."></textarea>
+        </div>
+    `;
+    container.appendChild(newLine);
+    productLineCount++;
+}
+
+function removeProductLine(button) {
+    const productRow = button.closest('.product-row');
+    productRow.remove();
+}
+
+function previewRFQ() {
+    // Open preview in new window/modal
+    alert('RFQ Preview functionality would open here');
+}
+
+// Set minimum date to today
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.querySelector('input[name="response_deadline"]').min = today;
+    
+    // Set default deadline to 7 days from now
+    const weekFromNow = new Date();
+    weekFromNow.setDate(weekFromNow.getDate() + 7);
+    document.querySelector('input[name="response_deadline"]').value = weekFromNow.toISOString().split('T')[0];
+});
+</script>
+{% endblock %}

@@ -1,12 +1,18 @@
 from rest_framework import viewsets, permissions
-from .models import Employee, Attendance, Leave, Payroll, Payslip, HRReport
-from .serializers import EmployeeSerializer, AttendanceSerializer, LeaveSerializer, PayrollSerializer, PayslipSerializer, HRReportSerializer
+from .models import Employee, Contractor, Attendance, Leave, Payroll, Payslip, HRReport
+from .serializers import EmployeeSerializer, ContractorSerializer, AttendanceSerializer, LeaveSerializer, PayrollSerializer, PayslipSerializer, HRReportSerializer
 
 class EmployeeViewSet(viewsets.ModelViewSet):
     serializer_class = EmployeeSerializer
     permission_classes = [permissions.IsAuthenticated]
     def get_queryset(self):
         return Employee.objects.filter(company=self.request.user.company)
+
+class ContractorViewSet(viewsets.ModelViewSet):
+    serializer_class = ContractorSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        return Contractor.objects.filter(company=self.request.user.company)
 
 class AttendanceViewSet(viewsets.ModelViewSet):
     serializer_class = AttendanceSerializer

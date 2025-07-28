@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}Manufacturing Dashboard | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .metric-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        transition: all 0.3s ease;
+    }
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
+    }
+    .activity-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Manufacturing Dashboard</h1>
+                <p class="text-gray-600">Production management and bill of materials overview</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'manufacturing_boms_add' %}" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Create BOM
+                </a>
+            </div>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total BOMs</p>
+                        <p class="text-3xl font-bold text-emerald-600">{{ total_boms }}</p>
+                    </div>
+                    <div class="p-3 bg-emerald-100 rounded-full">
+                        <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Active Work Orders</p>
+                        <p class="text-3xl font-bold text-blue-600">{{ active_work_orders }}</p>
+                    </div>
+                    <div class="p-3 bg-blue-100 rounded-full">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Production Units</p>
+                        <p class="text-3xl font-bold text-green-600">{{ production_units }}</p>
+                    </div>
+                    <div class="p-3 bg-green-100 rounded-full">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Quality Checks</p>
+                        <p class="text-3xl font-bold text-purple-600">{{ quality_checks }}</p>
+                    </div>
+                    <div class="p-3 bg-purple-100 rounded-full">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOMs and Recent Activity -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Recent BOMs -->
+            <div class="activity-card rounded-2xl p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-6">Recent Bill of Materials</h3>
+                <div class="space-y-4">
+                    {% for bom in recent_boms %}
+                    <div class="flex items-center p-4 bg-white rounded-xl">
+                        <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mr-4">
+                            <span class="text-emerald-600 font-bold">{{ bom.code|slice:":2" }}</span>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-800">{{ bom.name }}</p>
+                            <p class="text-sm text-gray-500">{{ bom.code }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm {% if bom.is_active %}text-green-600{% else %}text-red-600{% endif %}">
+                                {% if bom.is_active %}Active{% else %}Inactive{% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Production Statistics -->
+            <div class="activity-card rounded-2xl p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-6">Production Statistics</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-4 bg-white rounded-xl">
+                        <div>
+                            <p class="font-medium text-gray-800">New BOMs This Month</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-bold text-blue-600">{{ new_boms_this_month }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-white rounded-xl">
+                        <div>
+                            <p class="font-medium text-gray-800">Completed Orders</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-bold text-green-600">0</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-white rounded-xl">
+                        <div>
+                            <p class="font-medium text-gray-800">Pending Orders</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-bold text-orange-600">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <a href="{% url 'manufacturing_boms_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
+                <div class="flex items-center">
+                    <div class="p-3 bg-emerald-100 rounded-full mr-4">
+                        <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-800">Bill of Materials</h4>
+                        <p class="text-sm text-gray-500">Manage BOMs</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="{% url 'manufacturing_workorders_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
+                <div class="flex items-center">
+                    <div class="p-3 bg-blue-100 rounded-full mr-4">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-800">Work Orders</h4>
+                        <p class="text-sm text-gray-500">Manage production</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="{% url 'manufacturing_production_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
+                <div class="flex items-center">
+                    <div class="p-3 bg-green-100 rounded-full mr-4">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-800">Production</h4>
+                        <p class="text-sm text-gray-500">Monitor production</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="{% url 'manufacturing_quality_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
+                <div class="flex items-center">
+                    <div class="p-3 bg-purple-100 rounded-full mr-4">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-800">Quality Control</h4>
+                        <p class="text-sm text-gray-500">Quality assurance</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

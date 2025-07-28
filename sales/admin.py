@@ -1,12 +1,7 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
-from .models import Product, Tax, Quotation, SalesOrder, SalesOrderItem, Invoice, Payment
-
-@admin.register(Product)
-class ProductAdmin(ModelAdmin):
-    list_display = ('name', 'company', 'sku', 'price', 'is_service', 'is_active', 'created_at')
-    search_fields = ('name', 'sku', 'description')
-    list_filter = ('company', 'is_service', 'is_active')
+from .models import Tax, Quotation, QuotationItem, SalesOrder, SalesOrderItem, Invoice, Payment
+# Note: Product is now managed in the products app
 
 @admin.register(Tax)
 class TaxAdmin(ModelAdmin):
@@ -19,6 +14,12 @@ class QuotationAdmin(ModelAdmin):
     list_display = ('id', 'company', 'customer', 'date', 'valid_until', 'total', 'status', 'created_by')
     search_fields = ('id', 'customer__name', 'status')
     list_filter = ('company', 'status')
+
+@admin.register(QuotationItem)
+class QuotationItemAdmin(ModelAdmin):
+    list_display = ('quotation', 'product', 'quantity', 'price', 'tax', 'total')
+    search_fields = ('quotation__id', 'product__name')
+    list_filter = ('product',)
 
 @admin.register(SalesOrder)
 class SalesOrderAdmin(ModelAdmin):

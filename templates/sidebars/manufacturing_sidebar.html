@@ -1,0 +1,77 @@
+{% load static %}
+
+<div class="sidebar-content">
+    <!-- Logo -->
+    <div class="sidebar-logo p-6">
+        <a href="{% url 'dashboard' %}" class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur">
+                <img src="{% static 'logo.png' %}" alt="FutureERP Logo" class="w-8 h-8" style="border-radius: 50%;">
+            </div>
+            <span class="sidebar-text text-xl font-bold text-white">FutureERP</span>
+        </a>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav">
+        <!-- Back to Dashboard -->
+        <a href="{% url 'dashboard' %}" class="sidebar-item bg-white/20 border border-white/20 mb-4">
+            <span class="sidebar-icon">
+                <i class="fas fa-arrow-left"></i>
+            </span>
+            <span class="sidebar-text">Back to Dashboard</span>
+        </a>
+
+        <!-- Manufacturing Dashboard -->
+        <a href="{% url 'manufacturing_dashboard' %}" class="sidebar-item">
+            <span class="sidebar-icon">
+                <i class="fas fa-tachometer-alt"></i>
+            </span>
+            <span class="sidebar-text">Manufacturing Dashboard</span>
+        </a>
+
+        <!-- Bill of Materials -->
+        <div class="sidebar-section mb-4">
+            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Bill of Materials</h3>
+            <a href="{% url 'manufacturing_boms_ui' %}" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-clipboard-list"></i>
+                </span>
+                <span class="sidebar-text">All BOMs</span>
+            </a>
+            <a href="{% url 'manufacturing_boms_add' %}" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-plus-circle"></i>
+                </span>
+                <span class="sidebar-text">Create BOM</span>
+            </a>
+        </div>
+
+        <!-- Production -->
+        <div class="sidebar-section mb-4">
+            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Production</h3>
+            <a href="{% url 'manufacturing_workorders_ui' %}" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-tasks"></i>
+                </span>
+                <span class="sidebar-text">Work Orders</span>
+            </a>
+            <a href="{% url 'manufacturing_production_ui' %}" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-cogs"></i>
+                </span>
+                <span class="sidebar-text">Production</span>
+            </a>
+        </div>
+
+        <!-- Quality Control -->
+        <div class="sidebar-section">
+            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Quality Control</h3>
+            <a href="{% url 'manufacturing_quality_ui' %}" class="sidebar-item">
+                <span class="sidebar-icon">
+                    <i class="fas fa-check-circle"></i>
+                </span>
+                <span class="sidebar-text">Quality Control</span>
+            </a>
+        </div>
+    </nav>
+</div>

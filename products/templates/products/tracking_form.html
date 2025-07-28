@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if object %}Edit Tracking {{ object.tracking_id }}{% else %}Create Tracking Item{% endif %} | Product Tracking{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8 max-w-4xl">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">
+                    {% if object %}Edit Tracking Item{% else %}Create Tracking Item{% endif %}
+                </h1>
+                <p class="text-gray-600">
+                    {% if object %}Update tracking information{% else %}Add a new tracking item{% endif %}
+                    {% if product %} for {{ product.name }}{% endif %}
+                </p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% if product %}{% url 'products:tracking_list_by_product' product.id %}{% else %}{% url 'products:tracking_list' %}{% endif %}" 
+                   class="action-btn bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to Tracking
+                </a>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="form-card rounded-2xl p-8">
+            <form method="post" class="space-y-8">
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {% if not object %}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Product *</label>
+                            {{ form.product }}
+                            {% if form.product.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.product.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tracking ID</label>
+                            {{ form.tracking_id }}
+                            {% if form.tracking_id.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.tracking_id.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            <p class="mt-1 text-sm text-gray-500">Leave empty to auto-generate</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Information -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Status</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Current Status *</label>
+                            {{ form.status }}
+                            {% if form.status.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.status.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <div class="flex items-center h-full">
+                                {{ form.is_available }}
+                                <label for="{{ form.is_available.id_for_label }}" class="ml-2 block text-sm text-gray-700">
+                                    Item is Available
+                                </label>
+                            </div>
+                            {% if form.is_available.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.is_available.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            <p class="mt-1 text-sm text-gray-500">Available items can be sold or transferred</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Information -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.notes.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Optional notes about this tracking item</p>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end gap-4 pt-6 border-t">
+                    <a href="{% if product %}{% url 'products:tracking_list_by_product' product.id %}{% else %}{% url 'products:tracking_list' %}{% endif %}" 
+                       class="btn-secondary">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn-primary">
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        {% if object %}Update Tracking{% else %}Create Tracking{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Help Section -->
+        <div class="mt-8 bg-blue-50 border border-blue-200 rounded-2xl p-6">
+            <h3 class="text-lg font-semibold text-blue-900 mb-3">Tracking Guidelines</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-semibold text-blue-900 mb-2">Status Options:</h4>
+                    <ul class="text-sm text-blue-800 space-y-1">
+                        <li><strong>Available:</strong> Item is in stock and ready for sale</li>
+                        <li><strong>Sold:</strong> Item has been sold to a customer</li>
+                        <li><strong>Damaged:</strong> Item is damaged and cannot be sold</li>
+                        <li><strong>Lost:</strong> Item is missing or lost</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-blue-900 mb-2">Best Practices:</h4>
+                    <ul class="text-sm text-blue-800 space-y-1">
+                        <li>Use unique tracking IDs for each item</li>
+                        <li>Update status promptly when items are sold</li>
+                        <li>Add notes for damaged or lost items</li>
+                        <li>Only available items appear in stock counts</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk Creation -->
+        {% if not object %}
+        <div class="mt-8 form-card rounded-2xl p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Bulk Creation</h3>
+            <p class="text-gray-600 mb-4">Need to create multiple tracking items for the same product?</p>
+            <div class="flex items-center gap-4">
+                <label class="block text-sm font-medium text-gray-700">Quantity:</label>
+                <input type="number" id="bulk-quantity" min="2" max="100" value="5" 
+                       class="form-input w-20 rounded-lg border-gray-300">
+                <button type="button" id="bulk-create" class="btn-secondary">
+                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Create Multiple Items
+                </button>
+            </div>
+            <p class="text-sm text-gray-500 mt-2">This will create multiple tracking items with auto-generated IDs</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add proper styling to form fields
+    const inputs = document.querySelectorAll('input[type="text"], textarea, select');
+    inputs.forEach(input => {
+        input.classList.add('form-input', 'rounded-lg', 'border-gray-300', 'shadow-sm', 'focus:border-green-500', 'focus:ring-green-500');
+    });
+    
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.classList.add('form-check-input', 'rounded', 'border-gray-300', 'text-green-600', 'focus:ring-green-500');
+    });
+
+    // Status-based availability update
+    const statusField = document.querySelector('select[name="status"]');
+    const availableField = document.querySelector('input[name="is_available"]');
+    
+    if (statusField && availableField) {
+        statusField.addEventListener('change', function() {
+            const status = this.value;
+            if (status === 'sold' || status === 'damaged' || status === 'lost') {
+                availableField.checked = false;
+                availableField.disabled = true;
+            } else {
+                availableField.disabled = false;
+                if (status === 'available') {
+                    availableField.checked = true;
+                }
+            }
+        });
+        
+        // Trigger initial update
+        statusField.dispatchEvent(new Event('change'));
+    }
+
+    // Bulk creation functionality
+    const bulkCreateBtn = document.getElementById('bulk-create');
+    const bulkQuantityInput = document.getElementById('bulk-quantity');
+    
+    if (bulkCreateBtn && bulkQuantityInput) {
+        bulkCreateBtn.addEventListener('click', function() {
+            const quantity = parseInt(bulkQuantityInput.value);
+            const productSelect = document.querySelector('select[name="product"]');
+            
+            if (!productSelect || !productSelect.value) {
+                alert('Please select a product first.');
+                return;
+            }
+            
+            if (quantity < 2 || quantity > 100) {
+                alert('Quantity must be between 2 and 100.');
+                return;
+            }
+            
+            if (confirm(`Create ${quantity} tracking items for the selected product?`)) {
+                const formData = new FormData();
+                formData.append('product', productSelect.value);
+                formData.append('quantity', quantity);
+                formData.append('status', 'available');
+                formData.append('is_available', 'true');
+                
+                fetch('/products/tracking/bulk-create/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`Successfully created ${data.created_count} tracking items.`);
+                        window.location.href = data.redirect_url;
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error);
+                });
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.btn-primary {
+    background-color: #10b981;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.btn-primary:hover {
+    background-color: #059669;
+}
+.btn-secondary {
+    background-color: #6b7280;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.btn-secondary:hover {
+    background-color: #4b5563;
+}
+.form-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

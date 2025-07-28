@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+{% block title %}Request for Quotations | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .rfq-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        transition: all 0.3s ease;
+    }
+    .rfq-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+    }
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .status-draft { background-color: #f3f4f6; color: #6b7280; }
+    .status-sent { background-color: #dbeafe; color: #2563eb; }
+    .status-responses_received { background-color: #fef3c7; color: #d97706; }
+    .status-completed { background-color: #d1fae5; color: #059669; }
+    .status-expired { background-color: #fecaca; color: #dc2626; }
+    .status-cancelled { background-color: #fee2e2; color: #dc2626; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Request for Quotations</h1>
+                <p class="text-gray-600">Manage RFQs and collect supplier quotations</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'purchase:rfq_add' %}" class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Create RFQ
+                </a>
+                <a href="{% url 'purchase:quotation_compare' %}" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    Compare Quotations
+                </a>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl shadow-lg p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-100 text-sm font-medium">Total RFQs</p>
+                        <p class="text-3xl font-bold">{{ total_rfqs|default:0 }}</p>
+                    </div>
+                    <div class="bg-blue-400 bg-opacity-30 rounded-full p-3">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl shadow-lg p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-orange-100 text-sm font-medium">Pending Responses</p>
+                        <p class="text-3xl font-bold">{{ pending_rfqs|default:0 }}</p>
+                    </div>
+                    <div class="bg-orange-400 bg-opacity-30 rounded-full p-3">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-2xl shadow-lg p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-100 text-sm font-medium">This Month</p>
+                        <p class="text-3xl font-bold">{{ rfqs.paginator.count|default:0 }}</p>
+                    </div>
+                    <div class="bg-green-400 bg-opacity-30 rounded-full p-3">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select name="status" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="">All Statuses</option>
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" name="search" value="{{ search }}" placeholder="Search RFQ number or supplier..." class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Date From</label>
+                    <input type="date" name="date_from" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition-colors">
+                        Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- RFQ List -->
+        {% if error %}
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div class="flex">
+                <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                    <h3 class="text-sm font-medium text-red-800">Error Loading RFQs</h3>
+                    <div class="mt-1 text-sm text-red-700">{{ error }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="grid gap-6">
+            {% if rfqs %}
+                {% for rfq in rfqs %}
+                <div class="rfq-card rounded-2xl shadow-lg p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900">{{ rfq.rfq_number }}</h3>
+                            <p class="text-gray-600">{{ rfq.description|truncatewords:8|default:"No description" }}</p>
+                        </div>
+                        <span class="status-badge status-{{ rfq.status }}">{{ rfq.get_status_display }}</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Created Date</p>
+                            <p class="font-medium">{{ rfq.issue_date|date:"M d, Y" }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Response Deadline</p>
+                            <p class="font-medium">{{ rfq.response_deadline|date:"M d, Y" }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Items</p>
+                            <p class="font-medium">{{ rfq.items.count }} Product{{ rfq.items.count|pluralize }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Suppliers Invited</p>
+                            <p class="font-medium">{{ rfq.suppliers.count }} Supplier{{ rfq.suppliers.count|pluralize }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Products Preview -->
+                    {% if rfq.items.exists %}
+                    <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                        <h4 class="font-medium text-gray-900 mb-2">Products Requested</h4>
+                        <div class="space-y-2">
+                            {% for item in rfq.items.all|slice:":3" %}
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm">{{ item.product.name }}</span>
+                                <span class="text-sm text-gray-600">{{ item.quantity|floatformat:2 }} {{ item.required_uom.abbreviation|default:"Units" }}</span>
+                            </div>
+                            {% endfor %}
+                            {% if rfq.items.count > 3 %}
+                            <div class="text-sm text-blue-600 font-medium">+ {{ rfq.items.count|add:"-3" }} more item{{ rfq.items.count|add:"-3"|pluralize }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Purchase Requisition Link -->
+                    {% if rfq.purchase_requisition %}
+                    <div class="bg-green-50 rounded-lg p-4 mb-4">
+                        <h4 class="font-medium text-green-900 mb-2">Linked Purchase Requisition</h4>
+                        <div class="text-sm text-green-700">
+                            <a href="{% url 'purchase:requisitions_ui' %}?pr={{ rfq.purchase_requisition.id }}" class="font-medium hover:underline">
+                                {{ rfq.purchase_requisition.pr_number }}
+                            </a>
+                            - {{ rfq.purchase_requisition.purpose|default:"No purpose specified" }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Actions -->
+                    <div class="flex gap-3 flex-wrap">
+                        <a href="{% url 'purchase:rfq_detail' rfq.id %}" class="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors">
+                            View Details
+                        </a>
+                        {% with quotation_count=rfq.quotations.count %}
+                        {% if quotation_count > 0 %}
+                        <a href="{% url 'purchase:quotations_ui' %}?rfq={{ rfq.id }}" class="bg-green-100 text-green-700 px-4 py-2 rounded-lg hover:bg-green-200 transition-colors">
+                            View Quotations ({{ quotation_count }})
+                        </a>
+                        {% endif %}
+                        {% if quotation_count > 1 %}
+                        <a href="{% url 'purchase:quotation_compare' %}?rfq={{ rfq.id }}" class="bg-purple-100 text-purple-700 px-4 py-2 rounded-lg hover:bg-purple-200 transition-colors">
+                            Compare Quotes
+                        </a>
+                        {% endif %}
+                        {% endwith %}
+                        {% if rfq.status == 'responses_received' %}
+                        <button onclick="createPOFromRFQ({{ rfq.id }})" class="bg-orange-100 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-200 transition-colors">
+                            Create PO
+                        </button>
+                        {% endif %}
+                        {% if rfq.status == 'draft' %}
+                        <a href="{% url 'purchase:rfq_edit' rfq.id %}" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                            Edit
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-12">
+                    <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No RFQs Found</h3>
+                    <p class="text-gray-600 mb-4">You haven't created any Request for Quotations yet.</p>
+                    <a href="{% url 'purchase:rfq_add' %}" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                        Create Your First RFQ
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Pagination -->
+        {% if rfqs.has_other_pages %}
+        <div class="flex justify-center mt-8">
+            <nav class="flex space-x-2">
+                {% if rfqs.has_previous %}
+                    <a href="?page={{ rfqs.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="px-3 py-2 text-sm text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Previous</a>
+                {% endif %}
+                
+                {% for num in rfqs.paginator.page_range %}
+                    {% if rfqs.number == num %}
+                        <span class="px-3 py-2 text-sm text-white bg-blue-600 border border-blue-600 rounded-lg">{{ num }}</span>
+                    {% elif num > rfqs.number|add:'-3' and num < rfqs.number|add:'3' %}
+                        <a href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="px-3 py-2 text-sm text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if rfqs.has_next %}
+                    <a href="?page={{ rfqs.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="px-3 py-2 text-sm text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Next</a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function createPOFromRFQ(rfqId) {
+    if (confirm('Create Purchase Order from this RFQ? This will redirect you to the PO creation page with RFQ data pre-filled.')) {
+        window.location.href = `/purchase/purchase-orders/add/?rfq=${rfqId}`;
+    }
+}
+
+// Auto-submit form when filters change
+document.addEventListener('DOMContentLoaded', function() {
+    const statusSelect = document.querySelector('select[name="status"]');
+    if (statusSelect) {
+        statusSelect.addEventListener('change', function() {
+            this.form.submit();
+        });
+    }
+});
+</script>
+{% endblock %}

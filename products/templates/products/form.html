@@ -1,0 +1,424 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+{% if object %}Edit {{ object.name }}{% else %}Create Product{% endif %} | FutureERP
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(6, 95, 70, 0.05));
+        border: 1px solid rgba(16, 185, 129, 0.1);
+        transition: all 0.3s ease;
+    }
+    .form-card:hover {
+        border-color: rgba(16, 185, 129, 0.2);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.1);
+    }
+    .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 0.75rem;
+        background: white;
+        transition: all 0.2s ease;
+        font-size: 0.875rem;
+    }
+    .form-input:focus {
+        outline: none;
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+    .form-select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 0.75rem;
+        background: white;
+        transition: all 0.2s ease;
+        font-size: 0.875rem;
+    }
+    .form-select:focus {
+        outline: none;
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+    .form-textarea {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 0.75rem;
+        background: white;
+        transition: all 0.2s ease;
+        font-size: 0.875rem;
+        min-height: 120px;
+        resize: vertical;
+    }
+    .form-textarea:focus {
+        outline: none;
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+    .checkbox-container {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        background: rgba(16, 185, 129, 0.05);
+        border: 1px solid rgba(16, 185, 129, 0.1);
+        border-radius: 0.75rem;
+        transition: all 0.2s ease;
+    }
+    .checkbox-container:hover {
+        background: rgba(16, 185, 129, 0.1);
+    }
+    .checkbox-input {
+        width: 1.25rem;
+        height: 1.25rem;
+        margin-right: 0.75rem;
+        accent-color: #10b981;
+    }
+    .section-header {
+        background: linear-gradient(135deg, #10b981, #059669);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700;
+    }
+    .field-label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">
+                    {% if object %}Edit Product{% else %}Create Product{% endif %}
+                </h1>
+                <p class="text-gray-600">
+                    {% if object %}Update product information{% else %}Add a new product to your catalog{% endif %}
+                </p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'products:list' %}" class="action-btn bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Products
+                </a>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="form-card rounded-2xl p-8">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                    <!-- Basic Information -->
+                    <div class="space-y-6">
+                        <h3 class="section-header text-xl font-bold border-b-2 border-green-200 pb-3">Basic Information</h3>
+                        
+                        <div>
+                            <label for="{{ form.name.id_for_label }}" class="field-label">Product Name *</label>
+                            <input type="text" name="name" id="{{ form.name.id_for_label }}" 
+                                   class="form-input" value="{{ form.name.value|default:'' }}" 
+                                   placeholder="Enter product name" required>
+                            {% if form.name.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.name.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.sku.id_for_label }}" class="field-label">SKU (Stock Keeping Unit) *</label>
+                            <input type="text" name="sku" id="{{ form.sku.id_for_label }}" 
+                                   class="form-input" value="{{ form.sku.value|default:'' }}" 
+                                   placeholder="Enter unique SKU" required>
+                            {% if form.sku.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.sku.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.category.id_for_label }}" class="field-label">Category</label>
+                            <select name="category" id="{{ form.category.id_for_label }}" class="form-select">
+                                <option value="">Select a category</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}" {% if form.category.value == category.id %}selected{% endif %}>
+                                        {{ category.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.category.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.category.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.product_type.id_for_label }}" class="field-label">Product Type</label>
+                            <select name="product_type" id="{{ form.product_type.id_for_label }}" class="form-select">
+                                <option value="product" {% if form.product_type.value == 'product' %}selected{% endif %}>Product</option>
+                                <option value="service" {% if form.product_type.value == 'service' %}selected{% endif %}>Service</option>
+                                <option value="raw_material" {% if form.product_type.value == 'raw_material' %}selected{% endif %}>Raw Material</option>
+                                <option value="component" {% if form.product_type.value == 'component' %}selected{% endif %}>Component</option>
+                                <option value="consumable" {% if form.product_type.value == 'consumable' %}selected{% endif %}>Consumable</option>
+                            </select>
+                            {% if form.product_type.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.product_type.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.unit_of_measure.id_for_label }}" class="field-label">Unit of Measure</label>
+                            <select name="unit_of_measure" id="{{ form.unit_of_measure.id_for_label }}" class="form-select">
+                                <option value="piece" {% if form.unit_of_measure.value == 'piece' %}selected{% endif %}>Piece</option>
+                                <option value="kg" {% if form.unit_of_measure.value == 'kg' %}selected{% endif %}>Kilogram</option>
+                                <option value="liter" {% if form.unit_of_measure.value == 'liter' %}selected{% endif %}>Liter</option>
+                                <option value="meter" {% if form.unit_of_measure.value == 'meter' %}selected{% endif %}>Meter</option>
+                                <option value="hour" {% if form.unit_of_measure.value == 'hour' %}selected{% endif %}>Hour</option>
+                                <option value="box" {% if form.unit_of_measure.value == 'box' %}selected{% endif %}>Box</option>
+                                <option value="set" {% if form.unit_of_measure.value == 'set' %}selected{% endif %}>Set</option>
+                                <option value="dozen" {% if form.unit_of_measure.value == 'dozen' %}selected{% endif %}>Dozen</option>
+                            </select>
+                            {% if form.unit_of_measure.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.unit_of_measure.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.description.id_for_label }}" class="field-label">Description</label>
+                            <textarea name="description" id="{{ form.description.id_for_label }}" 
+                                      class="form-textarea" placeholder="Enter product description">{{ form.description.value|default:'' }}</textarea>
+                            {% if form.description.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.description.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Pricing & Settings -->
+                    <div class="space-y-6">
+                        <h3 class="section-header text-xl font-bold border-b-2 border-green-200 pb-3">Pricing & Settings</h3>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="{{ form.cost_price.id_for_label }}" class="field-label">Cost Price ($)</label>
+                                <input type="number" name="cost_price" id="{{ form.cost_price.id_for_label }}" 
+                                       class="form-input" value="{{ form.cost_price.value|default:'0.00' }}" 
+                                       step="0.01" min="0" placeholder="0.00">
+                                {% if form.cost_price.errors %}
+                                    <p class="text-red-600 text-sm mt-1">{{ form.cost_price.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <label for="{{ form.selling_price.id_for_label }}" class="field-label">Selling Price ($)</label>
+                                <input type="number" name="selling_price" id="{{ form.selling_price.id_for_label }}" 
+                                       class="form-input" value="{{ form.selling_price.value|default:'0.00' }}" 
+                                       step="0.01" min="0" placeholder="0.00">
+                                {% if form.selling_price.errors %}
+                                    <p class="text-red-600 text-sm mt-1">{{ form.selling_price.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="{{ form.tracking_method.id_for_label }}" class="field-label">Tracking Method</label>
+                            <select name="tracking_method" id="{{ form.tracking_method.id_for_label }}" class="form-select" onchange="updateTrackingOptions()">
+                                <option value="none" {% if form.tracking_method.value == 'none' %}selected{% endif %}>No Tracking</option>
+                                <option value="barcode" {% if form.tracking_method.value == 'barcode' %}selected{% endif %}>Barcode</option>
+                                <option value="serial" {% if form.tracking_method.value == 'serial' %}selected{% endif %}>Serial Number</option>
+                                <option value="imei" {% if form.tracking_method.value == 'imei' %}selected{% endif %}>IMEI Number</option>
+                                <option value="batch" {% if form.tracking_method.value == 'batch' %}selected{% endif %}>Batch/Lot</option>
+                                <option value="expiry" {% if form.tracking_method.value == 'expiry' %}selected{% endif %}>Expiry Date</option>
+                            </select>
+                            {% if form.tracking_method.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.tracking_method.errors.0 }}</p>
+                            {% endif %}
+                            <p class="text-sm text-gray-600 mt-1">Choose how this product will be tracked in inventory</p>
+                        </div>
+
+                        <!-- Tracking Options -->
+                        <div id="trackingOptions" class="space-y-3" style="display: none;">
+                            <h5 class="text-md font-semibold text-gray-700">Tracking Configuration</h5>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div class="checkbox-container">
+                                    <input type="checkbox" name="requires_individual_tracking" id="{{ form.requires_individual_tracking.id_for_label }}" 
+                                           class="checkbox-input" {% if form.requires_individual_tracking.value %}checked{% endif %}>
+                                    <label for="{{ form.requires_individual_tracking.id_for_label }}" class="checkbox-label">
+                                        Requires Individual Tracking
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-1">Each unit must be tracked individually</p>
+                                </div>
+
+                                <div class="checkbox-container">
+                                    <input type="checkbox" name="requires_expiry_tracking" id="{{ form.requires_expiry_tracking.id_for_label }}" 
+                                           class="checkbox-input" {% if form.requires_expiry_tracking.value %}checked{% endif %}>
+                                    <label for="{{ form.requires_expiry_tracking.id_for_label }}" class="checkbox-label">
+                                        Requires Expiry Tracking
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-1">Track expiry dates for this product</p>
+                                </div>
+
+                                <div class="checkbox-container">
+                                    <input type="checkbox" name="requires_batch_tracking" id="{{ form.requires_batch_tracking.id_for_label }}" 
+                                           class="checkbox-input" {% if form.requires_batch_tracking.value %}checked{% endif %}>
+                                    <label for="{{ form.requires_batch_tracking.id_for_label }}" class="checkbox-label">
+                                        Requires Batch Tracking
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-1">Track batch/lot numbers for this product</p>
+                                </div>
+
+                                <div>
+                                    <label for="{{ form.shelf_life_days.id_for_label }}" class="field-label">Shelf Life (Days)</label>
+                                    <input type="number" name="shelf_life_days" id="{{ form.shelf_life_days.id_for_label }}" 
+                                           class="form-input" value="{{ form.shelf_life_days.value|default:'' }}" min="0">
+                                    {% if form.shelf_life_days.errors %}
+                                        <p class="text-red-600 text-sm mt-1">{{ form.shelf_life_days.errors.0 }}</p>
+                                    {% endif %}
+                                    <p class="text-xs text-gray-500 mt-1">Number of days before expiry (optional)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Product Properties -->
+                        <div class="space-y-4">
+                            <h4 class="text-lg font-semibold text-gray-700">Product Properties</h4>
+                            <div class="grid grid-cols-1 gap-3">
+                                <div class="checkbox-container">
+                                    <input type="checkbox" name="is_saleable" id="{{ form.is_saleable.id_for_label }}" 
+                                           class="checkbox-input" {% if form.is_saleable.value %}checked{% endif %}>
+                                    <label for="{{ form.is_saleable.id_for_label }}" class="text-sm font-medium text-gray-700">
+                                        Can be Sold
+                                        <span class="text-xs text-gray-500 block">This product can be sold to customers</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="checkbox-container">
+                                    <input type="checkbox" name="is_purchasable" id="{{ form.is_purchasable.id_for_label }}" 
+                                           class="checkbox-input" {% if form.is_purchasable.value %}checked{% endif %}>
+                                    <label for="{{ form.is_purchasable.id_for_label }}" class="text-sm font-medium text-gray-700">
+                                        Can be Purchased
+                                        <span class="text-xs text-gray-500 block">This product can be purchased from suppliers</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="checkbox-container">
+                                    <input type="checkbox" name="is_manufacturable" id="{{ form.is_manufacturable.id_for_label }}" 
+                                           class="checkbox-input" {% if form.is_manufacturable.value %}checked{% endif %}>
+                                    <label for="{{ form.is_manufacturable.id_for_label }}" class="text-sm font-medium text-gray-700">
+                                        Can be Manufactured
+                                        <span class="text-xs text-gray-500 block">This product can be manufactured in-house</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="checkbox-container">
+                                    <input type="checkbox" name="is_stockable" id="{{ form.is_stockable.id_for_label }}" 
+                                           class="checkbox-input" {% if form.is_stockable.value %}checked{% endif %}>
+                                    <label for="{{ form.is_stockable.id_for_label }}" class="text-sm font-medium text-gray-700">
+                                        Track Stock
+                                        <span class="text-xs text-gray-500 block">Track inventory levels for this product</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end gap-4 mt-12 pt-8 border-t-2 border-gray-200">
+                    <a href="{% url 'products:list' %}" class="px-8 py-3 bg-gray-200 text-gray-700 rounded-2xl hover:bg-gray-300 transition-all font-medium">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl hover:shadow-lg transition-all font-medium">
+                        {% if object %}
+                            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Update Product
+                        {% else %}
+                            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Create Product
+                        {% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize tracking options on page load
+    updateTrackingOptions();
+});
+
+function updateTrackingOptions() {
+    const trackingMethod = $('#{{ form.tracking_method.id_for_label }}').val();
+    const trackingOptions = $('#trackingOptions');
+    
+    if (trackingMethod && trackingMethod !== 'none') {
+        trackingOptions.show();
+        
+        // Auto-set some options based on tracking method
+        const individualTracking = $('#{{ form.requires_individual_tracking.id_for_label }}');
+        const expiryTracking = $('#{{ form.requires_expiry_tracking.id_for_label }}');
+        const batchTracking = $('#{{ form.requires_batch_tracking.id_for_label }}');
+        
+        // Reset options
+        individualTracking.prop('checked', false);
+        expiryTracking.prop('checked', false);
+        batchTracking.prop('checked', false);
+        
+        // Set defaults based on tracking method
+        switch(trackingMethod) {
+            case 'serial':
+            case 'imei':
+                individualTracking.prop('checked', true);
+                break;
+            case 'batch':
+                batchTracking.prop('checked', true);
+                break;
+            case 'expiry':
+                expiryTracking.prop('checked', true);
+                break;
+            case 'barcode':
+                // Barcode can be either individual or batch
+                break;
+        }
+    } else {
+        trackingOptions.hide();
+    }
+}
+
+// Form validation
+$('form').submit(function(e) {
+    const trackingMethod = $('#{{ form.tracking_method.id_for_label }}').val();
+    
+    if (trackingMethod && trackingMethod !== 'none') {
+        const hasIndividualTracking = $('#{{ form.requires_individual_tracking.id_for_label }}').is(':checked');
+        const hasExpiryTracking = $('#{{ form.requires_expiry_tracking.id_for_label }}').is(':checked');
+        const hasBatchTracking = $('#{{ form.requires_batch_tracking.id_for_label }}').is(':checked');
+        
+        if (!hasIndividualTracking && !hasExpiryTracking && !hasBatchTracking) {
+            alert('Please select at least one tracking requirement for this tracking method.');
+            e.preventDefault();
+            return false;
+        }
+    }
+    
+    return true;
+});
+</script>
+{% endblock %}

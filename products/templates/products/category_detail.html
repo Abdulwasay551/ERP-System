@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ category.name }} | Categories{% endblock %}
+
+{% block extra_css %}
+<style>
+    .category-detail-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">{{ category.name }}</h1>
+                <p class="text-gray-600">Category Details and Products</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'products:category_update' category.id %}" class="action-btn bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    Edit Category
+                </a>
+                <a href="{% url 'products:category_list' %}" class="action-btn bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to Categories
+                </a>
+            </div>
+        </div>
+
+        <!-- Category Details -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Information -->
+            <div class="lg:col-span-2">
+                <div class="category-detail-card rounded-2xl p-8 mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">Category Information</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Category Name</label>
+                            <p class="text-lg font-semibold text-gray-900">{{ category.name }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                            <p class="text-lg text-gray-900">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                    {% if category.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ category.is_active|yesno:'Active,Inactive' }}
+                                </span>
+                            </p>
+                        </div>
+                        {% if category.parent %}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Parent Category</label>
+                            <p class="text-lg text-gray-900">
+                                <a href="{% url 'products:category_detail' category.parent.id %}" class="text-green-600 hover:text-green-700">
+                                    {{ category.parent.name }}
+                                </a>
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if category.description %}
+                    <div class="mt-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <p class="text-gray-700">{{ category.description }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="space-y-8">
+                <!-- Category Stats -->
+                <div class="category-detail-card rounded-2xl p-6">
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">Statistics</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Total Products</label>
+                            <p class="text-2xl font-bold text-green-600">{{ category.products.count }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Active Products</label>
+                            <p class="text-xl font-semibold text-blue-600">{{ category.products.filter.is_active=True.count }}</p>
+                        </div>
+                        {% if category.children.count > 0 %}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Subcategories</label>
+                            <p class="text-xl font-semibold text-purple-600">{{ category.children.count }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="category-detail-card rounded-2xl p-6">
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <a href="{% url 'products:create' %}?category={{ category.id }}" class="w-full btn-primary flex items-center justify-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Add Product
+                        </a>
+                        <a href="{% url 'products:category_create' %}?parent={{ category.id }}" class="w-full btn-secondary flex items-center justify-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                            </svg>
+                            Add Subcategory
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subcategories -->
+        {% if category.children.all %}
+        <div class="mt-12">
+            <div class="category-detail-card rounded-2xl p-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Subcategories</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {% for subcategory in category.children.all %}
+                    <div class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">{{ subcategory.name }}</h3>
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                {% if subcategory.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ subcategory.is_active|yesno:'Active,Inactive' }}
+                            </span>
+                        </div>
+                        
+                        <div class="space-y-2 mb-4">
+                            {% if subcategory.description %}
+                            <p class="text-sm text-gray-600">{{ subcategory.description|truncatewords:15 }}</p>
+                            {% endif %}
+                            <p class="text-sm text-gray-500">{{ subcategory.products.count }} products</p>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <a href="{% url 'products:category_detail' subcategory.id %}" class="btn-sm btn-primary flex-1 text-center">View</a>
+                            <a href="{% url 'products:category_update' subcategory.id %}" class="btn-sm btn-secondary flex-1 text-center">Edit</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Products in Category -->
+        {% if category.products.all %}
+        <div class="mt-12">
+            <div class="category-detail-card rounded-2xl p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">Products in Category</h2>
+                    <a href="{% url 'products:list' %}?category={{ category.id }}" class="btn-primary">
+                        View All Products
+                    </a>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {% for product in category.products.all|slice:":6" %}
+                    <div class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">{{ product.name }}</h3>
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                {% if product.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ product.is_active|yesno:'Active,Inactive' }}
+                            </span>
+                        </div>
+                        
+                        <div class="space-y-2 mb-4">
+                            <p class="text-sm text-gray-500">SKU: {{ product.sku }}</p>
+                            <p class="text-lg font-semibold text-green-600">${{ product.selling_price|floatformat:2 }}</p>
+                            {% if product.description %}
+                            <p class="text-sm text-gray-600">{{ product.description|truncatewords:10 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <a href="{% url 'products:detail' product.id %}" class="btn-sm btn-primary flex-1 text-center">View</a>
+                            <a href="{% url 'products:update' product.id %}" class="btn-sm btn-secondary flex-1 text-center">Edit</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if category.products.count > 6 %}
+                <div class="mt-6 text-center">
+                    <a href="{% url 'products:list' %}?category={{ category.id }}" class="btn-secondary">
+                        View All {{ category.products.count }} Products
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.375rem;
+}
+.btn-primary { background-color: #10b981; color: white; border: none; }
+.btn-secondary { background-color: #6b7280; color: white; border: none; }
+</style>
+{% endblock %}

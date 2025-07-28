@@ -1,0 +1,454 @@
+{% extends "base.html" %}
+{% block title %}Goods Receipt Notes | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .grn-card {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(21, 128, 61, 0.1));
+        border: 1px solid rgba(34, 197, 94, 0.2);
+        transition: all 0.3s ease;
+    }
+    .grn-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(34, 197, 94, 0.15);
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .status-draft { background-color: #f3f4f6; color: #374151; }
+    .status-pending { background-color: #fef3c7; color: #92400e; }
+    .status-received { background-color: #d1fae5; color: #065f46; }
+    .status-quality_checked { background-color: #dbeafe; color: #1e40af; }
+    .status-partial { background-color: #fed7aa; color: #c2410c; }
+    .status-completed { background-color: #dcfce7; color: #166534; }
+    .status-rejected { background-color: #fee2e2; color: #991b1b; }
+
+    .btn-sm {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+        border-radius: 0.375rem;
+        transition: all 0.2s ease;
+    }
+    .btn-primary { background-color: #3b82f6; color: white; }
+    .btn-primary:hover { background-color: #2563eb; }
+    .btn-secondary { background-color: #6b7280; color: white; }
+    .btn-secondary:hover { background-color: #4b5563; }
+    .btn-success { background-color: #10b981; color: white; }
+    .btn-success:hover { background-color: #059669; }
+    .btn-warning { background-color: #f59e0b; color: white; }
+    .btn-warning:hover { background-color: #d97706; }
+    .btn-danger { background-color: #ef4444; color: white; }
+    .btn-danger:hover { background-color: #dc2626; }
+
+    .grn-stats {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        border: 1px solid #bbf7d0;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .item-preview {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        margin-top: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Goods Receipt Notes</h1>
+                <p class="text-gray-600">Track and manage goods received from suppliers</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'purchase:grn_add' %}" class="action-btn bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                    New GRN
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grn-stats rounded-2xl p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="stat-card">
+                    <div class="text-2xl font-bold text-green-600">{{ total_grns|default:0 }}</div>
+                    <div class="text-sm text-gray-600">Total GRNs</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-2xl font-bold text-blue-600">{{ pending_grns|default:0 }}</div>
+                    <div class="text-sm text-gray-600">Pending</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-2xl font-bold text-yellow-600">{{ partial_grns|default:0 }}</div>
+                    <div class="text-sm text-gray-600">Partial Received</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-2xl font-bold text-emerald-600">{{ completed_grns|default:0 }}</div>
+                    <div class="text-sm text-gray-600">Completed</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card-modern mb-8">
+            <form method="GET" class="flex flex-wrap gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select name="status" class="form-select rounded-lg border-gray-300">
+                        <option value="">All Status</option>
+                        {% for status_code, status_name in status_choices %}
+                        <option value="{{ status_code }}" {% if status_filter == status_code %}selected{% endif %}>
+                            {{ status_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Supplier</label>
+                    <select name="supplier" class="form-select rounded-lg border-gray-300">
+                        <option value="">All Suppliers</option>
+                        {% for supplier in suppliers %}
+                        <option value="{{ supplier.id }}" {% if supplier_filter == supplier.id|stringformat:"s" %}selected{% endif %}>
+                            {{ supplier.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                    <div class="flex gap-2">
+                        <input type="date" name="date_from" value="{{ date_from }}" class="form-input rounded-lg border-gray-300">
+                        <input type="date" name="date_to" value="{{ date_to }}" class="form-input rounded-lg border-gray-300">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" name="search" value="{{ search_query }}" placeholder="Search GRN number, PO..." 
+                           class="form-input rounded-lg border-gray-300">
+                </div>
+                <button type="submit" class="btn-primary">Filter</button>
+                <a href="{% url 'purchase:grns_ui' %}" class="btn-secondary">Clear</a>
+            </form>
+        </div>
+
+        <!-- GRNs List -->
+        <div class="grid grid-cols-1 gap-6">
+            {% for grn in grns %}
+            <div class="grn-card rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold text-gray-900">{{ grn.grn_number|default:grn.id }}</h3>
+                            <p class="text-gray-600">
+                                PO: {{ grn.purchase_order.po_number|default:grn.purchase_order.id }} • 
+                                {{ grn.purchase_order.supplier.name }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="status-badge status-{{ grn.status }}">
+                            {% if grn.status == 'draft' %}
+                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path>
+                                </svg>
+                            {% elif grn.status == 'pending' %}
+                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                                </svg>
+                            {% elif grn.status == 'completed' %}
+                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                </svg>
+                            {% endif %}
+                            {{ grn.get_status_display }}
+                        </span>
+                        <div class="flex gap-2">
+                            <a href="{% url 'purchase:grn_detail' grn.id %}" class="btn-sm btn-primary">
+                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                                View
+                            </a>
+                            {% if grn.status == 'draft' %}
+                            <a href="{% url 'purchase:grn_edit' grn.id %}" class="btn-sm btn-secondary">
+                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                                Edit
+                            </a>
+                            {% endif %}
+                            {% if grn.status == 'pending' %}
+                            <button onclick="completeGRN({{ grn.id }})" class="btn-sm btn-success">
+                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                Complete
+                            </button>
+                            {% endif %}
+                            {% if grn.status in 'draft,pending' and perms.purchase.delete_grn %}
+                            <button onclick="deleteGRN({{ grn.id }})" class="btn-sm btn-danger">
+                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                                Delete
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div>
+                        <p class="text-sm text-gray-500">Received Date</p>
+                        <p class="font-medium">{{ grn.received_date|date:"M d, Y"|default:"Not set" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Received By</p>
+                        <p class="font-medium">{{ grn.received_by.get_full_name|default:grn.received_by.username|default:"Not assigned" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Items Count</p>
+                        <p class="font-medium">{{ grn.items.count }} item{{ grn.items.count|pluralize }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Total Amount</p>
+                        <p class="font-medium text-green-600">${{ grn.total_amount|floatformat:2|default:"0.00" }}</p>
+                    </div>
+                </div>
+
+                <!-- Items Preview -->
+                {% if grn.items.exists %}
+                <div class="border-t pt-4">
+                    <p class="text-sm font-medium text-gray-700 mb-3">Items Overview:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {% for item in grn.items.all|slice:":3" %}
+                        <div class="item-preview">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <p class="font-medium text-gray-900">{{ item.product.name }}</p>
+                                    <p class="text-sm text-gray-600">SKU: {{ item.product.sku }}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-medium">{{ item.received_quantity|default:item.ordered_quantity }}</p>
+                                    <p class="text-xs text-gray-500">{{ item.unit_of_measure.abbreviation }}</p>
+                                </div>
+                            </div>
+                            {% if item.condition and item.condition != 'good' %}
+                            <div class="mt-2">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                    {% if item.condition == 'damaged' %}bg-red-100 text-red-800
+                                    {% elif item.condition == 'defective' %}bg-orange-100 text-orange-800
+                                    {% elif item.condition == 'expired' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ item.get_condition_display }}
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        {% if grn.items.count > 3 %}
+                        <div class="item-preview flex items-center justify-center text-gray-500">
+                            <span class="text-sm">+{{ grn.items.count|add:"-3" }} more items</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Quality Status -->
+                {% if grn.quality_check_status %}
+                <div class="border-t pt-4 mt-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Quality Status:</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if grn.quality_check_status == 'passed' %}bg-green-100 text-green-800
+                            {% elif grn.quality_check_status == 'failed' %}bg-red-100 text-red-800
+                            {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                            {{ grn.get_quality_check_status_display }}
+                        </span>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if grn.notes %}
+                <div class="border-t pt-4 mt-4">
+                    <p class="text-sm text-gray-500 mb-1">Notes</p>
+                    <p class="text-gray-700">{{ grn.notes|truncatewords:20 }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div class="text-center py-12">
+                <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No GRNs found</h3>
+                <p class="text-gray-500 mb-4">Start by creating your first goods receipt note</p>
+                <a href="{% url 'purchase:grn_add' %}" class="btn-primary">Create GRN</a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if grns.has_other_pages %}
+        <div class="mt-8 flex justify-center">
+            <nav class="flex space-x-2">
+                {% if grns.has_previous %}
+                    <a href="?page={{ grns.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                       class="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">Previous</a>
+                {% endif %}
+                
+                <span class="px-3 py-2 text-sm bg-green-600 text-white rounded-md">
+                    Page {{ grns.number }} of {{ grns.paginator.num_pages }}
+                </span>
+                
+                {% if grns.has_next %}
+                    <a href="?page={{ grns.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                       class="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">Next</a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Complete GRN functionality
+    window.completeGRN = function(grnId) {
+        if (confirm('Mark this GRN as complete? This action cannot be undone.')) {
+            // In a real implementation, this would be an AJAX call
+            fetch(`/purchase/grn/${grnId}/complete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Error completing GRN. Please try again.');
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('Error completing GRN. Please check your connection and try again.');
+            });
+        }
+    };
+
+    // Delete GRN functionality
+    window.deleteGRN = function(grnId) {
+        if (confirm('Are you sure you want to delete this GRN? This action cannot be undone.')) {
+            fetch(`/purchase/grn/${grnId}/delete/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Error deleting GRN. Please try again.');
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('Error deleting GRN. Please check your connection and try again.');
+            });
+        }
+    };
+
+    // Auto-refresh for pending GRNs
+    const hasPendingGRNs = document.querySelectorAll('.status-pending').length > 0;
+    if (hasPendingGRNs) {
+        // Auto refresh every 30 seconds if there are pending GRNs
+        setTimeout(() => {
+            location.reload();
+        }, 30000);
+    }
+
+    // Enhanced search functionality
+    const searchInput = document.querySelector('input[name="search"]');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                if (this.value.length >= 3 || this.value.length === 0) {
+                    this.form.submit();
+                }
+            }, 500);
+        });
+    }
+
+    // Print functionality for GRN cards
+    window.printGRN = function(grnId) {
+        window.open(`/purchase/grn/${grnId}/print/`, '_blank');
+    };
+
+    // Export functionality
+    window.exportGRNs = function() {
+        const form = document.querySelector('form');
+        const formData = new FormData(form);
+        const params = new URLSearchParams(formData);
+        window.open(`/purchase/grn/export/?${params.toString()}`, '_blank');
+    };
+});
+
+// CSRF Token for AJAX requests
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Add CSRF token to all AJAX requests
+const csrftoken = getCookie('csrftoken');
+if (csrftoken) {
+    document.querySelector('head').innerHTML += `<meta name="csrf-token" content="${csrftoken}">`;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Import Products | FutureERP{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Import Products</h1>
+                <p class="text-gray-600">Bulk import products from CSV or Excel file</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'products:list' %}" class="action-btn bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                    Back to Products
+                </a>
+            </div>
+        </div>
+
+        <!-- Import Form -->
+        <div class="card-modern rounded-2xl p-8 mb-8">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="space-y-6">
+                    <div>
+                        <label for="file" class="block text-sm font-medium text-gray-700 mb-2">Choose File</label>
+                        <input type="file" name="file" accept=".csv,.xlsx,.xls" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        <p class="text-sm text-gray-600 mt-1">Supported formats: CSV, Excel (.xlsx, .xls)</p>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button type="submit" class="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all">
+                            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            Import Products
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Instructions -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="card-modern rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">File Format Requirements</h3>
+                <div class="space-y-3 text-sm text-gray-600">
+                    <p><strong>Required Columns:</strong></p>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>name - Product name</li>
+                        <li>sku - Product SKU (must be unique)</li>
+                        <li>product_type - Product type (product, service, etc.)</li>
+                    </ul>
+                    
+                    <p class="mt-4"><strong>Optional Columns:</strong></p>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>description - Product description</li>
+                        <li>category - Category name</li>
+                        <li>cost_price - Cost price</li>
+                        <li>selling_price - Selling price</li>
+                        <li>is_active - true/false</li>
+                        <li>is_saleable - true/false</li>
+                        <li>is_purchasable - true/false</li>
+                        <li>is_stockable - true/false</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card-modern rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Sample Template</h3>
+                <p class="text-sm text-gray-600 mb-4">Download a sample template to get started:</p>
+                
+                <a href="#" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Download CSV Template
+                </a>
+
+                <div class="mt-6">
+                    <h4 class="font-medium text-gray-900 mb-2">Import Tips:</h4>
+                    <ul class="text-sm text-gray-600 space-y-1 list-disc pl-5">
+                        <li>Ensure SKUs are unique across all products</li>
+                        <li>Categories will be created if they don't exist</li>
+                        <li>Boolean fields accept: true/false, 1/0, yes/no</li>
+                        <li>Large files may take several minutes to process</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
