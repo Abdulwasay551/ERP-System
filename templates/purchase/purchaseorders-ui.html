@@ -104,7 +104,7 @@
                         </div>
                         <div>
                             <h3 class="text-xl font-semibold text-gray-900">{{ order.po_number|default:order.id }}</h3>
-                            <p class="text-gray-600">{{ order.supplier.name }} • {{ order.created_by.get_full_name|default:order.created_by.username }}</p>
+                            <p class="text-gray-600">{{ order.supplier.name }} • {{ order.created_by.get_full_name|default:order.created_by.email }}</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-4">

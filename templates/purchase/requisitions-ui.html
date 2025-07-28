@@ -113,8 +113,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-7xl mx-auto">
+<div class="container mx-auto px-8 py-8">
+    <div class="mx-auto">
         <!-- Header Section -->
         <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl shadow-xl p-8 mb-8 text-white">
             <div class="flex items-center justify-between">
@@ -272,7 +272,7 @@
                         <div class="flex items-start justify-between">
                             <div>
                                 <h3 class="text-lg font-bold text-gray-900 mb-1">
-                                    <a href="{% url 'purchase:purchase_requisition_detail' requisition.id %}" 
+                                    <a href="{% url 'purchase:requisition_detail' requisition.id %}" 
                                        class="hover:text-purple-600 transition-colors">
                                         {{ requisition.pr_number }}
                                     </a>
@@ -294,7 +294,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600">
                             <div>
                                 <strong>Requester:</strong><br>
-                                {{ requisition.requested_by.get_full_name|default:requisition.requested_by.username }}
+                                {{ requisition.requested_by.get_full_name|default:requisition.requested_by.email }}
                             </div>
                             <div>
                                 <strong>Department:</strong><br>
@@ -329,7 +329,7 @@
 
                     <!-- Right Side - Actions -->
                     <div class="flex flex-col lg:flex-row lg:items-center space-y-2 lg:space-y-0 lg:space-x-3">
-                        <a href="{% url 'purchase:purchase_requisition_detail' requisition.id %}" 
+                        <a href="{% url 'purchase:requisition_detail' requisition.id %}" 
                            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-center">
                             <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -339,7 +339,7 @@
                         </a>
 
                         {% if requisition.status == 'draft' or user == requisition.requested_by %}
-                        <a href="{% url 'purchase:purchase_requisition_edit' requisition.id %}" 
+                        <a href="{% url 'purchase:requisition_edit' requisition.id %}" 
                            class="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors text-center">
                             <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>

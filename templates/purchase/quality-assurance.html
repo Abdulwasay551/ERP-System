@@ -178,7 +178,6 @@
                             {{ inspection.get_status_display }}
                         </span>
                         <div class="flex gap-2">
-                            <a href="{% url 'purchase:quality_detail' inspection.id %}" class="btn-sm btn-primary">View</a>
                             {% if inspection.status == 'pending' %}
                             <button onclick="startInspection({{ inspection.id }})" class="btn-sm bg-blue-600 text-white">Start</button>
                             {% endif %}
@@ -196,7 +195,7 @@
                     </div>
                     <div>
                         <p class="text-sm text-gray-500">Inspector</p>
-                        <p class="font-medium">{{ inspection.inspector.get_full_name|default:inspection.inspector.username }}</p>
+                        <p class="font-medium">{{ inspection.assigned_to.get_full_name|default:inspection.assigned_to.email|default:"Not assigned" }}</p>
                     </div>
                     <div>
                         <p class="text-sm text-gray-500">Items Tested</p>

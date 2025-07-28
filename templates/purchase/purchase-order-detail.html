@@ -180,7 +180,7 @@
                 </div>
                 <div class="text-right opacity-90">
                     <p class="text-sm">Created: {{ order.created_at|date:"M d, Y" }}</p>
-                    <p class="text-sm">By: {{ order.created_by.get_full_name|default:order.created_by.username }}</p>
+                    <p class="text-sm">By: {{ order.created_by.get_full_name|default:order.created_by.email }}</p>
                 </div>
             </div>
         </div>

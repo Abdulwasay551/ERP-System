@@ -301,7 +301,7 @@
                                     <small class="text-muted">
                                         {{ movement.timestamp|date:"F j, Y g:i A" }}
                                         {% if movement.created_by %}
-                                            by {{ movement.created_by.get_full_name|default:movement.created_by.username }}
+                                            by {{ movement.created_by.get_full_name|default:movement.created_by.email }}
                                         {% endif %}
                                     </small>
                                 </div>

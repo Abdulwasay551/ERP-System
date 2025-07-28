@@ -120,7 +120,7 @@
                         <select name="inspector" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
                             <option value="">Select Inspector</option>
                             {% for inspector in inspectors %}
-                            <option value="{{ inspector.id }}">{{ inspector.get_full_name|default:inspector.username }}</option>
+                            <option value="{{ inspector.id }}">{{ inspector.get_full_name|default:inspector.email }}</option>
                             {% endfor %}
                         </select>
                         <p class="text-xs text-gray-500 mt-1">Assigned quality inspector</p>

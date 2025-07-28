@@ -485,7 +485,7 @@
             
             {% if user.is_authenticated %}
             <div class="flex items-center space-x-4">
-                <span class="text-green-800 font-medium">Welcome, {{ user.username }}</span>
+                <span class="text-green-800 font-medium">Welcome, {{ user.get_full_name|default:user.email }}</span>
                 <a href="{% url 'logout' %}" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-2 rounded-full hover:shadow-lg transition-all">
                     Logout
                 </a>
