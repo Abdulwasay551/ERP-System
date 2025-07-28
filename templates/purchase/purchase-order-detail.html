@@ -5,441 +5,488 @@
 
 {% block extra_css %}
 <style>
-    .po-detail-card {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.9));
-        border: 1px solid rgba(226, 232, 240, 0.8);
-        backdrop-filter: blur(10px);
+    .po-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 1rem;
+        padding: 2rem;
+        color: white;
+        margin-bottom: 2rem;
+    }
+    
+    .po-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
         transition: all 0.3s ease;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
-    .po-detail-card:hover {
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    
+    .po-card:hover {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
     }
+    
     .status-badge {
-        padding: 6px 16px;
+        padding: 8px 16px;
         border-radius: 25px;
         font-size: 0.8rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
     }
-    .status-draft { background: linear-gradient(135deg, #f3f4f6, #e5e7eb); color: #6b7280; }
-    .status-pending_approval { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #d97706; }
-    .status-approved { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #059669; }
-    .status-sent_to_supplier { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #2563eb; }
-    .status-acknowledged { background: linear-gradient(135deg, #e0e7ff, #c7d2fe); color: #4338ca; }
-    .status-partially_received { background: linear-gradient(135deg, #fed7d7, #fbb6ce); color: #be185d; }
-    .status-fully_received { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #047857; }
-    .status-cancelled { background: linear-gradient(135deg, #fecaca, #fca5a5); color: #dc2626; }
+    
+    .status-draft { 
+        background: linear-gradient(135deg, #f3f4f6, #e5e7eb); 
+        color: #6b7280; 
+    }
+    .status-pending_approval { 
+        background: linear-gradient(135deg, #fef3c7, #fde68a); 
+        color: #d97706; 
+    }
+    .status-approved { 
+        background: linear-gradient(135deg, #dcfce7, #bbf7d0); 
+        color: #059669; 
+    }
+    .status-sent_to_supplier { 
+        background: linear-gradient(135deg, #dbeafe, #bfdbfe); 
+        color: #2563eb; 
+    }
+    .status-partially_received { 
+        background: linear-gradient(135deg, #fed7d7, #fbb6ce); 
+        color: #be185d; 
+    }
+    .status-fully_received { 
+        background: linear-gradient(135deg, #d1fae5, #a7f3d0); 
+        color: #047857; 
+    }
+    .status-cancelled { 
+        background: linear-gradient(135deg, #fecaca, #fca5a5); 
+        color: #dc2626; 
+    }
     
     .action-btn {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
         font-weight: 600;
-        letter-spacing: 0.025em;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
     }
+    
     .action-btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
     }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #10b981, #047857);
+        color: white;
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+    }
+    
+    .btn-secondary {
+        background: linear-gradient(135deg, #6b7280, #4b5563);
+        color: white;
+    }
+    
     .item-card {
-        background: linear-gradient(135deg, rgba(249, 250, 251, 0.8), rgba(243, 244, 246, 0.8));
-        border: 1px solid rgba(229, 231, 235, 0.5);
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
         transition: all 0.3s ease;
     }
+    
     .item-card:hover {
-        background: linear-gradient(135deg, rgba(243, 244, 246, 0.9), rgba(229, 231, 235, 0.9));
+        background: #f1f5f9;
         transform: translateX(4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
-    .timeline-item {
-        border-left: 3px solid #e5e7eb;
-        position: relative;
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
     }
-    .timeline-item:before {
-        content: '';
-        position: absolute;
-        left: -6px;
-        top: 0;
-        width: 12px;
-        height: 12px;
-        background: #3b82f6;
-        border-radius: 50%;
+    
+    .info-item {
+        background: rgba(255, 255, 255, 0.8);
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border-left: 4px solid #3b82f6;
     }
-    .timeline-item.completed:before {
-        background: #10b981;
+    
+    .amount-display {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #059669;
+        text-align: center;
+        padding: 1rem;
+        background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+        border-radius: 0.75rem;
+        margin: 1rem 0;
     }
-    .timeline-item.active:before {
-        background: #f59e0b;
-        animation: pulse 2s infinite;
+    
+    .progress-indicator {
+        background: #f3f4f6;
+        border-radius: 1rem;
+        padding: 0.5rem;
+        margin: 1rem 0;
     }
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.5; }
+    
+    .progress-bar {
+        background: linear-gradient(135deg, #10b981, #047857);
+        height: 0.5rem;
+        border-radius: 0.5rem;
+        transition: width 0.5s ease;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="pt-24 pb-8">
-    <div class="mx-auto px-8">
+    <div class="mx-auto px-8 max-w-7xl">
+        
         <!-- Header -->
-        <div class="flex justify-between items-start mb-8">
-            <div>
-                <div class="flex items-center gap-4 mb-4">
-                    <h1 class="text-4xl font-bold text-gray-900">{{ order.po_number }}</h1>
-                    <span class="status-badge status-{{ order.status }}">{{ order.get_status_display }}</span>
+        <div class="po-header">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h1 class="text-4xl font-bold mb-2">Purchase Order</h1>
+                    <p class="text-2xl opacity-90">#{{ order.po_number }}</p>
+                    <div class="mt-4">
+                        <span class="status-badge status-{{ order.status }}">
+                            <i class="fas fa-circle"></i>
+                            {{ order.get_status_display }}
+                        </span>
+                    </div>
                 </div>
-                <div class="text-gray-600 space-y-1">
-                    <p><strong>Supplier:</strong> {{ order.supplier.name }}</p>
-                    <p><strong>Order Date:</strong> {{ order.order_date|date:"M d, Y" }}</p>
-                    {% if order.expected_delivery_date %}
-                    <p><strong>Expected Delivery:</strong> {{ order.expected_delivery_date|date:"M d, Y" }}</p>
-                    {% endif %}
+                <div class="text-right opacity-90">
+                    <p class="text-sm">Created: {{ order.created_at|date:"M d, Y" }}</p>
+                    <p class="text-sm">By: {{ order.created_by.get_full_name|default:order.created_by.username }}</p>
                 </div>
-            </div>
-            
-            <!-- Action Buttons -->
-            <div class="flex gap-3 flex-wrap">
-                <a href="{% url 'purchase:purchaseorders_ui' %}" class="action-btn bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200">
-                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-                    Back to List
-                </a>
-                
-                {% if order.status == 'draft' %}
-                <a href="{% url 'purchase:purchase_order_edit' order.id %}" class="action-btn bg-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-200">
-                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                    </svg>
-                    Edit
-                </a>
-                {% endif %}
-                
-                {% if order.can_be_approved and user.is_superuser %}
-                <form method="post" action="{% url 'purchase:purchase_order_approve' order.id %}" class="inline">
-                    {% csrf_token %}
-                    <button type="submit" class="action-btn bg-green-100 text-green-700 px-4 py-2 rounded-lg hover:bg-green-200">
-                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        Approve
-                    </button>
-                </form>
-                {% endif %}
-                
-                {% if order.status == 'approved' %}
-                <form method="post" action="{% url 'purchase:purchase_order_send_to_supplier' order.id %}" class="inline">
-                    {% csrf_token %}
-                    <button type="submit" class="action-btn bg-purple-100 text-purple-700 px-4 py-2 rounded-lg hover:bg-purple-200">
-                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                        </svg>
-                        Send to Supplier
-                    </button>
-                </form>
-                {% endif %}
-                
-                <a href="{% url 'purchase:purchase_order_duplicate' order.id %}" class="action-btn bg-indigo-100 text-indigo-700 px-4 py-2 rounded-lg hover:bg-indigo-200">
-                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                    </svg>
-                    Duplicate
-                </a>
-                
-                {% if order.can_be_cancelled %}
-                <form method="post" action="{% url 'purchase:purchase_order_cancel' order.id %}" class="inline" onsubmit="return confirm('Are you sure you want to cancel this purchase order?')">
-                    {% csrf_token %}
-                    <button type="submit" class="action-btn bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200">
-                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                        Cancel
-                    </button>
-                </form>
-                {% endif %}
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Action Buttons -->
+        <div class="flex gap-3 flex-wrap mb-6">
+            <a href="{% url 'purchase:purchaseorders_ui' %}" class="action-btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Back to List
+            </a>
+            
+            {% if order.status == 'draft' %}
+            <a href="{% url 'purchase:purchase_order_edit' order.id %}" class="action-btn btn-primary">
+                <i class="fas fa-edit"></i>
+                Edit Order
+            </a>
+            {% endif %}
+            
+            {% if order.status == 'draft' and can_approve %}
+            <form method="POST" action="{% url 'purchase:purchase_order_approve' order.id %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="action-btn btn-success" onclick="return confirm('Are you sure you want to approve this purchase order?')">
+                    <i class="fas fa-check"></i>
+                    Approve Order
+                </button>
+            </form>
+            {% endif %}
+            
+            {% if order.status == 'approved' %}
+            <form method="POST" action="{% url 'purchase:purchase_order_send_to_supplier' order.id %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="action-btn btn-primary">
+                    <i class="fas fa-paper-plane"></i>
+                    Send to Supplier
+                </button>
+            </form>
+            {% endif %}
+            
+            {% if order.can_be_cancelled %}
+            <form method="POST" action="{% url 'purchase:purchase_order_cancel' order.id %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="action-btn btn-danger" onclick="return confirm('Are you sure you want to cancel this purchase order?')">
+                    <i class="fas fa-times"></i>
+                    Cancel Order
+                </button>
+            </form>
+            {% endif %}
+            
+            <a href="{% url 'purchase:purchase_order_duplicate' order.id %}" class="action-btn btn-secondary">
+                <i class="fas fa-copy"></i>
+                Duplicate
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
             <!-- Main Content -->
-            <div class="lg:col-span-2 space-y-8">
-                <!-- Purchase Order Items -->
-                <div class="po-detail-card rounded-2xl p-6">
-                    <h3 class="text-xl font-bold text-gray-900 mb-6">Order Items</h3>
+            <div class="lg:col-span-2">
+                
+                <!-- Order Information -->
+                <div class="po-card">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-info-circle text-blue-500"></i>
+                        Order Information
+                    </h2>
                     
-                    {% if items %}
-                    <div class="space-y-4">
-                        {% for item in items %}
-                        <div class="item-card rounded-lg p-4">
-                            <div class="flex justify-between items-start">
-                                <div class="flex-1">
-                                    <h4 class="font-semibold text-gray-900">{{ item.product.name }}</h4>
-                                    {% if item.product.description %}
-                                    <p class="text-sm text-gray-600 mt-1">{{ item.product.description|truncatewords:15 }}</p>
-                                    {% endif %}
-                                    <div class="flex flex-wrap gap-4 mt-3 text-sm text-gray-600">
-                                        <span><strong>Quantity:</strong> {{ item.quantity|floatformat:2 }} {{ item.uom.abbreviation|default:"Units" }}</span>
-                                        <span><strong>Unit Price:</strong> ${{ item.unit_price|floatformat:2 }}</span>
-                                        {% if item.item_discount > 0 %}
-                                        <span class="text-green-600"><strong>Discount:</strong> ${{ item.item_discount|floatformat:2 }}</span>
-                                        {% endif %}
-                                        {% if item.received_quantity > 0 %}
-                                        <span class="text-blue-600"><strong>Received:</strong> {{ item.received_quantity|floatformat:2 }}</span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-lg font-bold text-gray-900">${{ item.line_total|floatformat:2 }}</div>
-                                    {% if item.delivery_date %}
-                                    <div class="text-sm text-gray-500">Due: {{ item.delivery_date|date:"M d" }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <p class="text-sm text-gray-600">Supplier</p>
+                            <p class="font-semibold">{{ order.supplier.name }}</p>
+                            {% if order.supplier.email %}
+                            <p class="text-sm text-gray-600">{{ order.supplier.email }}</p>
+                            {% endif %}
                         </div>
-                        {% endfor %}
+                        
+                        <div class="info-item">
+                            <p class="text-sm text-gray-600">Order Date</p>
+                            <p class="font-semibold">{{ order.order_date|date:"M d, Y" }}</p>
+                        </div>
+                        
+                        {% if order.expected_delivery_date %}
+                        <div class="info-item">
+                            <p class="text-sm text-gray-600">Expected Delivery</p>
+                            <p class="font-semibold">{{ order.expected_delivery_date|date:"M d, Y" }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if order.warehouse %}
+                        <div class="info-item">
+                            <p class="text-sm text-gray-600">Delivery Warehouse</p>
+                            <p class="font-semibold">{{ order.warehouse.name }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if order.purchase_requisition %}
+                        <div class="info-item">
+                            <p class="text-sm text-gray-600">Purchase Requisition</p>
+                            <p class="font-semibold">{{ order.purchase_requisition.pr_number }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if order.payment_terms %}
+                        <div class="info-item">
+                            <p class="text-sm text-gray-600">Payment Terms</p>
+                            <p class="font-semibold">{{ order.payment_terms }}</p>
+                        </div>
+                        {% endif %}
                     </div>
-                    {% else %}
-                    <div class="text-center py-8 text-gray-500">
-                        <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2 2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-2.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 009.586 13H7"></path>
-                        </svg>
-                        <p>No items in this purchase order</p>
+                </div>
+
+                <!-- Order Items -->
+                <div class="po-card">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-list text-green-500"></i>
+                        Order Items ({{ items.count }})
+                    </h2>
+                    
+                    {% if order.status in 'approved,sent_to_supplier,partially_received' %}
+                    <div class="progress-indicator">
+                        <div class="flex justify-between text-sm text-gray-600 mb-2">
+                            <span>Delivery Progress</span>
+                            <span>{{ order.get_received_percentage|floatformat:1 }}%</span>
+                        </div>
+                        <div class="progress-bar" style="width: {{ order.get_received_percentage }}%"></div>
                     </div>
                     {% endif %}
-                </div>
-
-                <!-- Order Summary -->
-                <div class="po-detail-card rounded-2xl p-6">
-                    <h3 class="text-xl font-bold text-gray-900 mb-6">Order Summary</h3>
                     
-                    <div class="space-y-3">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600">Subtotal:</span>
-                            <span class="font-medium">${{ order.subtotal|floatformat:2 }}</span>
+                    <div class="space-y-4">
+                        {% for item in items %}
+                        <div class="item-card">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex-1">
+                                    <h3 class="font-semibold text-gray-900">{{ item.product.name }}</h3>
+                                    {% if item.product.code %}
+                                    <p class="text-sm text-gray-600">Code: {{ item.product.code }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-semibold text-lg">${{ item.line_total|floatformat:2 }}</p>
+                                    <p class="text-sm text-gray-600">${{ item.unit_price|floatformat:2 }} each</p>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
+                                <div>
+                                    <p class="text-xs text-gray-600">Ordered Qty</p>
+                                    <p class="font-semibold">{{ item.quantity }} {{ item.uom.name|default:"units" }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-600">Received Qty</p>
+                                    <p class="font-semibold">{{ item.received_quantity|default:0 }} {{ item.uom.name|default:"units" }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-600">Pending Qty</p>
+                                    <p class="font-semibold">{{ item.quantity|floatformat:0|add:item.received_quantity|default:0|floatformat:0|add:"-"|floatformat:0 }} {{ item.uom.name|default:"units" }}</p>
+                                </div>
+                                {% if item.delivery_date %}
+                                <div>
+                                    <p class="text-xs text-gray-600">Delivery Date</p>
+                                    <p class="font-semibold">{{ item.delivery_date|date:"M d, Y" }}</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            {% if item.received_quantity > 0 %}
+                            <div class="mt-3 p-2 bg-green-50 border border-green-200 rounded">
+                                <p class="text-sm text-green-700">
+                                    <i class="fas fa-check-circle"></i>
+                                    Partially received: {{ item.received_quantity|floatformat:2 }} / {{ item.quantity|floatformat:2 }}
+                                </p>
+                            </div>
+                            {% endif %}
                         </div>
-                        {% if order.discount_amount > 0 %}
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600">Discount ({{ order.get_discount_type_display }}):</span>
-                            <span class="font-medium text-green-600">-${{ order.discount_amount|floatformat:2 }}</span>
+                        {% empty %}
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-box-open text-4xl mb-4"></i>
+                            <p>No items in this purchase order</p>
                         </div>
-                        {% endif %}
-                        {% if order.tax_amount > 0 %}
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600">Tax:</span>
-                            <span class="font-medium">${{ order.tax_amount|floatformat:2 }}</span>
-                        </div>
-                        {% endif %}
-                        <hr class="border-gray-200">
-                        <div class="flex justify-between items-center text-lg font-bold">
-                            <span>Total:</span>
-                            <span class="text-blue-600">${{ order.total_amount|floatformat:2 }}</span>
-                        </div>
+                        {% endfor %}
                     </div>
                 </div>
 
-                <!-- Tax Charges -->
-                {% if tax_charges %}
-                <div class="po-detail-card rounded-2xl p-6">
-                    <h3 class="text-xl font-bold text-gray-900 mb-6">Tax & Charges</h3>
-                    
-                    <div class="space-y-3">
-                        {% for charge in tax_charges %}
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <span class="font-medium">{{ charge.tax_template.name }}</span>
-                                <span class="text-sm text-gray-500 ml-2">({{ charge.tax_template.charge_type|title }})</span>
-                            </div>
-                            <span class="font-medium">${{ charge.amount|floatformat:2 }}</span>
-                        </div>
-                        {% endfor %}
+                <!-- Terms and Conditions -->
+                {% if order.terms_conditions %}
+                <div class="po-card">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-file-contract text-purple-500"></i>
+                        Terms & Conditions
+                    </h2>
+                    <div class="bg-gray-50 p-4 rounded border">
+                        <p class="whitespace-pre-wrap">{{ order.terms_conditions }}</p>
                     </div>
                 </div>
                 {% endif %}
 
-                <!-- Related Documents -->
-                {% if grns or bills %}
-                <div class="po-detail-card rounded-2xl p-6">
-                    <h3 class="text-xl font-bold text-gray-900 mb-6">Related Documents</h3>
-                    
-                    {% if grns %}
-                    <div class="mb-6">
-                        <h4 class="font-semibold text-gray-800 mb-3">Goods Receipt Notes</h4>
-                        <div class="space-y-2">
-                            {% for grn in grns %}
-                            <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
-                                <span class="font-medium">{{ grn.grn_number }}</span>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm text-gray-600">{{ grn.received_date|date:"M d, Y" }}</span>
-                                    <a href="{% url 'purchase:grn_detail' grn.id %}" class="text-blue-600 hover:text-blue-800">View</a>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
+                <!-- Notes -->
+                {% if order.notes %}
+                <div class="po-card">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-sticky-note text-yellow-500"></i>
+                        Notes
+                    </h2>
+                    <div class="bg-yellow-50 p-4 rounded border border-yellow-200">
+                        <p class="whitespace-pre-wrap">{{ order.notes }}</p>
                     </div>
-                    {% endif %}
-                    
-                    {% if bills %}
-                    <div>
-                        <h4 class="font-semibold text-gray-800 mb-3">Bills</h4>
-                        <div class="space-y-2">
-                            {% for bill in bills %}
-                            <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
-                                <span class="font-medium">{{ bill.bill_number }}</span>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm text-gray-600">${{ bill.total_amount|floatformat:2 }}</span>
-                                    <a href="{% url 'purchase:bill_detail' bill.id %}" class="text-blue-600 hover:text-blue-800">View</a>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endif %}
                 </div>
                 {% endif %}
             </div>
 
             <!-- Sidebar -->
-            <div class="space-y-6">
-                <!-- Order Details -->
-                <div class="po-detail-card rounded-2xl p-6">
-                    <h3 class="text-lg font-bold text-gray-900 mb-4">Order Details</h3>
+            <div class="lg:col-span-1">
+                
+                <!-- Order Summary -->
+                <div class="po-card">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-calculator text-blue-500"></i>
+                        Order Summary
+                    </h2>
                     
-                    <div class="space-y-3 text-sm">
-                        <div>
-                            <span class="text-gray-600">Created by:</span>
-                            <div class="font-medium">{{ order.created_by.get_full_name|default:order.created_by.username }}</div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Subtotal:</span>
+                            <span class="font-semibold">${{ order.subtotal|floatformat:2 }}</span>
                         </div>
-                        <div>
-                            <span class="text-gray-600">Order Date:</span>
-                            <div class="font-medium">{{ order.order_date|date:"F d, Y" }}</div>
-                        </div>
-                        {% if order.expected_delivery_date %}
-                        <div>
-                            <span class="text-gray-600">Expected Delivery:</span>
-                            <div class="font-medium">{{ order.expected_delivery_date|date:"F d, Y" }}</div>
+                        
+                        {% if order.discount_total %}
+                        <div class="flex justify-between text-red-600">
+                            <span>Discount:</span>
+                            <span>-${{ order.discount_total|floatformat:2 }}</span>
                         </div>
                         {% endif %}
-                        {% if order.warehouse %}
-                        <div>
-                            <span class="text-gray-600">Delivery Warehouse:</span>
-                            <div class="font-medium">{{ order.warehouse.name }}</div>
+                        
+                        {% if order.tax_amount %}
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Tax:</span>
+                            <span class="font-semibold">${{ order.tax_amount|floatformat:2 }}</span>
                         </div>
                         {% endif %}
-                        {% if order.approved_by %}
-                        <div>
-                            <span class="text-gray-600">Approved by:</span>
-                            <div class="font-medium">{{ order.approved_by.get_full_name|default:order.approved_by.username }}</div>
-                            <div class="text-xs text-gray-500">{{ order.approved_at|date:"M d, Y H:i" }}</div>
+                        
+                        <hr class="border-gray-300">
+                        
+                        <div class="amount-display">
+                            ${{ order.total_amount|floatformat:2 }}
                         </div>
+                    </div>
+                </div>
+
+                <!-- Related Documents -->
+                <div class="po-card">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-paperclip text-gray-500"></i>
+                        Related Documents
+                    </h2>
+                    
+                    <div class="space-y-3">
+                        {% if grns %}
+                        <div>
+                            <h3 class="font-medium text-gray-700 mb-2">Goods Receipt Notes</h3>
+                            {% for grn in grns %}
+                            <a href="{% url 'purchase:grn_detail' grn.id %}" class="block p-2 bg-green-50 border border-green-200 rounded hover:bg-green-100 transition-colors">
+                                <p class="text-sm font-medium">{{ grn.grn_number }}</p>
+                                <p class="text-xs text-gray-600">{{ grn.received_date|date:"M d, Y" }}</p>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        {% if bills %}
+                        <div>
+                            <h3 class="font-medium text-gray-700 mb-2">Bills/Invoices</h3>
+                            {% for bill in bills %}
+                            <a href="{% url 'purchase:bill_detail' bill.id %}" class="block p-2 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
+                                <p class="text-sm font-medium">{{ bill.bill_number }}</p>
+                                <p class="text-xs text-gray-600">${{ bill.total_amount|floatformat:2 }}</p>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        {% if not grns and not bills %}
+                        <p class="text-gray-500 text-sm">No related documents yet</p>
                         {% endif %}
                     </div>
                 </div>
 
-                <!-- Supplier Information -->
-                <div class="po-detail-card rounded-2xl p-6">
-                    <h3 class="text-lg font-bold text-gray-900 mb-4">Supplier Information</h3>
+                <!-- Quick Actions -->
+                {% if order.status in 'approved,sent_to_supplier,partially_received' %}
+                <div class="po-card">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-bolt text-yellow-500"></i>
+                        Quick Actions
+                    </h2>
                     
-                    <div class="space-y-3 text-sm">
-                        <div>
-                            <div class="font-medium text-lg">{{ order.supplier.name }}</div>
-                            {% if order.supplier.contact_person %}
-                            <div class="text-gray-600">Contact: {{ order.supplier.contact_person }}</div>
-                            {% endif %}
-                        </div>
-                        {% if order.supplier.email %}
-                        <div>
-                            <span class="text-gray-600">Email:</span>
-                            <div class="font-medium">{{ order.supplier.email }}</div>
-                        </div>
-                        {% endif %}
-                        {% if order.supplier.phone %}
-                        <div>
-                            <span class="text-gray-600">Phone:</span>
-                            <div class="font-medium">{{ order.supplier.phone }}</div>
-                        </div>
-                        {% endif %}
-                        {% if order.payment_terms %}
-                        <div>
-                            <span class="text-gray-600">Payment Terms:</span>
-                            <div class="font-medium">{{ order.payment_terms }}</div>
-                        </div>
-                        {% endif %}
-                        {% if order.delivery_terms %}
-                        <div>
-                            <span class="text-gray-600">Delivery Terms:</span>
-                            <div class="font-medium">{{ order.delivery_terms }}</div>
-                        </div>
+                    <div class="space-y-2">
+                        <a href="{% url 'purchase:grn_add' %}?po={{ order.id }}" class="action-btn btn-primary w-full text-center">
+                            <i class="fas fa-truck"></i>
+                            Create GRN
+                        </a>
+                        
+                        {% if grns %}
+                        <a href="{% url 'purchase:bill_add' %}?po={{ order.id }}" class="action-btn btn-secondary w-full text-center">
+                            <i class="fas fa-file-invoice"></i>
+                            Create Bill
+                        </a>
                         {% endif %}
                     </div>
-                </div>
-
-                <!-- Order Progress -->
-                <div class="po-detail-card rounded-2xl p-6">
-                    <h3 class="text-lg font-bold text-gray-900 mb-4">Order Progress</h3>
-                    
-                    <div class="space-y-4">
-                        <div class="timeline-item completed pl-6 py-2">
-                            <div class="font-medium">Order Created</div>
-                            <div class="text-sm text-gray-500">{{ order.created_at|date:"M d, Y H:i" }}</div>
-                        </div>
-                        
-                        {% if order.approved_at %}
-                        <div class="timeline-item completed pl-6 py-2">
-                            <div class="font-medium">Order Approved</div>
-                            <div class="text-sm text-gray-500">{{ order.approved_at|date:"M d, Y H:i" }}</div>
-                        </div>
-                        {% elif order.status == 'pending_approval' %}
-                        <div class="timeline-item active pl-6 py-2">
-                            <div class="font-medium">Pending Approval</div>
-                            <div class="text-sm text-gray-500">Waiting for approval</div>
-                        </div>
-                        {% endif %}
-                        
-                        {% if order.status == 'sent_to_supplier' %}
-                        <div class="timeline-item completed pl-6 py-2">
-                            <div class="font-medium">Sent to Supplier</div>
-                            <div class="text-sm text-gray-500">Order sent for processing</div>
-                        </div>
-                        {% endif %}
-                        
-                        {% if order.status == 'acknowledged' %}
-                        <div class="timeline-item completed pl-6 py-2">
-                            <div class="font-medium">Acknowledged</div>
-                            <div class="text-sm text-gray-500">Supplier confirmed order</div>
-                        </div>
-                        {% endif %}
-                        
-                        {% if order.status == 'partially_received' %}
-                        <div class="timeline-item active pl-6 py-2">
-                            <div class="font-medium">Partially Received</div>
-                            <div class="text-sm text-gray-500">{{ order.get_received_percentage|floatformat:0 }}% received</div>
-                        </div>
-                        {% elif order.status == 'fully_received' %}
-                        <div class="timeline-item completed pl-6 py-2">
-                            <div class="font-medium">Fully Received</div>
-                            <div class="text-sm text-gray-500">All items received</div>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Additional Information -->
-                {% if order.notes or order.terms_conditions %}
-                <div class="po-detail-card rounded-2xl p-6">
-                    <h3 class="text-lg font-bold text-gray-900 mb-4">Additional Information</h3>
-                    
-                    {% if order.notes %}
-                    <div class="mb-4">
-                        <span class="text-gray-600 text-sm">Notes:</span>
-                        <div class="font-medium mt-1">{{ order.notes }}</div>
-                    </div>
-                    {% endif %}
-                    
-                    {% if order.terms_conditions %}
-                    <div>
-                        <span class="text-gray-600 text-sm">Terms & Conditions:</span>
-                        <div class="font-medium mt-1 text-sm">{{ order.terms_conditions|linebreaksbr }}</div>
-                    </div>
-                    {% endif %}
                 </div>
                 {% endif %}
             </div>

@@ -1,96 +1,47 @@
 {% extends "base.html" %}
-{% block title %}Create Purchase Order | FutureERP{% endblock %}
+{% load static %}
+
+{% block title %}{{ title|default:"Create Purchase Order" }} | FutureERP{% endblock %}
 
 {% block extra_css %}
 <style>
-    .form-section {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
-        border: 1px solid rgba(59, 130, 246, 0.2);
+    .po-form-container {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        min-height: 100vh;
+        padding-top: 6rem;
+    }
+    
+    .form-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid #e2e8f0;
         border-radius: 1rem;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         transition: all 0.3s ease;
     }
     
-    .form-section:hover {
+    .form-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
     }
     
-    .item-row {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(6, 95, 70, 0.05));
-        border: 1px solid rgba(16, 185, 129, 0.2);
-        border-radius: 0.75rem;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease;
-    }
-    
-    .item-row:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px -2px rgba(0, 0, 0, 0.1);
-    }
-    
-    .discount-section {
-        background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(147, 51, 234, 0.1));
-        border: 1px solid rgba(168, 85, 247, 0.2);
-        border-radius: 0.75rem;
-        padding: 1rem;
-        margin-top: 1rem;
-    }
-    
-    .hover-lift {
-        transition: transform 0.2s ease;
-    }
-    
-    .hover-lift:hover {
-        transform: translateY(-2px);
-    }
-    
-    .accounting-highlight {
+    .form-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-    
-    .action-btn {
-        display: inline-flex;
-        align-items: center;
-        font-weight: 600;
-        text-decoration: none;
-        transition: all 0.2s ease;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    
-    .action-btn:hover {
-        text-decoration: none;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    }
-    
-    .card-modern {
-        background: white;
         border-radius: 1rem;
-        padding: 1.5rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        border: 1px solid rgba(229, 231, 235, 0.8);
-    }
-    
-    .info-banner {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
-        border: 1px solid rgba(59, 130, 246, 0.2);
-        border-radius: 0.75rem;
-        padding: 1rem;
-        margin-bottom: 1rem;
+        padding: 2rem;
+        color: white;
+        margin-bottom: 2rem;
+        text-align: center;
     }
     
     .section-header {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #e5e7eb;
     }
     
     .section-icon {
@@ -98,836 +49,693 @@
         height: 1.5rem;
         color: #3b82f6;
     }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        border: 2px solid #d1d5db;
+        border-radius: 0.75rem;
+        font-size: 0.875rem;
+        transition: all 0.3s ease;
+        background: white;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        transform: translateY(-1px);
+    }
+    
+    .form-select {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        border: 2px solid #d1d5db;
+        border-radius: 0.75rem;
+        font-size: 0.875rem;
+        background: white;
+        transition: all 0.3s ease;
+    }
+    
+    .form-select:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .item-card {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border: 2px solid #0ea5e9;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+    
+    .item-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(14, 165, 233, 0.15);
+    }
+    
+    .item-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #0ea5e9;
+    }
+    
+    .remove-item-btn {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+    }
+    
+    .remove-item-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+    }
+    
+    .add-item-btn {
+        background: linear-gradient(135deg, #10b981, #047857);
+        color: white;
+        border: none;
+        border-radius: 0.75rem;
+        padding: 1rem 2rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 2rem auto;
+    }
+    
+    .add-item-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+    }
+    
+    .submit-section {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        border-radius: 1rem;
+        padding: 2rem;
+        text-align: center;
+        margin-top: 2rem;
+    }
+    
+    .submit-btn {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        border: none;
+        border-radius: 0.75rem;
+        padding: 1rem 3rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 0 0.5rem;
+    }
+    
+    .submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+    }
+    
+    .cancel-btn {
+        background: linear-gradient(135deg, #6b7280, #4b5563);
+        color: white;
+        border: none;
+        border-radius: 0.75rem;
+        padding: 1rem 3rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+        margin: 0 0.5rem;
+    }
+    
+    .cancel-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(107, 114, 128, 0.3);
+        text-decoration: none;
+        color: white;
+    }
+    
+    .discount-section {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border: 2px solid #f59e0b;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-top: 2rem;
+    }
+    
+    .total-section {
+        background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+        border: 2px solid #10b981;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-top: 2rem;
+    }
+    
+    .total-amount {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #047857;
+        text-align: center;
+        margin: 1rem 0;
+    }
+    
+    .required-field::after {
+        content: ' *';
+        color: #ef4444;
+        font-weight: bold;
+    }
+    
+    .help-text {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+    }
+    
+    .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+    }
+    
+    .grid-4 {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+        .grid-2, .grid-3, .grid-4 {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-card {
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .item-card {
+            padding: 1rem;
+        }
+    }
+    
+    .info-banner {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        border: 1px solid #3b82f6;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        color: #1e40af;
+    }
+    
+    .quotation-info {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border: 1px solid #0ea5e9;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="pt-24 pb-8">
+<div class="po-form-container">
     <div class="mx-auto px-8">
+        
         <!-- Header -->
-        <div class="flex justify-between items-center mb-8">
-            <div>
-                <h1 class="text-4xl font-bold accounting-highlight mb-2">{{ title }}</h1>
-                <p class="text-gray-600">Create a new purchase order with optional quotation reference</p>
-            </div>
-            <div class="flex gap-4">
-                <a href="{% url 'purchase:purchaseorders_ui' %}" class="action-btn bg-gray-500 text-white px-6 py-3 rounded-2xl hover-lift">
-                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-                    Back to Purchase Orders
-                </a>
-            </div>
+        <div class="form-header">
+            <h1 class="text-4xl font-bold mb-2">{{ title|default:"Create Purchase Order" }}</h1>
+            <p class="text-lg opacity-90">Fill in the details below to create a new purchase order</p>
         </div>
 
-        <form method="POST" enctype="multipart/form-data" class="space-y-6">
+        <!-- Main Form -->
+        <form method="post" enctype="multipart/form-data" id="po-form">
             {% csrf_token %}
             
-            <!-- Basic Information Section -->
-            <div class="form-section">
+            <!-- Quotation Information (if applicable) -->
+            {% if quotation_id %}
+            <div class="form-card">
+                <div class="quotation-info">
+                    <h3 class="font-semibold text-lg mb-2">
+                        <i class="fas fa-quote-left"></i>
+                        Creating from Quotation
+                    </h3>
+                    <p class="text-sm">This purchase order is being created from a supplier quotation. Some fields may be pre-filled.</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Basic Information -->
+            <div class="form-card">
                 <div class="section-header">
-                    <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <h3 class="text-xl font-semibold text-blue-900">Basic Information</h3>
+                    <i class="fas fa-info-circle section-icon"></i>
+                    <h2 class="text-xl font-semibold">Basic Information</h2>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Supplier *</label>
-                        {{ form.supplier }}
-                        {% if form.supplier.errors %}
-                            <p class="text-red-500 text-sm mt-1">{{ form.supplier.errors.0 }}</p>
-                        {% endif %}
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label for="supplier" class="form-label required-field">Supplier</label>
+                        <select name="supplier" id="supplier" class="form-select" required onchange="updateSupplierInfo()">
+                            <option value="">Select Supplier</option>
+                            {% for supplier in suppliers %}
+                            <option value="{{ supplier.id }}" 
+                                    data-email="{{ supplier.email }}" 
+                                    data-phone="{{ supplier.phone }}"
+                                    {% if form.supplier.value == supplier.id %}selected{% endif %}>
+                                {{ supplier.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="help-text">Choose the supplier for this purchase order</div>
                     </div>
                     
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Expected Delivery Date</label>
-                        {{ form.expected_delivery_date }}
-                        {% if form.expected_delivery_date.errors %}
-                            <p class="text-red-500 text-sm mt-1">{{ form.expected_delivery_date.errors.0 }}</p>
-                        {% endif %}
+                    <div class="form-group">
+                        <label for="warehouse" class="form-label">Delivery Warehouse</label>
+                        <select name="warehouse" id="warehouse" class="form-select">
+                            <option value="">Select Warehouse</option>
+                            {% for warehouse in warehouses %}
+                            <option value="{{ warehouse.id }}" {% if form.warehouse.value == warehouse.id %}selected{% endif %}>
+                                {{ warehouse.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="help-text">Where should the goods be delivered?</div>
                     </div>
                     
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Purchase Requisition (Optional)</label>
-                        {{ form.purchase_requisition }}
-                        {% if form.purchase_requisition.errors %}
-                            <p class="text-red-500 text-sm mt-1">{{ form.purchase_requisition.errors.0 }}</p>
-                        {% endif %}
+                    <div class="form-group">
+                        <label for="expected_delivery_date" class="form-label">Expected Delivery Date</label>
+                        <input type="date" name="expected_delivery_date" id="expected_delivery_date" 
+                               class="form-input" value="{{ form.expected_delivery_date.value|default:'' }}">
+                        <div class="help-text">When do you expect delivery?</div>
+                    </div>
+                </div>
+                
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="purchase_requisition" class="form-label">Purchase Requisition</label>
+                        <select name="purchase_requisition" id="purchase_requisition" class="form-select">
+                            <option value="">Select Requisition (Optional)</option>
+                            {% for req in requisitions %}
+                            <option value="{{ req.id }}" {% if form.purchase_requisition.value == req.id %}selected{% endif %}>
+                                {{ req.pr_number }} - {{ req.purpose|truncatechars:30 }}
+                            </option>
+                            {% endfor %}
+                        </select>
                     </div>
                     
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Warehouse</label>
-                        {{ form.warehouse }}
-                        {% if form.warehouse.errors %}
-                            <p class="text-red-500 text-sm mt-1">{{ form.warehouse.errors.0 }}</p>
-                        {% endif %}
+                    <div class="form-group">
+                        <label for="supplier_quotation" class="form-label">Reference Quotation</label>
+                        <select name="supplier_quotation" id="supplier_quotation" class="form-select">
+                            <option value="">Select Quotation (Optional)</option>
+                            {% for quote in quotations %}
+                            <option value="{{ quote.id }}" {% if form.supplier_quotation.value == quote.id %}selected{% endif %}>
+                                {{ quote.quotation_number }} - ${{ quote.total_amount|floatformat:2 }}
+                            </option>
+                            {% endfor %}
+                        </select>
                     </div>
                 </div>
             </div>
 
-            <!-- Optional Quotation Section -->
-            <div class="form-section">
+            <!-- Order Items -->
+            <div class="form-card">
                 <div class="section-header">
-                    <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                    </svg>
-                    <h3 class="text-xl font-semibold text-blue-900">Optional Quotation Reference</h3>
-                </div>
-                <div class="info-banner">
-                    <div class="flex items-center">
-                        <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <p class="text-blue-700 text-sm">
-                            <strong>Flexible System:</strong> You can optionally select a quotation to pre-fill items, but you're free to modify, add, or remove items as needed.
-                        </p>
-                    </div>
+                    <i class="fas fa-list section-icon"></i>
+                    <h2 class="text-xl font-semibold">Order Items</h2>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Reference Quotation (Optional)</label>
-                        {{ form.supplier_quotation }}
-                        <p class="text-xs text-gray-500 mt-1">Select a quotation to pre-fill items (you can modify them)</p>
-                        {% if form.supplier_quotation.errors %}
-                            <p class="text-red-500 text-sm mt-1">{{ form.supplier_quotation.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    
-                    <div>
-                        <button type="button" id="previewQuotationBtn" class="btn-secondary mt-6" style="display: none;">
-                            Preview Quotation Items
-                        </button>
-                        <div id="quotationPreview" class="mt-4" style="display: none;">
-                            <!-- Quotation preview will be loaded here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Terms Section -->
-            <div class="form-section">
-                <div class="section-header">
-                    <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    <h3 class="text-xl font-semibold text-blue-900">Terms & Conditions</h3>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Payment Terms</label>
-                        {{ form.payment_terms }}
-                        {% if form.payment_terms.errors %}
-                            <p class="text-red-500 text-sm mt-1">{{ form.payment_terms.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Delivery Terms</label>
-                        {{ form.delivery_terms }}
-                        {% if form.delivery_terms.errors %}
-                            <p class="text-red-500 text-sm mt-1">{{ form.delivery_terms.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Items Section -->
-            <div class="form-section">
-                <div class="section-header">
-                    <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                    </svg>
-                    <h3 class="text-xl font-semibold text-blue-900">Items</h3>
-                    <div class="ml-auto">
-                        <button type="button" id="addItemBtn" class="btn-primary">
-                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                            Add Item
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="info-banner">
-                    <div class="flex items-center">
-                        <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <p class="text-green-700 text-sm">
-                            <strong>Enhanced Features:</strong> Each item supports percentage, fixed amount, or quantity-based discounts/rebates. 
-                            Items can also have individual minimum order quantities and delivery requirements.
-                        </p>
-                    </div>
-                </div>
-                
-                <div id="itemsContainer" class="space-y-4">
+                <div id="items-container">
                     <!-- Items will be added here dynamically -->
                 </div>
                 
-                <div class="text-center py-8" id="noItemsMessage">
-                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                        </svg>
-                    </div>
-                    <p class="text-gray-500">No items added yet. Click "Add Item" to get started.</p>
-                </div>
+                <button type="button" class="add-item-btn" onclick="addItem()">
+                    <i class="fas fa-plus"></i>
+                    Add Item
+                </button>
             </div>
 
-            <!-- Order-Level Discount Section -->
-            <div class="form-section">
+            <!-- Discount & Charges -->
+            <div class="form-card">
                 <div class="section-header">
-                    <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <h3 class="text-xl font-semibold text-blue-900">Order-Level Discount/Rebate</h3>
+                    <i class="fas fa-percent section-icon"></i>
+                    <h2 class="text-xl font-semibold">Discount & Additional Charges</h2>
                 </div>
                 
                 <div class="discount-section">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Discount Type</label>
-                            {{ form.discount_type }}
-                            {% if form.discount_type.errors %}
-                                <p class="text-red-500 text-sm mt-1">{{ form.discount_type.errors.0 }}</p>
-                            {% endif %}
+                    <div class="grid-3">
+                        <div class="form-group">
+                            <label for="discount_type" class="form-label">Discount Type</label>
+                            <select name="discount_type" id="discount_type" class="form-select" onchange="toggleDiscountFields()">
+                                <option value="percentage">Percentage Discount</option>
+                                <option value="fixed_amount">Fixed Amount</option>
+                                <option value="quantity_based">Quantity Based</option>
+                            </select>
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Application</label>
-                            {{ form.discount_application }}
-                            {% if form.discount_application.errors %}
-                                <p class="text-red-500 text-sm mt-1">{{ form.discount_application.errors.0 }}</p>
-                            {% endif %}
+                        <div class="form-group" id="percentage_field">
+                            <label for="discount_percentage" class="form-label">Discount %</label>
+                            <input type="number" name="discount_percentage" id="discount_percentage" 
+                                   class="form-input" step="0.01" min="0" max="100" 
+                                   value="{{ form.discount_percentage.value|default:0 }}"
+                                   onchange="calculateTotals()">
                         </div>
                         
-                        <div id="orderDiscountValue">
-                            <!-- Dynamic discount fields will be shown here -->
+                        <div class="form-group" id="amount_field" style="display: none;">
+                            <label for="discount_amount" class="form-label">Discount Amount</label>
+                            <input type="number" name="discount_amount" id="discount_amount" 
+                                   class="form-input" step="0.01" min="0" 
+                                   value="{{ form.discount_amount.value|default:0 }}"
+                                   onchange="calculateTotals()">
                         </div>
+                        
+                        <div class="form-group">
+                            <label for="discount_application" class="form-label">Application</label>
+                            <select name="discount_application" id="discount_application" class="form-select">
+                                <option value="subtract">Subtract (Discount)</option>
+                                <option value="add">Add (Additional Charge)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terms & Notes -->
+            <div class="form-card">
+                <div class="section-header">
+                    <i class="fas fa-file-contract section-icon"></i>
+                    <h2 class="text-xl font-semibold">Terms & Additional Information</h2>
+                </div>
+                
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="payment_terms" class="form-label">Payment Terms</label>
+                        <input type="text" name="payment_terms" id="payment_terms" 
+                               class="form-input" placeholder="e.g., Net 30 days"
+                               value="{{ form.payment_terms.value|default:'' }}">
                     </div>
                     
-                    <!-- Hidden fields for different discount types -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div id="percentageField">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Percentage (%)</label>
-                            {{ form.discount_percentage }}
+                    <div class="form-group">
+                        <label for="delivery_terms" class="form-label">Delivery Terms</label>
+                        <input type="text" name="delivery_terms" id="delivery_terms" 
+                               class="form-input" placeholder="e.g., FOB Destination"
+                               value="{{ form.delivery_terms.value|default:'' }}">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="terms_conditions" class="form-label">Terms & Conditions</label>
+                    <textarea name="terms_conditions" id="terms_conditions" 
+                              class="form-input" rows="4" 
+                              placeholder="Enter any terms and conditions for this purchase order">{{ form.terms_conditions.value|default:'' }}</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="notes" class="form-label">Internal Notes</label>
+                    <textarea name="notes" id="notes" 
+                              class="form-input" rows="3" 
+                              placeholder="Any internal notes about this purchase order">{{ form.notes.value|default:'' }}</textarea>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="form-card">
+                <div class="total-section">
+                    <div class="section-header">
+                        <i class="fas fa-calculator section-icon"></i>
+                        <h2 class="text-xl font-semibold">Order Summary</h2>
+                    </div>
+                    
+                    <div class="grid-4">
+                        <div class="text-center">
+                            <p class="text-sm text-gray-600">Subtotal</p>
+                            <p class="text-lg font-semibold" id="subtotal">$0.00</p>
                         </div>
-                        
-                        <div id="fixedAmountField" style="display: none;">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Fixed Amount ($)</label>
-                            {{ form.discount_amount }}
+                        <div class="text-center">
+                            <p class="text-sm text-gray-600">Discount</p>
+                            <p class="text-lg font-semibold text-red-600" id="discount">$0.00</p>
                         </div>
-                        
-                        <div id="quantityDiscountFields" style="display: none;" class="md:col-span-2">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Minimum Quantity</label>
-                                    {{ form.quantity_discount_min_qty }}
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Discount Rate (%)</label>
-                                    {{ form.quantity_discount_rate }}
-                                </div>
-                            </div>
+                        <div class="text-center">
+                            <p class="text-sm text-gray-600">Tax</p>
+                            <p class="text-lg font-semibold" id="tax">$0.00</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-sm text-gray-600">Total</p>
+                            <p class="total-amount" id="total">$0.00</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Notes Section -->
-            <div class="form-section">
-                <div class="section-header">
-                    <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                    </svg>
-                    <h3 class="text-xl font-semibold text-blue-900">Additional Information</h3>
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                    {{ form.notes }}
-                    {% if form.notes.errors %}
-                        <p class="text-red-500 text-sm mt-1">{{ form.notes.errors.0 }}</p>
-                    {% endif %}
-                </div>
-                
-                <div class="mt-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Terms & Conditions</label>
-                    {{ form.terms_conditions }}
-                    {% if form.terms_conditions.errors %}
-                        <p class="text-red-500 text-sm mt-1">{{ form.terms_conditions.errors.0 }}</p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Form Actions -->
-            <div class="card-modern">
-                <div class="flex justify-end gap-4 pt-2">
-                    <a href="{% url 'purchase:purchaseorders_ui' %}" class="btn-secondary">
-                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                        </svg>
-                        Cancel
-                    </a>
-                    <button type="submit" class="btn-primary">
-                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                        Create Purchase Order
-                    </button>
-                </div>
+            <!-- Submit Section -->
+            <div class="submit-section">
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-save"></i>
+                    Create Purchase Order
+                </button>
+                <a href="{% url 'purchase:purchaseorders_ui' %}" class="cancel-btn">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </a>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Item Template (Hidden) -->
-<template id="itemTemplate">
-        <div class="item-row">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                        </svg>
-                    </div>
-                    <h4 class="text-lg font-medium text-green-800">Item #<span class="item-number"></span></h4>
-                </div>
-                <button type="button" class="btn-danger-sm remove-item-btn">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                    </svg>
-                    Remove
-                </button>
-            </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Product *</label>
-                <select name="products[]" class="form-select w-full rounded-lg border-gray-300 product-select" required>
-                    <option value="">Select Product</option>
-                    {% for product in products %}
-                    <option value="{{ product.id }}" data-price="{{ product.sale_price|default:0 }}">{{ product.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Quantity *</label>
-                <input type="number" name="quantities[]" class="form-input w-full rounded-lg border-gray-300 quantity-input" 
-                       step="0.01" min="0.01" required>
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Unit Price *</label>
-                <input type="number" name="unit_prices[]" class="form-input w-full rounded-lg border-gray-300 price-input" 
-                       step="0.01" min="0" required>
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">UOM</label>
-                <select name="uoms[]" class="form-select w-full rounded-lg border-gray-300">
-                    <option value="">Select UOM</option>
-                    {% for uom in uoms %}
-                    <option value="{{ uom.id }}">{{ uom.name }} ({{ uom.abbreviation }})</option>
-                    {% endfor %}
-                </select>
-            </div>
-        </div>
-        
-        <!-- Item Discount Section -->
-        <div class="discount-section">
-            <div class="flex items-center gap-2 mb-3">
-                <div class="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
-                    <svg class="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-                <h5 class="text-purple-800 font-medium">Item Discount/Rebate</h5>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Discount Type</label>
-                    <select name="item_discount_types[]" class="form-select w-full rounded-lg border-gray-300 item-discount-type">
-                        <option value="percentage">Percentage</option>
-                        <option value="fixed_amount">Fixed Amount</option>
-                        <option value="quantity_based">Quantity Based</option>
-                    </select>
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Application</label>
-                    <select name="item_discount_applications[]" class="form-select w-full rounded-lg border-gray-300">
-                        <option value="subtract">Subtract (Discount)</option>
-                        <option value="add">Add (Rebate/Fee)</option>
-                    </select>
-                </div>
-                
-                <div class="item-percentage-field">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Percentage (%)</label>
-                    <input type="number" name="item_discount_percentages[]" class="form-input w-full rounded-lg border-gray-300" 
-                           step="0.01" min="0" max="100" value="0">
-                </div>
-                
-                <div class="item-fixed-amount-field" style="display: none;">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Fixed Amount ($)</label>
-                    <input type="number" name="item_discount_amounts[]" class="form-input w-full rounded-lg border-gray-300" 
-                           step="0.01" min="0" value="0">
-                </div>
-                
-                <div class="item-quantity-discount-field" style="display: none;" class="md:col-span-2">
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Min Qty</label>
-                            <input type="number" name="item_qty_discount_mins[]" class="form-input w-full rounded-lg border-gray-300" 
-                                   step="1" min="0" value="0">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Rate (%)</label>
-                            <input type="number" name="item_qty_discount_rates[]" class="form-input w-full rounded-lg border-gray-300" 
-                                   step="0.01" min="0" value="0">
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Minimum Order Quantity</label>
-                    <input type="number" name="minimum_order_qtys[]" class="form-input w-full rounded-lg border-gray-300" 
-                           step="1" min="1" value="1">
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Quotation Item Reference</label>
-                    <select name="quotation_items[]" class="form-select w-full rounded-lg border-gray-300">
-                        <option value="">No quotation reference</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-    </div>
-</template>
-
 <script>
+let itemCounter = 0;
+
+function addItem() {
+    const container = document.getElementById('items-container');
+    const itemHtml = `
+        <div class="item-card" id="item-${itemCounter}">
+            <button type="button" class="remove-item-btn" onclick="removeItem(${itemCounter})">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="item-header">
+                <h3 class="text-lg font-semibold text-blue-800">Item ${itemCounter + 1}</h3>
+            </div>
+            
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="product_${itemCounter}" class="form-label required-field">Product</label>
+                    <select name="products[]" id="product_${itemCounter}" class="form-select" required onchange="updateItemDetails(${itemCounter})">
+                        <option value="">Select Product</option>
+                        {% for product in products %}
+                        <option value="{{ product.id }}" 
+                                data-price="{{ product.unit_price|default:0 }}"
+                                data-uom="{{ product.unit_of_measure.id|default:'' }}">
+                            {{ product.name }} {% if product.code %}({{ product.code }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="uom_${itemCounter}" class="form-label">UOM</label>
+                    <select name="uoms[]" id="uom_${itemCounter}" class="form-select">
+                        <option value="">Select UOM</option>
+                        {% for uom in uoms %}
+                        <option value="{{ uom.id }}">{{ uom.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="grid-4">
+                <div class="form-group">
+                    <label for="quantity_${itemCounter}" class="form-label required-field">Quantity</label>
+                    <input type="number" name="quantities[]" id="quantity_${itemCounter}" 
+                           class="form-input" step="0.01" min="0.01" required 
+                           onchange="calculateItemTotal(${itemCounter})">
+                </div>
+                
+                <div class="form-group">
+                    <label for="unit_price_${itemCounter}" class="form-label required-field">Unit Price</label>
+                    <input type="number" name="unit_prices[]" id="unit_price_${itemCounter}" 
+                           class="form-input" step="0.01" min="0" required 
+                           onchange="calculateItemTotal(${itemCounter})">
+                </div>
+                
+                <div class="form-group">
+                    <label for="item_discount_${itemCounter}" class="form-label">Item Discount %</label>
+                    <input type="number" name="item_discounts[]" id="item_discount_${itemCounter}" 
+                           class="form-input" step="0.01" min="0" max="100" value="0"
+                           onchange="calculateItemTotal(${itemCounter})">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Line Total</label>
+                    <div class="form-input" style="background: #f3f4f6; cursor: not-allowed;">
+                        <span id="line_total_${itemCounter}">$0.00</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="delivery_date_${itemCounter}" class="form-label">Expected Delivery Date</label>
+                <input type="date" name="delivery_dates[]" id="delivery_date_${itemCounter}" class="form-input">
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', itemHtml);
+    itemCounter++;
+}
+
+function removeItem(index) {
+    const item = document.getElementById(`item-${index}`);
+    if (item) {
+        item.remove();
+        calculateTotals();
+    }
+}
+
+function updateItemDetails(index) {
+    const productSelect = document.getElementById(`product_${index}`);
+    const selectedOption = productSelect.selectedOptions[0];
+    
+    if (selectedOption) {
+        const price = selectedOption.dataset.price;
+        const uomId = selectedOption.dataset.uom;
+        
+        document.getElementById(`unit_price_${index}`).value = price;
+        
+        if (uomId) {
+            document.getElementById(`uom_${index}`).value = uomId;
+        }
+        
+        calculateItemTotal(index);
+    }
+}
+
+function calculateItemTotal(index) {
+    const quantity = parseFloat(document.getElementById(`quantity_${index}`).value) || 0;
+    const unitPrice = parseFloat(document.getElementById(`unit_price_${index}`).value) || 0;
+    const discount = parseFloat(document.getElementById(`item_discount_${index}`).value) || 0;
+    
+    const subtotal = quantity * unitPrice;
+    const discountAmount = subtotal * (discount / 100);
+    const total = subtotal - discountAmount;
+    
+    document.getElementById(`line_total_${index}`).textContent = `$${total.toFixed(2)}`;
+    
+    calculateTotals();
+}
+
+function calculateTotals() {
+    let subtotal = 0;
+    
+    // Calculate subtotal from all items
+    for (let i = 0; i < itemCounter; i++) {
+        const lineTotal = document.getElementById(`line_total_${i}`);
+        if (lineTotal) {
+            const amount = parseFloat(lineTotal.textContent.replace('$', '')) || 0;
+            subtotal += amount;
+        }
+    }
+    
+    // Apply order-level discount
+    const discountType = document.getElementById('discount_type').value;
+    const discountPercentage = parseFloat(document.getElementById('discount_percentage').value) || 0;
+    const discountAmount = parseFloat(document.getElementById('discount_amount').value) || 0;
+    
+    let orderDiscount = 0;
+    if (discountType === 'percentage') {
+        orderDiscount = subtotal * (discountPercentage / 100);
+    } else if (discountType === 'fixed_amount') {
+        orderDiscount = discountAmount;
+    }
+    
+    const afterDiscount = subtotal - orderDiscount;
+    const tax = 0; // Calculate tax if needed
+    const total = afterDiscount + tax;
+    
+    // Update display
+    document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+    document.getElementById('discount').textContent = `$${orderDiscount.toFixed(2)}`;
+    document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
+    document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+}
+
+function toggleDiscountFields() {
+    const discountType = document.getElementById('discount_type').value;
+    const percentageField = document.getElementById('percentage_field');
+    const amountField = document.getElementById('amount_field');
+    
+    if (discountType === 'percentage') {
+        percentageField.style.display = 'block';
+        amountField.style.display = 'none';
+    } else if (discountType === 'fixed_amount') {
+        percentageField.style.display = 'none';
+        amountField.style.display = 'block';
+    } else {
+        percentageField.style.display = 'block';
+        amountField.style.display = 'none';
+    }
+    
+    calculateTotals();
+}
+
+function updateSupplierInfo() {
+    // You can add supplier-specific logic here
+    // For example, auto-fill payment terms based on supplier
+}
+
+// Initialize with one item
 document.addEventListener('DOMContentLoaded', function() {
-    let itemCounter = 0;
-    const itemsContainer = document.getElementById('itemsContainer');
-    const noItemsMessage = document.getElementById('noItemsMessage');
-    const addItemBtn = document.getElementById('addItemBtn');
-    const itemTemplate = document.getElementById('itemTemplate');
-    
-    // Add item functionality
-    addItemBtn.addEventListener('click', function() {
-        addItem();
-    });
-    
-    function addItem() {
-        itemCounter++;
-        
-        // Clone the template
-        const template = itemTemplate.content.cloneNode(true);
-        
-        // Update item number
-        template.querySelector('.item-number').textContent = itemCounter;
-        
-        // Add event listeners
-        const removeBtn = template.querySelector('.remove-item-btn');
-        removeBtn.addEventListener('click', function() {
-            removeItem(this);
-        });
-        
-        // Product selection change handler
-        const productSelect = template.querySelector('.product-select');
-        productSelect.addEventListener('change', function() {
-            updateProductPrice(this);
-        });
-        
-        // Item discount type change handler
-        const itemDiscountType = template.querySelector('.item-discount-type');
-        itemDiscountType.addEventListener('change', function() {
-            toggleItemDiscountFields(this);
-        });
-        
-        // Append to container
-        itemsContainer.appendChild(template);
-        
-        // Hide no items message
-        noItemsMessage.style.display = 'none';
-        
-        // Update item numbers
-        updateItemNumbers();
-    }
-    
-    function removeItem(button) {
-        const itemRow = button.closest('.item-row');
-        itemRow.remove();
-        
-        // Show no items message if no items left
-        if (itemsContainer.children.length === 0) {
-            noItemsMessage.style.display = 'block';
-        }
-        
-        // Update item numbers
-        updateItemNumbers();
-    }
-    
-    function updateItemNumbers() {
-        const items = itemsContainer.querySelectorAll('.item-row');
-        items.forEach((item, index) => {
-            item.querySelector('.item-number').textContent = index + 1;
-        });
-    }
-    
-    function updateProductPrice(selectElement) {
-        const selectedOption = selectElement.options[selectElement.selectedIndex];
-        const price = selectedOption.getAttribute('data-price') || 0;
-        const priceInput = selectElement.closest('.item-row').querySelector('.price-input');
-        priceInput.value = price;
-    }
-    
-    function toggleItemDiscountFields(selectElement) {
-        const itemRow = selectElement.closest('.item-row');
-        const discountType = selectElement.value;
-        
-        const percentageField = itemRow.querySelector('.item-percentage-field');
-        const fixedAmountField = itemRow.querySelector('.item-fixed-amount-field');
-        const quantityDiscountField = itemRow.querySelector('.item-quantity-discount-field');
-        
-        // Hide all fields first
-        percentageField.style.display = 'none';
-        fixedAmountField.style.display = 'none';
-        quantityDiscountField.style.display = 'none';
-        
-        // Show relevant field
-        if (discountType === 'percentage') {
-            percentageField.style.display = 'block';
-        } else if (discountType === 'fixed_amount') {
-            fixedAmountField.style.display = 'block';
-        } else if (discountType === 'quantity_based') {
-            quantityDiscountField.style.display = 'block';
-        }
-    }
-    
-    // Order-level discount type handling
-    const orderDiscountType = document.getElementById('{{ form.discount_type.id_for_label }}');
-    if (orderDiscountType) {
-        orderDiscountType.addEventListener('change', function() {
-            toggleOrderDiscountFields(this.value);
-        });
-        
-        // Initialize on page load
-        toggleOrderDiscountFields(orderDiscountType.value);
-    }
-    
-    function toggleOrderDiscountFields(discountType) {
-        const percentageField = document.getElementById('percentageField');
-        const fixedAmountField = document.getElementById('fixedAmountField');
-        const quantityDiscountFields = document.getElementById('quantityDiscountFields');
-        
-        // Hide all fields first
-        percentageField.style.display = 'none';
-        fixedAmountField.style.display = 'none';
-        quantityDiscountFields.style.display = 'none';
-        
-        // Show relevant field
-        if (discountType === 'percentage') {
-            percentageField.style.display = 'block';
-        } else if (discountType === 'fixed_amount') {
-            fixedAmountField.style.display = 'block';
-        } else if (discountType === 'quantity_based') {
-            quantityDiscountFields.style.display = 'block';
-        }
-    }
-    
-    // Quotation preview functionality
-    const quotationSelect = document.getElementById('{{ form.supplier_quotation.id_for_label }}');
-    const previewBtn = document.getElementById('previewQuotationBtn');
-    const previewDiv = document.getElementById('quotationPreview');
-    
-    if (quotationSelect) {
-        quotationSelect.addEventListener('change', function() {
-            if (this.value) {
-                previewBtn.style.display = 'block';
-            } else {
-                previewBtn.style.display = 'none';
-                previewDiv.style.display = 'none';
-            }
-        });
-    }
-    
-    if (previewBtn) {
-        previewBtn.addEventListener('click', function() {
-            const quotationId = quotationSelect.value;
-            if (quotationId) {
-                // You can implement AJAX call here to preview quotation items
-                previewDiv.style.display = 'block';
-                previewDiv.innerHTML = '<p class="text-gray-600">Quotation preview functionality can be implemented here.</p>';
-            }
-        });
-    }
-    
-    // Add first item by default
     addItem();
 });
+
+// Form validation
+document.getElementById('po-form').addEventListener('submit', function(e) {
+    const itemsContainer = document.getElementById('items-container');
+    if (itemsContainer.children.length === 0) {
+        e.preventDefault();
+        alert('Please add at least one item to the purchase order.');
+        return false;
+    }
+    
+    // Additional validation can be added here
+});
 </script>
-
-<style>
-/* Modern Form Styling */
-.form-input, .form-select, .form-textarea {
-    width: 100%;
-    padding: 0.875rem 1rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 0.75rem;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    background: white;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-}
-
-.form-input:focus, .form-select:focus, .form-textarea:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
-}
-
-.form-input:hover, .form-select:hover, .form-textarea:hover {
-    border-color: #9ca3af;
-}
-
-.form-textarea {
-    resize: vertical;
-    min-height: 120px;
-    font-family: inherit;
-}
-
-/* Enhanced Button Styling */
-.btn-primary {
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    color: white;
-    padding: 0.875rem 1.75rem;
-    border-radius: 0.75rem;
-    font-weight: 600;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-    border: none;
-    cursor: pointer;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 15px -3px rgba(59, 130, 246, 0.4);
-    background: linear-gradient(135deg, #1d4ed8, #1e40af);
-}
-
-.btn-primary:active {
-    transform: translateY(0);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.btn-secondary {
-    background: linear-gradient(135deg, #6b7280, #4b5563);
-    color: white;
-    padding: 0.875rem 1.75rem;
-    border-radius: 0.75rem;
-    font-weight: 600;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.btn-secondary:hover {
-    background: linear-gradient(135deg, #4b5563, #374151);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 15px -3px rgba(107, 114, 128, 0.4);
-    text-decoration: none;
-    color: white;
-}
-
-.btn-danger-sm {
-    background: linear-gradient(135deg, #ef4444, #dc2626);
-    color: white;
-    padding: 0.625rem 1.25rem;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
-}
-
-.btn-danger-sm:hover {
-    background: linear-gradient(135deg, #dc2626, #b91c1c);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px -2px rgba(239, 68, 68, 0.4);
-}
-
-/* Form Labels */
-label {
-    display: block;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 0.5rem;
-    letter-spacing: 0.025em;
-}
-
-/* Grid Improvements */
-.grid {
-    display: grid;
-    gap: 1.5rem;
-}
-
-.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
-.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-
-/* Input Group Styling */
-.input-group {
-    position: relative;
-}
-
-.input-group .form-input {
-    padding-left: 2.5rem;
-}
-
-.input-group .input-icon {
-    position: absolute;
-    left: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 1.25rem;
-    height: 1.25rem;
-    color: #6b7280;
-}
-
-/* Loading States */
-.btn-primary:disabled {
-    background: #9ca3af;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-/* Error States */
-.form-input.error, .form-select.error, .form-textarea.error {
-    border-color: #ef4444;
-    background-color: #fef2f2;
-}
-
-.error-message {
-    color: #ef4444;
-    font-size: 0.875rem;
-    margin-top: 0.25rem;
-    font-weight: 500;
-}
-
-/* Success States */
-.form-input.success, .form-select.success {
-    border-color: #10b981;
-    background-color: #f0fdf4;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .grid-cols-2, .grid-cols-4 {
-        grid-template-columns: 1fr;
-    }
-    
-    .form-section {
-        padding: 1rem;
-    }
-    
-    .item-row {
-        padding: 1rem;
-    }
-    
-    .btn-primary, .btn-secondary {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .section-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-    
-    .section-header .ml-auto {
-        margin-left: 0;
-        width: 100%;
-    }
-}
-
-@media (max-width: 640px) {
-    .px-8 {
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
-    
-    .text-4xl {
-        font-size: 2rem;
-    }
-    
-    .form-section {
-        margin-bottom: 1rem;
-    }
-}
-
-/* Animation for adding/removing items */
-.item-row {
-    animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Focus visible for accessibility */
-.btn-primary:focus-visible, .btn-secondary:focus-visible, .btn-danger-sm:focus-visible {
-    outline: 2px solid #3b82f6;
-    outline-offset: 2px;
-}
-
-/* Improved select styling */
-.form-select {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-    background-position: right 0.5rem center;
-    background-repeat: no-repeat;
-    background-size: 1.5em 1.5em;
-    padding-right: 2.5rem;
-    appearance: none;
-}
-
-/* Card hover effects */
-.card-modern:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1);
-}
-</style>
 {% endblock %}
