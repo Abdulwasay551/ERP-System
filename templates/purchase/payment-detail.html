@@ -1,0 +1,746 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payment {{ payment.payment_number }} - Details{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payment-detail-container {
+        padding: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .header-section {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .header-info h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .header-info .breadcrumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+    }
+    
+    .status-indicator {
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 0.875rem;
+    }
+    
+    .status-pending { background-color: #fef3c7; color: #d97706; }
+    .status-completed { background-color: #d1fae5; color: #047857; }
+    .status-cancelled { background-color: #fee2e2; color: #dc2626; }
+    .status-processing { background-color: #cffafe; color: #0891b2; }
+    .status-failed { background-color: #fee2e2; color: #dc2626; }
+    
+    .header-actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn-primary {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        color: white;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        background: rgba(255, 255, 255, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .btn-secondary {
+        background: white;
+        border: 1px solid #d1d5db;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        color: #374151;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+        background: #f9fafb;
+        border-color: #9ca3af;
+        color: #374151;
+        text-decoration: none;
+    }
+    
+    .btn-warning {
+        background: #f59e0b;
+        border: 1px solid #f59e0b;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        color: white;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-danger {
+        background: #ef4444;
+        border: 1px solid #ef4444;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        color: white;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .card-modern {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e5e7eb;
+    }
+    
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f3f4f6;
+    }
+    
+    .card-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #374151;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .info-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .info-value {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #374151;
+    }
+    
+    .amount-large {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #059669;
+        font-family: 'Monaco', 'Menlo', monospace;
+    }
+    
+    .amount-medium {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #059669;
+        font-family: 'Monaco', 'Menlo', monospace;
+    }
+    
+    .payment-method-badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .method-cash { background-color: #d1fae5; color: #047857; }
+    .method-bank_transfer { background-color: #cffafe; color: #0891b2; }
+    .method-check { background-color: #e0e7ff; color: #6366f1; }
+    .method-credit_card { background-color: #fef3c7; color: #d97706; }
+    .method-online { background-color: #ede9fe; color: #7c3aed; }
+    
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 0.75rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e5e7eb;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -1.625rem;
+        top: 1rem;
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 50%;
+        background: #059669;
+        border: 2px solid white;
+        box-shadow: 0 0 0 2px #059669;
+    }
+    
+    .timeline-date {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-bottom: 0.25rem;
+    }
+    
+    .timeline-content {
+        font-size: 0.875rem;
+        color: #374151;
+    }
+    
+    .timeline-user {
+        font-weight: 500;
+        color: #059669;
+    }
+    
+    .documents-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .document-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        text-align: center;
+        transition: all 0.2s ease;
+    }
+    
+    .document-card:hover {
+        border-color: #059669;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .document-icon {
+        font-size: 2rem;
+        color: #6b7280;
+        margin-bottom: 0.5rem;
+    }
+    
+    .document-name {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.25rem;
+    }
+    
+    .document-size {
+        font-size: 0.75rem;
+        color: #6b7280;
+    }
+    
+    .notes-section {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .notes-title {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .notes-content {
+        color: #6b7280;
+        line-height: 1.6;
+        white-space: pre-wrap;
+    }
+    
+    .bill-link {
+        color: #059669;
+        text-decoration: none;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .bill-link:hover {
+        color: #047857;
+        text-decoration: underline;
+    }
+    
+    .print-view {
+        display: none;
+    }
+    
+    @media print {
+        .payment-detail-container {
+            padding: 0;
+            max-width: none;
+        }
+        
+        .header-actions,
+        .btn-primary,
+        .btn-secondary,
+        .btn-warning,
+        .btn-danger {
+            display: none !important;
+        }
+        
+        .print-view {
+            display: block;
+        }
+        
+        .card-modern {
+            box-shadow: none;
+            border: 1px solid #ccc;
+            margin-bottom: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="payment-detail-container">
+    <!-- Header Section -->
+    <div class="header-section">
+        <div class="header-content">
+            <div class="header-info">
+                <h1>
+                    <i class="fas fa-credit-card"></i>
+                    Payment {{ payment.payment_number }}
+                </h1>
+                <div class="breadcrumb">
+                    <a href="{% url 'purchase:payments_list' %}" style="color: rgba(255,255,255,0.8);">Payments</a>
+                    <span style="margin: 0 0.5rem;">›</span>
+                    <span>{{ payment.payment_number }}</span>
+                </div>
+                <div style="margin-top: 0.5rem;">
+                    <span class="status-indicator status-{{ payment.status }}">
+                        {{ payment.get_status_display }}
+                    </span>
+                </div>
+            </div>
+            <div class="header-actions">
+                {% if payment.status == 'pending' %}
+                    <a href="{% url 'purchase:payment_edit' payment.pk %}" class="btn-primary">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <button onclick="markCompleted()" class="btn-primary">
+                        <i class="fas fa-check"></i> Mark Completed
+                    </button>
+                    <button onclick="cancelPayment()" class="btn-warning">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                {% endif %}
+                <button onclick="printPayment()" class="btn-secondary">
+                    <i class="fas fa-print"></i> Print
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Payment Overview -->
+    <div class="card-modern">
+        <div class="card-header">
+            <h2 class="card-title">
+                <i class="fas fa-info-circle"></i>
+                Payment Overview
+            </h2>
+        </div>
+        
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Payment Date</span>
+                <span class="info-value">{{ payment.payment_date|date:"F d, Y" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Amount</span>
+                <span class="amount-large">${{ payment.amount|floatformat:2 }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Payment Method</span>
+                <span class="payment-method-badge method-{{ payment.payment_method }}">
+                    {% if payment.payment_method == 'cash' %}<i class="fas fa-money-bill-wave"></i>{% endif %}
+                    {% if payment.payment_method == 'bank_transfer' %}<i class="fas fa-university"></i>{% endif %}
+                    {% if payment.payment_method == 'check' %}<i class="fas fa-money-check"></i>{% endif %}
+                    {% if payment.payment_method == 'credit_card' %}<i class="fas fa-credit-card"></i>{% endif %}
+                    {% if payment.payment_method == 'online' %}<i class="fas fa-globe"></i>{% endif %}
+                    {{ payment.get_payment_method_display }}
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Reference Number</span>
+                <span class="info-value">{{ payment.reference_number|default:"-" }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Supplier Information -->
+    <div class="card-modern">
+        <div class="card-header">
+            <h2 class="card-title">
+                <i class="fas fa-building"></i>
+                Supplier Information
+            </h2>
+        </div>
+        
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Supplier Name</span>
+                <span class="info-value">{{ payment.supplier.name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Email</span>
+                <span class="info-value">{{ payment.supplier.email|default:"-" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Phone</span>
+                <span class="info-value">{{ payment.supplier.phone|default:"-" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Address</span>
+                <span class="info-value">{{ payment.supplier.address|default:"-" }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bill Information (if linked) -->
+    {% if payment.bill %}
+        <div class="card-modern">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-file-invoice"></i>
+                    Linked Bill
+                </h2>
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Bill Number</span>
+                    <span class="info-value">
+                        <a href="{% url 'purchase:bill_detail' payment.bill.pk %}" class="bill-link">
+                            {{ payment.bill.bill_number }}
+                            <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    </span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Bill Date</span>
+                    <span class="info-value">{{ payment.bill.bill_date|date:"F d, Y" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Bill Total</span>
+                    <span class="amount-medium">${{ payment.bill.total_amount|floatformat:2 }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Outstanding Amount</span>
+                    <span class="amount-medium">${{ payment.bill.outstanding_amount|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    
+    <!-- Bank/Payment Details -->
+    {% if payment.bank_account or payment.check_number %}
+        <div class="card-modern">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-university"></i>
+                    Payment Details
+                </h2>
+            </div>
+            
+            <div class="info-grid">
+                {% if payment.bank_account %}
+                    <div class="info-item">
+                        <span class="info-label">Bank Account</span>
+                        <span class="info-value">{{ payment.bank_account.name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Account Number</span>
+                        <span class="info-value">{{ payment.bank_account.account_number }}</span>
+                    </div>
+                {% endif %}
+                {% if payment.check_number %}
+                    <div class="info-item">
+                        <span class="info-label">Check Number</span>
+                        <span class="info-value">{{ payment.check_number }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Check Date</span>
+                        <span class="info-value">{{ payment.check_date|date:"F d, Y" }}</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+    
+    <!-- Notes -->
+    {% if payment.notes %}
+        <div class="card-modern">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-sticky-note"></i>
+                    Notes
+                </h2>
+            </div>
+            
+            <div class="notes-section">
+                <div class="notes-content">{{ payment.notes }}</div>
+            </div>
+        </div>
+    {% endif %}
+    
+    <!-- Activity Timeline -->
+    <div class="card-modern">
+        <div class="card-header">
+            <h2 class="card-title">
+                <i class="fas fa-history"></i>
+                Activity Timeline
+            </h2>
+        </div>
+        
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-date">{{ payment.created_at|date:"M d, Y H:i" }}</div>
+                <div class="timeline-content">
+                    Payment created by <span class="timeline-user">{{ payment.created_by.get_full_name|default:payment.created_by.email }}</span>
+                </div>
+            </div>
+            
+            {% if payment.status == 'completed' %}
+                <div class="timeline-item">
+                    <div class="timeline-date">{{ payment.completed_at|date:"M d, Y H:i" }}</div>
+                    <div class="timeline-content">
+                        Payment completed by <span class="timeline-user">{{ payment.completed_by.get_full_name|default:payment.completed_by.email }}</span>
+                    </div>
+                </div>
+            {% endif %}
+            
+            {% if payment.status == 'cancelled' %}
+                <div class="timeline-item">
+                    <div class="timeline-date">{{ payment.cancelled_at|date:"M d, Y H:i" }}</div>
+                    <div class="timeline-content">
+                        Payment cancelled by <span class="timeline-user">{{ payment.cancelled_by.get_full_name|default:payment.cancelled_by.email }}</span>
+                        {% if payment.cancellation_reason %}
+                            <br>Reason: {{ payment.cancellation_reason }}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+            
+            {% if payment.updated_at != payment.created_at %}
+                <div class="timeline-item">
+                    <div class="timeline-date">{{ payment.updated_at|date:"M d, Y H:i" }}</div>
+                    <div class="timeline-content">
+                        Payment updated by <span class="timeline-user">{{ payment.updated_by.get_full_name|default:payment.updated_by.email }}</span>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Documents (if any) -->
+    {% if payment.documents.exists %}
+        <div class="card-modern">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-paperclip"></i>
+                    Attachments
+                </h2>
+            </div>
+            
+            <div class="documents-grid">
+                {% for document in payment.documents.all %}
+                    <div class="document-card">
+                        <div class="document-icon">
+                            <i class="fas fa-file-{% if document.file_type == 'pdf' %}pdf{% elif document.file_type == 'image' %}image{% else %}alt{% endif %}"></i>
+                        </div>
+                        <div class="document-name">{{ document.name }}</div>
+                        <div class="document-size">{{ document.file_size|filesizeformat }}</div>
+                        <div style="margin-top: 0.5rem;">
+                            <a href="{{ document.file.url }}" class="btn-secondary" target="_blank">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Print View (hidden on screen) -->
+<div class="print-view">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h1>Payment Receipt</h1>
+        <h2>{{ payment.payment_number }}</h2>
+    </div>
+    
+    <div style="margin-bottom: 2rem;">
+        <strong>Date:</strong> {{ payment.payment_date|date:"F d, Y" }}<br>
+        <strong>Amount:</strong> ${{ payment.amount|floatformat:2 }}<br>
+        <strong>Method:</strong> {{ payment.get_payment_method_display }}<br>
+        <strong>Status:</strong> {{ payment.get_status_display }}
+    </div>
+    
+    <div style="margin-bottom: 2rem;">
+        <h3>Supplier</h3>
+        <strong>{{ payment.supplier.name }}</strong><br>
+        {% if payment.supplier.address %}{{ payment.supplier.address }}<br>{% endif %}
+        {% if payment.supplier.email %}{{ payment.supplier.email }}<br>{% endif %}
+        {% if payment.supplier.phone %}{{ payment.supplier.phone }}{% endif %}
+    </div>
+    
+    {% if payment.notes %}
+        <div>
+            <h3>Notes</h3>
+            {{ payment.notes }}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function markCompleted() {
+    if (confirm('Mark this payment as completed? This action cannot be undone.')) {
+        $.ajax({
+            url: `{% url 'purchase:payment_complete' payment.pk %}`,
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(response) {
+                if (response.success) {
+                    location.reload();
+                } else {
+                    alert('Error completing payment: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Error completing payment. Please try again.');
+            }
+        });
+    }
+}
+
+function cancelPayment() {
+    const reason = prompt('Please provide a reason for cancelling this payment:');
+    if (reason !== null && reason.trim() !== '') {
+        $.ajax({
+            url: `{% url 'purchase:payment_cancel' payment.pk %}`,
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+            },
+            data: {
+                'reason': reason
+            },
+            success: function(response) {
+                if (response.success) {
+                    location.reload();
+                } else {
+                    alert('Error cancelling payment: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Error cancelling payment. Please try again.');
+            }
+        });
+    }
+}
+
+function printPayment() {
+    window.print();
+}
+
+// Add CSRF token to all AJAX requests
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+            xhr.setRequestHeader("X-CSRFToken", $('[name=csrfmiddlewaretoken]').val());
+        }
+    }
+});
+</script>
+{% endblock %}

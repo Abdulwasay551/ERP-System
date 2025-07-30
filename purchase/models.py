@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Sum, Q
 from django.core.validators import MinValueValidator
 from user_auth.models import Company, User
 from crm.models import Partner
@@ -42,62 +43,332 @@ class UnitOfMeasure(models.Model):
         return f"{self.name} ({self.abbreviation})"
 
 class Supplier(models.Model):
-    """Extended Supplier model that links to centralized Partner"""
-    PAYMENT_TERMS_CHOICES = [
-        ('net_30', 'Net 30'),
-        ('net_60', 'Net 60'),
-        ('net_90', 'Net 90'),
-        ('cash_on_delivery', 'Cash on Delivery'),
-        ('advance_payment', 'Advance Payment'),
+    """Enhanced Supplier model with supplier-specific features - linked to Partner for basic info"""
+    
+    SUPPLIER_TYPE_CHOICES = [
+        ('manufacturer', 'Manufacturer'),
+        ('distributor', 'Distributor'),
+        ('wholesaler', 'Wholesaler'),
+        ('retailer', 'Retailer'),
+        ('service_provider', 'Service Provider'),
+        ('contractor', 'Contractor'),
+        ('consultant', 'Consultant'),
+        ('other', 'Other'),
     ]
     
-    # Link to centralized Partner
-    partner = models.OneToOneField(Partner, on_delete=models.CASCADE, related_name='supplier_profile', null=True, blank=True)
-
-    # Supplier-specific fields
-    supplier_code = models.CharField(max_length=50, unique=True, blank=True)
-    contact_person = models.CharField(max_length=255, blank=True)
-    bank_details = models.TextField(blank=True, help_text="Bank account details for payments")
-    payment_terms = models.CharField(max_length=50, choices=PAYMENT_TERMS_CHOICES, default='net_30')
-    credit_limit = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    delivery_lead_time = models.IntegerField(default=0, help_text="Default delivery time in days")
+    SUPPLIER_STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+        ('pending_approval', 'Pending Approval'),
+        ('blacklisted', 'Blacklisted'),
+        ('on_hold', 'On Hold'),
+        ('terminated', 'Terminated'),
+    ]
     
-    # Quality and ratings
+    # Link to centralized Partner (required)
+    partner = models.OneToOneField(Partner, on_delete=models.CASCADE, related_name='supplier_profile')
+
+    # Supplier-specific Information
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='suppliers')
+    supplier_code = models.CharField(max_length=50, unique=True, blank=True)
+    supplier_type = models.CharField(max_length=50, choices=SUPPLIER_TYPE_CHOICES, default='manufacturer')
+    status = models.CharField(max_length=50, choices=SUPPLIER_STATUS_CHOICES, default='active')
+    
+    # Operational Information
+    delivery_lead_time = models.IntegerField(default=0, help_text="Default delivery time in days")
+    minimum_order_value = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    preferred_shipping_method = models.CharField(max_length=100, blank=True)
+    
+    # Performance Metrics
     quality_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0, help_text="Quality rating 0-10")
     delivery_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0, help_text="Delivery rating 0-10")
+    price_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0, help_text="Price competitiveness 0-10")
+    service_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0, help_text="Service rating 0-10")
+    overall_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0, help_text="Overall rating 0-10")
     
     # Legacy fields for backward compatibility
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='suppliers')
-    name = models.CharField(max_length=255)
-    email = models.EmailField(blank=True)
-    phone = models.CharField(max_length=50, blank=True)
-    address = models.TextField(blank=True)
-    tax_number = models.CharField(max_length=100, blank=True)
     is_active = models.BooleanField(default=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_suppliers')
     
-    # Document uploads
-    registration_certificate = models.FileField(upload_to='purchase/suppliers/registration/', null=True, blank=True, help_text="Business registration certificate")
-    tax_certificate = models.FileField(upload_to='purchase/suppliers/tax/', null=True, blank=True, help_text="Tax registration certificate")
-    quality_certificates = models.FileField(upload_to='purchase/suppliers/quality/', null=True, blank=True, help_text="Quality certifications (ISO, etc.)")
-    bank_documents = models.FileField(upload_to='purchase/suppliers/bank/', null=True, blank=True, help_text="Bank account verification documents")
-    agreement_contract = models.FileField(upload_to='purchase/suppliers/contracts/', null=True, blank=True, help_text="Master agreement or contract")
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        # Generate supplier code if not exists
+        if not self.supplier_code:
+            last_supplier = Supplier.objects.filter(company=self.company).order_by('-id').first()
+            if last_supplier and last_supplier.supplier_code:
+                try:
+                    last_number = int(last_supplier.supplier_code.split('-')[-1])
+                    new_number = last_number + 1
+                except (ValueError, IndexError):
+                    new_number = 1
+            else:
+                new_number = 1
+            
+            self.supplier_code = f'SUP-{new_number:06d}'
+        
+        # Calculate overall rating
+        ratings = [self.quality_rating, self.delivery_rating, self.price_rating, self.service_rating]
+        valid_ratings = [r for r in ratings if r > 0]
+        if valid_ratings:
+            self.overall_rating = sum(valid_ratings) / len(valid_ratings)
+        
+        # Ensure partner is marked as supplier
+        if self.partner:
+            self.partner.is_supplier = True
+            self.partner.save()
+        
+        super().save(*args, **kwargs)
+
+    # Properties to access Partner fields easily
+    @property
+    def name(self):
+        return self.partner.name if self.partner else ""
+    
+    @property
+    def email(self):
+        return self.partner.email if self.partner else ""
+    
+    @property
+    def phone(self):
+        return self.partner.phone if self.partner else ""
+    
+    @property
+    def mobile(self):
+        return self.partner.mobile if self.partner else ""
+    
+    @property
+    def website(self):
+        return self.partner.website if self.partner else ""
+    
+    @property
+    def address(self):
+        return self.partner.get_full_address() if self.partner else ""
+    
+    @property
+    def city(self):
+        return self.partner.city if self.partner else ""
+    
+    @property
+    def state(self):
+        return self.partner.state if self.partner else ""
+    
+    @property
+    def country(self):
+        return self.partner.country if self.partner else ""
+    
+    @property
+    def postal_code(self):
+        return self.partner.zip_code if self.partner else ""
+    
+    @property
+    def contact_person(self):
+        return self.partner.contact_person if self.partner else ""
+    
+    @property
+    def tax_number(self):
+        return self.partner.tax_id if self.partner else ""
+    
+    @property
+    def vat_number(self):
+        return self.partner.vat_number if self.partner else ""
+    
+    @property
+    def payment_terms(self):
+        return self.partner.payment_terms if self.partner else ""
+    
+    @property
+    def preferred_currency(self):
+        return self.partner.preferred_currency if self.partner else "USD"
+    
+    @property
+    def credit_limit(self):
+        return self.partner.credit_limit if self.partner else 0
+    
+    @property
+    def credit_period_days(self):
+        return self.partner.credit_period_days if self.partner else 30
+    
+    @property
+    def bank_details(self):
+        return self.partner.bank_details if self.partner else ""
+    
+    @property
+    def business_registration_number(self):
+        return self.partner.registration_number if self.partner else ""
+    
+    @property
+    def established_year(self):
+        return self.partner.established_year if self.partner else None
+    
+    @property
+    def annual_revenue(self):
+        return self.partner.annual_revenue if self.partner else None
+    
+    @property
+    def employee_count(self):
+        return self.partner.employee_count if self.partner else None
+    
+    @property
+    def certifications(self):
+        return self.partner.certifications if self.partner else ""
+    
+    @property
+    def relationship_manager(self):
+        return self.partner.relationship_manager if self.partner else None
+    
+    @property
+    def last_contact_date(self):
+        return self.partner.last_contact_date if self.partner else None
+    
+    @property
+    def next_review_date(self):
+        return self.partner.next_review_date if self.partner else None
+    
+    @property
+    def notes(self):
+        return self.partner.notes if self.partner else ""
+
+    def get_outstanding_balance(self):
+        """Get current outstanding balance with supplier"""
+        from .models import SupplierLedger
+        ledger_totals = SupplierLedger.objects.filter(supplier=self).aggregate(
+            total_debit=Sum('debit_amount'),
+            total_credit=Sum('credit_amount')
+        )
+        
+        total_debit = ledger_totals['total_debit'] or 0
+        total_credit = ledger_totals['total_credit'] or 0
+        return total_debit - total_credit
+
+    def get_total_purchases(self, year=None):
+        """Get total purchase amount for a year or all time"""
+        bills = self.bills.filter(status__in=['approved', 'paid'])
+        if year:
+            bills = bills.filter(bill_date__year=year)
+        return bills.aggregate(total=Sum('total_amount'))['total'] or 0
+
+    def get_average_payment_days(self):
+        """Calculate average payment days"""
+        payments = self.payments.filter(status='completed')
+        if not payments.exists():
+            return 0
+        
+        total_days = 0
+        count = 0
+        for payment in payments:
+            if payment.bill and payment.actual_date:
+                days = (payment.actual_date - payment.bill.bill_date).days
+                total_days += days
+                count += 1
+        
+        return total_days / count if count > 0 else 0
+
+    def update_performance_ratings(self):
+        """Update performance ratings based on historical data"""
+        # This would be implemented based on your business logic
+        # For now, it's a placeholder for future enhancement
+        pass
+
+    def __str__(self):
+        return self.partner.name if self.partner else f"Supplier {self.supplier_code}"
+
+    class Meta:
+        ordering = ['partner__name']
+        indexes = [
+            models.Index(fields=['supplier_code']),
+            models.Index(fields=['status', 'is_active']),
+            models.Index(fields=['supplier_type']),
+        ]
+
+
+class SupplierContact(models.Model):
+    """Additional contacts for suppliers"""
+    
+    CONTACT_TYPE_CHOICES = [
+        ('primary', 'Primary Contact'),
+        ('accounting', 'Accounting'),
+        ('sales', 'Sales'),
+        ('technical', 'Technical Support'),
+        ('logistics', 'Logistics'),
+        ('quality', 'Quality Assurance'),
+        ('executive', 'Executive'),
+        ('other', 'Other'),
+    ]
+    
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='contacts')
+    contact_type = models.CharField(max_length=50, choices=CONTACT_TYPE_CHOICES)
+    name = models.CharField(max_length=255)
+    designation = models.CharField(max_length=100, blank=True)
+    email = models.EmailField()
+    phone = models.CharField(max_length=50, blank=True)
+    mobile = models.CharField(max_length=50, blank=True)
+    is_primary = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.partner.name if self.partner else self.name
-
-    def save(self, *args, **kwargs):
-        # Ensure partner is marked as supplier
-        if self.partner:
-            self.partner.is_supplier = True
-            self.partner.save()
-        super().save(*args, **kwargs)
+        return f"{self.name} ({self.supplier.name})"
 
     class Meta:
-        ordering = ['name']
+        ordering = ['supplier', 'contact_type', 'name']
+
+
+class SupplierProductCatalog(models.Model):
+    """Supplier's product catalog with pricing"""
+    
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='product_catalog')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='supplier_catalogs')
+    supplier_product_code = models.CharField(max_length=100, blank=True)
+    supplier_product_name = models.CharField(max_length=255, blank=True)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, choices=Partner.CURRENCY_CHOICES, default='USD')
+    minimum_order_quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
+    lead_time_days = models.IntegerField(default=0)
+    
+    # Pricing tiers
+    tier_1_qty = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    tier_1_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    tier_2_qty = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    tier_2_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    tier_3_qty = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    tier_3_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    
+    # Validity
+    effective_date = models.DateField()
+    expiry_date = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    
+    # Additional information
+    description = models.TextField(blank=True)
+    technical_specifications = models.TextField(blank=True)
+    warranty_terms = models.TextField(blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def get_price_for_quantity(self, quantity):
+        """Get the best price for a given quantity"""
+        if self.tier_3_qty and quantity >= self.tier_3_qty and self.tier_3_price:
+            return self.tier_3_price
+        elif self.tier_2_qty and quantity >= self.tier_2_qty and self.tier_2_price:
+            return self.tier_2_price
+        elif self.tier_1_qty and quantity >= self.tier_1_qty and self.tier_1_price:
+            return self.tier_1_price
+        else:
+            return self.unit_price
+
+    def __str__(self):
+        return f"{self.supplier.name} - {self.product.name}"
+
+    class Meta:
+        ordering = ['supplier', 'product']
+        unique_together = ['supplier', 'product']
 
 # Tax and Charges Template
 class TaxChargesTemplate(models.Model):
@@ -972,10 +1243,10 @@ class GRNItem(models.Model):
             # Inherit tracking settings from product
             if self.product.tracking_method != 'none':
                 self.tracking_type = self.product.tracking_method
-                self.requires_individual_tracking = self.product.requires_individual_tracking
+                self.tracking_required = self.product.requires_individual_tracking
             else:
                 self.tracking_type = 'none'
-                self.requires_individual_tracking = False
+                self.tracking_required = False
         
         super().save(*args, **kwargs)
     
@@ -992,6 +1263,32 @@ class GRNItem(models.Model):
                 self.tracking_type != 'none' and 
                 self.accepted_qty > 0 and
                 self.quality_status == 'passed')
+    
+    def validate_tracking_quantity(self):
+        """Validate that tracking items match received quantity"""
+        if self.tracking_required and self.tracking_type != 'none':
+            # Count tracking items
+            tracking_count = self.tracking_items.count()
+            
+            # For individual tracking (serial, IMEI, barcode), count must match received quantity
+            if self.product.requires_individual_tracking:
+                if tracking_count != int(self.received_qty):
+                    from django.core.exceptions import ValidationError
+                    raise ValidationError(
+                        f"For {self.product.name}, you must provide {int(self.received_qty)} "
+                        f"{self.product.get_tracking_method_display()} numbers, "
+                        f"but only {tracking_count} were provided."
+                    )
+            
+            # For batch/expiry tracking, at least one tracking item should exist
+            elif self.tracking_type in ['batch', 'expiry']:
+                if tracking_count == 0:
+                    from django.core.exceptions import ValidationError
+                    raise ValidationError(
+                        f"For {self.product.name}, at least one batch/lot entry is required."
+                    )
+        
+        return True
 
 # Individual Item Tracking
 class GRNItemTracking(models.Model):
@@ -1252,8 +1549,15 @@ class Bill(models.Model):
         ('cancelled', 'Cancelled'),
     ]
     
+    MATCHING_TYPE_CHOICES = [
+        ('three_way', 'Three-Way Match (PO + GRN + Invoice)'),
+        ('two_way_po', 'Two-Way Match (PO + Invoice)'),
+        ('two_way_grn', 'Two-Way Match (GRN + Invoice)'),
+        ('manual', 'Manual Entry (No Match)'),
+    ]
+    
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='bills')
-    bill_number = models.CharField(max_length=100, unique=True,null=True,blank=True)
+    bill_number = models.CharField(max_length=100, unique=True, null=True, blank=True)
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='bills')
     purchase_order = models.ForeignKey(PurchaseOrder, on_delete=models.SET_NULL, null=True, blank=True, related_name='bills')
     grn = models.ForeignKey(GoodsReceiptNote, on_delete=models.SET_NULL, null=True, blank=True, related_name='bills')
@@ -1267,7 +1571,15 @@ class Bill(models.Model):
     paid_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     outstanding_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='draft')
+    
+    # Enhanced matching system
+    matching_type = models.CharField(max_length=20, choices=MATCHING_TYPE_CHOICES, default='manual')
     three_way_match_status = models.BooleanField(default=False)  # PO = GRN = Invoice matching
+    po_match_status = models.BooleanField(default=False)  # PO matches invoice
+    grn_match_status = models.BooleanField(default=False)  # GRN matches invoice
+    has_additional_items = models.BooleanField(default=False)  # Items not in PO/GRN
+    has_quantity_variances = models.BooleanField(default=False)  # Quantity differences
+    
     notes = models.TextField(blank=True)
     
     # Document uploads
@@ -1278,71 +1590,512 @@ class Bill(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    # Note: Removed account field - Bill is for documentation only, no accounting impact
 
     def save(self, *args, **kwargs):
+        # Auto-generate bill number if not provided
+        if not self.bill_number:
+            current_year = timezone.now().year
+            last_bill = Bill.objects.filter(
+                company=self.company,
+                bill_number__startswith=f'BILL-{current_year}'
+            ).order_by('-id').first()
+            
+            if last_bill and last_bill.bill_number:
+                try:
+                    last_number = int(last_bill.bill_number.split('-')[-1])
+                    new_number = last_number + 1
+                except (ValueError, IndexError):
+                    new_number = 1
+            else:
+                new_number = 1
+            
+            self.bill_number = f'BILL-{current_year}-{new_number:04d}'
+        
         self.outstanding_amount = self.total_amount - self.paid_amount
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Bill-{self.bill_number} - {self.supplier.name}"
+    
+    def determine_matching_type(self):
+        """Determine the matching type based on linked documents"""
+        if self.purchase_order and self.grn:
+            return 'three_way'
+        elif self.purchase_order:
+            return 'two_way_po'
+        elif self.grn:
+            return 'two_way_grn'
+        else:
+            return 'manual'
+    
+    def perform_matching_validation(self):
+        """Perform matching validation based on matching type"""
+        self.matching_type = self.determine_matching_type()
+        
+        if self.matching_type == 'three_way':
+            self.validate_three_way_match()
+        elif self.matching_type == 'two_way_po':
+            self.validate_po_match()
+        elif self.matching_type == 'two_way_grn':
+            self.validate_grn_match()
+        
+        self.save()
+    
+    def validate_three_way_match(self):
+        """Validate three-way match between PO, GRN, and Invoice"""
+        if not (self.purchase_order and self.grn):
+            self.three_way_match_status = False
+            return False
+        
+        # Check if all quantities and items match
+        po_items = {item.product_id: item.quantity for item in self.purchase_order.items.all()}
+        grn_items = {item.product_id: item.received_qty for item in self.grn.items.all()}
+        bill_items = {item.product_id: item.quantity for item in self.items.all()}
+        
+        # Check if all items are present in all three documents
+        po_products = set(po_items.keys())
+        grn_products = set(grn_items.keys())
+        bill_products = set(bill_items.keys())
+        
+        self.three_way_match_status = (po_products == grn_products == bill_products)
+        self.po_match_status = (po_products == bill_products)
+        self.grn_match_status = (grn_products == bill_products)
+        
+        # Check for additional items not in PO/GRN
+        self.has_additional_items = bool(bill_products - (po_products | grn_products))
+        
+        # Check for quantity variances
+        self.has_quantity_variances = False
+        for product_id in bill_products:
+            if product_id in po_items and product_id in grn_items:
+                if not (bill_items[product_id] == grn_items[product_id]):
+                    self.has_quantity_variances = True
+                    break
+        
+        return self.three_way_match_status
+    
+    def validate_po_match(self):
+        """Validate two-way match between PO and Invoice"""
+        if not self.purchase_order:
+            self.po_match_status = False
+            return False
+        
+        po_items = {item.product_id: item.quantity for item in self.purchase_order.items.all()}
+        bill_items = {item.product_id: item.quantity for item in self.items.all()}
+        
+        po_products = set(po_items.keys())
+        bill_products = set(bill_items.keys())
+        
+        self.po_match_status = po_products.issubset(bill_products)
+        self.has_additional_items = bool(bill_products - po_products)
+        
+        return self.po_match_status
+    
+    def validate_grn_match(self):
+        """Validate two-way match between GRN and Invoice"""
+        if not self.grn:
+            self.grn_match_status = False
+            return False
+        
+        grn_items = {item.product_id: item.received_qty for item in self.grn.items.all()}
+        bill_items = {item.product_id: item.quantity for item in self.items.all()}
+        
+        grn_products = set(grn_items.keys())
+        bill_products = set(bill_items.keys())
+        
+        self.grn_match_status = grn_products.issubset(bill_products)
+        self.has_additional_items = bool(bill_products - grn_products)
+        
+        return self.grn_match_status
+    
+    def unlock_grn_items(self):
+        """Unlock GRN items when bill is created/approved"""
+        if self.grn and self.status in ['approved', 'paid']:
+            # Remove locks from GRN items
+            from .models import GRNInventoryLock
+            locks = GRNInventoryLock.objects.filter(grn=self.grn, lock_reason='pending_invoice')
+            
+            for lock in locks:
+                # Create inventory movement to make items available
+                # This will be handled by the inventory app
+                lock.is_released = True
+                lock.released_at = timezone.now()
+                lock.released_by = self.created_by
+                lock.save()
 
     class Meta:
         ordering = ['-created_at']
 
-# Bill Items
+# Enhanced Bill Items with Tracking Support
 class BillItem(models.Model):
+    ITEM_SOURCE_CHOICES = [
+        ('po', 'From Purchase Order'),
+        ('grn', 'From GRN'),
+        ('manual', 'Manual Entry'),
+    ]
+    
     bill = models.ForeignKey(Bill, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.00'))])
     line_total = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+    # Source references
     po_item = models.ForeignKey(PurchaseOrderItem, on_delete=models.SET_NULL, null=True, blank=True)
     grn_item = models.ForeignKey(GRNItem, on_delete=models.SET_NULL, null=True, blank=True)
+    item_source = models.CharField(max_length=10, choices=ITEM_SOURCE_CHOICES, default='manual')
+    
+    # Tracking information
+    tracking_required = models.BooleanField(default=False)
+    tracking_type = models.CharField(max_length=20, choices=GRNItem.TRACKING_TYPE_CHOICES, default='none')
+    
+    # Variance tracking
+    po_quantity_variance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    grn_quantity_variance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    is_additional_item = models.BooleanField(default=False, help_text="Item not in PO/GRN")
+    
+    # Notes and additional info
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     
     def save(self, *args, **kwargs):
         self.line_total = self.quantity * self.unit_price
+        
+        # Auto-determine tracking requirements from product
+        if self.product:
+            self.tracking_required = self.product.tracking_method != 'none'
+            self.tracking_type = self.product.tracking_method
+        
+        # Calculate variances if linked to PO/GRN
+        if self.po_item:
+            self.po_quantity_variance = self.quantity - self.po_item.quantity
+        
+        if self.grn_item:
+            self.grn_quantity_variance = self.quantity - self.grn_item.received_qty
+        
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.product.name} x {self.quantity}"
+        return f"{self.product.name} x {self.quantity} @ ${self.unit_price}"
+    
+    def validate_tracking_quantity(self):
+        """Validate that tracking items match invoiced quantity"""
+        if self.tracking_required and self.tracking_type != 'none':
+            tracking_count = self.tracking_items.count()
+            
+            # For individual tracking, count must match quantity
+            if self.product.requires_individual_tracking:
+                if tracking_count != int(self.quantity):
+                    from django.core.exceptions import ValidationError
+                    raise ValidationError(
+                        f"For {self.product.name}, you must provide {int(self.quantity)} "
+                        f"{self.product.get_tracking_method_display()} numbers, "
+                        f"but only {tracking_count} were provided."
+                    )
+        return True
+
+
+class BillItemTracking(models.Model):
+    """Individual tracking for bill items"""
+    
+    TRACKING_TYPE_CHOICES = [
+        ('none', 'No Tracking'),
+        ('batch', 'Batch/Lot Tracking'),
+        ('serial', 'Serial Number'),
+        ('imei', 'IMEI Number'),
+        ('barcode', 'Barcode Tracking'),
+        ('expiry', 'Expiry Date Tracking'),
+    ]
+    
+    bill_item = models.ForeignKey(BillItem, on_delete=models.CASCADE, related_name='tracking_items')
+    tracking_number = models.CharField(max_length=100, help_text="Serial, IMEI, Barcode, etc.")
+    tracking_type = models.CharField(max_length=20, choices=TRACKING_TYPE_CHOICES)
+    
+    # Link to GRN tracking if available
+    grn_tracking = models.ForeignKey(GRNItemTracking, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # Asset creation info
+    creates_asset = models.BooleanField(default=False, help_text="Whether this item creates a fixed asset")
+    asset_value = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    
+    # Additional tracking info
+    batch_number = models.CharField(max_length=100, blank=True)
+    manufacturing_date = models.DateField(null=True, blank=True)
+    expiry_date = models.DateField(null=True, blank=True)
+    warranty_expiry = models.DateField(null=True, blank=True)
+    condition = models.CharField(max_length=100, blank=True)
+    notes = models.TextField(blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['bill_item', 'tracking_number']
+    
+    def save(self, *args, **kwargs):
+        # If linked to GRN tracking, inherit some values
+        if self.grn_tracking:
+            self.tracking_type = self.grn_tracking.tracking_type
+            self.batch_number = self.grn_tracking.batch_number
+            self.manufacturing_date = self.grn_tracking.manufacturing_date
+            self.expiry_date = self.grn_tracking.expiry_date
+        
+        super().save(*args, **kwargs)
+        
+        # Create or update corresponding ProductTracking entry
+        self.update_product_tracking()
+    
+    def update_product_tracking(self):
+        """Update the corresponding ProductTracking entry with invoice information"""
+        if self.grn_tracking and self.grn_tracking.product_tracking:
+            # Update existing ProductTracking with invoice info
+            product_tracking = self.grn_tracking.product_tracking
+            product_tracking.purchase_price = self.bill_item.unit_price
+            product_tracking.status = 'available'  # Unlock the item
+            product_tracking.save()
+        else:
+            # Create new ProductTracking if not linked to GRN
+            from products.models import ProductTracking
+            ProductTracking.objects.create(
+                product=self.bill_item.product,
+                purchase_price=self.bill_item.unit_price,
+                purchase_date=self.bill_item.bill.bill_date,
+                supplier=self.bill_item.bill.supplier,
+                manufacturing_date=self.manufacturing_date,
+                expiry_date=self.expiry_date,
+                batch_number=self.batch_number,
+                warranty_expiry=self.warranty_expiry,
+                status='available',
+                notes=self.notes,
+                created_by=self.bill_item.bill.created_by
+            )
+
+    def __str__(self):
+        return f"{self.bill_item.product.name} - {self.tracking_type}: {self.tracking_number}"
 
 # Enhanced Purchase Payment
 class PurchasePayment(models.Model):
+    """Enhanced Purchase Payment with supplier ledger management"""
+    
     PAYMENT_METHOD_CHOICES = [
         ('cash', 'Cash'),
         ('check', 'Check'),
         ('bank_transfer', 'Bank Transfer'),
         ('credit_card', 'Credit Card'),
         ('online', 'Online Payment'),
+        ('credit_note', 'Credit Note'),
+        ('advance', 'Advance Payment'),
+    ]
+    
+    PAYMENT_TYPE_CHOICES = [
+        ('bill_payment', 'Bill Payment'),
+        ('advance_payment', 'Advance Payment'),
+        ('partial_payment', 'Partial Payment'),
+        ('refund', 'Refund'),
+        ('credit_note', 'Credit Note Application'),
+        ('adjustment', 'Adjustment'),
+    ]
+    
+    PAYMENT_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('cancelled', 'Cancelled'),
+        ('on_hold', 'On Hold'),
     ]
     
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='purchase_payments')
     payment_number = models.CharField(max_length=100, unique=True, null=True, blank=True)
-    bill = models.ForeignKey(Bill, on_delete=models.CASCADE, related_name='payments')
-    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='payments', null=True, blank=True)
-    amount = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))], null=True, blank=True)
-    payment_date = models.DateField(null=True, blank=True)
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='payments')
+    bill = models.ForeignKey(Bill, on_delete=models.SET_NULL, null=True, blank=True, related_name='payments')
+    
+    # Payment details
+    payment_type = models.CharField(max_length=50, choices=PAYMENT_TYPE_CHOICES, default='bill_payment')
+    amount = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    currency = models.CharField(max_length=3, default='USD')
+    exchange_rate = models.DecimalField(max_digits=10, decimal_places=4, default=1.0000)
+    base_currency_amount = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
+    
+    # Payment method and details
     payment_method = models.CharField(max_length=50, choices=PAYMENT_METHOD_CHOICES, default='bank_transfer')
-    reference_number = models.CharField(max_length=255, blank=True)
-    # Note: Removed bank_account field - Payment is for documentation only, no accounting impact
+    payment_date = models.DateField()
+    expected_date = models.DateField(null=True, blank=True, help_text="Expected payment date")
+    actual_date = models.DateField(null=True, blank=True, help_text="Actual payment date")
+    
+    # Reference details
+    reference_number = models.CharField(max_length=255, blank=True, help_text="Bank reference, check number, etc.")
+    transaction_id = models.CharField(max_length=255, blank=True, help_text="Bank transaction ID")
+    approval_code = models.CharField(max_length=100, blank=True, help_text="Approval code for card payments")
+    
+    # Bank details
+    bank_account = models.CharField(max_length=255, blank=True, help_text="Bank account used for payment")
+    beneficiary_bank = models.CharField(max_length=255, blank=True, help_text="Supplier's bank details")
+    swift_code = models.CharField(max_length=50, blank=True)
+    
+    # Status and workflow
+    status = models.CharField(max_length=50, choices=PAYMENT_STATUS_CHOICES, default='pending')
+    is_advance = models.BooleanField(default=False, help_text="Is this an advance payment?")
+    advance_adjusted = models.BooleanField(default=False, help_text="Has advance been adjusted against bills?")
+    
+    # Users
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_payments')
     paid_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='paid_purchase_payments')
+    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_payments')
+    
+    # Additional details
     notes = models.TextField(blank=True)
+    internal_notes = models.TextField(blank=True, help_text="Internal notes not visible to supplier")
     
     # Document uploads
     payment_receipt = models.FileField(upload_to='purchase/payments/receipts/', null=True, blank=True, help_text="Payment receipt document")
     bank_statement = models.FileField(upload_to='purchase/payments/statements/', null=True, blank=True, help_text="Bank statement showing payment")
     check_copy = models.FileField(upload_to='purchase/payments/checks/', null=True, blank=True, help_text="Copy of check if payment by check")
     wire_transfer_advice = models.FileField(upload_to='purchase/payments/wire/', null=True, blank=True, help_text="Wire transfer advice document")
+    approval_document = models.FileField(upload_to='purchase/payments/approvals/', null=True, blank=True, help_text="Payment approval document")
     
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        # Generate payment number if not exists
+        if not self.payment_number:
+            current_year = timezone.now().year
+            last_payment = PurchasePayment.objects.filter(
+                company=self.company,
+                payment_number__isnull=False
+            ).order_by('-id').first()
+            
+            if last_payment and last_payment.payment_number:
+                try:
+                    last_number = int(last_payment.payment_number.split('-')[-1])
+                    new_number = last_number + 1
+                except (ValueError, IndexError):
+                    new_number = 1
+            else:
+                new_number = 1
+            
+            self.payment_number = f'PAY-{current_year}-{new_number:06d}'
+        
+        # Calculate base currency amount
+        if self.exchange_rate and self.amount:
+            self.base_currency_amount = self.amount * self.exchange_rate
+        
+        super().save(*args, **kwargs)
+        
+        # Update supplier ledger
+        self.update_supplier_ledger()
+    
+    def update_supplier_ledger(self):
+        """Update supplier ledger entry for this payment"""
+        from .models import SupplierLedger  # Avoid circular import
+        
+        # Create or update ledger entry
+        ledger_entry, created = SupplierLedger.objects.get_or_create(
+            company=self.company,
+            supplier=self.supplier,
+            reference_type='payment',
+            reference_id=self.id,
+            defaults={
+                'transaction_date': self.payment_date,
+                'description': f'Payment {self.payment_number}',
+                'credit_amount': self.amount if self.payment_type in ['bill_payment', 'advance_payment'] else 0,
+                'debit_amount': self.amount if self.payment_type == 'refund' else 0,
+                'payment_method': self.payment_method,
+                'reference_number': self.reference_number,
+                'created_by': self.created_by
+            }
+        )
+        
+        if not created:
+            # Update existing entry
+            ledger_entry.transaction_date = self.payment_date
+            ledger_entry.description = f'Payment {self.payment_number}'
+            ledger_entry.credit_amount = self.amount if self.payment_type in ['bill_payment', 'advance_payment'] else 0
+            ledger_entry.debit_amount = self.amount if self.payment_type == 'refund' else 0
+            ledger_entry.payment_method = self.payment_method
+            ledger_entry.reference_number = self.reference_number
+            ledger_entry.save()
 
     def __str__(self):
-        return f"Payment-{self.payment_number} - ${self.amount}"
+        return f"Payment-{self.payment_number} - {self.supplier.name} - ${self.amount}"
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['supplier', 'payment_date']),
+            models.Index(fields=['status', 'payment_date']),
+            models.Index(fields=['payment_type', 'created_at']),
+        ]
+
+
+class SupplierLedger(models.Model):
+    """Supplier ledger for tracking all financial transactions"""
+    
+    REFERENCE_TYPE_CHOICES = [
+        ('bill', 'Purchase Bill/Invoice'),
+        ('payment', 'Payment Made'),
+        ('credit_note', 'Credit Note'),
+        ('debit_note', 'Debit Note'),
+        ('advance', 'Advance Payment'),
+        ('adjustment', 'Manual Adjustment'),
+        ('opening_balance', 'Opening Balance'),
+    ]
+    
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='supplier_ledgers')
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='ledger_entries')
+    
+    # Transaction details
+    transaction_date = models.DateField()
+    reference_type = models.CharField(max_length=50, choices=REFERENCE_TYPE_CHOICES)
+    reference_id = models.IntegerField(help_text="ID of the referenced document")
+    description = models.TextField()
+    
+    # Financial amounts
+    debit_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0, help_text="Amount owed TO supplier")
+    credit_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0, help_text="Amount paid BY company")
+    balance = models.DecimalField(max_digits=15, decimal_places=2, default=0, help_text="Running balance")
+    
+    # Payment details (if applicable)
+    payment_method = models.CharField(max_length=50, blank=True)
+    reference_number = models.CharField(max_length=255, blank=True)
+    
+    # Metadata
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        # Calculate running balance before saving
+        if not self.balance and self.id is None:  # New record
+            previous_balance = SupplierLedger.objects.filter(
+                supplier=self.supplier,
+                transaction_date__lte=self.transaction_date
+            ).exclude(id=self.id if self.id else None).aggregate(
+                total_debit=Sum('debit_amount'),
+                total_credit=Sum('credit_amount')
+            )
+            
+            total_debit = previous_balance['total_debit'] or 0
+            total_credit = previous_balance['total_credit'] or 0
+            previous_balance_amount = total_debit - total_credit
+            
+            self.balance = previous_balance_amount + self.debit_amount - self.credit_amount
+        
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.supplier.name} - {self.transaction_date} - {self.reference_type}"
+
+    class Meta:
+        ordering = ['-transaction_date', '-created_at']
+        indexes = [
+            models.Index(fields=['supplier', 'transaction_date']),
+            models.Index(fields=['reference_type', 'reference_id']),
+        ]
 
 # Purchase Return
 class PurchaseReturn(models.Model):
@@ -1455,10 +2208,14 @@ class GRNInventoryLock(models.Model):
     
     # Lock status
     is_active = models.BooleanField(default=True)
+    is_released = models.BooleanField(default=False)  # Added for better tracking
     locked_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     locked_at = models.DateTimeField(auto_now_add=True)
     released_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='released_locks')
     released_at = models.DateTimeField(null=True, blank=True)
+    
+    # Bill reference (when released due to invoice creation)
+    released_for_bill = models.ForeignKey(Bill, on_delete=models.SET_NULL, null=True, blank=True, related_name='released_locks')
     
     # Notes
     lock_notes = models.TextField(blank=True)
@@ -1467,17 +2224,20 @@ class GRNInventoryLock(models.Model):
     def __str__(self):
         return f"Lock: {self.grn_item.product.name} - {self.locked_quantity} - {self.lock_reason}"
     
-    def release_lock(self, user, notes=""):
+    def release_lock(self, user, notes="", bill=None):
         """Release the inventory lock"""
         self.is_active = False
+        self.is_released = True
         self.released_by = user
         self.released_at = timezone.now()
         self.release_notes = notes
+        self.released_for_bill = bill
         self.save()
         
         # Update tracking item if exists
         if self.tracking_item:
             self.tracking_item.is_locked = False
+            self.tracking_item.is_available = True
             self.tracking_item.save()
 
     class Meta:

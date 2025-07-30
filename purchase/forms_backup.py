@@ -46,12 +46,14 @@ class MultipleFileField(forms.FileField):
 class UnitOfMeasureForm(forms.ModelForm):
     class Meta:
         model = UnitOfMeasure
-        fields = ['name', 'abbreviation', 'uom_type', 'is_base_unit']
+        fields = ['name', 'abbreviation', 'uom_type', 'conversion_factor', 'is_base_unit', 'is_active']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'abbreviation': forms.TextInput(attrs={'class': 'form-control'}),
             'uom_type': forms.Select(attrs={'class': 'form-control'}),
-            'is_base_unit': forms.CheckboxInput(attrs={'class': 'form-check-input'})
+            'conversion_factor': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.000001'}),
+            'is_base_unit': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'})
         }
 
 
@@ -60,85 +62,150 @@ class UnitOfMeasureForm(forms.ModelForm):
 class SupplierForm(forms.ModelForm):
     """Enhanced Supplier form that works with Partner model integration"""
     
-    # Partner fields
-    name = forms.CharField(max_length=255, widget=forms.TextInput(attrs={
-        'class': 'form-control',
-        'placeholder': 'Enter supplier company name',
-        'required': True
-    }))
+    # Partner fields - these will be used to create/update the Partner record
+    partner_name = forms.CharField(
+        max_length=255, 
+        label="Company Name",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter supplier company name',
+            'required': True
+        })
+    )
     
-    contact_person = forms.CharField(max_length=255, required=False, widget=forms.TextInput(attrs={
-        'class': 'form-control',
-        'placeholder': 'Primary contact person name'
-    }))
+    contact_person = forms.CharField(
+        max_length=255, 
+        required=False, 
+        label="Contact Person",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Primary contact person name'
+        })
+    )
     
-    email = forms.EmailField(required=False, widget=forms.EmailInput(attrs={
-        'class': 'form-control',
-        'placeholder': 'supplier@company.com'
-    }))
+    email = forms.EmailField(
+        required=False, 
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'supplier@company.com'
+        })
+    )
     
-    phone = forms.CharField(max_length=50, required=False, widget=forms.TextInput(attrs={
-        'class': 'form-control',
-        'placeholder': '+1-234-567-8900'
-    }))
+    phone = forms.CharField(
+        max_length=50, 
+        required=False, 
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '+1-234-567-8900'
+        })
+    )
     
-    mobile = forms.CharField(max_length=50, required=False, widget=forms.TextInput(attrs={
-        'class': 'form-control',
-        'placeholder': '+1-234-567-8901'
-    }))
+    mobile = forms.CharField(
+        max_length=50, 
+        required=False, 
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '+1-234-567-8901'
+        })
+    )
     
-    website = forms.URLField(required=False, widget=forms.URLInput(attrs={
-        'class': 'form-control',
-        'placeholder': 'https://www.supplier.com'
-    }))
+    website = forms.URLField(
+        required=False, 
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://www.supplier.com'
+        })
+    )
     
     # Address fields
-    street = forms.CharField(max_length=255, required=False, widget=forms.Textarea(attrs={
-        'class': 'form-control',
-        'rows': 2,
-        'placeholder': 'Street address line 1'
-    }))
+    street = forms.CharField(
+        max_length=255, 
+        required=False, 
+        label="Address Line 1",
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 2,
+            'placeholder': 'Street address line 1'
+        })
+    )
     
-    street2 = forms.CharField(max_length=255, required=False, widget=forms.TextInput(attrs={
-        'class': 'form-control',
-        'placeholder': 'Street address line 2 (optional)'
-    }))
+    street2 = forms.CharField(
+        max_length=255, 
+        required=False, 
+        label="Address Line 2",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Street address line 2 (optional)'
+        })
+    )
     
-    city = forms.CharField(max_length=100, required=False, widget=forms.TextInput(attrs={
-        'class': 'form-control',
-        'placeholder': 'City'
-    }))
+    city = forms.CharField(
+        max_length=100, 
+        required=False, 
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'City'
+        })
+    )
     
-    state = forms.CharField(max_length=100, required=False, widget=forms.TextInput(attrs={
-        'class': 'form-control',
-        'placeholder': 'State/Province'
-    }))
+    state = forms.CharField(
+        max_length=100, 
+        required=False, 
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'State/Province'
+        })
+    )
     
-    zip_code = forms.CharField(max_length=20, required=False, widget=forms.TextInput(attrs={
-        'class': 'form-control',
-        'placeholder': 'Postal/ZIP code'
-    }))
+    zip_code = forms.CharField(
+        max_length=20, 
+        required=False, 
+        label="Postal Code",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Postal/ZIP code'
+        })
+    )
     
-    country = forms.CharField(max_length=100, required=False, widget=forms.TextInput(attrs={
-        'class': 'form-control',
-        'placeholder': 'Country'
-    }))
+    country = forms.CharField(
+        max_length=100, 
+        required=False, 
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Country'
+        })
+    )
     
     # Business Information
-    tax_id = forms.CharField(max_length=50, required=False, widget=forms.TextInput(attrs={
-        'class': 'form-control',
-        'placeholder': 'Tax ID/VAT number'
-    }))
+    tax_id = forms.CharField(
+        max_length=50, 
+        required=False, 
+        label="Tax ID",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Tax ID/VAT number'
+        })
+    )
     
-    vat_number = forms.CharField(max_length=100, required=False, widget=forms.TextInput(attrs={
-        'class': 'form-control',
-        'placeholder': 'VAT registration number'
-    }))
+    vat_number = forms.CharField(
+        max_length=100, 
+        required=False, 
+        label="VAT Number",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'VAT registration number'
+        })
+    )
     
-    registration_number = forms.CharField(max_length=50, required=False, widget=forms.TextInput(attrs={
-        'class': 'form-control',
-        'placeholder': 'Business registration number'
-    }))
+    registration_number = forms.CharField(
+        max_length=50, 
+        required=False, 
+        label="Registration Number",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Business registration number'
+        })
+    )
     
     # Financial Information
     payment_terms = forms.ChoiceField(
@@ -153,7 +220,9 @@ class SupplierForm(forms.ModelForm):
     )
     
     credit_limit = forms.DecimalField(
-        max_digits=15, decimal_places=2, required=False,
+        max_digits=15, 
+        decimal_places=2, 
+        required=False,
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'step': '0.01',
@@ -162,28 +231,39 @@ class SupplierForm(forms.ModelForm):
         })
     )
     
-    credit_period_days = forms.IntegerField(required=False, widget=forms.NumberInput(attrs={
-        'class': 'form-control',
-        'min': '0',
-        'placeholder': '30'
-    }))
+    credit_period_days = forms.IntegerField(
+        required=False, 
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'min': '0',
+            'placeholder': '30'
+        })
+    )
     
-    bank_details = forms.CharField(required=False, widget=forms.Textarea(attrs={
-        'class': 'form-control',
-        'rows': 3,
-        'placeholder': 'Bank account details for payments'
-    }))
+    bank_details = forms.CharField(
+        required=False, 
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Bank account details for payments'
+        })
+    )
     
     # Business Details
-    established_year = forms.IntegerField(required=False, widget=forms.NumberInput(attrs={
-        'class': 'form-control',
-        'min': '1800',
-        'max': '2025',
-        'placeholder': 'Year established'
-    }))
+    established_year = forms.IntegerField(
+        required=False, 
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'min': '1800',
+            'max': '2025',
+            'placeholder': 'Year established'
+        })
+    )
     
     annual_revenue = forms.DecimalField(
-        max_digits=15, decimal_places=2, required=False,
+        max_digits=15, 
+        decimal_places=2, 
+        required=False,
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'step': '0.01',
@@ -192,17 +272,23 @@ class SupplierForm(forms.ModelForm):
         })
     )
     
-    employee_count = forms.IntegerField(required=False, widget=forms.NumberInput(attrs={
-        'class': 'form-control',
-        'min': '1',
-        'placeholder': 'Number of employees'
-    }))
+    employee_count = forms.IntegerField(
+        required=False, 
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'min': '1',
+            'placeholder': 'Number of employees'
+        })
+    )
     
-    certifications = forms.CharField(required=False, widget=forms.Textarea(attrs={
-        'class': 'form-control',
-        'rows': 3,
-        'placeholder': 'ISO certifications, quality standards, etc.'
-    }))
+    certifications = forms.CharField(
+        required=False, 
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'ISO certifications, quality standards, etc.'
+        })
+    )
     
     relationship_manager = forms.ModelChoiceField(
         queryset=User.objects.none(),
@@ -210,12 +296,56 @@ class SupplierForm(forms.ModelForm):
         widget=forms.Select(attrs={'class': 'form-control'})
     )
     
-    notes = forms.CharField(required=False, widget=forms.Textarea(attrs={
-        'class': 'form-control',
-        'rows': 4,
-        'placeholder': 'General notes about the supplier'
-    }))
-    
+    notes = forms.CharField(
+        required=False, 
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 4,
+            'placeholder': 'General notes about the supplier'
+        })
+    )
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        if user:
+            # Set queryset for relationship manager to users in the same company
+            self.fields['relationship_manager'].queryset = User.objects.filter(
+                company=user.company,
+                is_active=True
+            ).order_by('first_name', 'last_name')
+            
+        # If editing existing supplier, populate partner fields
+        if self.instance and self.instance.pk and hasattr(self.instance, 'partner'):
+            partner = self.instance.partner
+            self.fields['partner_name'].initial = partner.name
+            self.fields['contact_person'].initial = partner.contact_person
+            self.fields['email'].initial = partner.email
+            self.fields['phone'].initial = partner.phone
+            self.fields['mobile'].initial = partner.mobile
+            self.fields['website'].initial = partner.website
+            self.fields['street'].initial = partner.street
+            self.fields['street2'].initial = partner.street2
+            self.fields['city'].initial = partner.city
+            self.fields['state'].initial = partner.state
+            self.fields['zip_code'].initial = partner.zip_code
+            self.fields['country'].initial = partner.country
+            self.fields['tax_id'].initial = partner.tax_id
+            self.fields['vat_number'].initial = partner.vat_number
+            self.fields['registration_number'].initial = partner.registration_number
+            self.fields['payment_terms'].initial = partner.payment_terms
+            self.fields['preferred_currency'].initial = partner.preferred_currency
+            self.fields['credit_limit'].initial = partner.credit_limit
+            self.fields['credit_period_days'].initial = partner.credit_period_days
+            self.fields['bank_details'].initial = partner.bank_details
+            self.fields['established_year'].initial = partner.established_year
+            self.fields['annual_revenue'].initial = partner.annual_revenue
+            self.fields['employee_count'].initial = partner.employee_count
+            self.fields['certifications'].initial = partner.certifications
+            self.fields['relationship_manager'].initial = partner.relationship_manager
+            self.fields['notes'].initial = partner.notes
+
     class Meta:
         model = Supplier
         fields = [
@@ -246,102 +376,53 @@ class SupplierForm(forms.ModelForm):
                 'class': 'form-control',
                 'step': '0.1',
                 'min': '0',
-                'max': '10',
-                'placeholder': '0.0 - 10.0'
+                'max': '5',
+                'placeholder': '5.0'
             }),
             'delivery_rating': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.1',
                 'min': '0',
-                'max': '10',
-                'placeholder': '0.0 - 10.0'
+                'max': '5',
+                'placeholder': '5.0'
             }),
             'price_rating': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.1',
                 'min': '0',
-                'max': '10',
-                'placeholder': '0.0 - 10.0'
+                'max': '5',
+                'placeholder': '5.0'
             }),
             'service_rating': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.1',
                 'min': '0',
-                'max': '10',
-                'placeholder': '0.0 - 10.0'
+                'max': '5',
+                'placeholder': '5.0'
             }),
         }
 
-    def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
-        super().__init__(*args, **kwargs)
-        
-        if self.user and hasattr(self.user, 'company'):
-            # Filter relationship managers by company
-            self.fields['relationship_manager'].queryset = User.objects.filter(
-                company=self.user.company,
-                is_active=True
-            )
-        
-        # If editing existing supplier, populate partner fields
-        if self.instance and self.instance.pk and self.instance.partner:
-            partner = self.instance.partner
-            self.fields['name'].initial = partner.name
-            self.fields['contact_person'].initial = partner.contact_person
-            self.fields['email'].initial = partner.email
-            self.fields['phone'].initial = partner.phone
-            self.fields['mobile'].initial = partner.mobile
-            self.fields['website'].initial = partner.website
-            self.fields['street'].initial = partner.street
-            self.fields['street2'].initial = partner.street2
-            self.fields['city'].initial = partner.city
-            self.fields['state'].initial = partner.state
-            self.fields['zip_code'].initial = partner.zip_code
-            self.fields['country'].initial = partner.country
-            self.fields['tax_id'].initial = partner.tax_id
-            self.fields['vat_number'].initial = partner.vat_number
-            self.fields['registration_number'].initial = partner.registration_number
-            self.fields['payment_terms'].initial = partner.payment_terms
-            self.fields['preferred_currency'].initial = partner.preferred_currency
-            self.fields['credit_limit'].initial = partner.credit_limit
-            self.fields['credit_period_days'].initial = partner.credit_period_days
-            self.fields['bank_details'].initial = partner.bank_details
-            self.fields['established_year'].initial = partner.established_year
-            self.fields['annual_revenue'].initial = partner.annual_revenue
-            self.fields['employee_count'].initial = partner.employee_count
-            self.fields['certifications'].initial = partner.certifications
-            self.fields['relationship_manager'].initial = partner.relationship_manager
-            self.fields['notes'].initial = partner.notes
-
     def save(self, commit=True):
-        """Enhanced save method to handle Partner model integration"""
+        # Create or update the Partner record first
+        from crm.models import Partner
+        
         supplier = super().save(commit=False)
         
-        # Generate supplier code if not provided
-        if not supplier.supplier_code and self.user and hasattr(self.user, 'company'):
-            last_supplier = Supplier.objects.filter(
-                company=self.user.company
-            ).order_by('-id').first()
-            supplier_number = (last_supplier.id + 1) if last_supplier else 1
-            supplier.supplier_code = f"SUP-{supplier_number:06d}"
-        
         if commit:
-            # Create or update Partner
-            if supplier.partner:
-                # Update existing Partner
+            # Create or get partner
+            if supplier.pk and hasattr(supplier, 'partner'):
+                # Editing existing supplier
                 partner = supplier.partner
             else:
-                # Create new Partner
+                # Creating new supplier
                 partner = Partner(
                     company=supplier.company,
                     partner_type='company',
-                    is_supplier=True,
-                    created_by=self.user
+                    is_supplier=True
                 )
             
-            # Update partner fields
-            partner.name = self.cleaned_data['name']
-            partner.display_name = self.cleaned_data['name']
+            # Update partner fields from form
+            partner.name = self.cleaned_data['partner_name']
             partner.contact_person = self.cleaned_data.get('contact_person', '')
             partner.email = self.cleaned_data.get('email', '')
             partner.phone = self.cleaned_data.get('phone', '')
@@ -361,21 +442,79 @@ class SupplierForm(forms.ModelForm):
             partner.credit_limit = self.cleaned_data.get('credit_limit', 0)
             partner.credit_period_days = self.cleaned_data.get('credit_period_days', 30)
             partner.bank_details = self.cleaned_data.get('bank_details', '')
-            partner.established_year = self.cleaned_data.get('established_year', None)
-            partner.annual_revenue = self.cleaned_data.get('annual_revenue', None)
-            partner.employee_count = self.cleaned_data.get('employee_count', None)
+            partner.established_year = self.cleaned_data.get('established_year')
+            partner.annual_revenue = self.cleaned_data.get('annual_revenue')
+            partner.employee_count = self.cleaned_data.get('employee_count')
             partner.certifications = self.cleaned_data.get('certifications', '')
-            partner.relationship_manager = self.cleaned_data.get('relationship_manager', None)
+            partner.relationship_manager = self.cleaned_data.get('relationship_manager')
             partner.notes = self.cleaned_data.get('notes', '')
-            partner.is_supplier = True
             
             partner.save()
             
             # Link supplier to partner
             supplier.partner = partner
             supplier.save()
-        
+            
         return supplier
+
+
+class SupplierContactForm(forms.ModelForm):
+    """Form for managing supplier contact information"""
+    
+    class Meta:
+        model = SupplierContact
+        fields = [
+            'name', 'contact_type', 'designation', 'email', 'phone', 'mobile',
+            'is_primary', 'is_active', 'notes'
+        ]
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Contact person name'
+            }),
+            'contact_type': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            'designation': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Job title or position'
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'contact@supplier.com'
+            }),
+            'phone': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '+1-234-567-8900'
+            }),
+            'mobile': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '+1-234-567-8901'
+            }),
+            'is_primary': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'notes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Additional notes about this contact'
+            })
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.supplier = kwargs.pop('supplier', None)
+        super().__init__(*args, **kwargs)
+
+    def save(self, commit=True):
+        contact = super().save(commit=False)
+        if self.supplier:
+            contact.supplier = self.supplier
+        if commit:
+            contact.save()
+        return contact
 
 
 class SupplierProductCatalogForm(forms.ModelForm):

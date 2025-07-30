@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Purchase Payments Management{% endblock %}
@@ -358,7 +358,7 @@
     <!-- Statistics Cards -->
     <div class="stats-grid">
         <div class="stat-card">
-            <div class="stat-number">{{ payments.paginator.count|default:0 }}</div>
+            <div class="stat-number">{{ payments.paginator.count }}</div>
             <div class="stat-label">Total Payments</div>
         </div>
         <div class="stat-card">
@@ -596,4 +596,3 @@ setInterval(function() {
 }, 120000); // 2 minutes
 </script>
 {% endblock %}
-           

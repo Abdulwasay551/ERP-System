@@ -1,366 +1,992 @@
-{% extends 'layouts/base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}{{ title }}{% endblock %}
 
 {% block extra_css %}
 <style>
-    .file-input-container {
-        position: relative;
-        overflow: hidden;
-        display: inline-block;
+    .supplier-form-container {
+        padding: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
     }
-    .file-input-container input[type=file] {
-        font-size: 100px;
-        position: absolute;
-        left: 0;
-        top: 0;
-        opacity: 0;
-    }
-    .file-input-label {
-        background-color: #007bff;
+    
+    .header-section {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
         color: white;
-        padding: 8px 12px;
-        border-radius: 4px;
+        padding: 2rem;
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .header-info h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .header-info .breadcrumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+    }
+    
+    .header-actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn-secondary {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        color: white;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .form-sections {
+        display: grid;
+        gap: 1.5rem;
+    }
+    
+    .form-section {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e5e7eb;
+        position: relative;
+    }
+    
+    .form-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #059669, #047857);
+        border-radius: 1rem 1rem 0 0;
+    }
+    
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f3f4f6;
+    }
+    
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #374151;
+        margin: 0;
+    }
+    
+    .section-icon {
+        font-size: 1.25rem;
+        color: #059669;
+    }
+    
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1rem;
+    }
+    
+    .form-grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .form-grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+    
+    .form-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #374151;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .required-field {
+        color: #ef4444;
+        font-size: 0.75rem;
+    }
+    
+    .form-control {
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+        background: white;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #059669;
+        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+    }
+    
+    .form-control:invalid {
+        border-color: #ef4444;
+    }
+    
+    .form-control[readonly] {
+        background-color: #f9fafb;
+        color: #6b7280;
+    }
+    
+    .form-help-text {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+    }
+    
+    .form-error {
+        font-size: 0.75rem;
+        color: #ef4444;
+        margin-top: 0.25rem;
+    }
+    
+    .file-upload-area {
+        border: 2px dashed #d1d5db;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        background: #f9fafb;
         cursor: pointer;
-        font-size: 14px;
     }
-    .file-input-label:hover {
-        background-color: #0056b3;
+    
+    .file-upload-area:hover {
+        border-color: #059669;
+        background: #f0fdf4;
     }
-    .file-info {
-        font-size: 12px;
-        color: #6c757d;
-        margin-top: 4px;
+    
+    .file-upload-area.drag-over {
+        border-color: #059669;
+        background: #d1fae5;
     }
-    .document-upload {
-        border: 2px dashed #dee2e6;
+    
+    .file-upload-icon {
+        font-size: 2rem;
+        color: #6b7280;
+        margin-bottom: 0.5rem;
+    }
+    
+    .file-upload-text {
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+    
+    .file-upload-text strong {
+        color: #059669;
+    }
+    
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+    }
+    
+    .checkbox-group:hover {
+        background: #f9fafb;
+        border-color: #9ca3af;
+    }
+    
+    .checkbox-group input[type="checkbox"] {
+        width: 1rem;
+        height: 1rem;
+        accent-color: #059669;
+    }
+    
+    .checkbox-group label {
+        flex: 1;
+        cursor: pointer;
+        font-size: 0.875rem;
+        color: #374151;
+    }
+    
+    .form-actions {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .form-buttons {
+        display: flex;
+        gap: 0.75rem;
+    }
+    
+    .btn-primary {
+        background: #059669;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+    
+    .btn-primary:hover {
+        background: #047857;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .btn-save-draft {
+        background: #6b7280;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .btn-save-draft:hover {
+        background: #4b5563;
+    }
+    
+    .form-status {
+        font-size: 0.875rem;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .status-indicator {
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 50%;
+        background: #10b981;
+    }
+    
+    @media (max-width: 768px) {
+        .supplier-form-container {
+            padding: 1rem;
+        }
+        
+        .header-content {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .form-grid,
+        .form-grid-2,
+        .form-grid-3 {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .form-buttons {
+            justify-content: center;
+        }
+    }
+
+    .btn-group-custom {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    .supplier-preview {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
         padding: 20px;
-        border-radius: 8px;
         margin-bottom: 20px;
     }
-    .form-help-text {
-        font-size: 0.875em;
-        color: #6c757d;
-        margin-top: 0.25rem;
+    .rating-display {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .star-rating {
+        color: #ffc107;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title">{{ title }}</h4>
-                    <a href="{% url 'suppliers_ui' %}" class="btn btn-secondary btn-sm float-right">
-                        <i class="fas fa-arrow-left"></i> Back to Suppliers
-                    </a>
-                </div>
-                <div class="card-body">
-                    <form method="post" enctype="multipart/form-data" id="supplierForm">
-                        {% csrf_token %}
-                        
-                        <!-- Basic Information -->
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="{{ form.name.id_for_label }}">{{ form.name.label }} <span class="text-danger">*</span></label>
-                                    {{ form.name }}
-                                    {% if form.name.help_text %}
-                                        <small class="form-help-text">{{ form.name.help_text }}</small>
-                                    {% endif %}
-                                    {% if form.name.errors %}
-                                        <div class="text-danger">{{ form.name.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="{{ form.supplier_code.id_for_label }}">{{ form.supplier_code.label }}</label>
-                                    {{ form.supplier_code }}
-                                    {% if form.supplier_code.help_text %}
-                                        <small class="form-help-text">{{ form.supplier_code.help_text }}</small>
-                                    {% endif %}
-                                    {% if form.supplier_code.errors %}
-                                        <div class="text-danger">{{ form.supplier_code.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Contact Information -->
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="{{ form.contact_person.id_for_label }}">{{ form.contact_person.label }}</label>
-                                    {{ form.contact_person }}
-                                    {% if form.contact_person.help_text %}
-                                        <small class="form-help-text">{{ form.contact_person.help_text }}</small>
-                                    {% endif %}
-                                    {% if form.contact_person.errors %}
-                                        <div class="text-danger">{{ form.contact_person.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
-                                    {{ form.email }}
-                                    {% if form.email.help_text %}
-                                        <small class="form-help-text">{{ form.email.help_text }}</small>
-                                    {% endif %}
-                                    {% if form.email.errors %}
-                                        <div class="text-danger">{{ form.email.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
-                                    {{ form.phone }}
-                                    {% if form.phone.help_text %}
-                                        <small class="form-help-text">{{ form.phone.help_text }}</small>
-                                    {% endif %}
-                                    {% if form.phone.errors %}
-                                        <div class="text-danger">{{ form.phone.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="{{ form.tax_number.id_for_label }}">{{ form.tax_number.label }}</label>
-                                    {{ form.tax_number }}
-                                    {% if form.tax_number.help_text %}
-                                        <small class="form-help-text">{{ form.tax_number.help_text }}</small>
-                                    {% endif %}
-                                    {% if form.tax_number.errors %}
-                                        <div class="text-danger">{{ form.tax_number.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="{{ form.address.id_for_label }}">{{ form.address.label }}</label>
-                            {{ form.address }}
-                            {% if form.address.help_text %}
-                                <small class="form-help-text">{{ form.address.help_text }}</small>
-                            {% endif %}
-                            {% if form.address.errors %}
-                                <div class="text-danger">{{ form.address.errors }}</div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Business Information -->
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="{{ form.payment_terms.id_for_label }}">{{ form.payment_terms.label }}</label>
-                                    {{ form.payment_terms }}
-                                    {% if form.payment_terms.help_text %}
-                                        <small class="form-help-text">{{ form.payment_terms.help_text }}</small>
-                                    {% endif %}
-                                    {% if form.payment_terms.errors %}
-                                        <div class="text-danger">{{ form.payment_terms.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="{{ form.credit_limit.id_for_label }}">{{ form.credit_limit.label }}</label>
-                                    {{ form.credit_limit }}
-                                    {% if form.credit_limit.help_text %}
-                                        <small class="form-help-text">{{ form.credit_limit.help_text }}</small>
-                                    {% endif %}
-                                    {% if form.credit_limit.errors %}
-                                        <div class="text-danger">{{ form.credit_limit.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="{{ form.delivery_lead_time.id_for_label }}">{{ form.delivery_lead_time.label }}</label>
-                                    {{ form.delivery_lead_time }}
-                                    {% if form.delivery_lead_time.help_text %}
-                                        <small class="form-help-text">{{ form.delivery_lead_time.help_text }}</small>
-                                    {% endif %}
-                                    {% if form.delivery_lead_time.errors %}
-                                        <div class="text-danger">{{ form.delivery_lead_time.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <div class="form-check mt-4">
-                                        {{ form.is_active }}
-                                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
-                                            {{ form.is_active.label }}
-                                        </label>
-                                        {% if form.is_active.help_text %}
-                                            <small class="form-help-text d-block">{{ form.is_active.help_text }}</small>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="{{ form.bank_details.id_for_label }}">{{ form.bank_details.label }}</label>
-                            {{ form.bank_details }}
-                            {% if form.bank_details.help_text %}
-                                <small class="form-help-text">{{ form.bank_details.help_text }}</small>
-                            {% endif %}
-                            {% if form.bank_details.errors %}
-                                <div class="text-danger">{{ form.bank_details.errors }}</div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Quality Ratings -->
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="{{ form.quality_rating.id_for_label }}">{{ form.quality_rating.label }}</label>
-                                    {{ form.quality_rating }}
-                                    {% if form.quality_rating.help_text %}
-                                        <small class="form-help-text">{{ form.quality_rating.help_text }}</small>
-                                    {% endif %}
-                                    {% if form.quality_rating.errors %}
-                                        <div class="text-danger">{{ form.quality_rating.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="{{ form.delivery_rating.id_for_label }}">{{ form.delivery_rating.label }}</label>
-                                    {{ form.delivery_rating }}
-                                    {% if form.delivery_rating.help_text %}
-                                        <small class="form-help-text">{{ form.delivery_rating.help_text }}</small>
-                                    {% endif %}
-                                    {% if form.delivery_rating.errors %}
-                                        <div class="text-danger">{{ form.delivery_rating.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Document Uploads -->
-                        <div class="document-upload">
-                            <h5 class="mb-3"><i class="fas fa-upload"></i> Document Uploads</h5>
-                            <p class="text-muted">Upload relevant supplier documents. All files are optional and must be under 32MB.</p>
-                            
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="{{ form.registration_certificate.id_for_label }}">{{ form.registration_certificate.label }}</label>
-                                        <div class="file-input-container">
-                                            {{ form.registration_certificate }}
-                                            <label for="{{ form.registration_certificate.id_for_label }}" class="file-input-label">
-                                                <i class="fas fa-file-upload"></i> Choose File
-                                            </label>
-                                        </div>
-                                        {% if form.registration_certificate.help_text %}
-                                            <div class="file-info">{{ form.registration_certificate.help_text }}</div>
-                                        {% endif %}
-                                        {% if form.registration_certificate.errors %}
-                                            <div class="text-danger">{{ form.registration_certificate.errors }}</div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="{{ form.tax_certificate.id_for_label }}">{{ form.tax_certificate.label }}</label>
-                                        <div class="file-input-container">
-                                            {{ form.tax_certificate }}
-                                            <label for="{{ form.tax_certificate.id_for_label }}" class="file-input-label">
-                                                <i class="fas fa-file-upload"></i> Choose File
-                                            </label>
-                                        </div>
-                                        {% if form.tax_certificate.help_text %}
-                                            <div class="file-info">{{ form.tax_certificate.help_text }}</div>
-                                        {% endif %}
-                                        {% if form.tax_certificate.errors %}
-                                            <div class="text-danger">{{ form.tax_certificate.errors }}</div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="{{ form.quality_certificates.id_for_label }}">{{ form.quality_certificates.label }}</label>
-                                        <div class="file-input-container">
-                                            {{ form.quality_certificates }}
-                                            <label for="{{ form.quality_certificates.id_for_label }}" class="file-input-label">
-                                                <i class="fas fa-file-upload"></i> Choose File
-                                            </label>
-                                        </div>
-                                        {% if form.quality_certificates.help_text %}
-                                            <div class="file-info">{{ form.quality_certificates.help_text }}</div>
-                                        {% endif %}
-                                        {% if form.quality_certificates.errors %}
-                                            <div class="text-danger">{{ form.quality_certificates.errors }}</div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="{{ form.bank_documents.id_for_label }}">{{ form.bank_documents.label }}</label>
-                                        <div class="file-input-container">
-                                            {{ form.bank_documents }}
-                                            <label for="{{ form.bank_documents.id_for_label }}" class="file-input-label">
-                                                <i class="fas fa-file-upload"></i> Choose File
-                                            </label>
-                                        </div>
-                                        {% if form.bank_documents.help_text %}
-                                            <div class="file-info">{{ form.bank_documents.help_text }}</div>
-                                        {% endif %}
-                                        {% if form.bank_documents.errors %}
-                                            <div class="text-danger">{{ form.bank_documents.errors }}</div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="{{ form.agreement_contract.id_for_label }}">{{ form.agreement_contract.label }}</label>
-                                <div class="file-input-container">
-                                    {{ form.agreement_contract }}
-                                    <label for="{{ form.agreement_contract.id_for_label }}" class="file-input-label">
-                                        <i class="fas fa-file-upload"></i> Choose File
-                                    </label>
-                                </div>
-                                {% if form.agreement_contract.help_text %}
-                                    <div class="file-info">{{ form.agreement_contract.help_text }}</div>
-                                {% endif %}
-                                {% if form.agreement_contract.errors %}
-                                    <div class="text-danger">{{ form.agreement_contract.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <!-- Form Actions -->
-                        <div class="row">
-                            <div class="col-12">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save"></i> Save Supplier
-                                </button>
-                                <a href="{% url 'suppliers_ui' %}" class="btn btn-secondary ml-2">
-                                    <i class="fas fa-times"></i> Cancel
-                                </a>
-                            </div>
-                        </div>
-                    </form>
+<div class="supplier-form-container">
+    <!-- Header Section -->
+    <div class="header-section">
+        <div class="header-content">
+            <div class="header-info">
+                <h1>
+                    <i class="fas fa-building"></i>
+                    {{ title }}
+                </h1>
+                <div class="breadcrumb">
+                    <i class="fas fa-home"></i> Dashboard / Purchase / Suppliers / {{ title }}
                 </div>
             </div>
+            <div class="header-actions">
+                <a href="{% url 'purchase:suppliers_ui' %}" class="btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Suppliers
+                </a>
+                {% if supplier %}
+                <a href="{% url 'purchase:supplier_detail' supplier.id %}" class="btn-secondary">
+                    <i class="fas fa-eye"></i> View Details
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Supplier Preview (for editing) -->
+    {% if supplier and supplier.partner %}
+    <div class="form-section" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white;">
+        <div class="section-header" style="border-bottom: 2px solid rgba(255,255,255,0.2);">
+            <div class="section-icon" style="color: white;">
+                <i class="fas fa-building"></i>
+            </div>
+            <h3 class="section-title" style="color: white;">Current Supplier Information</h3>
+        </div>
+        <div class="form-grid-2">
+            <div>
+                <h4 style="margin-bottom: 0.5rem; color: white;">{{ supplier.partner.name }}</h4>
+                <p style="margin-bottom: 1rem; opacity: 0.8;">
+                    <i class="fas fa-tag"></i> {{ supplier.get_supplier_type_display }}
+                    {% if supplier.partner.city %}
+                        | <i class="fas fa-map-marker-alt"></i> {{ supplier.partner.city }}, {{ supplier.partner.country }}
+                    {% endif %}
+                </p>
+                {% if supplier.overall_rating %}
+                <div class="rating-display">
+                    <span style="color: white;">Overall Rating:</span>
+                    <div class="star-rating">
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= supplier.overall_rating %}
+                                <i class="fas fa-star" style="color: #ffc107;"></i>
+                            {% else %}
+                                <i class="far fa-star" style="color: #ffc107;"></i>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <span style="color: white;">({{ supplier.overall_rating|floatformat:1 }}/5.0)</span>
+                </div>
+                {% endif %}
+            </div>
+            <div style="text-align: right;">
+                <span class="status-badge" style="background: rgba(255,255,255,0.2); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem;">
+                    <i class="fas fa-circle" style="color: #10b981;"></i> {{ supplier.get_status_display }}
+                </span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Main Form -->
+    <form method="post" enctype="multipart/form-data" id="supplierForm" class="form-sections">
+                {% csrf_token %}
+                
+                <!-- Basic Company Information -->
+                <div class="form-section">
+                    <h5 class="section-title">
+                        <i class="fas fa-building"></i> Company Information
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.name.id_for_label }}">
+                                    {{ form.name.label }} <span class="required-field">*</span>
+                                </label>
+                                {{ form.name }}
+                                {% if form.name.help_text %}
+                                    <small class="form-help-text">{{ form.name.help_text }}</small>
+                                {% endif %}
+                                {% if form.name.errors %}
+                                    <div class="text-danger">{{ form.name.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.supplier_type.id_for_label }}">{{ form.supplier_type.label }}</label>
+                                {{ form.supplier_type }}
+                                {% if form.supplier_type.help_text %}
+                                    <small class="form-help-text">{{ form.supplier_type.help_text }}</small>
+                                {% endif %}
+                                {% if form.supplier_type.errors %}
+                                    <div class="text-danger">{{ form.supplier_type.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.contact_person.id_for_label }}">{{ form.contact_person.label }}</label>
+                                {{ form.contact_person }}
+                                {% if form.contact_person.help_text %}
+                                    <small class="form-help-text">{{ form.contact_person.help_text }}</small>
+                                {% endif %}
+                                {% if form.contact_person.errors %}
+                                    <div class="text-danger">{{ form.contact_person.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
+                                {{ form.status }}
+                                {% if form.status.help_text %}
+                                    <small class="form-help-text">{{ form.status.help_text }}</small>
+                                {% endif %}
+                                {% if form.status.errors %}
+                                    <div class="text-danger">{{ form.status.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="form-section">
+                    <h5 class="section-title">
+                        <i class="fas fa-address-book"></i> Contact Information
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+                                {{ form.email }}
+                                {% if form.email.help_text %}
+                                    <small class="form-help-text">{{ form.email.help_text }}</small>
+                                {% endif %}
+                                {% if form.email.errors %}
+                                    <div class="text-danger">{{ form.email.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.website.id_for_label }}">{{ form.website.label }}</label>
+                                {{ form.website }}
+                                {% if form.website.help_text %}
+                                    <small class="form-help-text">{{ form.website.help_text }}</small>
+                                {% endif %}
+                                {% if form.website.errors %}
+                                    <div class="text-danger">{{ form.website.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+                                {{ form.phone }}
+                                {% if form.phone.help_text %}
+                                    <small class="form-help-text">{{ form.phone.help_text }}</small>
+                                {% endif %}
+                                {% if form.phone.errors %}
+                                    <div class="text-danger">{{ form.phone.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.mobile.id_for_label }}">{{ form.mobile.label }}</label>
+                                {{ form.mobile }}
+                                {% if form.mobile.help_text %}
+                                    <small class="form-help-text">{{ form.mobile.help_text }}</small>
+                                {% endif %}
+                                {% if form.mobile.errors %}
+                                    <div class="text-danger">{{ form.mobile.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Address Information -->
+                <div class="form-section">
+                    <h5 class="section-title">
+                        <i class="fas fa-map-marker-alt"></i> Address Information
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="{{ form.street.id_for_label }}">{{ form.street.label }}</label>
+                                {{ form.street }}
+                                {% if form.street.help_text %}
+                                    <small class="form-help-text">{{ form.street.help_text }}</small>
+                                {% endif %}
+                                {% if form.street.errors %}
+                                    <div class="text-danger">{{ form.street.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.street2.id_for_label }}">{{ form.street2.label }}</label>
+                                {{ form.street2 }}
+                                {% if form.street2.help_text %}
+                                    <small class="form-help-text">{{ form.street2.help_text }}</small>
+                                {% endif %}
+                                {% if form.street2.errors %}
+                                    <div class="text-danger">{{ form.street2.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.city.id_for_label }}">{{ form.city.label }}</label>
+                                {{ form.city }}
+                                {% if form.city.help_text %}
+                                    <small class="form-help-text">{{ form.city.help_text }}</small>
+                                {% endif %}
+                                {% if form.city.errors %}
+                                    <div class="text-danger">{{ form.city.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.state.id_for_label }}">{{ form.state.label }}</label>
+                                {{ form.state }}
+                                {% if form.state.help_text %}
+                                    <small class="form-help-text">{{ form.state.help_text }}</small>
+                                {% endif %}
+                                {% if form.state.errors %}
+                                    <div class="text-danger">{{ form.state.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.zip_code.id_for_label }}">{{ form.zip_code.label }}</label>
+                                {{ form.zip_code }}
+                                {% if form.zip_code.help_text %}
+                                    <small class="form-help-text">{{ form.zip_code.help_text }}</small>
+                                {% endif %}
+                                {% if form.zip_code.errors %}
+                                    <div class="text-danger">{{ form.zip_code.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.country.id_for_label }}">{{ form.country.label }}</label>
+                                {{ form.country }}
+                                {% if form.country.help_text %}
+                                    <small class="form-help-text">{{ form.country.help_text }}</small>
+                                {% endif %}
+                                {% if form.country.errors %}
+                                    <div class="text-danger">{{ form.country.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Business & Legal Information -->
+                <div class="form-section">
+                    <h5 class="section-title">
+                        <i class="fas fa-certificate"></i> Business & Legal Information
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.tax_id.id_for_label }}">{{ form.tax_id.label }}</label>
+                                {{ form.tax_id }}
+                                {% if form.tax_id.help_text %}
+                                    <small class="form-help-text">{{ form.tax_id.help_text }}</small>
+                                {% endif %}
+                                {% if form.tax_id.errors %}
+                                    <div class="text-danger">{{ form.tax_id.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.vat_number.id_for_label }}">{{ form.vat_number.label }}</label>
+                                {{ form.vat_number }}
+                                {% if form.vat_number.help_text %}
+                                    <small class="form-help-text">{{ form.vat_number.help_text }}</small>
+                                {% endif %}
+                                {% if form.vat_number.errors %}
+                                    <div class="text-danger">{{ form.vat_number.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.registration_number.id_for_label }}">{{ form.registration_number.label }}</label>
+                                {{ form.registration_number }}
+                                {% if form.registration_number.help_text %}
+                                    <small class="form-help-text">{{ form.registration_number.help_text }}</small>
+                                {% endif %}
+                                {% if form.registration_number.errors %}
+                                    <div class="text-danger">{{ form.registration_number.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.established_year.id_for_label }}">{{ form.established_year.label }}</label>
+                                {{ form.established_year }}
+                                {% if form.established_year.help_text %}
+                                    <small class="form-help-text">{{ form.established_year.help_text }}</small>
+                                {% endif %}
+                                {% if form.established_year.errors %}
+                                    <div class="text-danger">{{ form.established_year.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.employee_count.id_for_label }}">{{ form.employee_count.label }}</label>
+                                {{ form.employee_count }}
+                                {% if form.employee_count.help_text %}
+                                    <small class="form-help-text">{{ form.employee_count.help_text }}</small>
+                                {% endif %}
+                                {% if form.employee_count.errors %}
+                                    <div class="text-danger">{{ form.employee_count.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="{{ form.certifications.id_for_label }}">{{ form.certifications.label }}</label>
+                                {{ form.certifications }}
+                                {% if form.certifications.help_text %}
+                                    <small class="form-help-text">{{ form.certifications.help_text }}</small>
+                                {% endif %}
+                                {% if form.certifications.errors %}
+                                    <div class="text-danger">{{ form.certifications.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Information -->
+                <div class="form-section">
+                    <h5 class="section-title">
+                        <i class="fas fa-dollar-sign"></i> Financial Information
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.payment_terms.id_for_label }}">{{ form.payment_terms.label }}</label>
+                                {{ form.payment_terms }}
+                                {% if form.payment_terms.help_text %}
+                                    <small class="form-help-text">{{ form.payment_terms.help_text }}</small>
+                                {% endif %}
+                                {% if form.payment_terms.errors %}
+                                    <div class="text-danger">{{ form.payment_terms.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.preferred_currency.id_for_label }}">{{ form.preferred_currency.label }}</label>
+                                {{ form.preferred_currency }}
+                                {% if form.preferred_currency.help_text %}
+                                    <small class="form-help-text">{{ form.preferred_currency.help_text }}</small>
+                                {% endif %}
+                                {% if form.preferred_currency.errors %}
+                                    <div class="text-danger">{{ form.preferred_currency.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.credit_limit.id_for_label }}">{{ form.credit_limit.label }}</label>
+                                {{ form.credit_limit }}
+                                {% if form.credit_limit.help_text %}
+                                    <small class="form-help-text">{{ form.credit_limit.help_text }}</small>
+                                {% endif %}
+                                {% if form.credit_limit.errors %}
+                                    <div class="text-danger">{{ form.credit_limit.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.credit_period_days.id_for_label }}">{{ form.credit_period_days.label }}</label>
+                                {{ form.credit_period_days }}
+                                {% if form.credit_period_days.help_text %}
+                                    <small class="form-help-text">{{ form.credit_period_days.help_text }}</small>
+                                {% endif %}
+                                {% if form.credit_period_days.errors %}
+                                    <div class="text-danger">{{ form.credit_period_days.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.annual_revenue.id_for_label }}">{{ form.annual_revenue.label }}</label>
+                                {{ form.annual_revenue }}
+                                {% if form.annual_revenue.help_text %}
+                                    <small class="form-help-text">{{ form.annual_revenue.help_text }}</small>
+                                {% endif %}
+                                {% if form.annual_revenue.errors %}
+                                    <div class="text-danger">{{ form.annual_revenue.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.bank_details.id_for_label }}">{{ form.bank_details.label }}</label>
+                                {{ form.bank_details }}
+                                {% if form.bank_details.help_text %}
+                                    <small class="form-help-text">{{ form.bank_details.help_text }}</small>
+                                {% endif %}
+                                {% if form.bank_details.errors %}
+                                    <div class="text-danger">{{ form.bank_details.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Supplier Performance -->
+                <div class="form-section">
+                    <h5 class="section-title">
+                        <i class="fas fa-chart-line"></i> Supplier Performance
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="{{ form.delivery_lead_time.id_for_label }}">{{ form.delivery_lead_time.label }}</label>
+                                {{ form.delivery_lead_time }}
+                                {% if form.delivery_lead_time.help_text %}
+                                    <small class="form-help-text">{{ form.delivery_lead_time.help_text }}</small>
+                                {% endif %}
+                                {% if form.delivery_lead_time.errors %}
+                                    <div class="text-danger">{{ form.delivery_lead_time.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="{{ form.minimum_order_value.id_for_label }}">{{ form.minimum_order_value.label }}</label>
+                                {{ form.minimum_order_value }}
+                                {% if form.minimum_order_value.help_text %}
+                                    <small class="form-help-text">{{ form.minimum_order_value.help_text }}</small>
+                                {% endif %}
+                                {% if form.minimum_order_value.errors %}
+                                    <div class="text-danger">{{ form.minimum_order_value.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.preferred_shipping_method.id_for_label }}">{{ form.preferred_shipping_method.label }}</label>
+                                {{ form.preferred_shipping_method }}
+                                {% if form.preferred_shipping_method.help_text %}
+                                    <small class="form-help-text">{{ form.preferred_shipping_method.help_text }}</small>
+                                {% endif %}
+                                {% if form.preferred_shipping_method.errors %}
+                                    <div class="text-danger">{{ form.preferred_shipping_method.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="{{ form.quality_rating.id_for_label }}">{{ form.quality_rating.label }}</label>
+                                {{ form.quality_rating }}
+                                {% if form.quality_rating.help_text %}
+                                    <small class="form-help-text">{{ form.quality_rating.help_text }}</small>
+                                {% endif %}
+                                {% if form.quality_rating.errors %}
+                                    <div class="text-danger">{{ form.quality_rating.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="{{ form.delivery_rating.id_for_label }}">{{ form.delivery_rating.label }}</label>
+                                {{ form.delivery_rating }}
+                                {% if form.delivery_rating.help_text %}
+                                    <small class="form-help-text">{{ form.delivery_rating.help_text }}</small>
+                                {% endif %}
+                                {% if form.delivery_rating.errors %}
+                                    <div class="text-danger">{{ form.delivery_rating.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="{{ form.price_rating.id_for_label }}">{{ form.price_rating.label }}</label>
+                                {{ form.price_rating }}
+                                {% if form.price_rating.help_text %}
+                                    <small class="form-help-text">{{ form.price_rating.help_text }}</small>
+                                {% endif %}
+                                {% if form.price_rating.errors %}
+                                    <div class="text-danger">{{ form.price_rating.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="{{ form.service_rating.id_for_label }}">{{ form.service_rating.label }}</label>
+                                {{ form.service_rating }}
+                                {% if form.service_rating.help_text %}
+                                    <small class="form-help-text">{{ form.service_rating.help_text }}</small>
+                                {% endif %}
+                                {% if form.service_rating.errors %}
+                                    <div class="text-danger">{{ form.service_rating.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Relationship Management -->
+                <div class="form-section">
+                    <h5 class="section-title">
+                        <i class="fas fa-users"></i> Relationship Management
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.relationship_manager.id_for_label }}">{{ form.relationship_manager.label }}</label>
+                                {{ form.relationship_manager }}
+                                {% if form.relationship_manager.help_text %}
+                                    <small class="form-help-text">{{ form.relationship_manager.help_text }}</small>
+                                {% endif %}
+                                {% if form.relationship_manager.errors %}
+                                    <div class="text-danger">{{ form.relationship_manager.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+                                {{ form.notes }}
+                                {% if form.notes.help_text %}
+                                    <small class="form-help-text">{{ form.notes.help_text }}</small>
+                                {% endif %}
+                                {% if form.notes.errors %}
+                                    <div class="text-danger">{{ form.notes.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-section">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save"></i> 
+                                {% if supplier %}Update Supplier{% else %}Create Supplier{% endif %}
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-lg ml-2" onclick="window.history.back();">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                        {% if supplier %}
+                        <div>
+                            <a href="{% url 'purchase:supplier_detail' supplier.id %}" class="btn btn-outline-info">
+                                <i class="fas fa-eye"></i> View Details
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -369,61 +995,49 @@
 {% block extra_js %}
 <script>
 $(document).ready(function() {
-    // File input change handler
-    $('input[type=file]').change(function() {
-        var fileName = $(this).val().split('\\').pop();
-        var fileSize = this.files[0] ? (this.files[0].size / 1024 / 1024).toFixed(2) : 0;
-        
-        if (fileName) {
-            $(this).siblings('.file-input-label').html(
-                '<i class="fas fa-file-check"></i> ' + fileName + ' (' + fileSize + ' MB)'
-            );
-            
-            // Check file size
-            if (fileSize > 32) {
-                alert('File size exceeds 32MB limit. Please choose a smaller file.');
-                $(this).val('');
-                $(this).siblings('.file-input-label').html(
-                    '<i class="fas fa-file-upload"></i> Choose File'
-                );
-            }
-        }
-    });
-
     // Form validation
-    $('#supplierForm').submit(function(e) {
-        var hasErrors = false;
+    $('#supplierForm').on('submit', function(e) {
+        let isValid = true;
         
         // Check required fields
-        var requiredFields = ['name'];
-        requiredFields.forEach(function(field) {
-            if (!$('#id_' + field).val().trim()) {
-                hasErrors = true;
-                $('#id_' + field).addClass('is-invalid');
+        $(this).find('input[required], select[required], textarea[required]').each(function() {
+            if (!$(this).val()) {
+                isValid = false;
+                $(this).addClass('is-invalid');
             } else {
-                $('#id_' + field).removeClass('is-invalid');
+                $(this).removeClass('is-invalid');
             }
         });
-
-        // Email validation
-        var email = $('#id_email').val();
-        if (email && !isValidEmail(email)) {
-            hasErrors = true;
-            $('#id_email').addClass('is-invalid');
-        } else {
-            $('#id_email').removeClass('is-invalid');
-        }
-
-        if (hasErrors) {
+        
+        if (!isValid) {
             e.preventDefault();
-            alert('Please fill in all required fields correctly.');
+            alert('Please fill in all required fields.');
         }
     });
-
-    function isValidEmail(email) {
-        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    }
+    
+    // Real-time validation feedback
+    $('input, select, textarea').on('blur', function() {
+        if ($(this).is('[required]') && !$(this).val()) {
+            $(this).addClass('is-invalid');
+        } else {
+            $(this).removeClass('is-invalid');
+        }
+    });
+    
+    // Auto-format phone numbers
+    $('input[name="phone"], input[name="mobile"]').on('input', function() {
+        let value = $(this).val().replace(/\D/g, '');
+        if (value.length >= 10) {
+            value = value.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+        }
+        $(this).val(value);
+    });
+    
+    // Auto-format currency inputs
+    $('input[name="credit_limit"], input[name="annual_revenue"], input[name="minimum_order_value"]').on('input', function() {
+        let value = $(this).val().replace(/[^\d.]/g, '');
+        $(this).val(value);
+    });
 });
 </script>
 {% endblock %}

@@ -164,6 +164,19 @@ class ProductViewSet(viewsets.ModelViewSet):
             'product': serializer.data
         }, status=status.HTTP_201_CREATED)
 
+    @action(detail=True, methods=['get'])
+    def tracking_info(self, request, pk=None):
+        """Get product tracking information"""
+        product = self.get_object()
+        return Response({
+            'tracking_method': product.tracking_method,
+            'requires_individual_tracking': product.requires_individual_tracking,
+            'requires_expiry_tracking': product.requires_expiry_tracking,
+            'requires_batch_tracking': product.requires_batch_tracking,
+            'shelf_life_days': product.shelf_life_days,
+            'tracking_display': product.get_tracking_method_display(),
+        })
+
 
 class ProductVariantViewSet(viewsets.ModelViewSet):
     serializer_class = ProductVariantSerializer

@@ -80,10 +80,9 @@
         </a>
 
         <!-- Reports -->
-        <a href="#" class="sidebar-item text-gray-400">
+        <a href="{% url 'purchase:reports_ui' %}" class="sidebar-item {% if 'reports' in request.resolver_match.url_name %}active{% endif %}">
             <i class="fas fa-chart-pie sidebar-icon"></i>
             <span class="sidebar-text">Reports</span>
-            <span class="text-xs text-gray-500 sidebar-text ml-2">(Coming Soon)</span>
         </a>
     </nav>
 </div>

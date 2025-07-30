@@ -76,7 +76,7 @@ class UnitOfMeasureAdmin(ModelAdmin):
 class SupplierAdmin(ModelAdmin):
     list_display = ('name', 'supplier_code', 'company', 'email', 'phone', 'contact_person', 'payment_terms', 'is_active', 'created_at')
     search_fields = ('name', 'supplier_code', 'email', 'phone', 'address', 'contact_person', 'tax_number')
-    list_filter = ('company', 'is_active', 'payment_terms', 'created_at')
+    list_filter = ('company', 'is_active', 'created_at')
     fieldsets = (
         ('Basic Information', {
             'fields': ('name', 'supplier_code', 'company', 'partner', 'contact_person', 'is_active')

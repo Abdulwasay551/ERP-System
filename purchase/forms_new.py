@@ -378,6 +378,59 @@ class SupplierForm(forms.ModelForm):
         return supplier
 
 
+class SupplierContactForm(forms.ModelForm):
+    """Form for managing supplier contact information"""
+    
+    class Meta:
+        model = SupplierContact
+        fields = [
+            'name', 'title', 'email', 'phone', 'mobile',
+            'is_primary', 'notes'
+        ]
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Contact person name'
+            }),
+            'title': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Job title or position'
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'contact@supplier.com'
+            }),
+            'phone': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '+1-234-567-8900'
+            }),
+            'mobile': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '+1-234-567-8901'
+            }),
+            'is_primary': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'notes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Additional notes about this contact'
+            })
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.supplier = kwargs.pop('supplier', None)
+        super().__init__(*args, **kwargs)
+
+    def save(self, commit=True):
+        contact = super().save(commit=False)
+        if self.supplier:
+            contact.supplier = self.supplier
+        if commit:
+            contact.save()
+        return contact
+
+
 class SupplierProductCatalogForm(forms.ModelForm):
     """Form for managing supplier product catalog"""
     

@@ -388,6 +388,157 @@ let currentMode = 'po';
 let itemCounter = 0;
 let trackingCounter = 0;
 
+// Product tracking detection and auto-configuration
+function checkProductTracking(productSelect, itemIndex, mode = 'po') {
+    const selectedOption = productSelect.options[productSelect.selectedIndex];
+    const productTracking = selectedOption.getAttribute('data-tracking') || 'none';
+    const productRequiresIndividual = selectedOption.getAttribute('data-requires-individual') === 'true';
+    const productRequiresExpiry = selectedOption.getAttribute('data-requires-expiry') === 'true';
+    const productRequiresBatch = selectedOption.getAttribute('data-requires-batch') === 'true';
+    
+    const trackingSection = document.getElementById(`${mode}-tracking-section-${itemIndex}`);
+    const trackingToggle = document.getElementById(`tracking-toggle-${itemIndex}`);
+    
+    if (productTracking !== 'none') {
+        // Show tracking section
+        if (trackingSection) {
+            trackingSection.classList.remove('hidden');
+        }
+        
+        // Update tracking toggle button text
+        if (trackingToggle) {
+            trackingToggle.textContent = `Track by ${productTracking.toUpperCase()}`;
+            trackingToggle.classList.add('bg-orange-500');
+            trackingToggle.classList.remove('bg-purple-500');
+        }
+        
+        // Show appropriate tracking method description
+        const trackingHint = trackingSection.querySelector('.tracking-hint');
+        if (trackingHint) {
+            trackingHint.remove();
+        }
+        
+        const hintText = getTrackingHintText(productTracking, productRequiresIndividual);
+        trackingSection.insertAdjacentHTML('afterbegin', `
+            <div class="tracking-hint bg-blue-50 border border-blue-200 rounded p-2 mb-3">
+                <p class="text-sm text-blue-800">${hintText}</p>
+            </div>
+        `);
+        
+        // Auto-add required tracking fields
+        if (productRequiresIndividual && ['serial', 'imei', 'barcode'].includes(productTracking)) {
+            // For individual tracking, tracking items will be added based on received quantity
+            addTrackingItemsBasedOnQuantity(itemIndex, mode, productTracking);
+        }
+        
+    } else {
+        // Hide tracking section
+        if (trackingSection) {
+            trackingSection.classList.add('hidden');
+        }
+        
+        // Reset tracking toggle button
+        if (trackingToggle) {
+            trackingToggle.textContent = 'No Tracking';
+            trackingToggle.classList.remove('bg-orange-500');
+            trackingToggle.classList.add('bg-purple-500');
+        }
+    }
+}
+
+function getTrackingHintText(trackingMethod, requiresIndividual) {
+    switch (trackingMethod) {
+        case 'serial':
+            return requiresIndividual ? 
+                'This product requires individual serial numbers. Add one serial number per item received.' :
+                'This product uses serial number tracking.';
+        case 'imei':
+            return requiresIndividual ? 
+                'This product requires individual IMEI numbers. Add one IMEI per item received.' :
+                'This product uses IMEI number tracking.';
+        case 'barcode':
+            return requiresIndividual ? 
+                'This product requires individual barcodes. Add one barcode per item received.' :
+                'This product uses barcode tracking.';
+        case 'batch':
+            return 'This product requires batch/lot tracking. Add batch information for the received items.';
+        case 'expiry':
+            return 'This product requires expiry date tracking. Add expiry information for the received items.';
+        default:
+            return 'Product tracking is enabled for this item.';
+    }
+}
+
+function addTrackingItemsBasedOnQuantity(itemIndex, mode, trackingType) {
+    const quantityInput = document.querySelector(`input[name="${mode}_received_quantities[]"]:nth-of-type(${itemIndex + 1})`);
+    const trackingContainer = document.getElementById(`${mode}-tracking-items-${itemIndex}`);
+    
+    if (quantityInput && trackingContainer) {
+        const quantity = parseInt(quantityInput.value) || 0;
+        
+        // Clear existing tracking items
+        trackingContainer.innerHTML = '';
+        
+        // Add tracking items based on quantity
+        for (let i = 0; i < quantity; i++) {
+            addTrackingItemToContainer(trackingContainer, trackingType, i + 1);
+        }
+    }
+}
+
+function addTrackingItemToContainer(container, trackingType, itemNumber) {
+    const trackingItemHtml = `
+        <div class="tracking-item">
+            <div class="flex items-center gap-3">
+                <div class="flex-1">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">
+                        ${trackingType.toUpperCase()} #${itemNumber}
+                    </label>
+                    <input type="text" 
+                           name="tracking_numbers[]" 
+                           class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500"
+                           placeholder="Enter ${trackingType}"
+                           required>
+                    <input type="hidden" name="tracking_types[]" value="${trackingType}">
+                </div>
+                <div class="flex-1">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Condition</label>
+                    <select name="tracking_conditions[]" 
+                            class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500">
+                        <option value="good">Good</option>
+                        <option value="damaged">Damaged</option>
+                        <option value="defective">Defective</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">&nbsp;</label>
+                    <button type="button" 
+                            class="remove-item-btn" 
+                            onclick="removeTrackingItem('${container.id}-item-${itemNumber}')"
+                            title="Remove">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', trackingItemHtml);
+}
+
+function updateTrackingItemsForQuantityChange(itemIndex, mode) {
+    const productSelect = document.querySelector(`select[name="${mode}_products[]"]:nth-of-type(${itemIndex + 1})`);
+    if (productSelect) {
+        const selectedOption = productSelect.options[productSelect.selectedIndex];
+        const productTracking = selectedOption.getAttribute('data-tracking') || 'none';
+        const requiresIndividual = selectedOption.getAttribute('data-requires-individual') === 'true';
+        
+        if (productTracking !== 'none' && requiresIndividual && ['serial', 'imei', 'barcode'].includes(productTracking)) {
+            addTrackingItemsBasedOnQuantity(itemIndex, mode, productTracking);
+        }
+    }
+}
+
 // Mode switching functionality
 function toggleMode(mode) {
     currentMode = mode;
@@ -612,12 +763,17 @@ function createManualItemRow(index) {
                     <label class="block text-xs font-medium text-gray-700 mb-1">Product *</label>
                     <select name="manual_products[]" 
                             class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-green-500" 
+                            onchange="checkProductTracking(this, ${index}, 'manual')"
                             required>
                         <option value="">Select Product</option>
                         {% for product in products %}
                         <option value="{{ product.id }}" 
                                 data-name="{{ product.name }}"
-                                data-tracking="{{ product.tracking_method|default:'none' }}">
+                                data-tracking="{{ product.tracking_method|default:'none' }}"
+                                data-requires-individual="{{ product.requires_individual_tracking|yesno:'true,false' }}"
+                                data-requires-expiry="{{ product.requires_expiry_tracking|yesno:'true,false' }}"
+                                data-requires-batch="{{ product.requires_batch_tracking|yesno:'true,false' }}"
+                                onchange="checkProductTracking(this, {{ forloop.counter0 }}, 'manual')">
                             {{ product.name }}
                         </option>
                         {% endfor %}
@@ -632,7 +788,7 @@ function createManualItemRow(index) {
                            class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-green-500"
                            step="0.01"
                            min="0"
-                           onchange="updateManualItemTotal(${index})"
+                           onchange="updateManualItemTotal(${index}); updateTrackingItemsForQuantityChange(${index}, 'manual')"
                            required>
                 </div>
                 
@@ -832,6 +988,43 @@ document.querySelector('form').addEventListener('submit', function(e) {
             isValid = false;
             errorMessage = 'Please select a purchase order.';
         }
+        
+        // Validate tracking requirements for PO items
+        const poItems = document.querySelectorAll('#po-items-container .item-row');
+        for (let item of poItems) {
+            const productSelect = item.querySelector('select[name="po_products[]"]');
+            const receivedQtyInput = item.querySelector('input[name="po_received_quantities[]"]');
+            const trackingSection = item.querySelector('.tracking-section');
+            
+            if (productSelect && receivedQtyInput && trackingSection) {
+                const selectedOption = productSelect.options[productSelect.selectedIndex];
+                const productTracking = selectedOption.getAttribute('data-tracking') || 'none';
+                const receivedQty = parseInt(receivedQtyInput.value) || 0;
+                
+                if (productTracking !== 'none' && receivedQty > 0) {
+                    const trackingItems = trackingSection.querySelectorAll('.tracking-item');
+                    
+                    // For individual tracking (serial, IMEI, barcode), check if tracking count matches received quantity
+                    if (['serial', 'imei', 'barcode'].includes(productTracking)) {
+                        const trackingCount = trackingItems.length;
+                        if (trackingCount !== receivedQty) {
+                            isValid = false;
+                            errorMessage = `Product "${selectedOption.text}" requires individual tracking. You must provide ${receivedQty} tracking numbers, but only ${trackingCount} were provided.`;
+                            break;
+                        }
+                    }
+                    
+                    // For batch/expiry tracking, at least one tracking item should exist
+                    else if (['batch', 'expiry'].includes(productTracking)) {
+                        if (trackingItems.length === 0) {
+                            isValid = false;
+                            errorMessage = `Product "${selectedOption.text}" requires batch/lot tracking. Please add at least one batch entry.`;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     } else {
         const supplierSelect = document.getElementById('supplier_select');
         if (!supplierSelect.value) {
@@ -843,6 +1036,42 @@ document.querySelector('form').addEventListener('submit', function(e) {
         if (manualItems.length === 0) {
             isValid = false;
             errorMessage = 'Please add at least one item.';
+        }
+        
+        // Validate tracking requirements for manual items
+        for (let item of manualItems) {
+            const productSelect = item.querySelector('select[name="manual_products[]"]');
+            const receivedQtyInput = item.querySelector('input[name="manual_received_quantities[]"]');
+            const trackingSection = item.querySelector('.tracking-section');
+            
+            if (productSelect && receivedQtyInput && trackingSection) {
+                const selectedOption = productSelect.options[productSelect.selectedIndex];
+                const productTracking = selectedOption.getAttribute('data-tracking') || 'none';
+                const receivedQty = parseInt(receivedQtyInput.value) || 0;
+                
+                if (productTracking !== 'none' && receivedQty > 0) {
+                    const trackingItems = trackingSection.querySelectorAll('.tracking-item');
+                    
+                    // For individual tracking (serial, IMEI, barcode), check if tracking count matches received quantity
+                    if (['serial', 'imei', 'barcode'].includes(productTracking)) {
+                        const trackingCount = trackingItems.length;
+                        if (trackingCount !== receivedQty) {
+                            isValid = false;
+                            errorMessage = `Product "${selectedOption.text}" requires individual tracking. You must provide ${receivedQty} tracking numbers, but only ${trackingCount} were provided.`;
+                            break;
+                        }
+                    }
+                    
+                    // For batch/expiry tracking, at least one tracking item should exist
+                    else if (['batch', 'expiry'].includes(productTracking)) {
+                        if (trackingItems.length === 0) {
+                            isValid = false;
+                            errorMessage = `Product "${selectedOption.text}" requires batch/lot tracking. Please add at least one batch entry.`;
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
 

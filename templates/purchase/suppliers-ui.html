@@ -1,157 +1,817 @@
-{% extends "base.html" %}
-{% block title %}Supplier Management | ERP System{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Supplier Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .suppliers-container {
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    
+    .header-section {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .header-info h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .header-info .breadcrumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+    }
+    
+    .header-actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn-primary {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        color: white;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        background: rgba(255, 255, 255, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stats-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e5e7eb;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stats-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #059669, #047857);
+    }
+    
+    .stats-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .stats-info h3 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #059669;
+        margin: 0;
+        line-height: 1;
+    }
+    
+    .stats-info p {
+        color: #6b7280;
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin: 0.25rem 0 0 0;
+    }
+    
+    .stats-icon {
+        font-size: 2.5rem;
+        color: #059669;
+        opacity: 0.2;
+    }
+    
+    .filters-section {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e5e7eb;
+    }
+    
+    .filters-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .filters-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #374151;
+        margin: 0;
+    }
+    
+    .filters-toggle {
+        background: #f3f4f6;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        color: #6b7280;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .filters-toggle:hover {
+        background: #e5e7eb;
+        color: #374151;
+    }
+    
+    .filters-form {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        align-items: end;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .form-group label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.25rem;
+    }
+    
+    .form-control {
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: border-color 0.2s ease;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #059669;
+        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+    }
+    
+    .btn-filter {
+        background: #059669;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    
+    .btn-filter:hover {
+        background: #047857;
+    }
+    
+    .btn-clear {
+        background: #6b7280;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        text-decoration: none;
+    }
+    
+    .btn-clear:hover {
+        background: #4b5563;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .suppliers-table-container {
+        background: white;
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e5e7eb;
+    }
+    
+    .table-header {
+        background: #f9fafb;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .table-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #374151;
+        margin: 0;
+    }
+    
+    .table-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .suppliers-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .suppliers-table th {
+        background: #f9fafb;
+        padding: 0.75rem 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.875rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .suppliers-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #f3f4f6;
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+    
+    .suppliers-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+    
+    .suppliers-table tbody tr:hover {
+        background-color: #f9fafb;
+    }
+    
+    .supplier-name {
+        font-weight: 600;
+        color: #374151;
+    }
+    
+    .supplier-link {
+        color: #059669;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .supplier-link:hover {
+        color: #047857;
+        text-decoration: underline;
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .status-active {
+        background-color: #d1fae5;
+        color: #047857;
+    }
+    
+    .status-inactive {
+        background-color: #fee2e2;
+        color: #dc2626;
+    }
+    
+    .status-pending {
+        background-color: #fef3c7;
+        color: #d97706;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .btn-sm {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.75rem;
+        border-radius: 0.375rem;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-view {
+        background: #059669;
+        color: white;
+    }
+    
+    .btn-view:hover {
+        background: #047857;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .btn-edit {
+        background: #f59e0b;
+        color: white;
+    }
+    
+    .btn-edit:hover {
+        background: #d97706;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .pagination-container {
+        padding: 1rem 1.5rem;
+        background: #f9fafb;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .pagination-info {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+    
+    .pagination {
+        display: flex;
+        gap: 0.25rem;
+    }
+    
+    .page-link {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #d1d5db;
+        color: #6b7280;
+        text-decoration: none;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+    
+    .page-link:hover {
+        background: #f9fafb;
+        border-color: #9ca3af;
+        color: #374151;
+        text-decoration: none;
+    }
+    
+    .page-link.active {
+        background: #059669;
+        border-color: #059669;
+        color: white;
+    }
+    
+    .no-data {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #6b7280;
+    }
+    
+    .no-data-icon {
+        font-size: 3rem;
+        color: #d1d5db;
+        margin-bottom: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+        .suppliers-container {
+            padding: 1rem;
+        }
+        
+        .header-content {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .filters-form {
+            grid-template-columns: 1fr;
+        }
+        
+        .suppliers-table {
+            font-size: 0.75rem;
+        }
+        
+        .suppliers-table th,
+        .suppliers-table td {
+            padding: 0.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<!-- COA Integration Notice -->
-<div class="mt-16 p-8">
-    <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-6">
-        <div class="flex items-center">
-            <svg class="w-5 h-5 text-emerald-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-            </svg>
-            <span class="text-emerald-800 font-medium">Chart of Accounts Integration:</span>
-            <span class="text-emerald-700 ml-2">Supplier transactions automatically post to Accounts Payable</span>
+<div class="suppliers-container">
+    <!-- Header Section -->
+    <div class="header-section">
+        <div class="header-content">
+            <div class="header-info">
+                <h1>
+                    <i class="fas fa-building"></i>
+                    Supplier Management
+                </h1>
+                <div class="breadcrumb">
+                    <i class="fas fa-home"></i> Dashboard / Purchase / Suppliers
+                </div>
+            </div>
+            <div class="header-actions">
+                <a href="{% url 'purchase:supplier_add' %}" class="btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Add New Supplier
+                </a>
+                <button onclick="exportSuppliers()" class="btn-primary">
+                    <i class="fas fa-download"></i>
+                    Export
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- Page Header -->
-    <div class="flex justify-between items-center mb-8">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900">Supplier Management</h1>
-            <p class="text-gray-600 mt-2">Manage your vendor relationships and payables</p>
+    <!-- Statistics Grid -->
+    <div class="stats-grid">
+        <div class="stats-card">
+            <div class="stats-content">
+                <div class="stats-info">
+                    <h3>{{ suppliers.count|default:0 }}</h3>
+                    <p>Total Suppliers</p>
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-building"></i>
+                </div>
+            </div>
         </div>
-        <button id="addSupplierBtn" class="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-6 py-3 rounded-lg hover:from-emerald-700 hover:to-emerald-800 transition-all duration-200 shadow-md">
-            <i class="fas fa-plus mr-2"></i>Add Supplier
-        </button>
+        <div class="stats-card">
+            <div class="stats-content">
+                <div class="stats-info">
+                    <h3>{{ active_suppliers|default:0 }}</h3>
+                    <p>Active Suppliers</p>
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-content">
+                <div class="stats-info">
+                    <h3>${{ total_payables|default:0|floatformat:0 }}</h3>
+                    <p>Total Payables</p>
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-content">
+                <div class="stats-info">
+                    <h3>{{ pending_orders|default:0 }}</h3>
+                    <p>Pending Orders</p>
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-emerald-100">Total Suppliers</p>
-                    <p class="text-3xl font-bold" id="totalSuppliers">{{ suppliers.count|default:0 }}</p>
-                </div>
-                <svg class="w-12 h-12 text-emerald-200" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                </svg>
-            </div>
+    <!-- Filters Section -->
+    <div class="filters-section">
+        <div class="filters-header">
+            <h3 class="filters-title">Filter & Search</h3>
+            <button class="filters-toggle" onclick="toggleFilters()">
+                <i class="fas fa-chevron-down"></i>
+                Toggle Filters
+            </button>
         </div>
-
-        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-blue-100">Active Suppliers</p>
-                    <p class="text-3xl font-bold">{{ suppliers.count|default:0 }}</p>
-                </div>
-                <svg class="w-12 h-12 text-blue-200" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
+        <form method="get" class="filters-form" id="filtersForm">
+            <div class="form-group">
+                <label for="search">Search</label>
+                <input type="text" 
+                       id="search" 
+                       name="search" 
+                       class="form-control" 
+                       placeholder="Search suppliers..." 
+                       value="{{ request.GET.search }}">
             </div>
-        </div>
-
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-purple-100">Outstanding Payables</p>
-                    <p class="text-3xl font-bold">₨0</p>
-                </div>
-                <svg class="w-12 h-12 text-purple-200" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
-                </svg>
+            <div class="form-group">
+                <label for="status">Status</label>
+                <select id="status" name="status" class="form-control">
+                    <option value="">All Status</option>
+                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                    <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                </select>
             </div>
-        </div>
-
-        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-orange-100">This Month Purchases</p>
-                    <p class="text-3xl font-bold">₨0</p>
-                </div>
-                <svg class="w-12 h-12 text-orange-200" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                </svg>
+            <div class="form-group">
+                <label for="supplier_type">Type</label>
+                <select id="supplier_type" name="supplier_type" class="form-control">
+                    <option value="">All Types</option>
+                    <option value="manufacturer" {% if request.GET.supplier_type == 'manufacturer' %}selected{% endif %}>Manufacturer</option>
+                    <option value="distributor" {% if request.GET.supplier_type == 'distributor' %}selected{% endif %}>Distributor</option>
+                    <option value="wholesaler" {% if request.GET.supplier_type == 'wholesaler' %}selected{% endif %}>Wholesaler</option>
+                    <option value="retailer" {% if request.GET.supplier_type == 'retailer' %}selected{% endif %}>Retailer</option>
+                    <option value="service_provider" {% if request.GET.supplier_type == 'service_provider' %}selected{% endif %}>Service Provider</option>
+                </select>
             </div>
-        </div>
+            <div class="form-group">
+                <label for="payment_terms">Payment Terms</label>
+                <select id="payment_terms" name="payment_terms" class="form-control">
+                    <option value="">All Terms</option>
+                    {% for value, label in payment_terms_choices %}
+                        <option value="{{ value }}" {% if request.GET.payment_terms == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>&nbsp;</label>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="submit" class="btn-filter">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                    <a href="{% url 'purchase:suppliers_ui' %}" class="btn-clear">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                </div>
+            </div>
+        </form>
     </div>
 
     <!-- Suppliers Table -->
-    <div class="bg-white rounded-lg shadow-md overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+    <div class="suppliers-table-container">
+        <div class="table-header">
+            <h3 class="table-title">
+                <i class="fas fa-list"></i>
+                Suppliers List ({{ suppliers.count }} records)
+            </h3>
+            <div class="table-actions">
+                <button onclick="selectAll()" class="btn-sm btn-view">
+                    <i class="fas fa-check-square"></i> Select All
+                </button>
+                <button onclick="bulkAction()" class="btn-sm btn-edit" style="display: none;">
+                    <i class="fas fa-cogs"></i> Bulk Actions
+                </button>
+            </div>
+        </div>
+        
+        {% if suppliers %}
+            <table class="suppliers-table">
+                <thead>
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Terms</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Outstanding</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th><input type="checkbox" id="selectAllCheck"></th>
+                        <th>Supplier Name</th>
+                        <th>Contact Person</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Type</th>
+                        <th>Payment Terms</th>
+                        <th>Status</th>
+                        <th>Total Orders</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody>
                     {% for supplier in suppliers %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-500 rounded-xl flex items-center justify-center text-white font-bold text-sm mr-4">
-                                    {{ supplier.name|slice:":2"|upper }}
+                        <tr>
+                            <td><input type="checkbox" class="supplier-check" value="{{ supplier.id }}"></td>
+                            <td>
+                                <div class="supplier-name">
+                                    <a href="{% url 'purchase:supplier_detail' supplier.pk %}" class="supplier-link">
+                                        {{ supplier.partner.name }}
+                                    </a>
                                 </div>
-                                <div>
-                                    <div class="text-sm font-medium text-gray-900">{{ supplier.name }}</div>
-                                    <div class="text-sm text-gray-500">{{ supplier.contact_person|default:"No contact" }}</div>
+                                <div style="font-size: 0.75rem; color: #9ca3af;">
+                                    ID: {{ supplier.supplier_code }}
                                 </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">{{ supplier.email|default:"No email" }}</div>
-                            <div class="text-sm text-gray-500">{{ supplier.phone|default:"No phone" }}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                {{ supplier.payment_terms|default:"Net 30" }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ₨{{ supplier.outstanding_amount|default:0|floatformat:2 }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                Active
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button class="text-emerald-600 hover:text-emerald-900 mr-3">Edit</button>
-                            <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                            <button class="text-red-600 hover:text-red-900">Delete</button>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="px-6 py-12 text-center text-gray-500">
-                            <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
-                            </svg>
-                            <h3 class="mt-2 text-sm font-medium text-gray-900">No suppliers</h3>
-                            <p class="mt-1 text-sm text-gray-500">Get started by adding your first supplier.</p>
-                            <div class="mt-6">
-                                <button type="button" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700">
-                                    <i class="fas fa-plus mr-2"></i>Add Supplier
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
+                            </td>
+                            <td>{{ supplier.contact_person|default:"-" }}</td>
+                            <td>{{ supplier.partner.email|default:"-" }}</td>
+                            <td>{{ supplier.partner.phone|default:"-" }}</td>
+                            <td>
+                                <span class="badge" style="background: #f3f4f6; color: #6b7280; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem;">
+                                    {{ supplier.supplier_type|title|default:"General" }}
+                                </span>
+                            </td>
+                            <td>{{ supplier.partner.get_payment_terms_display|default:"-" }}</td>
+                            <td>
+                                {% if supplier.is_active %}
+                                    <span class="status-badge status-active">Active</span>
+                                {% else %}
+                                    <span class="status-badge status-inactive">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ supplier.purchase_orders.count|default:0 }}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="{% url 'purchase:supplier_detail' supplier.pk %}" class="btn-sm btn-view" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'purchase:supplier_edit' supplier.pk %}" class="btn-sm btn-edit" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
-    </div>
-
-    <!-- COA Integration Info -->
-    <div class="mt-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-        <div class="text-sm text-emerald-800">
-            <strong>Accounting Impact:</strong> Supplier bills automatically post: <strong>Dr. Purchases/Inventory</strong> | <strong>Cr. Accounts Payable - [Supplier Name]</strong>
-        </div>
+            
+            <!-- Pagination -->
+            <div class="pagination-container">
+                <div class="pagination-info">
+                    Showing {{ suppliers.start_index }} to {{ suppliers.end_index }} of {{ suppliers.paginator.count }} entries
+                </div>
+                <div class="pagination">
+                    {% if suppliers.has_previous %}
+                        <a href="?page=1{{ request.GET.urlencode }}" class="page-link">First</a>
+                        <a href="?page={{ suppliers.previous_page_number }}{{ request.GET.urlencode }}" class="page-link">Previous</a>
+                    {% endif %}
+                    
+                    {% for num in suppliers.paginator.page_range %}
+                        {% if suppliers.number == num %}
+                            <span class="page-link active">{{ num }}</span>
+                        {% elif num > suppliers.number|add:'-3' and num < suppliers.number|add:'3' %}
+                            <a href="?page={{ num }}{{ request.GET.urlencode }}" class="page-link">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if suppliers.has_next %}
+                        <a href="?page={{ suppliers.next_page_number }}{{ request.GET.urlencode }}" class="page-link">Next</a>
+                        <a href="?page={{ suppliers.paginator.num_pages }}{{ request.GET.urlencode }}" class="page-link">Last</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <div class="no-data">
+                <div class="no-data-icon">
+                    <i class="fas fa-building"></i>
+                </div>
+                <h3>No Suppliers Found</h3>
+                <p>No suppliers match your current filters. Try adjusting your search criteria or add a new supplier.</p>
+                <a href="{% url 'purchase:supplier_add' %}" class="btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Add First Supplier
+                </a>
+            </div>
+        {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Toggle filters visibility
+function toggleFilters() {
+    const form = document.getElementById('filtersForm');
+    const toggle = document.querySelector('.filters-toggle i');
+    
+    if (form.style.display === 'none') {
+        form.style.display = 'grid';
+        toggle.className = 'fas fa-chevron-up';
+    } else {
+        form.style.display = 'none';
+        toggle.className = 'fas fa-chevron-down';
+    }
+}
+
+// Select all functionality
+function selectAll() {
+    const selectAllCheck = document.getElementById('selectAllCheck');
+    const supplierChecks = document.querySelectorAll('.supplier-check');
+    
+    selectAllCheck.checked = !selectAllCheck.checked;
+    supplierChecks.forEach(check => {
+        check.checked = selectAllCheck.checked;
+    });
+    
+    updateBulkActions();
+}
+
+// Update bulk actions visibility
+function updateBulkActions() {
+    const checkedBoxes = document.querySelectorAll('.supplier-check:checked');
+    const bulkBtn = document.querySelector('[onclick="bulkAction()"]');
+    
+    if (checkedBoxes.length > 0) {
+        bulkBtn.style.display = 'inline-flex';
+        bulkBtn.innerHTML = `<i class="fas fa-cogs"></i> Actions (${checkedBoxes.length})`;
+    } else {
+        bulkBtn.style.display = 'none';
+    }
+}
+
+// Bulk actions
+function bulkAction() {
+    const checkedBoxes = document.querySelectorAll('.supplier-check:checked');
+    if (checkedBoxes.length === 0) {
+        alert('Please select suppliers first.');
+        return;
+    }
+    
+    const actions = [
+        'Activate Selected',
+        'Deactivate Selected', 
+        'Export Selected',
+        'Send Email to Selected'
+    ];
+    
+    const action = prompt(`Select action:\n${actions.map((a, i) => `${i+1}. ${a}`).join('\n')}\n\nEnter number (1-${actions.length}):`);
+    
+    if (action && action >= 1 && action <= actions.length) {
+        const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
+        console.log(`Performing action "${actions[action-1]}" on suppliers:`, selectedIds);
+        // Implement actual bulk action logic here
+        alert(`${actions[action-1]} action would be performed on ${selectedIds.length} suppliers.`);
+    }
+}
+
+// Export suppliers
+function exportSuppliers() {
+    const params = new URLSearchParams(window.location.search);
+    params.set('export', 'csv');
+    window.location.href = `${window.location.pathname}?${params.toString()}`;
+}
+
+// Real-time search
+let searchTimeout;
+document.getElementById('search')?.addEventListener('input', function(e) {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        const form = document.querySelector('.filters-form');
+        form.submit();
+    }, 500);
+});
+
+// Auto-submit filters on change
+document.querySelectorAll('#status, #supplier_type, #payment_terms').forEach(select => {
+    select.addEventListener('change', function() {
+        document.querySelector('.filters-form').submit();
+    });
+});
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners to checkboxes
+    document.querySelectorAll('.supplier-check').forEach(check => {
+        check.addEventListener('change', updateBulkActions);
+    });
+    
+    // Initialize bulk actions visibility
+    updateBulkActions();
+    
+    // Initialize tooltips if available
+    if (typeof $().tooltip === 'function') {
+        $('[title]').tooltip();
+    }
+});
+</script>
 {% endblock %}

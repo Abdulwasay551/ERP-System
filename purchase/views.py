@@ -3,28 +3,31 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from django.contrib import messages
-from django.db.models import Q, Sum, F, Count
+from django.db.models import Q, Sum, F, Count, Avg
+from django.db import models
 from django.core.paginator import Paginator
 from django.utils import timezone
 from datetime import datetime, timedelta
 import json
 from decimal import Decimal
-
+from django.db.models.functions import TruncMonth
 from .models import (
     UnitOfMeasure, Supplier, TaxChargesTemplate, PurchaseRequisition, PurchaseRequisitionItem,
     RequestForQuotation, RFQItem, SupplierQuotation, SupplierQuotationItem,
     PurchaseOrder, PurchaseOrderItem, PurchaseOrderTaxCharge,
     GoodsReceiptNote, GRNItem, GRNItemTracking, QualityInspection, QualityInspectionResult,
-    PurchaseReturn, PurchaseReturnItem, Bill, BillItem, PurchasePayment,
-    PurchaseApproval, GRNInventoryLock
+    PurchaseReturn, PurchaseReturnItem, Bill, BillItem, BillItemTracking, PurchasePayment,
+    PurchaseApproval, GRNInventoryLock, SupplierLedger, SupplierContact, SupplierProductCatalog
 )
+from crm.models import Partner
+
 from .forms import (
     UnitOfMeasureForm, SupplierForm, PurchaseRequisitionForm, RequestForQuotationForm,
     SupplierQuotationForm, PurchaseOrderForm, GoodsReceiptNoteForm, GRNItemForm,
     GRNItemTrackingForm, QualityInspectionForm, QualityInspectionResultForm,
-    BillForm, PurchasePaymentForm, PurchaseReturnForm, PurchaseReturnItemForm,
+    BillForm, PurchasePaymentForm, SupplierLedgerFilterForm, PurchaseReturnForm, PurchaseReturnItemForm,
     GRNItemFormSet, GRNItemTrackingFormSet, QualityInspectionResultFormSet,
-    PurchaseReturnItemFormSet
+    PurchaseReturnItemFormSet, SupplierContactForm, SupplierProductCatalogForm
 )
 from products.models import Product
 from inventory.models import Warehouse
@@ -100,41 +103,89 @@ def purchase_dashboard(request):
 
 @login_required
 def suppliers_ui(request):
-    """Supplier management interface"""
-    suppliers = Supplier.objects.filter(company=request.user.company).order_by('name')
+    """Enhanced supplier management interface with Partner model integration"""
+    suppliers = Supplier.objects.filter(company=request.user.company).select_related('partner').order_by('partner__name')
+    
+    # Advanced filtering
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        suppliers = suppliers.filter(status=status_filter)
+    
+    supplier_type_filter = request.GET.get('supplier_type', '')
+    if supplier_type_filter:
+        suppliers = suppliers.filter(supplier_type=supplier_type_filter)
+    
+    payment_terms_filter = request.GET.get('payment_terms', '')
+    if payment_terms_filter:
+        suppliers = suppliers.filter(partner__payment_terms=payment_terms_filter)
+    
+    # Rating filter
+    min_rating = request.GET.get('min_rating', '')
+    if min_rating:
+        try:
+            suppliers = suppliers.filter(overall_rating__gte=float(min_rating))
+        except ValueError:
+            pass
     
     # Search functionality
     search_query = request.GET.get('search', '')
     if search_query:
         suppliers = suppliers.filter(
-            Q(name__icontains=search_query) |
+            Q(partner__name__icontains=search_query) |
             Q(supplier_code__icontains=search_query) |
-            Q(email__icontains=search_query) |
-            Q(phone__icontains=search_query)
+            Q(partner__email__icontains=search_query) |
+            Q(partner__phone__icontains=search_query) |
+            Q(partner__contact_person__icontains=search_query) |
+            Q(partner__city__icontains=search_query) |
+            Q(partner__country__icontains=search_query)
         )
+    
+    # Get unique countries for filter dropdown
+    countries = Supplier.objects.filter(company=request.user.company).select_related('partner').values_list('partner__country', flat=True).distinct().exclude(partner__country__isnull=True)
+    
+    # Calculate summary statistics
+    total_suppliers = suppliers.count()
+    active_suppliers = suppliers.filter(status='active').count()
+    
+    # TODO: Calculate these from actual transaction data
+    total_payables = 0  # Sum of all outstanding payables
+    pending_orders = 0  # Count of pending purchase orders
+    avg_rating = suppliers.filter(overall_rating__gt=0).aggregate(avg=models.Avg('overall_rating'))['avg']
     
     # Pagination
     paginator = Paginator(suppliers, 25)
     page_number = request.GET.get('page')
     suppliers = paginator.get_page(page_number)
     
-    # Initialize form for adding new supplier
-    form = SupplierForm()
-    
     context = {
         'suppliers': suppliers,
         'search_query': search_query,
-        'payment_terms_choices': Supplier.PAYMENT_TERMS_CHOICES,
-        'form': form,
+        'status_filter': status_filter,
+        'supplier_type_filter': supplier_type_filter,
+        'payment_terms_filter': payment_terms_filter,
+        'min_rating': min_rating,
+        'total_suppliers': total_suppliers,
+        'active_suppliers': active_suppliers,
+        'avg_rating': round(avg_rating, 2) if avg_rating else 0,
+        'supplier_statuses': Supplier.SUPPLIER_STATUS_CHOICES,
+        'supplier_types': Supplier.SUPPLIER_TYPE_CHOICES,
+        'payment_terms_choices': Partner.PAYMENT_TERMS_CHOICES,
+        # Additional context for new template
+        'countries': countries,
+        'total_payables': total_payables,
+        'pending_orders': pending_orders,
+        'is_paginated': suppliers.has_other_pages(),
+        'page_obj': suppliers,
     }
     
     return render(request, 'purchase/suppliers-ui.html', context)
 
 @login_required
+@login_required
 def supplier_add(request):
-    """Add new supplier with file upload support"""
+    """Enhanced supplier creation with Partner model integration"""
     if request.method == 'POST':
-        form = SupplierForm(request.POST, request.FILES)
+        form = SupplierForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             try:
                 supplier = form.save(commit=False)
@@ -142,88 +193,164 @@ def supplier_add(request):
                 supplier.created_by = request.user
                 supplier.save()
                 
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({
-                        'success': True,
-                        'supplier': {
-                            'id': supplier.id,
-                            'name': supplier.name,
-                            'supplier_code': supplier.supplier_code,
-                            'email': supplier.email,
-                            'phone': supplier.phone,
-                            'payment_terms': supplier.get_payment_terms_display(),
-                            'is_active': supplier.is_active,
-                            'created_at': supplier.created_at.strftime('%Y-%m-%d')
-                        }
-                    })
-                else:
-                    messages.success(request, f'Supplier {supplier.name} created successfully.')
-                    return redirect('suppliers_ui')
+                # Get the partner name from the form since supplier.name is now supplier.partner.name
+                partner_name = form.cleaned_data.get('partner_name', 'Unknown')
+                messages.success(request, f'Supplier {partner_name} (ID: {supplier.id}) created successfully.')
+                return redirect('purchase:supplier_detail', pk=supplier.id)
+                
             except Exception as e:
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({'success': False, 'error': str(e)}, status=400)
-                else:
-                    messages.error(request, f'Error creating supplier: {str(e)}')
+                messages.error(request, f'Error creating supplier: {str(e)}')
         else:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'success': False, 'errors': form.errors}, status=400)
-            else:
-                messages.error(request, 'Please correct the errors below.')
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
     else:
-        form = SupplierForm()
+        form = SupplierForm(user=request.user)
     
     context = {
         'form': form,
-        'title': 'Add Supplier'
+        'title': 'Add New Supplier',
+        'supplier_types': Supplier.SUPPLIER_TYPE_CHOICES,
+        'payment_terms': Partner.PAYMENT_TERMS_CHOICES,
+        'currencies': Partner.CURRENCY_CHOICES,
     }
     return render(request, 'purchase/supplier-form.html', context)
 
 @login_required
 def supplier_edit(request, pk):
-    """Edit existing supplier with file upload support"""
+    """Enhanced supplier editing with Partner model integration"""
     supplier = get_object_or_404(Supplier, pk=pk, company=request.user.company)
     
     if request.method == 'POST':
-        form = SupplierForm(request.POST, request.FILES, instance=supplier)
+        form = SupplierForm(request.POST, request.FILES, instance=supplier, user=request.user)
         if form.is_valid():
             try:
                 supplier = form.save()
+                partner_name = supplier.partner.name if supplier.partner else 'Unknown'
+                messages.success(request, f'Supplier {partner_name} updated successfully.')
+                return redirect('purchase:supplier_detail', pk=supplier.id)
                 
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({
-                        'success': True,
-                        'supplier': {
-                            'id': supplier.id,
-                            'name': supplier.name,
-                            'supplier_code': supplier.supplier_code,
-                            'email': supplier.email,
-                            'phone': supplier.phone,
-                            'payment_terms': supplier.get_payment_terms_display(),
-                            'is_active': supplier.is_active,
-                        }
-                    })
-                else:
-                    messages.success(request, f'Supplier {supplier.name} updated successfully.')
-                    return redirect('suppliers_ui')
             except Exception as e:
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({'success': False, 'error': str(e)}, status=400)
-                else:
-                    messages.error(request, f'Error updating supplier: {str(e)}')
+                messages.error(request, f'Error updating supplier: {str(e)}')
         else:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'success': False, 'errors': form.errors}, status=400)
-            else:
-                messages.error(request, 'Please correct the errors below.')
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
     else:
-        form = SupplierForm(instance=supplier)
+        form = SupplierForm(instance=supplier, user=request.user)
     
     context = {
         'form': form,
         'supplier': supplier,
-        'title': f'Edit Supplier: {supplier.name}'
+        'title': f'Edit Supplier - {supplier.partner.name if supplier.partner else "Unknown"}',
+        'supplier_types': Supplier.SUPPLIER_TYPE_CHOICES,
+        'payment_terms': Partner.PAYMENT_TERMS_CHOICES,
+        'currencies': Partner.CURRENCY_CHOICES,
     }
     return render(request, 'purchase/supplier-form.html', context)
+
+@login_required
+def supplier_detail(request, pk):
+    """Enhanced supplier detail view with Partner model integration"""
+    supplier = get_object_or_404(Supplier, pk=pk, company=request.user.company)
+    
+    # Get related data
+    contacts = supplier.contacts.filter(is_active=True).order_by('contact_type', 'name')
+    recent_orders = supplier.purchase_orders.order_by('-created_at')[:10]
+    recent_bills = supplier.bills.order_by('-created_at')[:10]
+    recent_payments = supplier.payments.order_by('-created_at')[:10]
+    
+    # Calculate financial summary
+    total_orders = supplier.purchase_orders.aggregate(
+        total=Sum('total_amount')
+    )['total'] or 0
+    
+    total_bills = supplier.bills.filter(
+        status__in=['approved', 'paid']
+    ).aggregate(total=Sum('total_amount'))['total'] or 0
+    
+    total_payments = supplier.payments.filter(
+        status='completed'
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    outstanding_balance = total_bills - total_payments
+    
+    # Get partner information
+    partner = supplier.partner if supplier.partner else None
+    
+    context = {
+        'supplier': supplier,
+        'partner': partner,
+        'contacts': contacts,
+        'recent_orders': recent_orders,
+        'recent_bills': recent_bills,
+        'recent_payments': recent_payments,
+        'total_orders': total_orders,
+        'total_bills': total_bills,
+        'total_payments': total_payments,
+        'outstanding_balance': outstanding_balance,
+        'title': f'Supplier Details - {partner.name if partner else "Unknown"}',
+        'page_title': 'Supplier Details',
+        # Additional context for templates
+        'supplier_contacts': contacts,
+        'recent_activities': recent_orders[:5],  # Use recent orders as activities
+        'total_amount': total_orders,
+        'avg_delivery_time': supplier.delivery_lead_time if supplier.delivery_lead_time else "N/A",
+    }
+    return render(request, 'purchase/supplier-detail.html', context)
+
+
+@login_required 
+def supplier_contacts(request, supplier_id):
+    """Manage supplier contacts"""
+    supplier = get_object_or_404(Supplier, id=supplier_id, company=request.user.company)
+    contacts = supplier.contacts.all().order_by('contact_type', 'name')
+    
+    if request.method == 'POST':
+        form = SupplierContactForm(request.POST)
+        if form.is_valid():
+            contact = form.save(commit=False)
+            contact.supplier = supplier
+            contact.save()
+            
+            messages.success(request, f'Contact {contact.name} added successfully.')
+            return redirect('purchase:supplier_contacts', supplier_id=supplier.id)
+    else:
+        form = SupplierContactForm()
+    
+    context = {
+        'supplier': supplier,
+        'contacts': contacts,
+        'form': form,
+        'title': f'Manage Contacts - {supplier.name}'
+    }
+    return render(request, 'purchase/supplier-contacts.html', context)
+
+@login_required
+def supplier_catalog(request, supplier_id):
+    """Manage supplier product catalog"""
+    supplier = get_object_or_404(Supplier, id=supplier_id, company=request.user.company)
+    catalog_items = supplier.product_catalog.all().order_by('product__name')
+    
+    if request.method == 'POST':
+        form = SupplierProductCatalogForm(request.POST, user=request.user)
+        if form.is_valid():
+            catalog_item = form.save(commit=False)
+            catalog_item.supplier = supplier
+            catalog_item.save()
+            
+            messages.success(request, f'Product {catalog_item.product.name} added to catalog.')
+            return redirect('purchase:supplier_catalog', supplier_id=supplier.id)
+    else:
+        form = SupplierProductCatalogForm(user=request.user)
+    
+    context = {
+        'supplier': supplier,
+        'catalog_items': catalog_items,
+        'form': form,
+        'title': f'Product Catalog - {supplier.name}'
+    }
+    return render(request, 'purchase/supplier-catalog.html', context)
 
 # =====================================
 # PURCHASE REQUISITION VIEWS
@@ -560,7 +687,7 @@ def purchase_order_detail(request, pk):
         'order': order,
         'items': order.items.all(),
         'tax_charges': order.tax_charges.all(),
-        'grns': order.grns.all(),
+        'grns': order.goodsreceiptnote_set.all(),
         'bills': order.bills.all(),
         'can_approve': request.user.has_perm('purchase.approve_purchase_order'),
     }
@@ -1027,6 +1154,12 @@ def grn_add(request):
                                 quality_status='pending' if grn.requires_quality_inspection else 'passed'
                             )
                         
+                        # Auto-set tracking based on product configuration
+                        if po_item.product.tracking_method != 'none':
+                            grn_item.tracking_type = po_item.product.tracking_method
+                            grn_item.tracking_required = po_item.product.requires_individual_tracking
+                            grn_item.save()
+                        
                         # Create inventory lock for GRN item
                         # Lock items until purchase invoice is created
                         if grn.requires_quality_inspection:
@@ -1208,6 +1341,22 @@ def grn_add(request):
                     scheduled_date=timezone.now().date() + timedelta(days=1),
                     created_by=request.user
                 )
+            
+            # Validate tracking quantities for all GRN items
+            from django.core.exceptions import ValidationError
+            validation_errors = []
+            for grn_item in grn.items.all():
+                try:
+                    grn_item.validate_tracking_quantity()
+                except ValidationError as e:
+                    validation_errors.append(str(e))
+            
+            if validation_errors:
+                # If there are validation errors, delete the GRN and show errors
+                grn.delete()
+                for error in validation_errors:
+                    messages.error(request, error)
+                return redirect('purchase:grn_add')
             
             messages.success(request, f'GRN {grn.grn_number} created successfully!')
             return redirect('purchase:grn_detail', pk=grn.id)
@@ -1478,65 +1627,275 @@ def bill_detail(request, pk):
 
 @login_required
 def bill_add(request):
-    """Add new bill with file upload support"""
+    """Enhanced bill creation with GRN/PO integration and tracking support"""
     if request.method == 'POST':
-        form = BillForm(request.POST, request.FILES)
+        form = BillForm(request.POST, request.FILES, user=request.user)
+        
         if form.is_valid():
             try:
-                # Generate bill number
-                last_bill = Bill.objects.filter(company=request.user.company).order_by('-id').first()
-                bill_number = f"BILL-{(last_bill.id + 1) if last_bill else 1:06d}"
-                
+                # Create bill
                 bill = form.save(commit=False)
                 bill.company = request.user.company
-                bill.bill_number = bill_number
                 bill.created_by = request.user
+                
+                # Generate bill number
+                last_bill = Bill.objects.filter(company=request.user.company).order_by('-id').first()
+                bill.bill_number = f"BILL-{(last_bill.id + 1) if last_bill else 1:06d}"
+                
+                # Determine matching type
+                if bill.purchase_order and bill.grn:
+                    bill.matching_type = 'three_way'
+                elif bill.purchase_order:
+                    bill.matching_type = 'two_way_po'
+                elif bill.grn:
+                    bill.matching_type = 'two_way_grn'
+                else:
+                    bill.matching_type = 'standalone'
+                
                 bill.save()
                 
-                # Add items
-                products = request.POST.getlist('products[]')
-                quantities = request.POST.getlist('quantities[]')
-                unit_prices = request.POST.getlist('unit_prices[]')
+                # Process items
+                items_data = json.loads(request.POST.get('items_data', '[]'))
+                tracking_data = json.loads(request.POST.get('tracking_data', '{}'))
                 
-                subtotal = 0
-                for i, product_id in enumerate(products):
-                    if product_id and quantities[i]:
-                        product = Product.objects.get(id=product_id)
-                        quantity = float(quantities[i])
-                        unit_price = float(unit_prices[i])
-                        
-                        item = BillItem.objects.create(
-                            bill=bill,
-                            product=product,
-                            quantity=quantity,
-                            unit_price=unit_price
+                subtotal = Decimal('0.00')
+                total_tax = Decimal('0.00')
+                
+                for item_data in items_data:
+                    # Create bill item
+                    item = BillItem.objects.create(
+                        bill=bill,
+                        product_id=item_data['product_id'],
+                        quantity=Decimal(item_data['quantity']),
+                        unit_price=Decimal(item_data['unit_price']),
+                        item_source=item_data.get('item_source', 'manual'),
+                        po_item_id=item_data.get('po_item_id'),
+                        grn_item_id=item_data.get('grn_item_id'),
+                        notes=item_data.get('notes', '')
+                    )
+                    
+                    subtotal += item.line_total
+                    
+                    # Handle tracking for tracked products
+                    item_tracking_list = tracking_data.get(str(item.id), [])
+                    for tracking_info in item_tracking_list:
+                        BillItemTracking.objects.create(
+                            bill_item=item,
+                            tracking_number=tracking_info['tracking_number'],
+                            tracking_type=tracking_info['tracking_type'],
+                            grn_tracking_id=tracking_info.get('grn_tracking_id'),
+                            creates_asset=tracking_info.get('creates_asset', False),
+                            asset_value=Decimal(tracking_info.get('asset_value', '0.00')),
+                            batch_number=tracking_info.get('batch_number', ''),
+                            manufacturing_date=tracking_info.get('manufacturing_date'),
+                            expiry_date=tracking_info.get('expiry_date'),
+                            warranty_expiry=tracking_info.get('warranty_expiry'),
+                            condition=tracking_info.get('condition', 'new'),
+                            notes=tracking_info.get('notes', '')
                         )
-                        subtotal += item.line_total
+                    
+                    # Release GRN inventory locks if applicable
+                    if item.grn_item:
+                        locks = GRNInventoryLock.objects.filter(
+                            grn_item=item.grn_item,
+                            is_released=False
+                        )
+                        for lock in locks:
+                            lock.release_lock(bill)
                 
+                # Calculate totals
                 bill.subtotal = subtotal
-                bill.total_amount = subtotal  # Add tax calculation logic here
+                bill.total_amount = subtotal + total_tax  # Add tax calculation logic
                 bill.outstanding_amount = bill.total_amount
                 bill.save()
                 
-                messages.success(request, f'Bill {bill_number} created successfully.')
+                # Validate matching if applicable
+                if bill.matching_type in ['three_way', 'two_way_po', 'two_way_grn']:
+                    validation_result = bill.validate_three_way_match()
+                    if not validation_result['is_valid']:
+                        messages.warning(request, f'Matching validation warnings: {", ".join(validation_result["warnings"])}')
+                
+                messages.success(request, f'Bill {bill.bill_number} created successfully.')
                 return redirect('bill_detail', pk=bill.id)
                 
             except Exception as e:
                 messages.error(request, f'Error creating bill: {str(e)}')
         else:
-            messages.error(request, 'Please correct the errors below.')
+            # Form has errors
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
     else:
-        form = BillForm()
+        form = BillForm(user=request.user)
     
+    # Prepare context data
     context = {
         'form': form,
         'suppliers': Supplier.objects.filter(company=request.user.company, is_active=True),
-        'purchase_orders': PurchaseOrder.objects.filter(company=request.user.company),
-        'grns': GoodsReceiptNote.objects.filter(company=request.user.company, status='received'),
-        'products': Product.objects.filter(company=request.user.company),
-        'title': 'Create Bill/Invoice'
+        'purchase_orders': PurchaseOrder.objects.filter(
+            company=request.user.company,
+            status__in=['approved', 'sent_to_supplier', 'partially_received', 'completed']
+        ),
+        'grns': GoodsReceiptNote.objects.filter(
+            company=request.user.company,
+            status__in=['completed', 'inspection_completed']
+        ),
+        'products': Product.objects.filter(company=request.user.company, is_active=True),
+        'title': 'Create Purchase Invoice/Bill',
+        'tracking_types': BillItemTracking.TRACKING_TYPE_CHOICES,
+        'item_sources': BillItem.ITEM_SOURCE_CHOICES
     }
-    return render(request, 'purchase/bill-form.html', context)
+    return render(request, 'purchase/bill-form-enhanced.html', context)
+
+
+@login_required
+def bill_edit(request, pk):
+    """Edit an existing bill"""
+    bill = get_object_or_404(Bill, pk=pk, company=request.user.company)
+    
+    # Check if bill can be edited
+    if bill.status not in ['draft', 'submitted']:
+        messages.error(request, 'Only draft or submitted bills can be edited.')
+        return redirect('bill_detail', pk=bill.pk)
+    
+    if request.method == 'POST':
+        form = BillForm(request.POST, request.FILES, instance=bill, user=request.user)
+        
+        if form.is_valid():
+            try:
+                # Update bill
+                bill = form.save(commit=False)
+                
+                # Determine matching type
+                if bill.purchase_order and bill.grn:
+                    bill.matching_type = 'three_way'
+                elif bill.purchase_order:
+                    bill.matching_type = 'two_way_po'
+                elif bill.grn:
+                    bill.matching_type = 'two_way_grn'
+                else:
+                    bill.matching_type = 'standalone'
+                
+                bill.save()
+                
+                # Clear existing items
+                bill.items.all().delete()
+                
+                # Process updated items
+                items_data = json.loads(request.POST.get('items_data', '[]'))
+                tracking_data = json.loads(request.POST.get('tracking_data', '{}'))
+                
+                subtotal = Decimal('0.00')
+                total_tax = Decimal('0.00')
+                
+                for item_data in items_data:
+                    # Create bill item
+                    item = BillItem.objects.create(
+                        bill=bill,
+                        product_id=item_data['product_id'],
+                        quantity=Decimal(item_data['quantity']),
+                        unit_price=Decimal(item_data['unit_price']),
+                        item_source=item_data.get('item_source', 'manual'),
+                        po_item_id=item_data.get('po_item_id'),
+                        grn_item_id=item_data.get('grn_item_id'),
+                        notes=item_data.get('notes', '')
+                    )
+                    
+                    subtotal += item.line_total
+                    
+                    # Handle tracking for tracked products
+                    item_tracking_list = tracking_data.get(str(item.id), [])
+                    for tracking_info in item_tracking_list:
+                        BillItemTracking.objects.create(
+                            bill_item=item,
+                            tracking_number=tracking_info['tracking_number'],
+                            tracking_type=tracking_info['tracking_type'],
+                            grn_tracking_id=tracking_info.get('grn_tracking_id'),
+                            creates_asset=tracking_info.get('creates_asset', False),
+                            asset_value=Decimal(tracking_info.get('asset_value', '0.00')),
+                            batch_number=tracking_info.get('batch_number', ''),
+                            manufacturing_date=tracking_info.get('manufacturing_date'),
+                            expiry_date=tracking_info.get('expiry_date'),
+                            warranty_expiry=tracking_info.get('warranty_expiry'),
+                            condition=tracking_info.get('condition', 'new'),
+                            notes=tracking_info.get('notes', '')
+                        )
+                
+                # Update totals
+                bill.subtotal = subtotal
+                bill.total_amount = subtotal + total_tax  # Add tax calculation logic
+                bill.outstanding_amount = bill.total_amount - bill.paid_amount
+                bill.save()
+                
+                # Validate matching if applicable
+                if bill.matching_type in ['three_way', 'two_way_po', 'two_way_grn']:
+                    validation_result = bill.validate_three_way_match()
+                    if not validation_result['is_valid']:
+                        messages.warning(request, f'Matching validation warnings: {", ".join(validation_result["warnings"])}')
+                
+                messages.success(request, f'Bill {bill.bill_number} updated successfully.')
+                return redirect('bill_detail', pk=bill.id)
+                
+            except Exception as e:
+                messages.error(request, f'Error updating bill: {str(e)}')
+        else:
+            # Form has errors
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
+    else:
+        form = BillForm(instance=bill, user=request.user)
+    
+    # Prepare context data including existing items
+    existing_items = []
+    for item in bill.items.all():
+        item_data = {
+            'product_id': item.product.id,
+            'product_name': item.product.name,
+            'product_sku': item.product.sku,
+            'quantity': float(item.quantity),
+            'unit_price': float(item.unit_price),
+            'line_total': float(item.line_total),
+            'item_source': item.item_source,
+            'po_item_id': item.po_item.id if item.po_item else None,
+            'grn_item_id': item.grn_item.id if item.grn_item else None,
+            'notes': item.notes,
+            'tracking_items': []
+        }
+        
+        # Add tracking items
+        for tracking in item.tracking_items.all():
+            item_data['tracking_items'].append({
+                'tracking_number': tracking.tracking_number,
+                'tracking_type': tracking.tracking_type,
+                'batch_number': tracking.batch_number,
+                'manufacturing_date': tracking.manufacturing_date.strftime('%Y-%m-%d') if tracking.manufacturing_date else '',
+                'expiry_date': tracking.expiry_date.strftime('%Y-%m-%d') if tracking.expiry_date else '',
+                'condition': tracking.condition
+            })
+        
+        existing_items.append(item_data)
+    
+    context = {
+        'form': form,
+        'bill': bill,
+        'existing_items': json.dumps(existing_items),
+        'suppliers': Supplier.objects.filter(company=request.user.company, is_active=True),
+        'purchase_orders': PurchaseOrder.objects.filter(
+            company=request.user.company,
+            status__in=['approved', 'sent_to_supplier', 'partially_received', 'completed']
+        ),
+        'grns': GoodsReceiptNote.objects.filter(
+            company=request.user.company,
+            status__in=['completed', 'inspection_completed']
+        ),
+        'products': Product.objects.filter(company=request.user.company, is_active=True),
+        'title': f'Edit Bill {bill.bill_number}',
+        'tracking_types': BillItemTracking.TRACKING_TYPE_CHOICES,
+        'item_sources': BillItem.ITEM_SOURCE_CHOICES,
+        'is_edit': True
+    }
+    return render(request, 'purchase/bill-form-enhanced.html', context)
 
 # =====================================
 # PAYMENT VIEWS
@@ -1544,8 +1903,31 @@ def bill_add(request):
 
 @login_required
 def payments_ui(request):
-    """Enhanced payments management interface"""
+    """Enhanced payments management interface with supplier ledger"""
     payments = PurchasePayment.objects.filter(company=request.user.company).order_by('-created_at')
+    
+    # Filter by supplier
+    supplier_filter = request.GET.get('supplier', '')
+    if supplier_filter:
+        payments = payments.filter(supplier_id=supplier_filter)
+    
+    # Filter by payment type
+    payment_type_filter = request.GET.get('payment_type', '')
+    if payment_type_filter:
+        payments = payments.filter(payment_type=payment_type_filter)
+    
+    # Filter by status
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        payments = payments.filter(status=status_filter)
+    
+    # Date range filter
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    if date_from:
+        payments = payments.filter(payment_date__gte=date_from)
+    if date_to:
+        payments = payments.filter(payment_date__lte=date_to)
     
     # Search functionality
     search_query = request.GET.get('search', '')
@@ -1553,18 +1935,34 @@ def payments_ui(request):
         payments = payments.filter(
             Q(payment_number__icontains=search_query) |
             Q(bill__bill_number__icontains=search_query) |
-            Q(supplier__name__icontains=search_query)
+            Q(supplier__name__icontains=search_query) |
+            Q(reference_number__icontains=search_query) |
+            Q(transaction_id__icontains=search_query)
         )
     
+    # Calculate summary statistics
+    total_payments = payments.aggregate(total=Sum('amount'))['total'] or 0
+    payment_count = payments.count()
+    
     # Pagination
-    paginator = Paginator(payments, 20)
+    paginator = Paginator(payments, 25)
     page_number = request.GET.get('page')
     payments = paginator.get_page(page_number)
     
     context = {
         'payments': payments,
         'search_query': search_query,
+        'supplier_filter': supplier_filter,
+        'payment_type_filter': payment_type_filter,
+        'status_filter': status_filter,
+        'date_from': date_from,
+        'date_to': date_to,
+        'total_payments': total_payments,
+        'payment_count': payment_count,
+        'suppliers': Supplier.objects.filter(company=request.user.company, is_active=True),
         'payment_methods': PurchasePayment.PAYMENT_METHOD_CHOICES,
+        'payment_types': PurchasePayment.PAYMENT_TYPE_CHOICES,
+        'payment_statuses': PurchasePayment.PAYMENT_STATUS_CHOICES,
         'unpaid_bills': Bill.objects.filter(
             company=request.user.company,
             status__in=['approved', 'submitted'],
@@ -1576,46 +1974,75 @@ def payments_ui(request):
 
 @login_required
 def payment_add(request):
-    """Add new payment with file upload support"""
+    """Enhanced payment creation with supplier ledger integration"""
     if request.method == 'POST':
-        form = PurchasePaymentForm(request.POST, request.FILES)
+        form = PurchasePaymentForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             try:
-                # Generate payment number
-                last_payment = PurchasePayment.objects.filter(company=request.user.company).order_by('-id').first()
-                payment_number = f"PAY-{(last_payment.id + 1) if last_payment else 1:06d}"
-                
                 payment = form.save(commit=False)
                 payment.company = request.user.company
-                payment.payment_number = payment_number
+                payment.created_by = request.user
                 payment.paid_by = request.user
+                
+                # Set status based on payment method
+                if payment.payment_method in ['cash', 'check']:
+                    payment.status = 'completed'
+                    payment.actual_date = payment.payment_date
+                else:
+                    payment.status = 'processing'
+                
                 payment.save()
                 
-                # Update bill payment status
-                bill = payment.bill
-                bill.paid_amount += payment.amount
-                bill.outstanding_amount = bill.total_amount - bill.paid_amount
+                # Update bill if applicable
+                if payment.bill:
+                    bill = payment.bill
+                    bill.paid_amount += payment.amount
+                    bill.outstanding_amount = bill.total_amount - bill.paid_amount
+                    
+                    if bill.outstanding_amount <= 0:
+                        bill.status = 'paid'
+                    elif bill.paid_amount > 0:
+                        bill.status = 'partially_paid'
+                    
+                    bill.save()
                 
-                if bill.outstanding_amount <= 0:
-                    bill.status = 'paid'
-                elif bill.paid_amount > 0:
-                    bill.status = 'partially_paid'
+                # Check for overpayment warning
+                if hasattr(form.cleaned_data, '_overpayment_warning'):
+                    messages.warning(request, form.cleaned_data['_overpayment_warning'])
                 
-                bill.save()
+                messages.success(request, f'Payment {payment.payment_number} recorded successfully.')
                 
-                messages.success(request, f'Payment {payment_number} recorded successfully.')
-                return redirect('bill_detail', pk=bill.id)
+                # Redirect based on payment type
+                if payment.bill:
+                    return redirect('purchase:bill_detail', pk=payment.bill.id)
+                else:
+                    return redirect('purchase:supplier_ledger', supplier_id=payment.supplier.id)
                 
             except Exception as e:
                 messages.error(request, f'Error recording payment: {str(e)}')
         else:
-            messages.error(request, 'Please correct the errors below.')
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
     else:
-        form = PurchasePaymentForm()
+        form = PurchasePaymentForm(user=request.user)
+        
+        # Pre-fill if coming from a specific bill
+        bill_id = request.GET.get('bill_id')
+        if bill_id:
+            try:
+                bill = Bill.objects.get(id=bill_id, company=request.user.company)
+                form.fields['bill'].initial = bill
+                form.fields['supplier'].initial = bill.supplier
+                form.fields['amount'].initial = bill.outstanding_amount
+            except Bill.DoesNotExist:
+                messages.error(request, 'Bill not found.')
     
     context = {
         'form': form,
-        'unpaid_bills': Bill.objects.filter(
+        'payment': PurchasePayment(),  # Empty payment object for template compatibility
+        'suppliers': Supplier.objects.filter(company=request.user.company, is_active=True),
+        'bills': Bill.objects.filter(
             company=request.user.company,
             status__in=['approved', 'submitted'],
             outstanding_amount__gt=0
@@ -1623,6 +2050,213 @@ def payment_add(request):
         'title': 'Record Payment'
     }
     return render(request, 'purchase/payment-form.html', context)
+
+@login_required
+def payment_detail(request, pk):
+    """Payment detail view"""
+    payment = get_object_or_404(PurchasePayment, pk=pk, company=request.user.company)
+    
+    context = {
+        'payment': payment,
+        'title': f'Payment {payment.payment_number}'
+    }
+    return render(request, 'purchase/payment-detail.html', context)
+
+@login_required
+def payment_edit(request, pk):
+    """Edit payment view"""
+    payment = get_object_or_404(PurchasePayment, pk=pk, company=request.user.company)
+    
+    # Only allow editing of pending/processing payments
+    if payment.status not in ['pending', 'processing']:
+        messages.error(request, 'Cannot edit completed or cancelled payments.')
+        return redirect('purchase:payment_detail', pk=pk)
+    
+    if request.method == 'POST':
+        form = PurchasePaymentForm(request.POST, request.FILES, instance=payment, user=request.user)
+        if form.is_valid():
+            try:
+                payment = form.save(commit=False)
+                payment.updated_by = request.user
+                payment.save()
+                
+                messages.success(request, f'Payment {payment.payment_number} updated successfully.')
+                return redirect('purchase:payment_detail', pk=payment.pk)
+                
+            except Exception as e:
+                messages.error(request, f'Error updating payment: {str(e)}')
+    else:
+        form = PurchasePaymentForm(instance=payment, user=request.user)
+    
+    context = {
+        'form': form,
+        'payment': payment,
+        'suppliers': Supplier.objects.filter(company=request.user.company, is_active=True),
+        'bills': Bill.objects.filter(
+            company=request.user.company,
+            status__in=['approved', 'submitted'],
+            outstanding_amount__gt=0
+        ),
+        'title': f'Edit Payment {payment.payment_number}'
+    }
+    return render(request, 'purchase/payment-form.html', context)
+
+@login_required
+def payment_complete(request, pk):
+    """Complete payment (AJAX)"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
+    
+    try:
+        payment = get_object_or_404(PurchasePayment, pk=pk, company=request.user.company)
+        
+        if payment.status == 'completed':
+            return JsonResponse({'success': False, 'message': 'Payment is already completed'})
+        
+        if payment.status == 'cancelled':
+            return JsonResponse({'success': False, 'message': 'Cannot complete cancelled payment'})
+        
+        payment.status = 'completed'
+        payment.actual_date = timezone.now().date()
+        payment.updated_by = request.user
+        payment.save()
+        
+        # Update bill if applicable
+        if payment.bill:
+            bill = payment.bill
+            bill.paid_amount += payment.amount
+            bill.outstanding_amount = bill.total_amount - bill.paid_amount
+            
+            if bill.outstanding_amount <= 0:
+                bill.status = 'paid'
+            elif bill.paid_amount > 0:
+                bill.status = 'partially_paid'
+            
+            bill.save()
+        
+        return JsonResponse({
+            'success': True, 
+            'message': f'Payment {payment.payment_number} completed successfully.'
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+@login_required
+def payment_cancel(request, pk):
+    """Cancel payment (AJAX)"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
+    
+    try:
+        payment = get_object_or_404(PurchasePayment, pk=pk, company=request.user.company)
+        
+        if payment.status == 'cancelled':
+            return JsonResponse({'success': False, 'message': 'Payment is already cancelled'})
+        
+        if payment.status == 'completed':
+            return JsonResponse({'success': False, 'message': 'Cannot cancel completed payment'})
+        
+        reason = request.POST.get('reason', '')
+        if not reason:
+            return JsonResponse({'success': False, 'message': 'Cancellation reason is required'})
+        
+        payment.status = 'cancelled'
+        payment.notes = f"{payment.notes}\n\nCancelled: {reason}" if payment.notes else f"Cancelled: {reason}"
+        payment.updated_by = request.user
+        payment.save()
+        
+        return JsonResponse({
+            'success': True, 
+            'message': f'Payment {payment.payment_number} cancelled successfully.'
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+@login_required
+def payment_delete(request, pk):
+    """Delete payment (AJAX)"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
+    
+    try:
+        payment = get_object_or_404(PurchasePayment, pk=pk, company=request.user.company)
+        
+        if payment.status == 'completed':
+            return JsonResponse({'success': False, 'message': 'Cannot delete completed payment'})
+        
+        payment_number = payment.payment_number
+        payment.delete()
+        
+        return JsonResponse({
+            'success': True, 
+            'message': f'Payment {payment_number} deleted successfully.'
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+@login_required
+def supplier_ledger(request, supplier_id=None):
+    """Supplier ledger view with credit/debit tracking"""
+    supplier = None
+    ledger_entries = SupplierLedger.objects.filter(company=request.user.company)
+    
+    if supplier_id:
+        supplier = get_object_or_404(Supplier, id=supplier_id, company=request.user.company)
+        ledger_entries = ledger_entries.filter(supplier=supplier)
+    
+    # Filter form
+    filter_form = SupplierLedgerFilterForm(request.GET, user=request.user)
+    if filter_form.is_valid():
+        if filter_form.cleaned_data['supplier']:
+            ledger_entries = ledger_entries.filter(supplier=filter_form.cleaned_data['supplier'])
+            supplier = filter_form.cleaned_data['supplier']
+        
+        if filter_form.cleaned_data['date_from']:
+            ledger_entries = ledger_entries.filter(transaction_date__gte=filter_form.cleaned_data['date_from'])
+        
+        if filter_form.cleaned_data['date_to']:
+            ledger_entries = ledger_entries.filter(transaction_date__lte=filter_form.cleaned_data['date_to'])
+        
+        if filter_form.cleaned_data['reference_type']:
+            ledger_entries = ledger_entries.filter(reference_type=filter_form.cleaned_data['reference_type'])
+        
+        if filter_form.cleaned_data['search']:
+            search = filter_form.cleaned_data['search']
+            ledger_entries = ledger_entries.filter(
+                Q(description__icontains=search) |
+                Q(reference_number__icontains=search)
+            )
+    
+    # Calculate totals
+    totals = ledger_entries.aggregate(
+        total_debit=Sum('debit_amount'),
+        total_credit=Sum('credit_amount')
+    )
+    
+    balance = (totals['total_debit'] or 0) - (totals['total_credit'] or 0)
+    
+    # Order by date
+    ledger_entries = ledger_entries.order_by('-transaction_date', '-created_at')
+    
+    # Pagination
+    paginator = Paginator(ledger_entries, 25)
+    page_number = request.GET.get('page')
+    ledger_entries = paginator.get_page(page_number)
+    
+    context = {
+        'supplier': supplier,
+        'ledger_entries': ledger_entries,
+        'filter_form': filter_form,
+        'total_debit': totals['total_debit'] or 0,
+        'total_credit': totals['total_credit'] or 0,
+        'balance': balance,
+        'suppliers': Supplier.objects.filter(company=request.user.company, is_active=True),
+        'title': f'Supplier Ledger - {supplier.name}' if supplier else 'Supplier Ledger'
+    }
+    return render(request, 'purchase/supplier-ledger.html', context)
 
 # =====================================
 # LEGACY VIEWS (Updated for compatibility)
@@ -2845,3 +3479,528 @@ def product_search_ajax(request):
     
     results = [{'id': p.id, 'text': p.name} for p in products]
     return JsonResponse({'results': results})
+
+
+# =====================================
+# BILL AJAX ENDPOINTS
+# =====================================
+
+@login_required
+def get_po_items_ajax(request):
+    """Get PO items for bill creation"""
+    po_id = request.GET.get('po_id')
+    if not po_id:
+        return JsonResponse({'success': False, 'error': 'No PO ID provided'})
+    
+    try:
+        po = PurchaseOrder.objects.get(id=po_id, company=request.user.company)
+        items = []
+        
+        for item in po.items.all():
+            # Calculate pending quantity to invoice
+            invoiced_qty = BillItem.objects.filter(
+                po_item=item,
+                bill__status__in=['draft', 'submitted', 'approved', 'paid']
+            ).aggregate(total=Sum('quantity'))['total'] or 0
+            
+            pending_qty = item.quantity - invoiced_qty
+            
+            if pending_qty > 0:
+                items.append({
+                    'id': item.id,
+                    'product_id': item.product.id,
+                    'product_name': item.product.name,
+                    'product_code': item.product.code,
+                    'ordered_quantity': float(item.quantity),
+                    'invoiced_quantity': float(invoiced_qty),
+                    'pending_quantity': float(pending_qty),
+                    'unit_price': float(item.unit_price),
+                    'tracking_required': item.product.is_tracked(),
+                    'tracking_method': item.product.tracked_by
+                })
+        
+        return JsonResponse({
+            'success': True,
+            'supplier_id': po.supplier.id,
+            'items': items
+        })
+    except PurchaseOrder.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Purchase Order not found'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+def get_grn_items_for_bill_ajax(request):
+    """Get GRN items for bill creation"""
+    grn_id = request.GET.get('grn_id')
+    if not grn_id:
+        return JsonResponse({'success': False, 'error': 'No GRN ID provided'})
+    
+    try:
+        grn = GoodsReceiptNote.objects.get(id=grn_id, company=request.user.company)
+        items = []
+        
+        for item in grn.items.all():
+            # Calculate pending quantity to invoice
+            invoiced_qty = BillItem.objects.filter(
+                grn_item=item,
+                bill__status__in=['draft', 'submitted', 'approved', 'paid']
+            ).aggregate(total=Sum('quantity'))['total'] or 0
+            
+            pending_qty = item.received_qty - invoiced_qty
+            
+            if pending_qty > 0:
+                # Get tracking information
+                tracking_data = []
+                for tracking in item.tracking.all():
+                    tracking_data.append({
+                        'id': tracking.id,
+                        'tracking_number': tracking.tracking_number,
+                        'tracking_type': tracking.tracking_type,
+                        'batch_number': tracking.batch_number,
+                        'manufacturing_date': tracking.manufacturing_date.isoformat() if tracking.manufacturing_date else None,
+                        'expiry_date': tracking.expiry_date.isoformat() if tracking.expiry_date else None,
+                        'condition': tracking.condition
+                    })
+                
+                items.append({
+                    'id': item.id,
+                    'product_id': item.product.id,
+                    'product_name': item.product.name,
+                    'product_code': item.product.code,
+                    'received_quantity': float(item.received_qty),
+                    'invoiced_quantity': float(invoiced_qty),
+                    'pending_quantity': float(pending_qty),
+                    'tracking_required': item.product.is_tracked(),
+                    'tracking_method': item.product.tracked_by,
+                    'tracking_data': tracking_data
+                })
+        
+        return JsonResponse({
+            'success': True,
+            'supplier_id': grn.supplier.id if grn.supplier else grn.purchase_order.supplier.id,
+            'po_id': grn.purchase_order.id if grn.purchase_order else None,
+            'items': items
+        })
+    except GoodsReceiptNote.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'GRN not found'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+def filter_po_and_grn_ajax(request):
+    """Filter POs and GRNs by supplier"""
+    supplier_id = request.GET.get('supplier_id')
+    if not supplier_id:
+        return JsonResponse({'success': False, 'error': 'No supplier ID provided'})
+    
+    try:
+        # Get POs for supplier
+        pos = PurchaseOrder.objects.filter(
+            company=request.user.company,
+            supplier_id=supplier_id,
+            status__in=['approved', 'sent_to_supplier', 'partially_received', 'completed']
+        ).values('id', 'order_number', 'order_date')
+        
+        # Get GRNs for supplier
+        grns = GoodsReceiptNote.objects.filter(
+            company=request.user.company,
+            supplier_id=supplier_id,
+            status__in=['completed', 'inspection_completed']
+        ).values('id', 'grn_number', 'received_date')
+        
+        return JsonResponse({
+            'success': True,
+            'purchase_orders': list(pos),
+            'grns': list(grns)
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+def validate_bill_matching_ajax(request):
+    """Validate bill matching constraints"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST method required'})
+    
+    try:
+        data = json.loads(request.body)
+        po_id = data.get('po_id')
+        grn_id = data.get('grn_id')
+        supplier_id = data.get('supplier_id')
+        items = data.get('items', [])
+        
+        warnings = []
+        errors = []
+        
+        # Validate PO and GRN relationship
+        if po_id and grn_id:
+            try:
+                po = PurchaseOrder.objects.get(id=po_id, company=request.user.company)
+                grn = GoodsReceiptNote.objects.get(id=grn_id, company=request.user.company)
+                
+                if grn.purchase_order_id != po_id:
+                    errors.append('Selected GRN must be from the selected Purchase Order')
+                
+                if po.supplier_id != int(supplier_id):
+                    errors.append('Purchase Order supplier must match selected supplier')
+                    
+            except (PurchaseOrder.DoesNotExist, GoodsReceiptNote.DoesNotExist):
+                errors.append('Invalid PO or GRN selection')
+        
+        # Validate item quantities
+        for item in items:
+            if item.get('po_item_id') and item.get('quantity'):
+                try:
+                    po_item = PurchaseOrderItem.objects.get(id=item['po_item_id'])
+                    if float(item['quantity']) > po_item.quantity:
+                        warnings.append(f'Item {po_item.product.name}: Invoice quantity exceeds PO quantity')
+                except PurchaseOrderItem.DoesNotExist:
+                    errors.append(f'Invalid PO item reference')
+            
+            if item.get('grn_item_id') and item.get('quantity'):
+                try:
+                    grn_item = GRNItem.objects.get(id=item['grn_item_id'])
+                    if float(item['quantity']) > grn_item.received_qty:
+                        warnings.append(f'Item {grn_item.product.name}: Invoice quantity exceeds received quantity')
+                except GRNItem.DoesNotExist:
+                    errors.append(f'Invalid GRN item reference')
+        
+        return JsonResponse({
+            'success': True,
+            'is_valid': len(errors) == 0,
+            'errors': errors,
+            'warnings': warnings
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+def get_supplier_pos_ajax(request):
+    """Get Purchase Orders for a specific supplier"""
+    supplier_id = request.GET.get('supplier_id')
+    if not supplier_id:
+        return JsonResponse({'success': False, 'error': 'Supplier ID required'})
+    
+    try:
+        pos = PurchaseOrder.objects.filter(
+            company=request.user.company,
+            supplier_id=supplier_id,
+            status__in=['approved', 'sent_to_supplier', 'partially_received', 'completed']
+        ).values('id', 'po_number', 'status', 'po_date', 'total_amount')
+        
+        return JsonResponse({
+            'success': True,
+            'pos': list(pos)
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+def get_supplier_grns_ajax(request):
+    """Get GRNs for a specific supplier"""
+    supplier_id = request.GET.get('supplier_id')
+    if not supplier_id:
+        return JsonResponse({'success': False, 'error': 'Supplier ID required'})
+    
+    try:
+        grns = GoodsReceiptNote.objects.filter(
+            company=request.user.company,
+            supplier_id=supplier_id,
+            status__in=['completed', 'inspection_completed']
+        ).values('id', 'grn_number', 'status', 'received_date')
+        
+        return JsonResponse({
+            'success': True,
+            'grns': list(grns)
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+def get_po_info_ajax(request):
+    """Get detailed PO information"""
+    po_id = request.GET.get('po_id')
+    if not po_id:
+        return JsonResponse({'success': False, 'error': 'PO ID required'})
+    
+    try:
+        po = PurchaseOrder.objects.get(id=po_id, company=request.user.company)
+        return JsonResponse({
+            'success': True,
+            'po_number': po.po_number,
+            'po_date': po.po_date.strftime('%Y-%m-%d'),
+            'total_amount': float(po.total_amount),
+            'status': po.status,
+            'supplier': po.supplier.name
+        })
+    except PurchaseOrder.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'PO not found'})
+
+
+@login_required
+def get_grn_info_ajax(request):
+    """Get detailed GRN information"""
+    grn_id = request.GET.get('grn_id')
+    if not grn_id:
+        return JsonResponse({'success': False, 'error': 'GRN ID required'})
+    
+    try:
+        grn = GoodsReceiptNote.objects.get(id=grn_id, company=request.user.company)
+        return JsonResponse({
+            'success': True,
+            'grn_number': grn.grn_number,
+            'received_date': grn.received_date.strftime('%Y-%m-%d'),
+            'status': grn.status,
+            'item_count': grn.items.count(),
+            'supplier': grn.supplier.name
+        })
+    except GoodsReceiptNote.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'GRN not found'})
+
+
+@login_required
+def get_po_items_ajax(request):
+    """Get PO items for loading into bill"""
+    po_id = request.GET.get('po_id')
+    if not po_id:
+        return JsonResponse({'success': False, 'error': 'PO ID required'})
+    
+    try:
+        po = PurchaseOrder.objects.get(id=po_id, company=request.user.company)
+        items = []
+        
+        for item in po.items.all():
+            items.append({
+                'id': item.id,
+                'product_id': item.product.id,
+                'product_name': item.product.name,
+                'product_sku': item.product.sku,
+                'quantity': float(item.quantity),
+                'unit_price': float(item.unit_price),
+                'line_total': float(item.line_total)
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'items': items
+        })
+    except PurchaseOrder.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'PO not found'})
+
+
+@login_required
+def get_grn_items_ajax(request):
+    """Get GRN items for loading into bill"""
+    grn_id = request.GET.get('grn_id')
+    if not grn_id:
+        return JsonResponse({'success': False, 'error': 'GRN ID required'})
+    
+    try:
+        grn = GoodsReceiptNote.objects.get(id=grn_id, company=request.user.company)
+        items = []
+        
+        for item in grn.items.all():
+            tracking_items = []
+            if item.tracking_items.exists():
+                for tracking in item.tracking_items.all():
+                    tracking_items.append({
+                        'tracking_number': tracking.tracking_number,
+                        'tracking_type': tracking.tracking_type,
+                        'batch_number': tracking.batch_number,
+                        'manufacturing_date': tracking.manufacturing_date.strftime('%Y-%m-%d') if tracking.manufacturing_date else None,
+                        'expiry_date': tracking.expiry_date.strftime('%Y-%m-%d') if tracking.expiry_date else None,
+                    })
+            
+            items.append({
+                'id': item.id,
+                'product_id': item.product.id,
+                'product_name': item.product.name,
+                'product_sku': item.product.sku,
+                'received_qty': float(item.received_qty),
+                'unit_price': float(item.po_item.unit_price) if item.po_item else 0,
+                'po_item': {
+                    'id': item.po_item.id,
+                    'unit_price': float(item.po_item.unit_price)
+                } if item.po_item else None,
+                'tracking_items': tracking_items
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'items': items
+        })
+    except GoodsReceiptNote.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'GRN not found'})
+
+
+@login_required 
+def validate_matching_ajax(request):
+    """Validate PO and GRN matching"""
+    po_id = request.GET.get('po_id')
+    grn_id = request.GET.get('grn_id')
+    
+    if not po_id or not grn_id:
+        return JsonResponse({'success': False, 'error': 'Both PO and GRN IDs required'})
+    
+    try:
+        po = PurchaseOrder.objects.get(id=po_id, company=request.user.company)
+        grn = GoodsReceiptNote.objects.get(id=grn_id, company=request.user.company)
+        
+        errors = []
+        
+        # Check if GRN is from the selected PO
+        if grn.purchase_order_id != int(po_id):
+            errors.append('Selected GRN must be from the selected Purchase Order')
+        
+        # Check if both have the same supplier
+        if po.supplier_id != grn.supplier_id:
+            errors.append('PO and GRN must have the same supplier')
+        
+        return JsonResponse({
+            'success': True,
+            'is_valid': len(errors) == 0,
+            'errors': errors
+        })
+        
+    except (PurchaseOrder.DoesNotExist, GoodsReceiptNote.DoesNotExist):
+        return JsonResponse({'success': False, 'error': 'Invalid PO or GRN'})
+
+
+@login_required
+def bill_approve_ajax(request, pk):
+    """Approve a bill via AJAX"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'POST method required'})
+    
+    try:
+        bill = get_object_or_404(Bill, pk=pk, company=request.user.company)
+        
+        # Check permissions
+        if not request.user.has_perm('purchase.approve_bill'):
+            return JsonResponse({'success': False, 'message': 'You do not have permission to approve bills'})
+        
+        # Check if bill can be approved
+        if bill.status != 'submitted':
+            return JsonResponse({'success': False, 'message': 'Only submitted bills can be approved'})
+        
+        bill.status = 'approved'
+        bill.approved_by = request.user
+        bill.approved_at = timezone.now()
+        bill.save()
+        
+        return JsonResponse({'success': True, 'message': 'Bill approved successfully'})
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+
+@login_required
+def bill_delete_ajax(request, pk):
+    """Delete a bill via AJAX"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'POST method required'})
+    
+    try:
+        bill = get_object_or_404(Bill, pk=pk, company=request.user.company)
+        
+        # Check if bill can be deleted
+        if bill.status != 'draft':
+            return JsonResponse({'success': False, 'message': 'Only draft bills can be deleted'})
+        
+        bill.delete()
+        
+        return JsonResponse({'success': True, 'message': 'Bill deleted successfully'})
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+@login_required
+def reports_ui(request):
+    """Purchase Reports Dashboard: Summary stats and monthly charts"""
+    company = request.user.company
+
+    # Summary stats
+    total_purchase_orders = PurchaseOrder.objects.filter(company=company).count()
+    total_goods_received = GoodsReceiptNote.objects.filter(company=company).count()
+    total_returns = PurchaseReturn.objects.filter(company=company).count()
+    active_suppliers = Supplier.objects.filter(company=company, is_active=True).count()
+
+    # Calculate additional KPIs
+    po_with_amounts = PurchaseOrder.objects.filter(company=company, total_amount__isnull=False)
+    avg_order_value = po_with_amounts.aggregate(avg=Avg('total_amount'))['avg'] or 0
+
+    # Calculate on-time delivery rate (mock data for now)
+    on_time_delivery_rate = 94.5  # This would be calculated from actual delivery data
+
+    # Calculate return rate
+    if total_goods_received > 0:
+        return_rate = (total_returns / total_goods_received) * 100
+    else:
+        return_rate = 0
+
+    # Monthly Purchase Orders (last 12 months)
+    from datetime import datetime, timedelta
+    twelve_months_ago = datetime.now() - timedelta(days=365)
+    
+    po_months = (
+        PurchaseOrder.objects.filter(company=company, created_at__gte=twelve_months_ago)
+        .annotate(month=TruncMonth('created_at'))
+        .values('month')
+        .annotate(count=Count('id'))
+        .order_by('month')
+    )
+    monthly_po_labels = [m['month'].strftime('%b %Y') for m in po_months]
+    monthly_po_data = [m['count'] for m in po_months]
+
+    # Monthly Goods Received (last 12 months)
+    grn_months = (
+        GoodsReceiptNote.objects.filter(company=company, created_at__gte=twelve_months_ago)
+        .annotate(month=TruncMonth('created_at'))
+        .values('month')
+        .annotate(count=Count('id'))
+        .order_by('month')
+    )
+    monthly_grn_labels = [m['month'].strftime('%b %Y') for m in grn_months]
+    monthly_grn_data = [m['count'] for m in grn_months]
+
+    # Monthly Returns (last 12 months)
+    return_months = (
+        PurchaseReturn.objects.filter(company=company, created_at__gte=twelve_months_ago)
+        .annotate(month=TruncMonth('created_at'))
+        .values('month')
+        .annotate(count=Count('id'))
+        .order_by('month')
+    )
+    monthly_return_data = [m['count'] for m in return_months]
+
+    # Align all months for GRN vs Returns chart
+    all_months = sorted(set([m['month'] for m in grn_months] + [m['month'] for m in return_months]))
+    monthly_goods_received_labels = [m.strftime('%b %Y') for m in all_months]
+    grn_dict = {m['month']: m['count'] for m in grn_months}
+    return_dict = {m['month']: m['count'] for m in return_months}
+    monthly_goods_received_data = [grn_dict.get(month, 0) for month in all_months]
+    monthly_returns_data = [return_dict.get(month, 0) for month in all_months]
+
+    context = {
+        'total_purchase_orders': total_purchase_orders,
+        'total_goods_received': total_goods_received,
+        'total_returns': total_returns,
+        'active_suppliers': active_suppliers,
+        'avg_order_value': avg_order_value,
+        'on_time_delivery_rate': on_time_delivery_rate,
+        'return_rate': return_rate,
+        'monthly_purchase_orders_labels': monthly_po_labels,
+        'monthly_purchase_orders_data': monthly_po_data,
+        'monthly_goods_received_labels': monthly_goods_received_labels,
+        'monthly_goods_received_data': monthly_goods_received_data,
+        'monthly_returns_data': monthly_returns_data,
+    }
+    return render(request, 'purchase/reports.html', context)

@@ -229,19 +229,19 @@
                         </div>
 
                         <div>
-                            <label for="{{ form.tracking_method.id_for_label }}" class="field-label">Tracking Method</label>
+                            <label for="{{ form.tracking_method.id_for_label }}" class="field-label">Tracked By</label>
                             <select name="tracking_method" id="{{ form.tracking_method.id_for_label }}" class="form-select" onchange="updateTrackingOptions()">
                                 <option value="none" {% if form.tracking_method.value == 'none' %}selected{% endif %}>No Tracking</option>
                                 <option value="barcode" {% if form.tracking_method.value == 'barcode' %}selected{% endif %}>Barcode</option>
                                 <option value="serial" {% if form.tracking_method.value == 'serial' %}selected{% endif %}>Serial Number</option>
                                 <option value="imei" {% if form.tracking_method.value == 'imei' %}selected{% endif %}>IMEI Number</option>
-                                <option value="batch" {% if form.tracking_method.value == 'batch' %}selected{% endif %}>Batch/Lot</option>
+                                <option value="batch" {% if form.tracking_method.value == 'batch' %}selected{% endif %}>Batch/Lot Number</option>
                                 <option value="expiry" {% if form.tracking_method.value == 'expiry' %}selected{% endif %}>Expiry Date</option>
                             </select>
                             {% if form.tracking_method.errors %}
                                 <p class="text-red-600 text-sm mt-1">{{ form.tracking_method.errors.0 }}</p>
                             {% endif %}
-                            <p class="text-sm text-gray-600 mt-1">Choose how this product will be tracked in inventory</p>
+                            <p class="text-sm text-gray-600 mt-1">Choose how this product will be tracked in inventory and during purchase receipt</p>
                         </div>
 
                         <!-- Tracking Options -->
@@ -386,20 +386,50 @@ function updateTrackingOptions() {
             case 'serial':
             case 'imei':
                 individualTracking.prop('checked', true);
+                showTrackingInfo('Individual tracking enabled: Each unit must have a unique ' + trackingMethod + ' number during purchase receipt.');
                 break;
             case 'batch':
                 batchTracking.prop('checked', true);
+                showTrackingInfo('Batch tracking enabled: Items will be grouped by batch/lot numbers during purchase receipt.');
                 break;
             case 'expiry':
                 expiryTracking.prop('checked', true);
+                showTrackingInfo('Expiry tracking enabled: Expiry dates must be recorded during purchase receipt.');
                 break;
             case 'barcode':
-                // Barcode can be either individual or batch
+                individualTracking.prop('checked', true);
+                showTrackingInfo('Barcode tracking enabled: Each unit must have a unique barcode during purchase receipt.');
                 break;
         }
     } else {
         trackingOptions.hide();
+        hideTrackingInfo();
     }
+}
+
+function showTrackingInfo(message) {
+    // Remove existing info if any
+    hideTrackingInfo();
+    
+    // Add new info message
+    $('#trackingOptions').append(`
+        <div id="tracking-info" class="bg-blue-50 border-l-4 border-blue-400 p-3 mt-3">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-blue-700">${message}</p>
+                </div>
+            </div>
+        </div>
+    `);
+}
+
+function hideTrackingInfo() {
+    $('#tracking-info').remove();
 }
 
 // Form validation
