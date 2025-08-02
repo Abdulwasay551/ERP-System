@@ -1,0 +1,665 @@
+{% extends "base.html" %}
+{% load static %}
+{% csrf_token %}
+{% block title %}Product Tracking | ERP System{% endblock %}
+{% block content %}
+<!-- Product Tracking Dashboard -->
+<div class="mt-16 p-8">
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+            <span class="text-blue-800 font-medium">Product Tracking System:</span>
+            <span class="text-blue-700 ml-2">Track items by IMEI, Serial Number, Barcode, or Batch Number</span>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Product Tracking</h1>
+            <p class="text-gray-600 mt-2">Track and manage individual products by IMEI, serial numbers, and more</p>
+        </div>
+        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mt-4 lg:mt-0">
+            <button onclick="openTrackingSearch()" class="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-md">
+                <i class="fas fa-search mr-2"></i>Search by Tracking Number
+            </button>
+            <a href="{% url 'products:tracking_add' %}" class="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md">
+                <i class="fas fa-plus mr-2"></i>Add Tracking Unit
+            </a>
+            <a href="{% url 'products:bulk_tracking_import' %}" class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md">
+                <i class="fas fa-upload mr-2"></i>Bulk Import
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Tracking Search Panel -->
+    <div id="trackingSearchPanel" class="bg-white rounded-lg shadow-md p-6 mb-8 hidden">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">
+                <i class="fas fa-search mr-2 text-purple-600"></i>Quick Tracking Search
+            </h3>
+            <button onclick="closeTrackingSearch()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Tracking Type</label>
+                <select id="trackingType" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500">
+                    <option value="">Auto-detect</option>
+                    <option value="serial">Serial Number</option>
+                    <option value="imei">IMEI Number</option>
+                    <option value="barcode">Barcode</option>
+                    <option value="batch">Batch Number</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Tracking Number</label>
+                <div class="flex">
+                    <input type="text" id="trackingNumber" class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:ring-purple-500 focus:border-purple-500" placeholder="Enter tracking number...">
+                    <button onclick="searchTracking()" class="bg-purple-600 text-white px-4 py-2 rounded-r-md hover:bg-purple-700">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Search Results -->
+        <div id="trackingSearchResults" class="mt-6"></div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100">Available Units</p>
+                    <p class="text-3xl font-bold">{{ available_count|default:0 }}</p>
+                </div>
+                <svg class="w-12 h-12 text-green-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">Sold Units</p>
+                    <p class="text-3xl font-bold">{{ sold_count|default:0 }}</p>
+                </div>
+                <svg class="w-12 h-12 text-blue-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 3h2l.4 2M7 13h10l4-8H5.4m-.4-2H4.5M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17M17 13v4a2 2 0 01-2 2H9a2 2 0 01-2-2v-4m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-yellow-100">Expiring Soon</p>
+                    <p class="text-3xl font-bold">{{ expiring_count|default:0 }}</p>
+                </div>
+                <svg class="w-12 h-12 text-yellow-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 9v3l3 3m-6 0v-3m6 0v3M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-red-100">Issues</p>
+                    <p class="text-3xl font-bold">{{ issues_count|default:0 }}</p>
+                </div>
+                <svg class="w-12 h-12 text-red-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9l-5 4.87L18.18 22 12 18.82 5.82 22l1.18-8.13L2 9l6.91-1.74L12 2z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Product</label>
+                <select id="productFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500">
+                    <option value="">All Products</option>
+                    {% for product in products %}
+                    <option value="{{ product.id }}">{{ product.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select id="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500">
+                    <option value="">All Status</option>
+                    <option value="available">Available</option>
+                    <option value="sold">Sold</option>
+                    <option value="returned">Returned</option>
+                    <option value="damaged">Damaged</option>
+                    <option value="expired">Expired</option>
+                    <option value="quarantined">Quarantined</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Warehouse</label>
+                <select id="warehouseFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500">
+                    <option value="">All Warehouses</option>
+                    {% for warehouse in warehouses %}
+                    <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                <input type="text" id="generalSearch" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500" placeholder="Search...">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Actions</label>
+                <button onclick="clearFilters()" class="w-full bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+                    <i class="fas fa-times mr-2"></i>Clear Filters
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tracking Units Table -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tracking Info</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purchase Info</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dates</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for unit in page_obj %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                {% if unit.product.image %}
+                                <img class="h-10 w-10 rounded-lg object-cover mr-3" src="{{ unit.product.image.url }}" alt="{{ unit.product.name }}">
+                                {% else %}
+                                <div class="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center mr-3">
+                                    <i class="fas fa-box text-gray-400"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">{{ unit.product.name }}</div>
+                                    <div class="text-sm text-gray-500">{{ unit.product.sku }}</div>
+                                    {% if unit.variant %}
+                                    <div class="text-xs text-gray-400">{{ unit.variant.name }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">
+                                {% if unit.serial_number %}
+                                    <span class="text-blue-600 font-mono">Serial: {{ unit.serial_number }}</span>
+                                {% elif unit.imei_number %}
+                                    <span class="text-purple-600 font-mono">IMEI: {{ unit.imei_number }}</span>
+                                {% elif unit.barcode %}
+                                    <span class="text-green-600 font-mono">Barcode: {{ unit.barcode }}</span>
+                                {% elif unit.batch_number %}
+                                    <span class="text-orange-600 font-mono">Batch: {{ unit.batch_number }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="text-sm text-gray-500">{{ unit.product.get_tracking_method_display }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if unit.status == 'available' %}bg-green-100 text-green-800
+                                {% elif unit.status == 'sold' %}bg-blue-100 text-blue-800
+                                {% elif unit.status == 'returned' %}bg-yellow-100 text-yellow-800
+                                {% elif unit.status == 'damaged' %}bg-red-100 text-red-800
+                                {% elif unit.status == 'expired' %}bg-gray-100 text-gray-800
+                                {% elif unit.status == 'quarantined' %}bg-purple-100 text-purple-800
+                                {% endif %}">
+                                {{ unit.get_status_display }}
+                            </span>
+                            {% if unit.quality_status != 'passed' %}
+                            <div class="mt-1">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                    {% if unit.quality_status == 'pending' %}bg-yellow-100 text-yellow-800
+                                    {% elif unit.quality_status == 'failed' %}bg-red-100 text-red-800
+                                    {% elif unit.quality_status == 'quarantined' %}bg-purple-100 text-purple-800
+                                    {% endif %}">
+                                    Quality: {{ unit.get_quality_status_display }}
+                                </span>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if unit.current_warehouse %}
+                                <div class="text-sm font-medium text-gray-900">{{ unit.current_warehouse.name }}</div>
+                                {% if unit.location_notes %}
+                                <div class="text-sm text-gray-500">{{ unit.location_notes }}</div>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-gray-400">Not assigned</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if unit.supplier %}
+                                <div class="text-sm font-medium text-gray-900">{{ unit.supplier.name }}</div>
+                            {% endif %}
+                            {% if unit.purchase_price %}
+                                <div class="text-sm text-gray-500">${{ unit.purchase_price }}</div>
+                            {% endif %}
+                            {% if unit.purchase_date %}
+                                <div class="text-xs text-gray-400">{{ unit.purchase_date|date:"M d, Y" }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if unit.manufacturing_date %}
+                                <div>Mfg: {{ unit.manufacturing_date|date:"M d, Y" }}</div>
+                            {% endif %}
+                            {% if unit.expiry_date %}
+                                <div class="{% if unit.expiry_date < today %}text-red-600{% elif unit.expiry_date <= month_from_now %}text-yellow-600{% endif %}">
+                                    Exp: {{ unit.expiry_date|date:"M d, Y" }}
+                                </div>
+                            {% endif %}
+                            {% if unit.warranty_expiry %}
+                                <div class="text-xs">Warranty: {{ unit.warranty_expiry|date:"M d, Y" }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-2">
+                                <a href="{% url 'products:tracking_detail' unit.id %}" class="text-blue-600 hover:text-blue-900" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'products:tracking_edit' unit.id %}" class="text-green-600 hover:text-green-900" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button onclick="printLabel({{ unit.id }})" class="text-purple-600 hover:text-purple-900" title="Print Label">
+                                    <i class="fas fa-print"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center">
+                            <div class="text-gray-400">
+                                <i class="fas fa-search text-6xl mb-4"></i>
+                                <p class="text-xl font-medium text-gray-500">No tracking units found</p>
+                                <p class="text-gray-400">Add your first tracking unit to get started</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Previous</a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Next</a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Showing <span class="font-medium">{{ page_obj.start_index }}</span> to <span class="font-medium">{{ page_obj.end_index }}</span> of <span class="font-medium">{{ page_obj.paginator.count }}</span> results
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">Previous</a>
+                        {% endif %}
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if num == page_obj.number %}
+                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">{{ num }}</span>
+                            {% else %}
+                            <a href="?page={{ num }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{{ num }}</a>
+                            {% endif %}
+                        {% endfor %}
+                        {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">Next</a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Tracking Detail Modal -->
+<div id="trackingDetailModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between pb-3 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Item Tracking Details</h3>
+                <button onclick="closeModal('trackingDetailModal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="trackingDetailContent" class="mt-6">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up event listeners
+    setupEventListeners();
+    
+    // Filter handlers
+    document.getElementById('productFilter').addEventListener('change', applyFilters);
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+    document.getElementById('warehouseFilter').addEventListener('change', applyFilters);
+    document.getElementById('generalSearch').addEventListener('input', applyFilters);
+});
+
+function setupEventListeners() {
+    // Modal close on backdrop click
+    const modals = ['trackingDetailModal'];
+    modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal(modalId);
+                }
+            });
+        }
+    });
+    
+    // Enter key for tracking search
+    document.getElementById('trackingNumber').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchTracking();
+        }
+    });
+}
+
+function openTrackingSearch() {
+    document.getElementById('trackingSearchPanel').classList.remove('hidden');
+    document.getElementById('trackingNumber').focus();
+}
+
+function closeTrackingSearch() {
+    document.getElementById('trackingSearchPanel').classList.add('hidden');
+    document.getElementById('trackingSearchResults').innerHTML = '';
+}
+
+async function searchTracking() {
+    const trackingType = document.getElementById('trackingType').value;
+    const trackingNumber = document.getElementById('trackingNumber').value.trim();
+    
+    if (!trackingNumber) {
+        alert('Please enter a tracking number');
+        return;
+    }
+    
+    const resultsDiv = document.getElementById('trackingSearchResults');
+    resultsDiv.innerHTML = `
+        <div class="text-center py-8">
+            <i class="fas fa-spinner fa-spin text-3xl text-purple-400"></i>
+            <p class="mt-2 text-gray-500">Searching for tracking number...</p>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch('/products/api/tracking/search/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                tracking_type: trackingType,
+                tracking_number: trackingNumber
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            displayTrackingResults(data);
+        } else {
+            throw new Error('Search failed');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        resultsDiv.innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-exclamation-triangle text-3xl text-red-400"></i>
+                <p class="mt-2 text-red-500">Error searching for tracking number</p>
+            </div>
+        `;
+    }
+}
+
+function displayTrackingResults(data) {
+    const resultsDiv = document.getElementById('trackingSearchResults');
+    
+    if (data.results && data.results.length > 0) {
+        let html = '<div class="border-t pt-4"><h4 class="text-lg font-semibold text-gray-900 mb-4">Search Results</h4>';
+        
+        data.results.forEach(item => {
+            html += `
+                <div class="bg-gray-50 rounded-lg p-6 mb-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Product Information -->
+                        <div>
+                            <h5 class="font-semibold text-gray-900 mb-3">Product Information</h5>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Product:</span>
+                                    <span class="font-medium">${item.product_name}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">SKU:</span>
+                                    <span class="font-medium">${item.product_sku}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Category:</span>
+                                    <span class="font-medium">${item.category || 'N/A'}</span>
+                                </div>
+                                ${item.variant_name ? `
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Variant:</span>
+                                    <span class="font-medium">${item.variant_name}</span>
+                                </div>` : ''}
+                            </div>
+                        </div>
+                        
+                        <!-- Tracking & Status -->
+                        <div>
+                            <h5 class="font-semibold text-gray-900 mb-3">Tracking & Status</h5>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Tracking Type:</span>
+                                    <span class="font-medium">${item.tracking_method}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Tracking Number:</span>
+                                    <span class="font-medium font-mono text-purple-600">${item.tracking_value}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Status:</span>
+                                    <span class="px-2 py-1 rounded text-xs font-medium ${getStatusClass(item.status)}">${item.status_display}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Quality:</span>
+                                    <span class="px-2 py-1 rounded text-xs font-medium ${getQualityClass(item.quality_status)}">${item.quality_status_display}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Purchase & Location -->
+                        <div>
+                            <h5 class="font-semibold text-gray-900 mb-3">Purchase & Location</h5>
+                            <div class="space-y-2 text-sm">
+                                ${item.supplier ? `
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Supplier:</span>
+                                    <span class="font-medium">${item.supplier}</span>
+                                </div>` : ''}
+                                ${item.purchase_price ? `
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Purchase Price:</span>
+                                    <span class="font-medium">$${item.purchase_price}</span>
+                                </div>` : ''}
+                                ${item.purchase_date ? `
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Purchase Date:</span>
+                                    <span class="font-medium">${item.purchase_date}</span>
+                                </div>` : ''}
+                                ${item.current_warehouse ? `
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Location:</span>
+                                    <span class="font-medium">${item.current_warehouse}</span>
+                                </div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Additional Information -->
+                    ${item.manufacturing_date || item.expiry_date || item.warranty_expiry ? `
+                    <div class="mt-4 pt-4 border-t">
+                        <h5 class="font-semibold text-gray-900 mb-3">Important Dates</h5>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            ${item.manufacturing_date ? `
+                            <div>
+                                <span class="text-gray-600">Manufacturing:</span>
+                                <span class="font-medium">${item.manufacturing_date}</span>
+                            </div>` : ''}
+                            ${item.expiry_date ? `
+                            <div>
+                                <span class="text-gray-600">Expiry:</span>
+                                <span class="font-medium">${item.expiry_date}</span>
+                            </div>` : ''}
+                            ${item.warranty_expiry ? `
+                            <div>
+                                <span class="text-gray-600">Warranty Expiry:</span>
+                                <span class="font-medium">${item.warranty_expiry}</span>
+                            </div>` : ''}
+                        </div>
+                    </div>` : ''}
+                    
+                    <!-- Actions -->
+                    <div class="mt-4 pt-4 border-t">
+                        <div class="flex space-x-3">
+                            <a href="/products/tracking/${item.id}/" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm">
+                                <i class="fas fa-eye mr-1"></i>View Details
+                            </a>
+                            <a href="/products/tracking/${item.id}/edit/" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 text-sm">
+                                <i class="fas fa-edit mr-1"></i>Edit
+                            </a>
+                            <button onclick="printLabel(${item.id})" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 text-sm">
+                                <i class="fas fa-print mr-1"></i>Print Label
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        resultsDiv.innerHTML = html;
+    } else {
+        resultsDiv.innerHTML = `
+            <div class="text-center py-8 border-t">
+                <i class="fas fa-search text-4xl text-gray-400 mb-4"></i>
+                <p class="text-lg font-medium text-gray-500">No tracking units found</p>
+                <p class="text-gray-400">Try checking the tracking number and type</p>
+            </div>
+        `;
+    }
+}
+
+function getStatusClass(status) {
+    const classes = {
+        'available': 'bg-green-100 text-green-800',
+        'sold': 'bg-blue-100 text-blue-800',
+        'returned': 'bg-yellow-100 text-yellow-800',
+        'damaged': 'bg-red-100 text-red-800',
+        'expired': 'bg-gray-100 text-gray-800',
+        'quarantined': 'bg-purple-100 text-purple-800'
+    };
+    return classes[status] || 'bg-gray-100 text-gray-800';
+}
+
+function getQualityClass(quality) {
+    const classes = {
+        'pending': 'bg-yellow-100 text-yellow-800',
+        'passed': 'bg-green-100 text-green-800',
+        'failed': 'bg-red-100 text-red-800',
+        'quarantined': 'bg-purple-100 text-purple-800'
+    };
+    return classes[quality] || 'bg-gray-100 text-gray-800';
+}
+
+function applyFilters() {
+    const product = document.getElementById('productFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    const warehouse = document.getElementById('warehouseFilter').value;
+    const search = document.getElementById('generalSearch').value.toLowerCase();
+    
+    const rows = document.querySelectorAll('tbody tr:not(.no-results)');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        let show = true;
+        
+        // Text search
+        if (search && !row.textContent.toLowerCase().includes(search)) {
+            show = false;
+        }
+        
+        // You can add more specific filtering logic here
+        
+        row.style.display = show ? '' : 'none';
+        if (show) visibleCount++;
+    });
+}
+
+function clearFilters() {
+    document.getElementById('productFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('warehouseFilter').value = '';
+    document.getElementById('generalSearch').value = '';
+    applyFilters();
+}
+
+function openModal(modalId) {
+    document.getElementById(modalId).classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+function printLabel(trackingId) {
+    // This would generate and print a label for the tracking unit
+    window.open(`/products/tracking/${trackingId}/label/`, '_blank');
+}
+</script>
+{% endblock %}

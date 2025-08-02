@@ -1,0 +1,1038 @@
+{% extends "base.html" %}
+{% block title %}Stock Items Management | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stock-level-low { color: #dc2626; }
+    .stock-level-medium { color: #d97706; }
+    .stock-level-good { color: #059669; }
+    .coa-integration {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Stock Items Management</h1>
+                <p class="text-gray-600">Track stock levels, movements, and asset valuations</p>
+            </div>
+            <div class="flex gap-4">
+                <button id="addStockItemBtn" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Add Stock Item
+                </button>
+                <button id="stockMovementBtn" class="action-btn bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                    </svg>
+                    Stock Movement
+                </button>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total Items</p>
+                        <p class="text-3xl font-bold text-green-800">{{ total_items }}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Active Items</p>
+                        <p class="text-3xl font-bold text-blue-800">{{ active_items }}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Low Stock</p>
+                        <p class="text-3xl font-bold text-red-800">{{ low_stock_count }}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-pink-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Ready for Sale</p>
+                        <p class="text-3xl font-bold text-purple-800">{{ ready_for_sale }}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total Quantity</p>
+                        <p class="text-3xl font-bold text-indigo-800">{{ total_quantity|floatformat:0 }}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <div class="flex flex-wrap gap-4">
+                <div class="flex-1 min-w-0">
+                    <input type="text" id="searchStock" placeholder="Search stock items..." 
+                           class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div>
+                    <select id="filterWarehouse" class="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Warehouses</option>
+                        {% for warehouse in warehouses %}
+                        <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <select id="filterCategory" class="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <select id="filterStatus" class="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Status</option>
+                        <option value="available">Available</option>
+                        <option value="locked">Locked</option>
+                        <option value="low_stock">Low Stock</option>
+                        <option value="out_of_stock">Out of Stock</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stock Items Table -->
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div class="overflow-x-auto">
+                <table id="stockItemsTable" class="min-w-full">
+                    <thead class="bg-gradient-to-r from-green-50 to-emerald-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Product</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Category</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Warehouse</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Quantity</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Available</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Cost</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-100">
+                        {% for stockitem in stockitems %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">{{ stockitem.product.name }}</div>
+                                        <div class="text-sm text-gray-500">{{ stockitem.product.sku|default:"N/A" }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    {{ stockitem.category.name|default:"Uncategorized" }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ stockitem.warehouse.name }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ stockitem.quantity|floatformat:2 }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <span class="{% if stockitem.available_quantity <= stockitem.min_stock %}stock-level-low{% elif stockitem.available_quantity <= stockitem.reorder_point %}stock-level-medium{% else %}stock-level-good{% endif %}">
+                                    {{ stockitem.available_quantity|floatformat:2 }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if stockitem.is_out_of_stock %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Out of Stock</span>
+                                {% elif stockitem.is_low_stock %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Low Stock</span>
+                                {% elif stockitem.locked_quantity > 0 %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">Partially Locked</span>
+                                {% else %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Available</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                ₨{{ stockitem.average_cost|floatformat:2 }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex space-x-2">
+                                    <button onclick="editStockItem({{ stockitem.id }})" class="text-indigo-600 hover:text-indigo-900">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                    </button>
+                                    <button onclick="viewStockItem({{ stockitem.id }})" class="text-green-600 hover:text-green-900">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                    </button>
+                                    <button onclick="deleteStockItem({{ stockitem.id }})" class="text-red-600 hover:text-red-900">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="px-6 py-12 text-center">
+                                <div class="text-gray-500">
+                                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293L17 15.586a1 1 0 01-.707.293h-4.586a1 1 0 01-.707-.293L9.293 13.707A1 1 0 008.586 13H6"></path>
+                                    </svg>
+                                    <h3 class="mt-2 text-sm font-medium text-gray-900">No stock items</h3>
+                                    <p class="mt-1 text-sm text-gray-500">Get started by creating a new stock item.</p>
+                                    <div class="mt-6">
+                                        <button onclick="openAddStockItemModal()" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                                            Add Stock Item
+                                        </button>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total Items</p>
+                        <p class="text-3xl font-bold text-green-800" id="totalItems">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Low Stock Alerts</p>
+                        <p class="text-3xl font-bold text-red-800" id="lowStockItems">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-pink-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total Value</p>
+                        <p class="text-3xl font-bold text-blue-800" id="totalValue">₨0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Warehouses</p>
+                        <p class="text-3xl font-bold text-purple-800" id="totalWarehouses">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="bg-white rounded-2xl shadow-lg mb-8">
+            <nav class="flex space-x-8 px-8 py-4" aria-label="Tabs">
+                <button id="stockItemsTab" class="tab-btn active whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    Stock Items
+                </button>
+                <button id="warehousesTab" class="tab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    Warehouses
+                </button>
+                <button id="movementsTab" class="tab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    Stock Movements
+                </button>
+                <button id="alertsTab" class="tab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    Stock Alerts
+                </button>
+            </nav>
+        </div>
+
+        <!-- Stock Items Tab Content -->
+        <div id="stockItemsContent" class="tab-content">
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-gradient-to-r from-green-50 to-emerald-50">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Item</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Category</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Stock Level</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Unit Cost</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Asset Account</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stockItemsTableBody" class="bg-white divide-y divide-gray-100">
+                            <!-- Stock items will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Warehouses Tab Content -->
+        <div id="warehousesContent" class="tab-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="warehousesGrid">
+                <!-- Warehouses will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Stock Movements Tab Content -->
+        <div id="movementsContent" class="tab-content hidden">
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-gradient-to-r from-blue-50 to-indigo-50">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-blue-800 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-blue-800 uppercase tracking-wider">Item</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-blue-800 uppercase tracking-wider">Type</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-blue-800 uppercase tracking-wider">Quantity</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-blue-800 uppercase tracking-wider">Warehouse</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-blue-800 uppercase tracking-wider">Reference</th>
+                            </tr>
+                        </thead>
+                        <tbody id="movementsTableBody" class="bg-white divide-y divide-gray-100">
+                            <!-- Movements will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stock Alerts Tab Content -->
+        <div id="alertsContent" class="tab-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="alertsGrid">
+                <!-- Alerts will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Item Modal -->
+<div id="stockItemModal" class="modal-overlay fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl">
+        <div class="p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="stockItemModalTitle" class="text-2xl font-bold text-green-800">Add Stock Item</h2>
+                <button id="closeStockItemModalBtn" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+
+            <form id="stockItemForm" class="space-y-6">
+                {% csrf_token %}
+                <input type="hidden" id="stockItemId" name="id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Item Name</label>
+                        <input type="text" id="itemName" name="name" required
+                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Item Code</label>
+                        <input type="text" id="itemCode" name="code"
+                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea id="itemDescription" name="description" rows="3"
+                              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                        <select id="itemCategory" name="category"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            <option value="">Select Category</option>
+                            <option value="Raw Materials">Raw Materials</option>
+                            <option value="Finished Goods">Finished Goods</option>
+                            <option value="Work in Progress">Work in Progress</option>
+                            <option value="Consumables">Consumables</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Unit</label>
+                        <select id="itemUnit" name="unit"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            <option value="pieces">Pieces</option>
+                            <option value="kg">Kilograms</option>
+                            <option value="liters">Liters</option>
+                            <option value="meters">Meters</option>
+                            <option value="boxes">Boxes</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Unit Cost (₨)</label>
+                        <input type="number" id="itemCost" name="unit_cost" step="0.01" min="0"
+                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Current Stock</label>
+                        <input type="number" id="currentStock" name="quantity_on_hand" min="0"
+                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Min. Stock Level</label>
+                        <input type="number" id="minStock" name="min_stock_level" min="0"
+                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Max. Stock Level</label>
+                        <input type="number" id="maxStock" name="max_stock_level" min="0"
+                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Asset Account</label>
+                    <select id="assetAccount" name="asset_account"
+                            class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        <option value="">Select Asset Account</option>
+                        <!-- Options will be populated via API -->
+                    </select>
+                </div>
+
+                <div id="stockItemFormError" class="text-red-600 text-sm hidden"></div>
+
+                <div class="flex gap-4">
+                    <button type="submit" class="flex-1 quick-action-btn text-white py-3 rounded-xl font-medium">
+                        Save Stock Item
+                    </button>
+                    <button type="button" id="cancelStockItemBtn" class="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Movement Modal -->
+<div id="stockMovementModal" class="modal-overlay fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl">
+        <div class="p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-blue-800">Record Stock Movement</h2>
+                <button id="closeMovementModalBtn" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+
+            <form id="stockMovementForm" class="space-y-6">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Stock Item</label>
+                        <select id="movementItem" name="item" required
+                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select Item</option>
+                            <!-- Options will be populated via API -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Movement Type</label>
+                        <select id="movementType" name="movement_type" required
+                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select Type</option>
+                            <option value="IN">Stock In</option>
+                            <option value="OUT">Stock Out</option>
+                            <option value="TRANSFER">Transfer</option>
+                            <option value="ADJUSTMENT">Adjustment</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                        <input type="number" id="movementQuantity" name="quantity" required min="0" step="0.01"
+                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Warehouse</label>
+                        <select id="movementWarehouse" name="warehouse"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select Warehouse</option>
+                            <!-- Options will be populated via API -->
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Reference/Notes</label>
+                    <textarea id="movementReference" name="reference" rows="3"
+                              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Purchase order, transfer reason, etc."></textarea>
+                </div>
+
+                <div id="movementFormError" class="text-red-600 text-sm hidden"></div>
+
+                <div class="flex gap-4">
+                    <button type="submit" class="flex-1 action-btn bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 rounded-xl font-medium">
+                        Record Movement
+                    </button>
+                    <button type="button" id="cancelMovementBtn" class="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let stockItems = [];
+    let warehouses = [];
+    let movements = [];
+    let alerts = [];
+    let assetAccounts = [];
+
+    // Tab functionality
+    const tabs = {
+        stockItems: { btn: 'stockItemsTab', content: 'stockItemsContent' },
+        warehouses: { btn: 'warehousesTab', content: 'warehousesContent' },
+        movements: { btn: 'movementsTab', content: 'movementsContent' },
+        alerts: { btn: 'alertsTab', content: 'alertsContent' }
+    };
+
+    function switchTab(activeTab) {
+        Object.keys(tabs).forEach(tab => {
+            const btn = document.getElementById(tabs[tab].btn);
+            const content = document.getElementById(tabs[tab].content);
+            
+            if (tab === activeTab) {
+                btn.classList.add('active', 'border-green-500', 'text-green-600');
+                btn.classList.remove('border-transparent', 'text-gray-500');
+                content.classList.remove('hidden');
+            } else {
+                btn.classList.remove('active', 'border-green-500', 'text-green-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+                content.classList.add('hidden');
+            }
+        });
+    }
+
+    // Event listeners for tabs
+    document.getElementById('stockItemsTab').addEventListener('click', () => {
+        switchTab('stockItems');
+        loadStockItems();
+    });
+    
+    document.getElementById('warehousesTab').addEventListener('click', () => {
+        switchTab('warehouses');
+        loadWarehouses();
+    });
+    
+    document.getElementById('movementsTab').addEventListener('click', () => {
+        switchTab('movements');
+        loadMovements();
+    });
+    
+    document.getElementById('alertsTab').addEventListener('click', () => {
+        switchTab('alerts');
+        loadAlerts();
+    });
+
+    // Modal functionality
+    const stockItemModal = document.getElementById('stockItemModal');
+    const stockMovementModal = document.getElementById('stockMovementModal');
+    
+    document.getElementById('addStockItemBtn').addEventListener('click', openStockItemModal);
+    document.getElementById('stockMovementBtn').addEventListener('click', openStockMovementModal);
+    document.getElementById('closeStockItemModalBtn').addEventListener('click', () => stockItemModal.classList.add('hidden'));
+    document.getElementById('closeMovementModalBtn').addEventListener('click', () => stockMovementModal.classList.add('hidden'));
+    document.getElementById('cancelStockItemBtn').addEventListener('click', () => stockItemModal.classList.add('hidden'));
+    document.getElementById('cancelMovementBtn').addEventListener('click', () => stockMovementModal.classList.add('hidden'));
+
+    document.getElementById('stockItemForm').addEventListener('submit', handleStockItemSubmit);
+    document.getElementById('stockMovementForm').addEventListener('submit', handleMovementSubmit);
+
+    function openStockItemModal() {
+        document.getElementById('stockItemModalTitle').textContent = 'Add Stock Item';
+        document.getElementById('stockItemForm').reset();
+        document.getElementById('stockItemId').value = '';
+        stockItemModal.classList.remove('hidden');
+    }
+
+    function openStockMovementModal() {
+        document.getElementById('stockMovementForm').reset();
+        populateItemsSelect();
+        populateWarehousesSelect();
+        stockMovementModal.classList.remove('hidden');
+    }
+
+    // API Functions
+    async function loadStockItems() {
+        try {
+            const response = await fetch('/api/inventory/stockitems/', {
+                headers: { 'Authorization': 'Token ' + getAuthToken() }
+            });
+            if (response.ok) {
+                stockItems = await response.json();
+                renderStockItems();
+                updateStatistics();
+            }
+        } catch (error) {
+            console.error('Error loading stock items:', error);
+        }
+    }
+
+    async function loadAssetAccounts() {
+        try {
+            const response = await fetch('/api/accounting/accounts/?account_type=Asset', {
+                headers: { 'Authorization': 'Token ' + getAuthToken() }
+            });
+            if (response.ok) {
+                assetAccounts = await response.json();
+                populateAssetAccountSelect();
+            }
+        } catch (error) {
+            console.error('Error loading asset accounts:', error);
+        }
+    }
+
+    async function loadWarehouses() {
+        try {
+            const response = await fetch('/api/inventory/warehouses/', {
+                headers: { 'Authorization': 'Token ' + getAuthToken() }
+            });
+            if (response.ok) {
+                warehouses = await response.json();
+                renderWarehouses();
+            }
+        } catch (error) {
+            console.error('Error loading warehouses:', error);
+        }
+    }
+
+    async function loadMovements() {
+        try {
+            const response = await fetch('/api/inventory/movements/', {
+                headers: { 'Authorization': 'Token ' + getAuthToken() }
+            });
+            if (response.ok) {
+                movements = await response.json();
+                renderMovements();
+            }
+        } catch (error) {
+            console.error('Error loading movements:', error);
+        }
+    }
+
+    async function loadAlerts() {
+        try {
+            const response = await fetch('/api/inventory/alerts/', {
+                headers: { 'Authorization': 'Token ' + getAuthToken() }
+            });
+            if (response.ok) {
+                alerts = await response.json();
+                renderAlerts();
+            }
+        } catch (error) {
+            console.error('Error loading alerts:', error);
+        }
+    }
+
+    // Render functions
+    function renderStockItems() {
+        const tbody = document.getElementById('stockItemsTableBody');
+        if (stockItems.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No stock items found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = stockItems.map(item => {
+            const stockLevel = getStockLevel(item);
+            return `
+                <tr class="hover:bg-green-50 transition-colors duration-200">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl flex items-center justify-center text-white font-bold text-sm mr-4">
+                                ${item.name.substring(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-900">${item.name}</div>
+                                <div class="text-sm text-gray-500">${item.code || 'No code'}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            ${item.category || 'Uncategorized'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm ${stockLevel.class}">${item.quantity_on_hand || 0} ${item.unit || 'pcs'}</div>
+                        <div class="text-xs text-gray-500">Min: ${item.min_stock_level || 0}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-900">₨${parseFloat(item.unit_cost || 0).toLocaleString()}</div>
+                        <div class="text-xs text-gray-500">Total: ₨${(parseFloat(item.unit_cost || 0) * parseFloat(item.quantity_on_hand || 0)).toLocaleString()}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            ${item.asset_account_name || 'No Account'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex space-x-2">
+                            <button onclick="editStockItem(${item.id})" class="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded-lg">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                            </button>
+                            <button onclick="deleteStockItem(${item.id})" class="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded-lg">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function getStockLevel(item) {
+        const current = parseFloat(item.quantity_on_hand || 0);
+        const min = parseFloat(item.min_stock_level || 0);
+        const max = parseFloat(item.max_stock_level || 100);
+        
+        if (current <= min) return { class: 'stock-level-low', level: 'Low' };
+        if (current <= max * 0.5) return { class: 'stock-level-medium', level: 'Medium' };
+        return { class: 'stock-level-good', level: 'Good' };
+    }
+
+    function renderWarehouses() {
+        const grid = document.getElementById('warehousesGrid');
+        grid.innerHTML = '<div class="col-span-full text-center py-8 text-gray-500">Warehouses feature coming soon</div>';
+    }
+
+    function renderMovements() {
+        const tbody = document.getElementById('movementsTableBody');
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">Stock movements feature coming soon</td></tr>';
+    }
+
+    function renderAlerts() {
+        const grid = document.getElementById('alertsGrid');
+        grid.innerHTML = '<div class="col-span-full text-center py-8 text-gray-500">Stock alerts feature coming soon</div>';
+    }
+
+    function updateStatistics() {
+        document.getElementById('totalItems').textContent = stockItems.length;
+        
+        const lowStockItems = stockItems.filter(item => {
+            const current = parseFloat(item.quantity_on_hand || 0);
+            const min = parseFloat(item.min_stock_level || 0);
+            return current <= min;
+        }).length;
+        document.getElementById('lowStockItems').textContent = lowStockItems;
+        
+        const totalValue = stockItems.reduce((sum, item) => {
+            return sum + (parseFloat(item.unit_cost || 0) * parseFloat(item.quantity_on_hand || 0));
+        }, 0);
+        document.getElementById('totalValue').textContent = '₨' + totalValue.toLocaleString();
+        
+        document.getElementById('totalWarehouses').textContent = warehouses.length;
+    }
+
+    function populateAssetAccountSelect() {
+        const select = document.getElementById('assetAccount');
+        select.innerHTML = '<option value="">Select Asset Account</option>';
+        assetAccounts.forEach(account => {
+            select.innerHTML += `<option value="${account.id}">${account.code} - ${account.name}</option>`;
+        });
+    }
+
+    function populateItemsSelect() {
+        const select = document.getElementById('movementItem');
+        select.innerHTML = '<option value="">Select Item</option>';
+        stockItems.forEach(item => {
+            select.innerHTML += `<option value="${item.id}">${item.name} (${item.code || 'No code'})</option>`;
+        });
+    }
+
+    function populateWarehousesSelect() {
+        const select = document.getElementById('movementWarehouse');
+        select.innerHTML = '<option value="">Select Warehouse</option>';
+        warehouses.forEach(warehouse => {
+            select.innerHTML += `<option value="${warehouse.id}">${warehouse.name}</option>`;
+        });
+    }
+
+    // Form handlers
+    async function handleStockItemSubmit(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const itemData = {
+            name: formData.get('name'),
+            code: formData.get('code'),
+            description: formData.get('description'),
+            category: formData.get('category'),
+            unit: formData.get('unit'),
+            unit_cost: parseFloat(formData.get('unit_cost')) || 0,
+            quantity_on_hand: parseFloat(formData.get('quantity_on_hand')) || 0,
+            min_stock_level: parseFloat(formData.get('min_stock_level')) || 0,
+            max_stock_level: parseFloat(formData.get('max_stock_level')) || 0,
+            asset_account: formData.get('asset_account') || null
+        };
+
+        const id = formData.get('id');
+        const isEdit = !!id;
+        if (isEdit) itemData.id = parseInt(id);
+
+        try {
+            const url = isEdit ? `/api/inventory/stockitems/${id}/` : '/api/inventory/stockitems/';
+            const method = isEdit ? 'PUT' : 'POST';
+            
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Authorization': 'Token ' + getAuthToken(),
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                body: JSON.stringify(itemData)
+            });
+
+            if (response.ok) {
+                stockItemModal.classList.add('hidden');
+                loadStockItems();
+                showSuccess(isEdit ? 'Stock item updated successfully' : 'Stock item added successfully');
+            } else {
+                const errorData = await response.json();
+                showError(errorData.message || 'Failed to save stock item');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showError('Error saving stock item');
+        }
+    }
+
+    async function handleMovementSubmit(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const movementData = {
+            item: formData.get('item'),
+            movement_type: formData.get('movement_type'),
+            quantity: parseFloat(formData.get('quantity')),
+            warehouse: formData.get('warehouse') || null,
+            reference: formData.get('reference')
+        };
+
+        try {
+            const response = await fetch('/api/inventory/movements/', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Token ' + getAuthToken(),
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                body: JSON.stringify(movementData)
+            });
+
+            if (response.ok) {
+                stockMovementModal.classList.add('hidden');
+                loadStockItems(); // Refresh stock levels
+                showSuccess('Stock movement recorded successfully');
+            } else {
+                const errorData = await response.json();
+                showError(errorData.message || 'Failed to record movement');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showError('Error recording movement');
+        }
+    }
+
+    // Global functions
+    window.editStockItem = function(id) {
+        const item = stockItems.find(i => i.id === id);
+        if (!item) return;
+
+        document.getElementById('stockItemModalTitle').textContent = 'Edit Stock Item';
+        document.getElementById('stockItemId').value = item.id;
+        document.getElementById('itemName').value = item.name;
+        document.getElementById('itemCode').value = item.code || '';
+        document.getElementById('itemDescription').value = item.description || '';
+        document.getElementById('itemCategory').value = item.category || '';
+        document.getElementById('itemUnit').value = item.unit || 'pieces';
+        document.getElementById('itemCost').value = item.unit_cost || '';
+        document.getElementById('currentStock').value = item.quantity_on_hand || '';
+        document.getElementById('minStock').value = item.min_stock_level || '';
+        document.getElementById('maxStock').value = item.max_stock_level || '';
+        document.getElementById('assetAccount').value = item.asset_account || '';
+        
+        stockItemModal.classList.remove('hidden');
+    };
+
+    window.deleteStockItem = async function(id) {
+        if (!confirm('Are you sure you want to delete this stock item?')) return;
+
+        try {
+            const response = await fetch(`/api/inventory/stockitems/${id}/`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Token ' + getAuthToken(),
+                    'X-CSRFToken': getCSRFToken()
+                }
+            });
+
+            if (response.ok) {
+                loadStockItems();
+                showSuccess('Stock item deleted successfully');
+            } else {
+                showError('Failed to delete stock item');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showError('Error deleting stock item');
+        }
+    };
+
+    // Utility functions
+    function getAuthToken() {
+        return localStorage.getItem('auth_token') || '';
+    }
+
+    function getCSRFToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    }
+
+    function showError(message) {
+        console.error(message);
+        // Create toast notification for error
+    }
+
+    function showSuccess(message) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Initialize
+    loadStockItems();
+    loadAssetAccounts();
+    loadWarehouses();
+});
+</script>
+
+<style>
+.tab-btn.active {
+    border-color: #10b981;
+    color: #10b981;
+}
+.tab-btn {
+    border-color: transparent;
+    color: #6b7280;
+    transition: all 0.3s ease;
+}
+.tab-btn:hover {
+    color: #10b981;
+}
+.modal-overlay {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,642 @@
+{% extends 'base.html' %}
+
+{% block title %}Physical Stock Count - Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">
+                        <i class="fas fa-clipboard-check"></i> Physical Stock Count
+                    </h3>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" data-toggle="modal" data-target="#startCountModal">
+                            <i class="fas fa-play"></i> Start Count
+                        </button>
+                        <button class="btn btn-info" onclick="generateCountSheet()">
+                            <i class="fas fa-file-export"></i> Generate Count Sheet
+                        </button>
+                        <button class="btn btn-success" data-toggle="modal" data-target="#importCountModal">
+                            <i class="fas fa-file-import"></i> Import Count
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Summary Stats -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info">
+                                    <i class="fas fa-clipboard-list"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Total Counts</span>
+                                    <span class="info-box-number">{{ total_counts|default:0 }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-warning">
+                                    <i class="fas fa-clock"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">In Progress</span>
+                                    <span class="info-box-number">{{ in_progress_counts|default:0 }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success">
+                                    <i class="fas fa-check"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Completed</span>
+                                    <span class="info-box-number">{{ completed_counts|default:0 }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-danger">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Variances</span>
+                                    <span class="info-box-number">{{ variance_counts|default:0 }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filter Controls -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <select class="form-control" id="statusFilter">
+                                <option value="">All Status</option>
+                                <option value="draft">Draft</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                                <option value="variance">Has Variance</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-control" id="warehouseFilter">
+                                <option value="">All Warehouses</option>
+                                {% for warehouse in warehouses %}
+                                <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-control" id="countTypeFilter">
+                                <option value="">All Types</option>
+                                <option value="full_count">Full Count</option>
+                                <option value="cycle_count">Cycle Count</option>
+                                <option value="spot_check">Spot Check</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-secondary btn-block" onclick="clearFilters()">
+                                <i class="fas fa-times"></i> Clear Filters
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Physical Counts Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="countsTable">
+                            <thead>
+                                <tr>
+                                    <th>Count ID</th>
+                                    <th>Count Type</th>
+                                    <th>Warehouse</th>
+                                    <th>Start Date</th>
+                                    <th>Items to Count</th>
+                                    <th>Items Counted</th>
+                                    <th>Variances</th>
+                                    <th>Status</th>
+                                    <th>Assigned To</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for count in physical_counts %}
+                                <tr class="{% if count.status == 'variance' %}table-warning{% elif count.status == 'completed' %}table-success{% endif %}">
+                                    <td>
+                                        <strong>{{ count.count_number|default:count.id }}</strong>
+                                        {% if count.is_cycle_count %}
+                                            <br><small class="badge badge-info">Cycle</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{% if count.count_type == 'full_count' %}primary{% elif count.count_type == 'cycle_count' %}info{% else %}secondary{% endif %}">
+                                            {{ count.get_count_type_display|default:count.count_type|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {{ count.warehouse.name }}
+                                        {% if count.zone %}
+                                            <br><small class="text-muted">Zone: {{ count.zone.name }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ count.start_date|date:"M d, Y" }}
+                                        {% if count.target_completion_date %}
+                                            <br><small class="text-muted">Target: {{ count.target_completion_date|date:"M d" }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ count.total_items|default:0 }}</td>
+                                    <td>
+                                        {{ count.counted_items|default:0 }}
+                                        {% if count.total_items %}
+                                            <br><small class="text-muted">{{ count.counted_items|default:0|div:count.total_items|mul:100|floatformat:0 }}% complete</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if count.variance_items %}
+                                            <span class="badge badge-warning">{{ count.variance_items }}</span>
+                                            <br><small class="text-muted">${{ count.variance_value|default:0|floatformat:2 }}</small>
+                                        {% else %}
+                                            <span class="text-muted">None</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if count.status == 'draft' %}
+                                            <span class="badge badge-secondary">Draft</span>
+                                        {% elif count.status == 'in_progress' %}
+                                            <span class="badge badge-warning">In Progress</span>
+                                        {% elif count.status == 'completed' %}
+                                            <span class="badge badge-success">Completed</span>
+                                        {% elif count.status == 'variance' %}
+                                            <span class="badge badge-danger">Has Variance</span>
+                                        {% else %}
+                                            <span class="badge badge-info">{{ count.status|title }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% for user in count.assigned_users.all %}
+                                            {{ user.get_full_name|default:user.email }}
+                                            {% if not forloop.last %}<br>{% endif %}
+                                        {% empty %}
+                                            <span class="text-muted">Unassigned</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-info btn-sm" onclick="viewCount({{ count.id }})" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            {% if count.status == 'draft' or count.status == 'in_progress' %}
+                                            <button class="btn btn-primary btn-sm" onclick="editCount({{ count.id }})" title="Edit/Continue">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% if count.status == 'in_progress' %}
+                                            <button class="btn btn-success btn-sm" onclick="completeCount({{ count.id }})" title="Complete Count">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% if count.variance_items %}
+                                            <button class="btn btn-warning btn-sm" onclick="reviewVariances({{ count.id }})" title="Review Variances">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="10" class="text-center text-muted">
+                                        <i class="fas fa-clipboard-check fa-3x mb-3"></i>
+                                        <p>No physical counts found</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Start Count Modal -->
+<div class="modal fade" id="startCountModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Start Physical Count</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <form id="startCountForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Count Type</label>
+                                <select name="count_type" class="form-control" required>
+                                    <option value="">Select Type</option>
+                                    <option value="full_count">Full Warehouse Count</option>
+                                    <option value="cycle_count">Cycle Count</option>
+                                    <option value="spot_check">Spot Check</option>
+                                    <option value="category_count">Category Count</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Warehouse</label>
+                                <select name="warehouse" class="form-control" required>
+                                    <option value="">Select Warehouse</option>
+                                    {% for warehouse in warehouses %}
+                                    <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row" id="cycleCountOptions" style="display: none;">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Zone (Optional)</label>
+                                <select name="zone" class="form-control">
+                                    <option value="">All Zones</option>
+                                    <!-- Zones will be loaded dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Category (Optional)</label>
+                                <select name="category" class="form-control">
+                                    <option value="">All Categories</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Start Date</label>
+                                <input type="date" name="start_date" class="form-control" value="{{ today|date:'Y-m-d' }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Target Completion Date</label>
+                                <input type="date" name="target_completion_date" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Assign to Users</label>
+                        <select name="assigned_users" class="form-control select2" multiple>
+                            {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.get_full_name|default:user.email }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Count Instructions</label>
+                        <textarea name="instructions" class="form-control" rows="3" placeholder="Special instructions for count team..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" name="freeze_transactions" class="form-check-input" id="freezeTransactions">
+                            <label class="form-check-label" for="freezeTransactions">
+                                Freeze stock transactions during count
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" name="include_zero_stock" class="form-check-input" id="includeZeroStock">
+                            <label class="form-check-label" for="includeZeroStock">
+                                Include zero stock items
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Start Count</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Import Count Modal -->
+<div class="modal fade" id="importCountModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Import Count Results</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <form id="importCountForm" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Count Session</label>
+                        <select name="count_session" class="form-control" required>
+                            <option value="">Select Count Session</option>
+                            {% for count in in_progress_counts %}
+                            <option value="{{ count.id }}">{{ count.count_number|default:count.id }} - {{ count.warehouse.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Count Results File (CSV/Excel)</label>
+                        <input type="file" name="count_file" class="form-control-file" accept=".csv,.xlsx,.xls" required>
+                        <small class="text-muted">File should contain: Product SKU, Counted Quantity, Notes</small>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" name="validate_only" class="form-check-input" id="validateOnly">
+                            <label class="form-check-label" for="validateOnly">
+                                Validate only (don't import)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Import Count</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Count Details Modal -->
+<div class="modal fade" id="countDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Count Details</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body" id="countDetailsContent">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Variance Review Modal -->
+<div class="modal fade" id="varianceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Review Variances</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body" id="varianceContent">
+                <!-- Content loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-warning" onclick="approveVariances()">Approve All Variances</button>
+                <button type="button" class="btn btn-success" onclick="createAdjustments()">Create Adjustments</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize DataTable
+    $('#countsTable').DataTable({
+        order: [[3, 'desc']], // Sort by start date descending
+        pageLength: 25,
+        responsive: true,
+        columnDefs: [
+            { orderable: false, targets: [9] } // Actions column
+        ]
+    });
+
+    // Initialize Select2
+    $('.select2').select2({
+        theme: 'bootstrap4'
+    });
+
+    // Show/hide cycle count options
+    $('select[name="count_type"]').on('change', function() {
+        if ($(this).val() === 'cycle_count' || $(this).val() === 'category_count') {
+            $('#cycleCountOptions').show();
+        } else {
+            $('#cycleCountOptions').hide();
+        }
+    });
+
+    // Handle start count form submission
+    $('#startCountForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        // In a real implementation, submit to backend
+        alert('Physical count started successfully');
+        $('#startCountModal').modal('hide');
+        location.reload();
+    });
+
+    // Handle import count form submission
+    $('#importCountForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const file = $('input[name="count_file"]')[0].files[0];
+        if (!file) {
+            alert('Please select a file to import');
+            return;
+        }
+        
+        // In a real implementation, submit to backend
+        alert('Count results imported successfully');
+        $('#importCountModal').modal('hide');
+        location.reload();
+    });
+
+    // Filter functionality
+    $('#statusFilter, #warehouseFilter, #countTypeFilter').on('change', function() {
+        applyFilters();
+    });
+});
+
+function applyFilters() {
+    const table = $('#countsTable').DataTable();
+    const status = $('#statusFilter').val();
+    const warehouse = $('#warehouseFilter').val();
+    const countType = $('#countTypeFilter').val();
+    
+    // In real implementation, would filter server-side
+    table.draw();
+}
+
+function clearFilters() {
+    $('#statusFilter, #warehouseFilter, #countTypeFilter').val('');
+    $('#countsTable').DataTable().draw();
+}
+
+function viewCount(countId) {
+    $('#countDetailsContent').html('<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</div>');
+    $('#countDetailsModal').modal('show');
+    
+    // In real implementation, load from backend
+    setTimeout(() => {
+        $('#countDetailsContent').html(`
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>Count Information</h5>
+                    <table class="table table-sm">
+                        <tr><td><strong>Count ID:</strong></td><td>#${countId}</td></tr>
+                        <tr><td><strong>Type:</strong></td><td>Full Count</td></tr>
+                        <tr><td><strong>Warehouse:</strong></td><td>Main Warehouse</td></tr>
+                        <tr><td><strong>Status:</strong></td><td><span class="badge badge-warning">In Progress</span></td></tr>
+                    </table>
+                </div>
+                <div class="col-md-4">
+                    <h5>Progress</h5>
+                    <table class="table table-sm">
+                        <tr><td><strong>Items to Count:</strong></td><td>150</td></tr>
+                        <tr><td><strong>Items Counted:</strong></td><td>75</td></tr>
+                        <tr><td><strong>Progress:</strong></td><td>50%</td></tr>
+                        <tr><td><strong>Variances:</strong></td><td>3</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-4">
+                    <h5>Timeline</h5>
+                    <table class="table table-sm">
+                        <tr><td><strong>Started:</strong></td><td>Jan 15, 2024</td></tr>
+                        <tr><td><strong>Target:</strong></td><td>Jan 20, 2024</td></tr>
+                        <tr><td><strong>Assigned:</strong></td><td>John Doe, Jane Smith</td></tr>
+                    </table>
+                </div>
+            </div>
+            <div class="mt-4">
+                <h5>Count Items</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr><th>Product</th><th>System Qty</th><th>Counted Qty</th><th>Variance</th><th>Status</th><th>Counter</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Product A</td><td>100</td><td>98</td><td class="text-danger">-2</td><td><span class="badge badge-warning">Variance</span></td><td>John Doe</td></tr>
+                            <tr><td>Product B</td><td>50</td><td>50</td><td class="text-success">0</td><td><span class="badge badge-success">Match</span></td><td>Jane Smith</td></tr>
+                            <tr><td>Product C</td><td>25</td><td>-</td><td>-</td><td><span class="badge badge-secondary">Pending</span></td><td>-</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `);
+    }, 1000);
+}
+
+function editCount(countId) {
+    window.location.href = `/inventory/count/${countId}/edit/`;
+}
+
+function completeCount(countId) {
+    if (confirm('Are you sure you want to complete this count?')) {
+        alert('Count completed successfully');
+        location.reload();
+    }
+}
+
+function reviewVariances(countId) {
+    $('#varianceContent').html('<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</div>');
+    $('#varianceModal').modal('show');
+    
+    // In real implementation, load variances from backend
+    setTimeout(() => {
+        $('#varianceContent').html(`
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>System Qty</th>
+                            <th>Counted Qty</th>
+                            <th>Variance</th>
+                            <th>Value Impact</th>
+                            <th>Reason</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Product A</td>
+                            <td>100</td>
+                            <td>98</td>
+                            <td class="text-danger">-2</td>
+                            <td class="text-danger">-$50.00</td>
+                            <td>
+                                <select class="form-control form-control-sm">
+                                    <option>Theft/Loss</option>
+                                    <option>Damage</option>
+                                    <option>Counting Error</option>
+                                    <option>System Error</option>
+                                </select>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-success btn-sm">Accept</button>
+                                    <button class="btn btn-warning btn-sm">Recount</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Product B</td>
+                            <td>75</td>
+                            <td>77</td>
+                            <td class="text-success">+2</td>
+                            <td class="text-success">+$30.00</td>
+                            <td>
+                                <select class="form-control form-control-sm">
+                                    <option>Found Stock</option>
+                                    <option>Counting Error</option>
+                                    <option>System Error</option>
+                                </select>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-success btn-sm">Accept</button>
+                                    <button class="btn btn-warning btn-sm">Recount</button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        `);
+    }, 1000);
+}
+
+function generateCountSheet() {
+    // In real implementation, generate and download count sheet
+    alert('Count sheet generated and downloaded');
+}
+
+function approveVariances() {
+    if (confirm('Approve all variances and create stock adjustments?')) {
+        alert('All variances approved and adjustments created');
+        $('#varianceModal').modal('hide');
+        location.reload();
+    }
+}
+
+function createAdjustments() {
+    if (confirm('Create stock adjustments for approved variances?')) {
+        alert('Stock adjustments created successfully');
+        $('#varianceModal').modal('hide');
+        location.reload();
+    }
+}
+</script>
+{% endblock %}

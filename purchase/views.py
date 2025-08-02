@@ -1044,12 +1044,52 @@ def grn_ui(request):
 
 @login_required
 def grn_detail(request, pk):
-    """GRN detail view"""
+    """Enhanced GRN detail view with inventory status"""
     grn = get_object_or_404(GoodsReceiptNote, pk=pk, company=request.user.company)
+    
+    # Get GRN items with inventory status
+    items = grn.items.select_related('product', 'warehouse').all()
+    
+    # Get inventory locks for this GRN
+    from .models import GRNInventoryLock
+    inventory_locks = GRNInventoryLock.objects.filter(
+        grn=grn,
+        is_active=True
+    ).select_related('grn_item__product')
+    
+    # Get bills related to this GRN
+    bills = grn.bills.all()
+    
+    # Check if inventory items are ready for use
+    try:
+        from inventory.models import StockItem
+        inventory_status = {}
+        for item in items:
+            if item.product and item.product.is_stockable:
+                stock_items = StockItem.objects.filter(
+                    company=request.user.company,
+                    product=item.product,
+                    warehouse=item.warehouse or grn.warehouse
+                )
+                
+                total_locked = sum(si.locked_quantity for si in stock_items)
+                total_available = sum(si.available_quantity for si in stock_items)
+                
+                inventory_status[item.id] = {
+                    'locked_qty': total_locked,
+                    'available_qty': total_available,
+                    'status': 'Available' if total_available > 0 else ('Locked' if total_locked > 0 else 'Unknown')
+                }
+    except ImportError:
+        inventory_status = {}
     
     context = {
         'grn': grn,
-        'items': grn.items.all(),
+        'items': items,
+        'inventory_locks': inventory_locks,
+        'bills': bills,
+        'inventory_status': inventory_status,
+        'can_create_bill': grn.status in ['received', 'completed'] and not bills.exists(),
     }
     
     return render(request, 'purchase/grn-detail.html', context)
@@ -1613,14 +1653,61 @@ def bills_ui(request):
 
 @login_required
 def bill_detail(request, pk):
-    """Bill detail view"""
+    """Enhanced Bill detail view with inventory unlock status"""
     bill = get_object_or_404(Bill, pk=pk, company=request.user.company)
+    
+    # Get bill items with inventory status
+    items = bill.items.select_related('product', 'grn_item').all()
+    
+    # Check inventory unlock status
+    inventory_status = {}
+    unlocked_items = []
+    
+    if bill.grn:
+        from .models import GRNInventoryLock
+        
+        # Get locks that were released for this bill
+        released_locks = GRNInventoryLock.objects.filter(
+            grn=bill.grn,
+            released_for_bill=bill,
+            is_released=True
+        ).select_related('grn_item__product')
+        
+        unlocked_items = [lock.grn_item for lock in released_locks]
+        
+        # Check current inventory status
+        try:
+            from inventory.models import StockItem
+            for item in items:
+                if item.product and item.product.is_stockable:
+                    stock_items = StockItem.objects.filter(
+                        company=request.user.company,
+                        product=item.product
+                    )
+                    
+                    total_quantity = sum(si.quantity for si in stock_items)
+                    total_available = sum(si.available_quantity for si in stock_items)
+                    total_locked = sum(si.locked_quantity for si in stock_items)
+                    
+                    inventory_status[item.id] = {
+                        'total_qty': total_quantity,
+                        'available_qty': total_available,
+                        'locked_qty': total_locked,
+                        'purchase_status': stock_items.first().purchase_status if stock_items.exists() else 'unknown',
+                        'ready_for_use': total_available > 0,
+                    }
+        except ImportError:
+            pass
     
     context = {
         'bill': bill,
-        'items': bill.items.all(),
+        'items': items,
         'payments': bill.payments.all(),
+        'inventory_status': inventory_status,
+        'unlocked_items': unlocked_items,
+        'grn_linked': bool(bill.grn),
         'can_approve': request.user.has_perm('purchase.approve_bill'),
+        'can_unlock_inventory': bill.status == 'approved' and bill.grn and not unlocked_items,
     }
     
     return render(request, 'purchase/bill-detail.html', context)

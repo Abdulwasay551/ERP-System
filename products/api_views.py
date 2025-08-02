@@ -1,7 +1,11 @@
 from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from django.db.models import Q, Count
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+import json
 from .models import Product, ProductCategory, ProductVariant, ProductTracking, Attribute, AttributeValue, ProductAttribute
 from .serializers import (
     ProductSerializer, ProductCategorySerializer, ProductVariantSerializer, 
@@ -382,3 +386,103 @@ class ProductAttributeViewSet(viewsets.ModelViewSet):
         attributes = self.get_queryset().filter(product_id=product_id)
         serializer = self.get_serializer(attributes, many=True)
         return Response(serializer.data)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def tracking_search(request):
+    """
+    Search for tracking units by tracking number
+    """
+    try:
+        data = json.loads(request.body)
+        tracking_type = data.get('tracking_type', '')
+        tracking_number = data.get('tracking_number', '').strip()
+        
+        if not tracking_number:
+            return JsonResponse({'error': 'Tracking number is required'}, status=400)
+        
+        # Build query based on tracking type
+        query = Q()
+        
+        if tracking_type == 'serial':
+            query = Q(serial_number__icontains=tracking_number)
+        elif tracking_type == 'imei':
+            query = Q(imei_number__icontains=tracking_number)
+        elif tracking_type == 'barcode':
+            query = Q(barcode__icontains=tracking_number)
+        elif tracking_type == 'batch':
+            query = Q(batch_number__icontains=tracking_number)
+        else:
+            # Auto-detect: search all fields
+            query = (
+                Q(serial_number__icontains=tracking_number) |
+                Q(imei_number__icontains=tracking_number) |
+                Q(barcode__icontains=tracking_number) |
+                Q(batch_number__icontains=tracking_number)
+            )
+        
+        # Filter by company
+        tracking_units = ProductTracking.objects.filter(
+            query,
+            product__company=request.user.company
+        ).select_related(
+            'product', 
+            'variant', 
+            'supplier', 
+            'current_warehouse'
+        ).order_by('-created_at')[:20]  # Limit to 20 results
+        
+        results = []
+        for unit in tracking_units:
+            # Determine tracking method and value
+            tracking_method = 'Unknown'
+            tracking_value = ''
+            
+            if unit.serial_number:
+                tracking_method = 'Serial Number'
+                tracking_value = unit.serial_number
+            elif unit.imei_number:
+                tracking_method = 'IMEI Number'
+                tracking_value = unit.imei_number
+            elif unit.barcode:
+                tracking_method = 'Barcode'
+                tracking_value = unit.barcode
+            elif unit.batch_number:
+                tracking_method = 'Batch Number'
+                tracking_value = unit.batch_number
+            
+            result = {
+                'id': unit.id,
+                'product_name': unit.product.name,
+                'product_sku': unit.product.sku,
+                'category': unit.product.category.name if unit.product.category else None,
+                'variant_name': unit.variant.name if unit.variant else None,
+                'tracking_method': tracking_method,
+                'tracking_value': tracking_value,
+                'status': unit.status,
+                'status_display': unit.get_status_display(),
+                'quality_status': unit.quality_status,
+                'quality_status_display': unit.get_quality_status_display(),
+                'supplier': unit.supplier.name if unit.supplier else None,
+                'purchase_price': str(unit.purchase_price) if unit.purchase_price else None,
+                'purchase_date': unit.purchase_date.strftime('%b %d, %Y') if unit.purchase_date else None,
+                'current_warehouse': unit.current_warehouse.name if unit.current_warehouse else None,
+                'manufacturing_date': unit.manufacturing_date.strftime('%b %d, %Y') if unit.manufacturing_date else None,
+                'expiry_date': unit.expiry_date.strftime('%b %d, %Y') if unit.expiry_date else None,
+                'warranty_expiry': unit.warranty_expiry.strftime('%b %d, %Y') if unit.warranty_expiry else None,
+                'location_notes': unit.location_notes,
+            }
+            results.append(result)
+        
+        return JsonResponse({
+            'success': True,
+            'results': results,
+            'count': len(results)
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

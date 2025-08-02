@@ -1,0 +1,410 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ stockitem.product.name }} - Stock Details{% endblock %}
+
+{% block extra_css %}
+<style>
+.info-card {
+    border-radius: 8px;
+    border: 1px solid #e3e6f0;
+    transition: all 0.3s;
+}
+
+.purchase-status-badge {
+    font-size: 0.85rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.locked-item { background-color: #fff3cd; border-left: 4px solid #ffc107; }
+.available-item { background-color: #d4edda; border-left: 4px solid #28a745; }
+.ready-item { background-color: #cce8ff; border-left: 4px solid #007bff; }
+
+.movement-in { color: #28a745; }
+.movement-out { color: #dc3545; }
+.movement-adjustment { color: #6610f2; }
+
+.progress-custom {
+    height: 20px;
+    border-radius: 10px;
+}
+
+.lock-indicator {
+    background: linear-gradient(45deg, #ffc107, #fd7e14);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+.available-indicator {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'inventory_dashboard' %}">Inventory</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'inventory_stockitems_ui' %}">Stock Items</a></li>
+                    <li class="breadcrumb-item active">{{ stockitem.product.name }}</li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="fas fa-box text-primary"></i> {{ stockitem.product.name }}
+            </h1>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'inventory_stockitems_ui' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+            <a href="{% url 'inventory_stockitems_edit' stockitem.pk %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+        </div>
+    </div>
+
+    <!-- Stock Item Overview -->
+    <div class="row mb-4">
+        <div class="col-xl-8">
+            <div class="card shadow info-card">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Stock Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Product:</strong></td>
+                                    <td>{{ stockitem.product.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Warehouse:</strong></td>
+                                    <td>{{ stockitem.warehouse.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Category:</strong></td>
+                                    <td>{{ stockitem.category.name|default:"No category" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        {% if stockitem.is_active %}
+                                            <span class="badge badge-success">Active</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Purchase Status:</strong></td>
+                                    <td>
+                                        <span class="badge purchase-status-badge 
+                                            {% if stockitem.purchase_status == 'ready_for_use' %}badge-success
+                                            {% elif stockitem.purchase_status == 'pending_quality_check' %}badge-warning
+                                            {% elif stockitem.purchase_status == 'rejected' %}badge-danger
+                                            {% else %}badge-info{% endif %}">
+                                            {{ stockitem.get_purchase_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Stock Status:</strong></td>
+                                    <td>
+                                        {% if stockitem.stock_status == 'locked' %}
+                                            <span class="lock-indicator">
+                                                <i class="fas fa-lock"></i> Locked
+                                            </span>
+                                        {% else %}
+                                            <span class="available-indicator">
+                                                <i class="fas fa-check"></i> Available
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Average Cost:</strong></td>
+                                    <td>₹{{ stockitem.average_cost|floatformat:2 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Last Movement:</strong></td>
+                                    <td>
+                                        {% if stockitem.last_movement_date %}
+                                            {{ stockitem.last_movement_date|date:"M d, Y H:i" }}
+                                        {% else %}
+                                            No movements yet
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quantity Breakdown -->
+        <div class="col-xl-4">
+            <div class="card shadow info-card">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quantity Breakdown</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span><strong>Total Quantity:</strong></span>
+                            <span class="badge badge-primary badge-lg">{{ stockitem.quantity }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span>Available:</span>
+                            <span class="text-success">{{ stockitem.available_quantity }}</span>
+                        </div>
+                        <div class="progress progress-custom mb-2">
+                            <div class="progress-bar bg-success" style="width: {{ available_percentage }}%"></div>
+                        </div>
+                    </div>
+
+                    {% if stockitem.locked_quantity > 0 %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span>Locked:</span>
+                            <span class="text-warning">{{ stockitem.locked_quantity }}</span>
+                        </div>
+                        <div class="progress progress-custom mb-2">
+                            <div class="progress-bar bg-warning" style="width: {{ locked_percentage }}%"></div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span>Min Stock Level:</span>
+                            <span class="{% if stockitem.quantity <= stockitem.min_stock %}text-danger{% else %}text-muted{% endif %}">
+                                {{ stockitem.min_stock }}
+                            </span>
+                        </div>
+                        {% if stockitem.quantity <= stockitem.min_stock %}
+                            <small class="text-danger">
+                                <i class="fas fa-exclamation-triangle"></i> Below minimum stock level!
+                            </small>
+                        {% endif %}
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <div class="row">
+                            <div class="col-6">
+                                <span class="d-block text-muted small">For Sale</span>
+                                <span class="{% if stockitem.suitable_for_sale %}text-success{% else %}text-muted{% endif %}">
+                                    {% if stockitem.suitable_for_sale %}
+                                        <i class="fas fa-check"></i> Yes
+                                    {% else %}
+                                        <i class="fas fa-times"></i> No
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="col-6">
+                                <span class="d-block text-muted small">For Manufacturing</span>
+                                <span class="{% if stockitem.suitable_for_manufacturing %}text-success{% else %}text-muted{% endif %}">
+                                    {% if stockitem.suitable_for_manufacturing %}
+                                        <i class="fas fa-check"></i> Yes
+                                    {% else %}
+                                        <i class="fas fa-times"></i> No
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Purchase Integration Information -->
+    {% if purchase_info %}
+    <div class="row mb-4">
+        <!-- Current Locks -->
+        {% if purchase_info.current_locks %}
+        <div class="col-xl-6">
+            <div class="card shadow info-card">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-lock"></i> Current Inventory Locks
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>GRN</th>
+                                    <th>Lock Reason</th>
+                                    <th>Locked Qty</th>
+                                    <th>Date Locked</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lock in purchase_info.current_locks %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'purchase_grn_detail' lock.grn.id %}" class="text-decoration-none">
+                                            {{ lock.grn.grn_number }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-warning">
+                                            {{ lock.get_lock_reason_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ lock.locked_quantity }}</td>
+                                    <td>{{ lock.locked_date|date:"M d, Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- GRN History -->
+        {% if purchase_info.grn_history %}
+        <div class="col-xl-6">
+            <div class="card shadow info-card">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-history"></i> Recent GRN History
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>GRN</th>
+                                    <th>PO</th>
+                                    <th>Received Qty</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for grn_item in purchase_info.grn_history %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'purchase_grn_detail' grn_item.grn.id %}" class="text-decoration-none">
+                                            {{ grn_item.grn.grn_number }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {% if grn_item.grn.purchase_order %}
+                                            <a href="{% url 'purchase_order_detail' grn_item.grn.purchase_order.id %}" class="text-decoration-none">
+                                                {{ grn_item.grn.purchase_order.po_number }}
+                                            </a>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ grn_item.received_quantity }}</td>
+                                    <td>{{ grn_item.grn.received_date|date:"M d, Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Stock Movements -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-exchange-alt"></i> Recent Stock Movements
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if movements %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Movement Type</th>
+                                        <th>Quantity</th>
+                                        <th>Unit Cost</th>
+                                        <th>Total Value</th>
+                                        <th>Reference</th>
+                                        <th>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for movement in movements %}
+                                    <tr>
+                                        <td>{{ movement.timestamp|date:"M d, Y H:i" }}</td>
+                                        <td>
+                                            <span class="badge badge-{% if movement.movement_type == 'in' %}success{% elif movement.movement_type == 'out' %}warning{% else %}info{% endif %}">
+                                                <i class="fas fa-{% if movement.movement_type == 'in' %}arrow-down{% elif movement.movement_type == 'out' %}arrow-up{% else %}exchange-alt{% endif %}"></i>
+                                                {{ movement.get_movement_type_display }}
+                                            </span>
+                                        </td>
+                                        <td class="movement-{{ movement.movement_type }}">
+                                            {% if movement.movement_type == 'in' %}+{% elif movement.movement_type == 'out' %}-{% endif %}{{ movement.quantity }}
+                                        </td>
+                                        <td>₹{{ movement.unit_cost|floatformat:2 }}</td>
+                                        <td>₹{{ movement.total_value|floatformat:2 }}</td>
+                                        <td>{{ movement.reference_number|default:"-" }}</td>
+                                        <td>{{ movement.notes|default:"-" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No stock movements recorded yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+    
+    // Auto-refresh data every 2 minutes
+    setTimeout(function() {
+        location.reload();
+    }, 120000);
+});
+</script>
+{% endblock %}

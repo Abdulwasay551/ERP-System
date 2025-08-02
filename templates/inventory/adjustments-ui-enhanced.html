@@ -1,0 +1,577 @@
+{% extends "base.html" %}
+{% load static %}
+{% csrf_token %}
+{% block title %}Stock Adjustments | ERP System{% endblock %}
+{% block content %}
+<!-- Stock Adjustments Management -->
+<div class="mt-16 p-8">
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+            </svg>
+            <span class="text-blue-800 font-medium">Stock Adjustments System:</span>
+            <span class="text-blue-700 ml-2">Manage inventory adjustments with proper approval workflows</span>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Stock Adjustments</h1>
+            <p class="text-gray-600 mt-2">Track and manage all inventory adjustments</p>
+        </div>
+        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mt-4 lg:mt-0">
+            <button onclick="openCreateAdjustmentModal()" class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md">
+                <i class="fas fa-plus mr-2"></i>New Adjustment
+            </button>
+            <button onclick="exportAdjustments()" class="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md">
+                <i class="fas fa-download mr-2"></i>Export
+            </button>
+            <button onclick="showBulkAdjustment()" class="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-md">
+                <i class="fas fa-layer-group mr-2"></i>Bulk Adjustment
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">Total</p>
+                    <p class="text-3xl font-bold">{{ total_adjustments }}</p>
+                </div>
+                <svg class="w-12 h-12 text-blue-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-yellow-100">Pending</p>
+                    <p class="text-3xl font-bold">{{ pending_adjustments }}</p>
+                </div>
+                <svg class="w-12 h-12 text-yellow-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-100">Draft</p>
+                    <p class="text-3xl font-bold">{{ draft_adjustments }}</p>
+                </div>
+                <svg class="w-12 h-12 text-gray-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100">Posted</p>
+                    <p class="text-3xl font-bold">{{ posted_adjustments }}</p>
+                </div>
+                <svg class="w-12 h-12 text-green-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100">Today</p>
+                    <p class="text-3xl font-bold">{{ today_adjustments }}</p>
+                </div>
+                <svg class="w-12 h-12 text-purple-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-indigo-100">Net Impact</p>
+                    <p class="text-2xl font-bold {% if net_value_impact >= 0 %}text-green-200{% else %}text-red-200{% endif %}">
+                        ${{ net_value_impact|floatformat:0 }}
+                    </p>
+                </div>
+                <svg class="w-12 h-12 text-indigo-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                <input type="text" id="searchInput" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" placeholder="Reference, reason...">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select id="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All Status</option>
+                    <option value="draft">Draft</option>
+                    <option value="pending_approval">Pending Approval</option>
+                    <option value="approved">Approved</option>
+                    <option value="posted">Posted</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                <select id="typeFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All Types</option>
+                    <option value="increase">Increase</option>
+                    <option value="decrease">Decrease</option>
+                    <option value="write_off">Write Off</option>
+                    <option value="revaluation">Revaluation</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                <select id="dateFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="quarter">This Quarter</option>
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button onclick="clearFilters()" class="w-full bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+                    <i class="fas fa-times mr-2"></i>Clear
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Adjustments Table -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value Impact</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="adjustmentsTableBody">
+                    {% for adjustment in adjustments %}
+                    <tr class="hover:bg-gray-50 adjustment-row" data-id="{{ adjustment.id }}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
+                                    <i class="fas fa-edit text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">{{ adjustment.reference }}</div>
+                                    {% if adjustment.reason %}
+                                    <div class="text-sm text-gray-500">{{ adjustment.reason|truncatechars:30 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ adjustment.created_at|date:"M d, Y" }}</div>
+                            <div class="text-sm text-gray-500">{{ adjustment.created_at|date:"H:i" }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                {% if adjustment.adjustment_type == 'increase' %}bg-green-100 text-green-800
+                                {% elif adjustment.adjustment_type == 'decrease' %}bg-red-100 text-red-800
+                                {% elif adjustment.adjustment_type == 'write_off' %}bg-orange-100 text-orange-800
+                                {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                {{ adjustment.get_adjustment_type_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div class="flex items-center">
+                                <span class="font-medium">{{ adjustment.items.count }}</span>
+                                <span class="ml-1 text-gray-500">item{{ adjustment.items.count|pluralize }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            {% if adjustment.total_adjustment_value %}
+                                <span class="{% if adjustment.adjustment_type == 'increase' %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {% if adjustment.adjustment_type == 'increase' %}+{% else %}-{% endif %}${{ adjustment.total_adjustment_value|floatformat:2 }}
+                                </span>
+                            {% else %}
+                                <span class="text-gray-400">$0.00</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if adjustment.status == 'draft' %}bg-gray-100 text-gray-800
+                                {% elif adjustment.status == 'pending_approval' %}bg-yellow-100 text-yellow-800
+                                {% elif adjustment.status == 'approved' %}bg-blue-100 text-blue-800
+                                {% elif adjustment.status == 'posted' %}bg-green-100 text-green-800
+                                {% elif adjustment.status == 'cancelled' %}bg-red-100 text-red-800
+                                {% endif %}">
+                                {{ adjustment.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ adjustment.created_by.get_full_name|default:adjustment.created_by.email }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-2">
+                                <button onclick="viewAdjustmentDetails({{ adjustment.id }})" class="text-blue-600 hover:text-blue-900" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                {% if adjustment.status == 'draft' %}
+                                <button onclick="editAdjustment({{ adjustment.id }})" class="text-green-600 hover:text-green-900" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                {% endif %}
+                                {% if adjustment.status == 'pending_approval' %}
+                                <button onclick="approveAdjustment({{ adjustment.id }})" class="text-green-600 hover:text-green-900" title="Approve">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                {% endif %}
+                                {% if adjustment.status == 'approved' %}
+                                <button onclick="postAdjustment({{ adjustment.id }})" class="text-purple-600 hover:text-purple-900" title="Post">
+                                    <i class="fas fa-share"></i>
+                                </button>
+                                {% endif %}
+                                {% if adjustment.status in 'draft,pending_approval' %}
+                                <button onclick="cancelAdjustment({{ adjustment.id }})" class="text-red-600 hover:text-red-900" title="Cancel">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-8 text-center">
+                            <div class="text-gray-500">
+                                <i class="fas fa-edit text-6xl mb-4"></i>
+                                <p class="text-xl font-medium">No adjustments found</p>
+                                <p>Create your first stock adjustment to get started</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Create/Edit Adjustment Modal -->
+<div id="adjustmentModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-10 mx-auto p-5 border w-4/5 max-w-4xl shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between pb-3 border-b">
+                <h3 class="text-lg font-semibold text-gray-900" id="adjustmentModalTitle">New Stock Adjustment</h3>
+                <button onclick="closeModal('adjustmentModal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="adjustmentForm" class="mt-6">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Reference *</label>
+                        <input type="text" name="reference" id="adjustmentReference" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Adjustment Type *</label>
+                        <select name="adjustment_type" id="adjustmentType" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Select Type</option>
+                            <option value="increase">Stock Increase</option>
+                            <option value="decrease">Stock Decrease</option>
+                            <option value="write_off">Write Off</option>
+                            <option value="revaluation">Revaluation</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Reason</label>
+                    <textarea name="reason" id="adjustmentReason" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" placeholder="Reason for adjustment"></textarea>
+                </div>
+                
+                <!-- Items Section -->
+                <div class="mt-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-md font-medium text-gray-900">Adjustment Items</h4>
+                        <button type="button" onclick="addAdjustmentItem()" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                            <i class="fas fa-plus mr-1"></i>Add Item
+                        </button>
+                    </div>
+                    
+                    <div id="adjustmentItems" class="space-y-3">
+                        <!-- Items will be added dynamically -->
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('adjustmentModal')" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="saveAsDraft()" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">
+                        Save as Draft
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        <span id="submitButtonText">Create Adjustment</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentAdjustmentId = null;
+let isEditMode = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    setupEventListeners();
+    generateReference();
+});
+
+function setupEventListeners() {
+    // Filter event listeners
+    document.getElementById('searchInput').addEventListener('input', filterAdjustments);
+    document.getElementById('statusFilter').addEventListener('change', filterAdjustments);
+    document.getElementById('typeFilter').addEventListener('change', filterAdjustments);
+    document.getElementById('dateFilter').addEventListener('change', filterAdjustments);
+    
+    // Form submission
+    document.getElementById('adjustmentForm').addEventListener('submit', handleAdjustmentSubmit);
+}
+
+function filterAdjustments() {
+    // Implementation for filtering adjustments
+    console.log('Filtering adjustments...');
+}
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('typeFilter').value = '';
+    document.getElementById('dateFilter').value = '';
+    filterAdjustments();
+}
+
+function generateReference() {
+    const now = new Date();
+    const ref = `ADJ-${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}-${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
+    document.getElementById('adjustmentReference').value = ref;
+}
+
+function openCreateAdjustmentModal() {
+    currentAdjustmentId = null;
+    isEditMode = false;
+    document.getElementById('adjustmentModalTitle').textContent = 'New Stock Adjustment';
+    document.getElementById('submitButtonText').textContent = 'Create Adjustment';
+    document.getElementById('adjustmentForm').reset();
+    document.getElementById('adjustmentItems').innerHTML = '';
+    generateReference();
+    addAdjustmentItem(); // Add first item
+    document.getElementById('adjustmentModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function addAdjustmentItem() {
+    const itemsContainer = document.getElementById('adjustmentItems');
+    const itemIndex = itemsContainer.children.length;
+    
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'grid grid-cols-12 gap-3 p-3 border rounded-lg adjustment-item';
+    itemDiv.innerHTML = `
+        <div class="col-span-4">
+            <select name="items[${itemIndex}][stock_item]" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Select Product</option>
+                <!-- Products will be loaded via AJAX -->
+            </select>
+        </div>
+        <div class="col-span-2">
+            <input type="number" name="items[${itemIndex}][current_quantity]" placeholder="Current Qty" readonly class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+        </div>
+        <div class="col-span-2">
+            <input type="number" name="items[${itemIndex}][new_quantity]" placeholder="New Qty" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <div class="col-span-2">
+            <input type="number" name="items[${itemIndex}][adjustment_quantity]" placeholder="Adj Qty" readonly class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+        </div>
+        <div class="col-span-1">
+            <input type="text" name="items[${itemIndex}][reason]" placeholder="Reason" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <div class="col-span-1">
+            <button type="button" onclick="removeAdjustmentItem(this)" class="w-full bg-red-600 text-white px-3 py-2 rounded-md hover:bg-red-700">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    
+    itemsContainer.appendChild(itemDiv);
+    loadProducts(itemDiv.querySelector('select'));
+}
+
+function removeAdjustmentItem(button) {
+    button.closest('.adjustment-item').remove();
+}
+
+function loadProducts(selectElement) {
+    // Load products via AJAX
+    fetch('/inventory/api/stockitems/')
+        .then(response => response.json())
+        .then(data => {
+            selectElement.innerHTML = '<option value="">Select Product</option>';
+            data.results.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = `${item.product.name} - ${item.warehouse.name} (${item.quantity})`;
+                option.dataset.currentQuantity = item.quantity;
+                selectElement.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error loading products:', error));
+}
+
+function handleAdjustmentSubmit(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const url = isEditMode 
+        ? `/inventory/adjustments/${currentAdjustmentId}/update/`
+        : '/inventory/api/adjustments/create/';
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeModal('adjustmentModal');
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving adjustment');
+    });
+}
+
+function saveAsDraft() {
+    // Add status field for draft
+    const form = document.getElementById('adjustmentForm');
+    const statusInput = document.createElement('input');
+    statusInput.type = 'hidden';
+    statusInput.name = 'status';
+    statusInput.value = 'draft';
+    form.appendChild(statusInput);
+    
+    form.dispatchEvent(new Event('submit'));
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+function exportAdjustments() {
+    window.open('/inventory/adjustments/export/', '_blank');
+}
+
+function showBulkAdjustment() {
+    alert('Bulk adjustment feature coming soon!');
+}
+
+function viewAdjustmentDetails(adjustmentId) {
+    window.location.href = `/inventory/adjustments/${adjustmentId}/`;
+}
+
+function editAdjustment(adjustmentId) {
+    // Load adjustment details and open modal for editing
+    currentAdjustmentId = adjustmentId;
+    isEditMode = true;
+    // Implementation for loading adjustment details
+}
+
+function approveAdjustment(adjustmentId) {
+    if (confirm('Are you sure you want to approve this adjustment?')) {
+        fetch(`/inventory/api/adjustments/${adjustmentId}/approve/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+}
+
+function postAdjustment(adjustmentId) {
+    if (confirm('Are you sure you want to post this adjustment? This action cannot be undone.')) {
+        fetch(`/inventory/api/adjustments/${adjustmentId}/post/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+}
+
+function cancelAdjustment(adjustmentId) {
+    if (confirm('Are you sure you want to cancel this adjustment?')) {
+        fetch(`/inventory/adjustments/${adjustmentId}/cancel/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

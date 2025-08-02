@@ -1,8 +1,9 @@
 from rest_framework.routers import DefaultRouter
+from django.urls import path
 from .api_views import (
     ProductViewSet, ProductCategoryViewSet, ProductVariantViewSet,
     ProductTrackingViewSet, AttributeViewSet, AttributeValueViewSet,
-    ProductAttributeViewSet
+    ProductAttributeViewSet, tracking_search
 )
 
 router = DefaultRouter()
@@ -14,4 +15,6 @@ router.register(r'attributes', AttributeViewSet, basename='attribute')
 router.register(r'attribute-values', AttributeValueViewSet, basename='attributevalue')
 router.register(r'product-attributes', ProductAttributeViewSet, basename='productattribute')
 
-urlpatterns = router.urls
+urlpatterns = router.urls + [
+    path('tracking/search/', tracking_search, name='tracking_search'),
+]

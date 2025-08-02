@@ -1,0 +1,616 @@
+{% extends "base.html" %}
+{% load static %}
+{% csrf_token %}
+{% block title %}Physical Stock Count | ERP System{% endblock %}
+{% block content %}
+<!-- Physical Count Dashboard -->
+<div class="mt-16 p-8">
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" clip-rule="evenodd"/>
+            </svg>
+            <span class="text-blue-800 font-medium">Physical Count System:</span>
+            <span class="text-blue-700 ml-2">Perform accurate inventory counts and reconciliation</span>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Physical Stock Count</h1>
+            <p class="text-gray-600 mt-2">Manage inventory adjustments and physical counts</p>
+        </div>
+        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mt-4 lg:mt-0">
+            <button onclick="openNewCountModal()" class="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md">
+                <i class="fas fa-plus mr-2"></i>Start Physical Count
+            </button>
+            <button onclick="openCycleCountModal()" class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md">
+                <i class="fas fa-sync mr-2"></i>Cycle Count
+            </button>
+            <button onclick="downloadCountSheet()" class="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-md">
+                <i class="fas fa-download mr-2"></i>Count Sheet
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100">Active Counts</p>
+                    <p class="text-3xl font-bold">{{ active_counts|default:0 }}</p>
+                </div>
+                <svg class="w-12 h-12 text-green-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">Today's Adjustments</p>
+                    <p class="text-3xl font-bold">{{ adjustments_today|default:0 }}</p>
+                </div>
+                <svg class="w-12 h-12 text-blue-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-yellow-100">Pending Approval</p>
+                    <p class="text-3xl font-bold">{{ pending_approval|default:0 }}</p>
+                </div>
+                <svg class="w-12 h-12 text-yellow-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-red-100">Total Value Impact</p>
+                    <p class="text-3xl font-bold">${{ total_value_impact|default:0|floatformat:0 }}</p>
+                </div>
+                <svg class="w-12 h-12 text-red-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Panel -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button onclick="quickAdjustment()" class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fas fa-edit text-blue-600"></i>
+                </div>
+                <div class="text-left">
+                    <div class="font-semibold text-gray-900">Quick Adjustment</div>
+                    <div class="text-sm text-gray-500">Single item adjustment</div>
+                </div>
+            </button>
+            
+            <button onclick="openBulkImport()" class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fas fa-upload text-green-600"></i>
+                </div>
+                <div class="text-left">
+                    <div class="font-semibold text-gray-900">Bulk Import</div>
+                    <div class="text-sm text-gray-500">Import count data</div>
+                </div>
+            </button>
+            
+            <button onclick="generateReports()" class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fas fa-chart-bar text-purple-600"></i>
+                </div>
+                <div class="text-left">
+                    <div class="font-semibold text-gray-900">Count Reports</div>
+                    <div class="text-sm text-gray-500">View analytics</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select id="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All Status</option>
+                    <option value="draft">Draft</option>
+                    <option value="pending_approval">Pending Approval</option>
+                    <option value="approved">Approved</option>
+                    <option value="posted">Posted</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                <select id="typeFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All Types</option>
+                    <option value="physical_count">Physical Count</option>
+                    <option value="cycle_count">Cycle Count</option>
+                    <option value="annual_audit">Annual Audit</option>
+                    <option value="damage_write_off">Damage Write-off</option>
+                    <option value="system_correction">System Correction</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                <select id="dateFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="quarter">This Quarter</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                <input type="text" id="searchFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" placeholder="Search adjustments...">
+            </div>
+            <div class="flex items-end">
+                <button onclick="clearFilters()" class="w-full bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+                    <i class="fas fa-times mr-2"></i>Clear Filters
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Adjustments Table -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adjustment #</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value Impact</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for adjustment in adjustments %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ adjustment.adjustment_number }}</div>
+                            {% if adjustment.reference_document %}
+                                <div class="text-sm text-gray-500">Ref: {{ adjustment.reference_document }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if adjustment.adjustment_type == 'physical_count' %}bg-blue-100 text-blue-800
+                                {% elif adjustment.adjustment_type == 'cycle_count' %}bg-green-100 text-green-800
+                                {% elif adjustment.adjustment_type == 'annual_audit' %}bg-purple-100 text-purple-800
+                                {% elif adjustment.adjustment_type == 'damage_write_off' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800
+                                {% endif %}">
+                                {{ adjustment.get_adjustment_type_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if adjustment.status == 'draft' %}bg-gray-100 text-gray-800
+                                {% elif adjustment.status == 'pending_approval' %}bg-yellow-100 text-yellow-800
+                                {% elif adjustment.status == 'approved' %}bg-green-100 text-green-800
+                                {% elif adjustment.status == 'posted' %}bg-blue-100 text-blue-800
+                                {% elif adjustment.status == 'cancelled' %}bg-red-100 text-red-800
+                                {% endif %}">
+                                {{ adjustment.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div>{{ adjustment.adjustment_date|date:"M d, Y" }}</div>
+                            <div class="text-xs text-gray-500">{{ adjustment.created_at|date:"H:i" }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if adjustment.items.count %}
+                                <div class="font-medium">{{ adjustment.items.count }} items</div>
+                                {% with variance_items=adjustment.items.exclude %}
+                                {% if variance_items.count %}
+                                    <div class="text-xs text-red-600">{{ variance_items.count }} with variance</div>
+                                {% endif %}
+                                {% endwith %}
+                            {% else %}
+                                <span class="text-gray-400">No items</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            {% if adjustment.total_adjustment_value %}
+                                <div class="font-medium {% if adjustment.total_adjustment_value < 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                                    ${{ adjustment.total_adjustment_value|floatformat:2 }}
+                                </div>
+                            {% else %}
+                                <span class="text-gray-400">$0.00</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div>{{ adjustment.created_by.get_full_name|default:adjustment.created_by.email }}</div>
+                            <div class="text-xs">{{ adjustment.created_at|date:"M d, Y" }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-2">
+                                <button onclick="viewAdjustment({{ adjustment.id }})" class="text-blue-600 hover:text-blue-900" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                {% if adjustment.status == 'draft' %}
+                                <button onclick="editAdjustment({{ adjustment.id }})" class="text-green-600 hover:text-green-900" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                {% endif %}
+                                {% if adjustment.status == 'pending_approval' and perms.inventory.can_approve_adjustments %}
+                                <button onclick="approveAdjustment({{ adjustment.id }})" class="text-purple-600 hover:text-purple-900" title="Approve">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                {% endif %}
+                                {% if adjustment.status == 'approved' and perms.inventory.can_post_adjustments %}
+                                <button onclick="postAdjustment({{ adjustment.id }})" class="text-indigo-600 hover:text-indigo-900" title="Post">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                                {% endif %}
+                                <button onclick="printAdjustment({{ adjustment.id }})" class="text-gray-600 hover:text-gray-900" title="Print">
+                                    <i class="fas fa-print"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-12 text-center">
+                            <div class="text-gray-400">
+                                <i class="fas fa-clipboard-list text-6xl mb-4"></i>
+                                <p class="text-xl font-medium text-gray-500">No adjustments found</p>
+                                <p class="text-gray-400">Start your first physical count to get started</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- New Physical Count Modal -->
+<div id="newCountModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between pb-3 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Start New Physical Count</h3>
+                <button onclick="closeModal('newCountModal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="newCountForm" class="mt-6">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Count Type</label>
+                        <select name="adjustment_type" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            <option value="physical_count">Physical Count</option>
+                            <option value="cycle_count">Cycle Count</option>
+                            <option value="annual_audit">Annual Audit</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Warehouse</label>
+                        <select name="warehouse" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">All Warehouses</option>
+                            {% for warehouse in warehouses %}
+                            <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Reference Document</label>
+                        <input type="text" name="reference_document" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" placeholder="Optional reference">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Count Date</label>
+                        <input type="date" name="adjustment_date" value="{{ today|date:'Y-m-d' }}" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Reason</label>
+                        <textarea name="reason" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" placeholder="Reason for adjustment..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('newCountModal')" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        Start Count
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Adjustment Modal -->
+<div id="quickAdjustmentModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between pb-3 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Quick Stock Adjustment</h3>
+                <button onclick="closeModal('quickAdjustmentModal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="quickAdjustmentForm" class="mt-6">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Product</label>
+                        <input type="text" id="productSearch" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" placeholder="Search products...">
+                        <div id="productSearchResults" class="mt-2 max-h-60 overflow-y-auto"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Current Quantity</label>
+                            <input type="number" step="0.01" id="currentQty" readonly class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Counted Quantity</label>
+                            <input type="number" step="0.01" name="counted_quantity" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Reason</label>
+                        <textarea name="reason" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" placeholder="Reason for adjustment..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('quickAdjustmentModal')" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                        Create Adjustment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setupEventListeners();
+    loadAdjustments();
+});
+
+function setupEventListeners() {
+    // Modal close on backdrop click
+    const modals = ['newCountModal', 'quickAdjustmentModal'];
+    modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal(modalId);
+                }
+            });
+        }
+    });
+    
+    // Form submissions
+    document.getElementById('newCountForm').addEventListener('submit', handleNewCount);
+    document.getElementById('quickAdjustmentForm').addEventListener('submit', handleQuickAdjustment);
+    
+    // Product search
+    document.getElementById('productSearch').addEventListener('input', searchProducts);
+    
+    // Filters
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+    document.getElementById('typeFilter').addEventListener('change', applyFilters);
+    document.getElementById('dateFilter').addEventListener('change', applyFilters);
+    document.getElementById('searchFilter').addEventListener('input', applyFilters);
+}
+
+function openNewCountModal() {
+    document.getElementById('newCountModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function openCycleCountModal() {
+    document.getElementById('newCountModal').classList.remove('hidden');
+    document.querySelector('[name="adjustment_type"]').value = 'cycle_count';
+    document.body.style.overflow = 'hidden';
+}
+
+function quickAdjustment() {
+    document.getElementById('quickAdjustmentModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+async function handleNewCount(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('/inventory/api/adjustments/create/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: formData
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            closeModal('newCountModal');
+            window.location.href = `/inventory/adjustments/${data.id}/edit/`;
+        } else {
+            alert('Error creating adjustment');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error creating adjustment');
+    }
+}
+
+async function handleQuickAdjustment(e) {
+    e.preventDefault();
+    // Implementation for quick adjustment
+    alert('Quick adjustment feature coming soon!');
+}
+
+async function searchProducts(e) {
+    const query = e.target.value;
+    if (query.length < 2) {
+        document.getElementById('productSearchResults').innerHTML = '';
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/products/api/search/?q=${encodeURIComponent(query)}`);
+        if (response.ok) {
+            const data = await response.json();
+            displayProductResults(data.results);
+        }
+    } catch (error) {
+        console.error('Error searching products:', error);
+    }
+}
+
+function displayProductResults(products) {
+    const resultsDiv = document.getElementById('productSearchResults');
+    if (products.length === 0) {
+        resultsDiv.innerHTML = '<div class="p-2 text-gray-500">No products found</div>';
+        return;
+    }
+    
+    let html = '<div class="border border-gray-200 rounded-md max-h-40 overflow-y-auto">';
+    products.forEach(product => {
+        html += `
+            <div class="p-2 hover:bg-gray-50 cursor-pointer border-b" onclick="selectProduct(${product.id}, '${product.name}', ${product.stock_quantity})">
+                <div class="font-medium">${product.name}</div>
+                <div class="text-sm text-gray-500">${product.sku} | Stock: ${product.stock_quantity}</div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    resultsDiv.innerHTML = html;
+}
+
+function selectProduct(id, name, quantity) {
+    document.getElementById('productSearch').value = name;
+    document.getElementById('currentQty').value = quantity;
+    document.getElementById('productSearchResults').innerHTML = '';
+    // Store selected product ID for form submission
+    document.getElementById('quickAdjustmentForm').dataset.productId = id;
+}
+
+function applyFilters() {
+    // Implementation for filtering adjustments
+    console.log('Applying filters...');
+}
+
+function clearFilters() {
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('typeFilter').value = '';
+    document.getElementById('dateFilter').value = '';
+    document.getElementById('searchFilter').value = '';
+    applyFilters();
+}
+
+function loadAdjustments() {
+    // Implementation for loading adjustments via AJAX
+    console.log('Loading adjustments...');
+}
+
+function viewAdjustment(id) {
+    window.location.href = `/inventory/adjustments/${id}/`;
+}
+
+function editAdjustment(id) {
+    window.location.href = `/inventory/adjustments/${id}/edit/`;
+}
+
+async function approveAdjustment(id) {
+    if (confirm('Are you sure you want to approve this adjustment?')) {
+        try {
+            const response = await fetch(`/inventory/api/adjustments/${id}/approve/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            });
+            
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error approving adjustment');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error approving adjustment');
+        }
+    }
+}
+
+async function postAdjustment(id) {
+    if (confirm('Are you sure you want to post this adjustment? This action cannot be undone.')) {
+        try {
+            const response = await fetch(`/inventory/api/adjustments/${id}/post/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            });
+            
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error posting adjustment');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error posting adjustment');
+        }
+    }
+}
+
+function printAdjustment(id) {
+    window.open(`/inventory/adjustments/${id}/print/`, '_blank');
+}
+
+function downloadCountSheet() {
+    window.open('/inventory/count-sheet/', '_blank');
+}
+
+function openBulkImport() {
+    alert('Bulk import feature coming soon!');
+}
+
+function generateReports() {
+    alert('Reports feature coming soon!');
+}
+</script>
+{% endblock %}

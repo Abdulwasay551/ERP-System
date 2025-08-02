@@ -1249,6 +1249,219 @@ class GRNItem(models.Model):
                 self.tracking_required = False
         
         super().save(*args, **kwargs)
+        
+        # Create inventory lock for received items
+        if self.pk and self.received_qty > 0 and self.grn.status == 'received':
+            self.create_inventory_lock()
+    
+    def create_inventory_lock(self):
+        """Create inventory lock for received items pending bill creation using existing GRNInventoryLock"""
+        if not self.product or not getattr(self.product, 'is_stockable', True):
+            return None
+            
+        # Create inventory tracking in inventory app
+        if self._create_stock_item_and_movement():
+            # Create GRN inventory lock using existing model
+            lock = GRNInventoryLock.objects.create(
+                grn=self.grn,
+                grn_item=self,
+                locked_quantity=self.received_qty,
+                lock_reason='pending_invoice',
+                locked_by=self.grn.received_by,
+                lock_notes=f"GRN {self.grn.grn_number} pending bill creation",
+            )
+            
+            # Also lock any tracking items
+            for tracking_item in self.tracking_items.all():
+                GRNInventoryLock.objects.create(
+                    grn=self.grn,
+                    grn_item=self,
+                    tracking_item=tracking_item,
+                    locked_quantity=1,  # Individual items are quantity 1
+                    lock_reason='pending_invoice',
+                    locked_by=self.grn.received_by,
+                    lock_notes=f"Tracking item {tracking_item.tracking_number} locked pending bill",
+                )
+            
+            return lock
+        
+        return None
+    
+    def _create_stock_item_and_movement(self):
+        """Create stock item and initial movement in inventory app"""
+        try:
+            # Import here to avoid circular imports
+            from inventory.models import StockItem, StockMovement, Warehouse
+            
+            # Get warehouse for this item
+            warehouse = self.warehouse
+            if not warehouse:
+                warehouse = self.grn.warehouse
+            if not warehouse:
+                # Get company's first active warehouse as fallback
+                warehouse = Warehouse.objects.filter(
+                    company=self.grn.company, 
+                    is_active=True
+                ).first()
+                
+            if not warehouse:
+                return False
+                
+            # Get or create stock item
+            stock_item, created = StockItem.objects.get_or_create(
+                company=self.grn.company,
+                product=self.product,
+                warehouse=warehouse,
+                defaults={
+                    'category': getattr(self.product, 'category', None),
+                    'valuation_method': getattr(self.product, 'valuation_method', 'weighted_avg'),
+                    'min_stock': getattr(self.product, 'minimum_stock', 0),
+                    'max_stock': getattr(self.product, 'maximum_stock', 0),
+                    'reorder_point': getattr(self.product, 'reorder_level', 0),
+                    'purchase_status': 'received_unbilled',
+                    'stock_status': 'locked',
+                }
+            )
+            
+            # Update status if stock item already exists
+            if not created:
+                stock_item.purchase_status = 'received_unbilled'
+                stock_item.stock_status = 'locked'
+                stock_item.save()
+            
+            # Create stock movement for GRN receipt (locked)
+            movement = StockMovement.objects.create(
+                company=self.grn.company,
+                stock_item=stock_item,
+                movement_type='grn_receipt',
+                quantity=self.received_qty,
+                unit_cost=0,  # Will be updated when bill is created
+                reference_type='grn',
+                reference_id=self.grn.id,
+                reference_number=self.grn.grn_number,
+                batch_number=getattr(self, 'batch_number', ''),
+                lot_number=getattr(self, 'lot_number', ''),
+                expiry_date=self.expiry_date,
+                grn_item=self,
+                notes=f"GRN Receipt: {self.grn.grn_number} - Locked pending bill",
+                performed_by=self.grn.received_by,
+            )
+            
+            return True
+            
+        except Exception as e:
+            print(f"Error creating stock item and movement: {e}")
+            return False
+    
+    def unlock_inventory_on_bill(self, bill_item):
+        """Unlock inventory when bill is created and update costs"""
+        # Use existing GRNInventoryLock instead of creating new inventory locks
+        locks = GRNInventoryLock.objects.filter(
+            grn=self.grn,
+            grn_item=self,
+            is_active=True,
+            lock_reason='pending_invoice'
+        )
+        
+        for lock in locks:
+            # Release the lock
+            lock.release_lock(
+                user=bill_item.bill.created_by,
+                notes=f"Bill created: {bill_item.bill.bill_number}",
+                bill=bill_item.bill
+            )
+            
+            # Update inventory with cost information
+            if self.product and self.product.is_stockable:
+                self._update_inventory_cost(bill_item)
+        
+        return True
+    
+    def _update_inventory_cost(self, bill_item):
+        """Update inventory stock item with actual cost from bill"""
+        try:
+            from inventory.models import StockItem, StockMovement
+            
+            # Get the warehouse for this item
+            warehouse = self.warehouse or self.grn.warehouse
+            if not warehouse:
+                return False
+                
+            # Get or create stock item
+            stock_item, created = StockItem.objects.get_or_create(
+                company=self.grn.company,
+                product=self.product,
+                warehouse=warehouse,
+                defaults={
+                    'category': self.product.category,
+                    'valuation_method': getattr(self.product, 'valuation_method', 'weighted_avg'),
+                    'min_stock': getattr(self.product, 'minimum_stock', 0),
+                    'max_stock': getattr(self.product, 'maximum_stock', 0),
+                    'reorder_point': getattr(self.product, 'reorder_level', 0),
+                }
+            )
+            
+            # Update purchase status to show items are ready for use
+            stock_item.purchase_status = 'ready_for_use'
+            stock_item.stock_status = 'available'
+            
+            # Update average cost with bill price
+            stock_item.update_average_cost(self.received_qty, bill_item.unit_price)
+            
+            # Create movement to unlock inventory (convert from locked to available)
+            StockMovement.objects.create(
+                company=self.grn.company,
+                stock_item=stock_item,
+                movement_type='unlock',
+                quantity=self.received_qty,
+                unit_cost=bill_item.unit_price,
+                reference_type='bill',
+                reference_id=bill_item.bill.id,
+                reference_number=bill_item.bill.bill_number,
+                grn_item=self,
+                bill_item=bill_item,
+                notes=f"Inventory unlocked via bill: {bill_item.bill.bill_number}",
+                performed_by=bill_item.bill.created_by,
+            )
+            
+            return True
+            
+        except Exception as e:
+            print(f"Error updating inventory cost: {e}")
+            return False
+        
+    def quality_pass_inventory(self, inspector):
+        """Pass quality inspection and unlock inventory"""
+        if self.quality_status == 'passed':
+            from inventory.models import StockMovement
+            
+            # Find the stock item
+            from inventory.models import StockItem
+            try:
+                stock_item = StockItem.objects.get(
+                    product=self.product,
+                    warehouse=self.warehouse,
+                    company=self.grn.company
+                )
+                
+                # Create quality pass movement
+                StockMovement.objects.create(
+                    company=self.grn.company,
+                    stock_item=stock_item,
+                    movement_type='quality_pass',
+                    quantity=self.accepted_qty,
+                    unit_cost=stock_item.average_cost,
+                    reference_type='quality_inspection',
+                    reference_id=self.id,
+                    reference_number=f"QC-{self.grn.grn_number}-{self.product.sku}",
+                    notes=f"Quality passed for GRN: {self.grn.grn_number}",
+                    performed_by=inspector,
+                )
+                
+            except StockItem.DoesNotExist:
+                pass
+                
+        return True
     
     def __str__(self):
         return f"{self.product.name} - Received: {self.received_qty}"
@@ -1712,16 +1925,70 @@ class Bill(models.Model):
         """Unlock GRN items when bill is created/approved"""
         if self.grn and self.status in ['approved', 'paid']:
             # Remove locks from GRN items
-            from .models import GRNInventoryLock
-            locks = GRNInventoryLock.objects.filter(grn=self.grn, lock_reason='pending_invoice')
+            locks = GRNInventoryLock.objects.filter(
+                grn=self.grn, 
+                lock_reason='pending_invoice',
+                is_active=True
+            )
             
             for lock in locks:
-                # Create inventory movement to make items available
-                # This will be handled by the inventory app
-                lock.is_released = True
-                lock.released_at = timezone.now()
-                lock.released_by = self.created_by
-                lock.save()
+                # Release the lock and update inventory
+                lock.release_lock(
+                    user=self.created_by,
+                    notes=f"Released due to bill approval: {self.bill_number}",
+                    bill=self
+                )
+                
+                # Update inventory status for the related stock item
+                if lock.grn_item:
+                    self._update_inventory_for_unlock(lock.grn_item)
+    
+    def _update_inventory_for_unlock(self, grn_item):
+        """Update inventory status when GRN item is unlocked"""
+        try:
+            from inventory.models import StockItem, StockMovement
+            
+            # Find the corresponding stock item
+            warehouse = grn_item.warehouse or self.grn.warehouse
+            stock_item = StockItem.objects.filter(
+                company=self.company,
+                product=grn_item.product,
+                warehouse=warehouse
+            ).first()
+            
+            if stock_item:
+                # Find the corresponding bill item for pricing
+                bill_item = self.items.filter(product=grn_item.product).first()
+                unit_cost = bill_item.unit_price if bill_item else 0
+                
+                # Update stock status
+                stock_item.purchase_status = 'ready_for_use'
+                stock_item.stock_status = 'available'
+                
+                # Update cost information
+                if unit_cost > 0:
+                    stock_item.update_average_cost(grn_item.received_qty, unit_cost)
+                
+                stock_item.save()
+                
+                # Create unlock movement
+                StockMovement.objects.create(
+                    company=self.company,
+                    stock_item=stock_item,
+                    movement_type='unlock',
+                    quantity=grn_item.received_qty,
+                    unit_cost=unit_cost,
+                    reference_type='bill',
+                    reference_id=self.id,
+                    reference_number=self.bill_number,
+                    grn_item=grn_item,
+                    bill_item=bill_item,
+                    notes=f"Inventory unlocked via bill approval: {self.bill_number}",
+                    performed_by=self.created_by,
+                )
+                
+        except Exception as e:
+            print(f"Error updating inventory for unlock: {e}")
 
     class Meta:
         ordering = ['-created_at']
@@ -1775,6 +2042,16 @@ class BillItem(models.Model):
             self.grn_quantity_variance = self.quantity - self.grn_item.received_qty
         
         super().save(*args, **kwargs)
+        
+        # Unlock inventory when bill item is created/updated
+        if self.grn_item and self.bill.status in ['approved', 'paid']:
+            self.unlock_grn_inventory()
+
+    def unlock_grn_inventory(self):
+        """Unlock GRN inventory and update costs when bill is approved"""
+        if self.grn_item:
+            return self.grn_item.unlock_inventory_on_bill(self)
+        return False
 
     def __str__(self):
         return f"{self.product.name} x {self.quantity} @ ${self.unit_price}"

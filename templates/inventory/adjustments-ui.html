@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block title %}Stock Adjustments - Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">
+                        <i class="fas fa-edit"></i> Stock Adjustments
+                    </h3>
+                    <button class="btn btn-primary" data-toggle="modal" data-target="#addAdjustmentModal">
+                        <i class="fas fa-plus"></i> New Adjustment
+                    </button>
+                </div>
+                <div class="card-body">
+                    <!-- Summary Stats -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info">
+                                    <i class="fas fa-edit"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Total Adjustments</span>
+                                    <span class="info-box-number">{{ total_adjustments }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-warning">
+                                    <i class="fas fa-clock"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Recent Adjustments</span>
+                                    <span class="info-box-number">{{ adjustments|length }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Adjustments Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Product</th>
+                                    <th>Type</th>
+                                    <th>Quantity</th>
+                                    <th>From Warehouse</th>
+                                    <th>To Warehouse</th>
+                                    <th>Performed By</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for adjustment in adjustments %}
+                                <tr>
+                                    <td>{{ adjustment.timestamp|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        <strong>{{ adjustment.stock_item.product.name }}</strong>
+                                        <br><small class="text-muted">{{ adjustment.stock_item.product.sku }}</small>
+                                    </td>
+                                    <td>
+                                        {% if adjustment.movement_type == 'in' %}
+                                            <span class="badge badge-success">Stock In</span>
+                                        {% elif adjustment.movement_type == 'out' %}
+                                            <span class="badge badge-danger">Stock Out</span>
+                                        {% else %}
+                                            <span class="badge badge-info">{{ adjustment.movement_type|title }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong>{{ adjustment.quantity }}</strong>
+                                        {% if adjustment.unit_cost %}
+                                            <br><small class="text-muted">${{ adjustment.unit_cost|floatformat:2 }} each</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if adjustment.from_warehouse %}
+                                            {{ adjustment.from_warehouse.name }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if adjustment.to_warehouse %}
+                                            {{ adjustment.to_warehouse.name }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if adjustment.performed_by %}
+                                            {{ adjustment.performed_by.get_full_name|default:adjustment.performed_by.email }}
+                                        {% else %}
+                                            <span class="text-muted">System</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if adjustment.notes %}
+                                            <span data-toggle="tooltip" title="{{ adjustment.notes }}">
+                                                {{ adjustment.notes|truncatechars:30 }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted">
+                                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                                        <p>No adjustments found</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Adjustment Modal -->
+<div class="modal fade" id="addAdjustmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Add Stock Adjustment</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <form id="addAdjustmentForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Adjustment Type</label>
+                        <select name="adjustment_type" class="form-control" required>
+                            <option value="">Select Type</option>
+                            <option value="in">Stock In (Increase)</option>
+                            <option value="out">Stock Out (Decrease)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Product</label>
+                        <select name="product" class="form-control" required>
+                            <option value="">Select Product</option>
+                            <!-- Products will be loaded dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Warehouse</label>
+                        <select name="warehouse" class="form-control" required>
+                            <option value="">Select Warehouse</option>
+                            <!-- Warehouses will be loaded dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Quantity</label>
+                        <input type="number" name="quantity" class="form-control" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Unit Cost (Optional)</label>
+                        <input type="number" name="unit_cost" class="form-control" step="0.01" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Reason/Notes</label>
+                        <textarea name="notes" class="form-control" rows="3" placeholder="Reason for adjustment..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Adjustment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+    
+    // Handle adjustment form submission
+    $('#addAdjustmentForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        // In a real implementation, you would submit this to a backend endpoint
+        alert('Stock adjustment functionality would be implemented here');
+        $('#addAdjustmentModal').modal('hide');
+    });
+});
+</script>
+{% endblock %}

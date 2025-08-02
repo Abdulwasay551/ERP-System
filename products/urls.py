@@ -36,6 +36,7 @@ urlpatterns = [
     path('tracking/add/', views.product_tracking_add, name='tracking_add'),
     path('tracking/<int:pk>/', views.product_tracking_detail, name='tracking_detail'),
     path('tracking/<int:pk>/edit/', views.product_tracking_edit, name='tracking_edit'),
+    path('tracking/<int:pk>/label/', views.product_tracking_label, name='tracking_label'),
     path('tracking/bulk-import/', views.bulk_tracking_import, name='bulk_tracking_import'),
     path('tracking/expiry-alerts/', views.expiry_alerts, name='expiry_alerts'),
     

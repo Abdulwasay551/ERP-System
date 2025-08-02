@@ -4,7 +4,7 @@
 		{
 			"label": "Run ERP Development Server",
 			"type": "shell",
-			"command": "python",
+			"command": "D:/ERP-System/venv/Scripts/python.exe",
 			"args": [
 				"manage.py",
 				"runserver"

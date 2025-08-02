@@ -1,0 +1,645 @@
+{% extends "base.html" %}
+{% block title %}Lot/Batch Tracking | ERP System{% endblock %}
+{% block content %}
+<!-- COA Integration Notice -->
+<div class="mt-16 p-8">
+    <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            <span class="text-green-800 font-medium">Lot/Batch Tracking System:</span>
+            <span class="text-green-700 ml-2">Track product lots, batches, expiry dates, and quality control</span>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Lot/Batch Tracking</h1>
+            <p class="text-gray-600 mt-2">Manage product lots, batches, and expiry tracking</p>
+        </div>
+        <div class="flex space-x-2">
+            <button id="addLotBtn" class="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md">
+                <i class="fas fa-plus mr-2"></i>New Lot
+            </button>
+            <button onclick="exportExpiring()" class="bg-gradient-to-r from-orange-600 to-orange-700 text-white px-6 py-3 rounded-lg hover:from-orange-700 hover:to-orange-800 transition-all duration-200 shadow-md">
+                <i class="fas fa-exclamation-triangle mr-2"></i>Expiring Items
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">Active Lots</p>
+                    <p class="text-3xl font-bold">{{ total_lots|default:0 }}</p>
+                </div>
+                <svg class="w-12 h-12 text-blue-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7ZM9 3V4H15V3H9ZM7 6V19H17V6H7Z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-yellow-100">Expiring Soon</p>
+                    <p class="text-3xl font-bold">{{ expiring_lots|default:0 }}</p>
+                </div>
+                <svg class="w-12 h-12 text-yellow-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2L13.09 8.26L22 9L17 14L18 23L12 19L6 23L7 14L2 9L10.91 8.26L12 2Z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-red-100">Expired</p>
+                    <p class="text-3xl font-bold">{{ expired_lots|default:0 }}</p>
+                </div>
+                <svg class="w-12 h-12 text-red-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12S6.48 22 12 22 22 17.52 22 12 17.52 2 12 2ZM13 17H11V15H13V17ZM13 13H11V7H13V13Z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100">Quarantined</p>
+                    <p class="text-3xl font-bold">{{ quarantined_lots|default:0 }}</p>
+                </div>
+                <svg class="w-12 h-12 text-purple-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2L13.09 8.26L22 9L17 14L18 23L12 19L6 23L7 14L2 9L10.91 8.26L12 2Z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select id="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="expiring">Expiring Soon</option>
+                    <option value="expired">Expired</option>
+                    <option value="quarantined">Quarantined</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Product</label>
+                <select id="productFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
+                    <option value="">All Products</option>
+                    {% for product in products %}
+                    <option value="{{ product.id }}">{{ product.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Search Lot</label>
+                <input type="text" id="lotSearch" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500" placeholder="Search lot number...">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Actions</label>
+                <button onclick="clearFilters()" class="w-full bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+                    <i class="fas fa-times mr-2"></i>Clear Filters
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lots Table -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lot Number</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remaining</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Received Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quality</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for lot in lots %}
+                    <tr class="hover:bg-gray-50 {% if lot.is_expired %}bg-red-50{% elif lot.is_expiring_soon %}bg-yellow-50{% endif %}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="font-semibold text-gray-900">{{ lot.lot_number }}</div>
+                            {% if lot.batch_number %}
+                                <div class="text-sm text-gray-500">Batch: {{ lot.batch_number }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="font-medium text-gray-900">{{ lot.stock_item.product.name }}</div>
+                            <div class="text-sm text-gray-500">{{ lot.stock_item.product.sku }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ lot.quantity }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="font-semibold text-gray-900">{{ lot.remaining_quantity }}</div>
+                            {% if lot.remaining_quantity != lot.quantity %}
+                                <div class="text-sm text-gray-500">{{ lot.used_quantity }} used</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ lot.received_date|date:"M d, Y" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if lot.expiry_date %}
+                                <div class="text-sm text-gray-900">{{ lot.expiry_date|date:"M d, Y" }}</div>
+                                {% if lot.is_expired %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Expired</span>
+                                {% elif lot.is_expiring_soon %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Expiring Soon</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-gray-500 text-sm">No expiry</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if lot.is_quarantined %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    <i class="fas fa-pause mr-1"></i>Quarantined
+                                </span>
+                            {% elif lot.is_expired %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <i class="fas fa-times-circle mr-1"></i>Expired
+                                </span>
+                            {% elif lot.remaining_quantity <= 0 %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    <i class="fas fa-times mr-1"></i>Depleted
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>Active
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if lot.quality_approved %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i>Approved
+                                </span>
+                                {% if lot.quality_approved_by %}
+                                    <div class="text-xs text-gray-500">by {{ lot.quality_approved_by.get_full_name }}</div>
+                                {% endif %}
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-clock mr-1"></i>Pending
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-2">
+                                <button onclick="viewLot({{ lot.id }})" class="text-blue-600 hover:text-blue-900" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                {% if not lot.quality_approved %}
+                                <button onclick="approveQuality({{ lot.id }})" class="text-green-600 hover:text-green-900" title="Approve Quality">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                {% endif %}
+                                {% if not lot.is_quarantined and lot.remaining_quantity > 0 %}
+                                <button onclick="quarantineLot({{ lot.id }})" class="text-yellow-600 hover:text-yellow-900" title="Quarantine">
+                                    <i class="fas fa-pause"></i>
+                                </button>
+                                {% endif %}
+                                <button onclick="editLot({{ lot.id }})" class="text-purple-600 hover:text-purple-900" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="px-6 py-12 text-center">
+                            <div class="text-gray-400">
+                                <i class="fas fa-tags text-6xl mb-4"></i>
+                                <p class="text-xl font-medium text-gray-500">No lots found</p>
+                                <p class="text-gray-400">Create your first lot to get started</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Lot Modal -->
+<div id="addLotModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between pb-3 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Create New Lot</h3>
+                <button onclick="closeModal('addLotModal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="addLotForm" class="mt-6">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Product</label>
+                        <select name="stock_item" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500" required>
+                            <option value="">Select Product</option>
+                            {% for item in stock_items %}
+                            <option value="{{ item.id }}">{{ item.product.name }} - {{ item.warehouse.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Lot Number</label>
+                        <input type="text" name="lot_number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Batch Number (Optional)</label>
+                        <input type="text" name="batch_number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                        <input type="number" name="quantity" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500" step="0.01" min="0.01" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Manufacturing Date</label>
+                        <input type="date" name="manufacturing_date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Expiry Date</label>
+                        <input type="date" name="expiry_date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Unit Cost</label>
+                        <input type="number" name="unit_cost" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500" step="0.01" min="0">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Supplier Lot Number</label>
+                        <input type="text" name="supplier_lot_number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Country of Origin</label>
+                        <input type="text" name="country_of_origin" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quality Certificate</label>
+                        <input type="text" name="quality_certificate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Certification Details</label>
+                        <textarea name="certification_details" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-6 border-t mt-6">
+                    <button type="button" onclick="closeModal('addLotModal')" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                        <i class="fas fa-save mr-2"></i>Create Lot
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Lot Details Modal -->
+<div id="lotDetailsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between pb-3 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Lot Details</h3>
+                <button onclick="closeModal('lotDetailsModal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="lotDetailsContent" class="mt-6">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up event listeners
+    setupEventListeners();
+    
+    // Add lot button handler
+    document.getElementById('addLotBtn').addEventListener('click', function() {
+        openModal('addLotModal');
+    });
+    
+    // Form submission handler
+    document.getElementById('addLotForm').addEventListener('submit', handleLotFormSubmit);
+    
+    // Filter handlers
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+    document.getElementById('productFilter').addEventListener('change', applyFilters);
+    document.getElementById('lotSearch').addEventListener('input', applyFilters);
+});
+
+function setupEventListeners() {
+    // Modal close on backdrop click
+    const modals = ['addLotModal', 'lotDetailsModal'];
+    modals.forEach(modalId => {
+        document.getElementById(modalId).addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal(modalId);
+            }
+        });
+    });
+}
+
+function openModal(modalId) {
+    document.getElementById(modalId).classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    
+    // Reset form if it's the add modal
+    if (modalId === 'addLotModal') {
+        document.getElementById('addLotForm').reset();
+    }
+}
+
+async function handleLotFormSubmit(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Validate dates
+    if (data.manufacturing_date && data.expiry_date) {
+        if (new Date(data.expiry_date) <= new Date(data.manufacturing_date)) {
+            alert('Expiry date must be after manufacturing date');
+            return;
+        }
+    }
+    
+    try {
+        const response = await fetch('{% url "lot_add" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            if (result.status === 'success') {
+                alert('Lot created successfully!');
+                closeModal('addLotModal');
+                location.reload();
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } else {
+            alert('Error creating lot. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Network error. Please try again.');
+    }
+}
+
+function applyFilters() {
+    const status = document.getElementById('statusFilter').value;
+    const product = document.getElementById('productFilter').value;
+    const search = document.getElementById('lotSearch').value.toLowerCase();
+    
+    const rows = document.querySelectorAll('tbody tr:not(.no-results)');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        let show = true;
+        
+        // Text search
+        if (search && !row.textContent.toLowerCase().includes(search)) {
+            show = false;
+        }
+        
+        // Status filter
+        if (status) {
+            const statusBadge = row.querySelector('span[class*="bg-"]');
+            if (!statusBadge || !statusBadge.textContent.toLowerCase().includes(status)) {
+                show = false;
+            }
+        }
+        
+        // Product filter
+        if (product) {
+            // This would need to be implemented based on actual data attributes
+        }
+        
+        row.style.display = show ? '' : 'none';
+        if (show) visibleCount++;
+    });
+    
+    // Handle empty state
+    handleEmptyState(visibleCount === 0);
+}
+
+function handleEmptyState(isEmpty) {
+    const existingEmptyRow = document.querySelector('.no-results');
+    if (existingEmptyRow) {
+        existingEmptyRow.remove();
+    }
+    
+    if (isEmpty) {
+        const tbody = document.querySelector('tbody');
+        const emptyRow = document.createElement('tr');
+        emptyRow.className = 'no-results';
+        emptyRow.innerHTML = `
+            <td colspan="9" class="px-6 py-12 text-center">
+                <div class="text-gray-400">
+                    <i class="fas fa-search text-4xl mb-4"></i>
+                    <p class="text-lg font-medium text-gray-500">No lots match your filters</p>
+                    <p class="text-gray-400">Try adjusting your search criteria</p>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(emptyRow);
+    }
+}
+
+function clearFilters() {
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('productFilter').value = '';
+    document.getElementById('lotSearch').value = '';
+    applyFilters();
+}
+
+async function viewLot(lotId) {
+    document.getElementById('lotDetailsContent').innerHTML = `
+        <div class="text-center py-8">
+            <i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i>
+            <p class="mt-2 text-gray-500">Loading lot details...</p>
+        </div>
+    `;
+    openModal('lotDetailsModal');
+    
+    try {
+        const response = await fetch(`/inventory/lots/${lotId}/details/`);
+        if (response.ok) {
+            const data = await response.json();
+            displayLotDetails(data);
+        } else {
+            throw new Error('Failed to fetch lot details');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('lotDetailsContent').innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-exclamation-triangle text-3xl text-red-400"></i>
+                <p class="mt-2 text-red-500">Error loading lot details</p>
+            </div>
+        `;
+    }
+}
+
+function displayLotDetails(data) {
+    document.getElementById('lotDetailsContent').innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="font-semibold text-gray-900 mb-3">Lot Information</h4>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Lot Number:</span>
+                        <span class="font-medium">${data.lot_number || 'N/A'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Product:</span>
+                        <span class="font-medium">${data.product_name || 'N/A'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Quantity:</span>
+                        <span class="font-medium">${data.quantity || 'N/A'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Remaining:</span>
+                        <span class="font-medium">${data.remaining_quantity || 'N/A'}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="font-semibold text-gray-900 mb-3">Dates & Quality</h4>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Received:</span>
+                        <span class="font-medium">${data.received_date || 'N/A'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Expiry:</span>
+                        <span class="font-medium">${data.expiry_date || 'No expiry'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Quality:</span>
+                        <span class="font-medium">${data.quality_status || 'Pending'}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function approveQuality(lotId) {
+    if (!confirm('Are you sure you want to approve quality for this lot?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/inventory/lots/${lotId}/approve-quality/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        });
+        
+        if (response.ok) {
+            alert('Quality approved successfully!');
+            location.reload();
+        } else {
+            alert('Error approving quality. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Network error. Please try again.');
+    }
+}
+
+async function quarantineLot(lotId) {
+    const reason = prompt('Enter reason for quarantine:');
+    if (!reason) return;
+    
+    try {
+        const response = await fetch(`/inventory/lots/${lotId}/quarantine/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ reason })
+        });
+        
+        if (response.ok) {
+            alert('Lot quarantined successfully!');
+            location.reload();
+        } else {
+            alert('Error quarantining lot. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Network error. Please try again.');
+    }
+}
+
+function editLot(lotId) {
+    // This would open an edit modal similar to the add modal
+    alert('Edit lot functionality would be implemented here');
+}
+
+async function exportExpiring() {
+    try {
+        const response = await fetch('/inventory/lots/export-expiring/');
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `expiring-lots-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } else {
+            alert('Error generating report. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Network error. Please try again.');
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,613 @@
+{% extends "base.html" %}
+{% load static %}
+{% csrf_token %}
+{% block title %}Inventory Reports & Analytics | ERP System{% endblock %}
+{% block content %}
+<!-- Inventory Reports & Analytics -->
+<div class="mt-16 p-8">
+    <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 text-purple-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+            </svg>
+            <span class="text-purple-800 font-medium">Inventory Analytics:</span>
+            <span class="text-purple-700 ml-2">Comprehensive insights and reports for inventory management</span>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Inventory Reports & Analytics</h1>
+            <p class="text-gray-600 mt-2">Comprehensive insights into your inventory performance</p>
+        </div>
+        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mt-4 lg:mt-0">
+            <button onclick="exportReports()" class="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md">
+                <i class="fas fa-download mr-2"></i>Export Reports
+            </button>
+            <button onclick="scheduleReport()" class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md">
+                <i class="fas fa-clock mr-2"></i>Schedule
+            </button>
+            <button onclick="refreshData()" class="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-md">
+                <i class="fas fa-sync mr-2"></i>Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">Total Items</p>
+                    <p class="text-3xl font-bold">{{ stock_summary.total_items }}</p>
+                </div>
+                <svg class="w-12 h-12 text-blue-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100">Total Value</p>
+                    <p class="text-3xl font-bold">${{ stock_summary.total_value|floatformat:0 }}</p>
+                </div>
+                <svg class="w-12 h-12 text-green-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V7H9V9H3V19C3 20.1 3.9 21 5 21H11V19H5V9H21Z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-yellow-100">Low Stock</p>
+                    <p class="text-3xl font-bold">{{ stock_summary.low_stock_items }}</p>
+                </div>
+                <svg class="w-12 h-12 text-yellow-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2L13.09 8.26L22 9L17 14L18.18 23L12 19.77L5.82 23L7 14L2 9L10.91 8.26L12 2Z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-red-100">Out of Stock</p>
+                    <p class="text-3xl font-bold">{{ stock_summary.out_of_stock_items }}</p>
+                </div>
+                <svg class="w-12 h-12 text-red-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V7H9V9H3V19C3 20.1 3.9 21 5 21H11V19H5V9H21Z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100">Warehouses</p>
+                    <p class="text-3xl font-bold">{{ stock_summary.total_warehouses }}</p>
+                </div>
+                <svg class="w-12 h-12 text-purple-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M5 21H19A2 2 0 0 0 21 19V5A2 2 0 0 0 19 3H5A2 2 0 0 0 3 5V19A2 2 0 0 0 5 21M5 5H19V19H5V5Z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-indigo-100">Categories</p>
+                    <p class="text-3xl font-bold">{{ stock_summary.total_categories }}</p>
+                </div>
+                <svg class="w-12 h-12 text-indigo-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M10 3H4C2.9 3 2 3.9 2 5V11C2 12.1 2.9 13 4 13H10C11.1 13 12 12.1 12 11V5C12 3.9 11.1 3 10 3ZM20 3H14C12.9 3 12 3.9 12 5V7C12 8.1 12.9 9 14 9H20C21.1 9 22 8.1 22 7V5C22 3.9 21.1 3 20 3ZM20 11H14C12.9 11 12 11.9 12 13V19C12 20.1 12.9 21 14 21H20C21.1 21 22 20.1 22 19V13C22 11.9 21.1 11 20 11ZM10 15H4C2.9 15 2 15.9 2 17V19C2 20.1 2.9 21 4 21H10C11.1 21 12 20.1 12 19V17C12 15.9 11.1 15 10 15Z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs for Different Reports -->
+    <div class="bg-white rounded-lg shadow-md mb-6">
+        <div class="border-b border-gray-200">
+            <nav class="-mb-px flex">
+                <button onclick="showTab('overview')" class="tab-button active px-6 py-3 border-b-2 border-blue-500 text-blue-600 font-medium">
+                    <i class="fas fa-chart-line mr-2"></i>Overview
+                </button>
+                <button onclick="showTab('warehouse')" class="tab-button px-6 py-3 border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-warehouse mr-2"></i>Warehouse Analytics
+                </button>
+                <button onclick="showTab('category')" class="tab-button px-6 py-3 border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-tags mr-2"></i>Category Analytics
+                </button>
+                <button onclick="showTab('movement')" class="tab-button px-6 py-3 border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-exchange-alt mr-2"></i>Movement Analytics
+                </button>
+                <button onclick="showTab('abc')" class="tab-button px-6 py-3 border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-sort-amount-down mr-2"></i>ABC Analysis
+                </button>
+                <button onclick="showTab('aging')" class="tab-button px-6 py-3 border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-clock mr-2"></i>Aging Analysis
+                </button>
+                <button onclick="showTab('turnover')" class="tab-button px-6 py-3 border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-sync-alt mr-2"></i>Turnover Analysis
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Overview Tab -->
+    <div id="overview-tab" class="tab-content">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Inventory Value Chart -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Inventory Value Trend</h3>
+                <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+                    <canvas id="inventoryValueChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Stock Movement Chart -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Stock Movement Trend</h3>
+                <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+                    <canvas id="stockMovementChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Products Table -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Products by Value</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">% of Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for item in stock_summary.top_products %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {{ item.product__name }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ item.total_quantity }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                ${{ item.total_value|floatformat:2 }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-16 bg-gray-200 rounded-full h-2">
+                                        <div class="bg-blue-600 h-2 rounded-full" style="width: {{ item.percentage }}%"></div>
+                                    </div>
+                                    <span class="ml-2 text-sm text-gray-500">{{ item.percentage|floatformat:1 }}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warehouse Analytics Tab -->
+    <div id="warehouse-tab" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Warehouse Distribution Chart -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Warehouse Value Distribution</h3>
+                <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+                    <canvas id="warehouseDistributionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Warehouse Performance -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Warehouse Performance</h3>
+                <div class="space-y-4">
+                    {% for warehouse in warehouse_analytics %}
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                            <p class="font-medium text-gray-900">{{ warehouse.name }}</p>
+                            <p class="text-sm text-gray-500">{{ warehouse.total_items }} items</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-medium text-gray-900">${{ warehouse.total_value|floatformat:0 }}</p>
+                            <p class="text-sm text-green-600">{{ warehouse.utilization|floatformat:1 }}% utilized</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Analytics Tab -->
+    <div id="category-tab" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Category Distribution Chart -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Category Value Distribution</h3>
+                <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+                    <canvas id="categoryDistributionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Category Performance Table -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Category Performance</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for category in category_analytics %}
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {{ category.name }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ category.total_items }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    ${{ category.total_value|floatformat:2 }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Movement Analytics Tab -->
+    <div id="movement-tab" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Movement Types Chart -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Movement Types Distribution</h3>
+                <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+                    <canvas id="movementTypesChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Recent Movements -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Movements Summary</h3>
+                <div class="space-y-4">
+                    {% for movement in movement_analytics %}
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                            <p class="font-medium text-gray-900">{{ movement.movement_type|title }}</p>
+                            <p class="text-sm text-gray-500">{{ movement.count }} movements</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-medium text-gray-900">{{ movement.total_quantity }}</p>
+                            <p class="text-sm text-gray-500">units</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ABC Analysis Tab -->
+    <div id="abc-tab" class="tab-content hidden">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">ABC Analysis</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h4 class="font-medium text-green-800 mb-2">Category A (High Value)</h4>
+                    <p class="text-2xl font-bold text-green-600">{{ abc_analysis.A.count }}</p>
+                    <p class="text-sm text-green-700">{{ abc_analysis.A.percentage|floatformat:1 }}% of items</p>
+                    <p class="text-sm text-green-700">${{ abc_analysis.A.value|floatformat:0 }} value</p>
+                </div>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <h4 class="font-medium text-yellow-800 mb-2">Category B (Medium Value)</h4>
+                    <p class="text-2xl font-bold text-yellow-600">{{ abc_analysis.B.count }}</p>
+                    <p class="text-sm text-yellow-700">{{ abc_analysis.B.percentage|floatformat:1 }}% of items</p>
+                    <p class="text-sm text-yellow-700">${{ abc_analysis.B.value|floatformat:0 }} value</p>
+                </div>
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <h4 class="font-medium text-red-800 mb-2">Category C (Low Value)</h4>
+                    <p class="text-2xl font-bold text-red-600">{{ abc_analysis.C.count }}</p>
+                    <p class="text-sm text-red-700">{{ abc_analysis.C.percentage|floatformat:1 }}% of items</p>
+                    <p class="text-sm text-red-700">${{ abc_analysis.C.value|floatformat:0 }} value</p>
+                </div>
+            </div>
+            
+            <!-- ABC Analysis Chart -->
+            <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+                <canvas id="abcAnalysisChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aging Analysis Tab -->
+    <div id="aging-tab" class="tab-content hidden">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Inventory Aging Analysis</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+                {% for age_group in aging_analysis %}
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-800 mb-2">{{ age_group.label }}</h4>
+                    <p class="text-2xl font-bold text-gray-600">{{ age_group.count }}</p>
+                    <p class="text-sm text-gray-700">${{ age_group.value|floatformat:0 }} value</p>
+                    <p class="text-sm text-gray-700">{{ age_group.percentage|floatformat:1 }}% of total</p>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Aging Chart -->
+            <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+                <canvas id="agingAnalysisChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Turnover Analysis Tab -->
+    <div id="turnover-tab" class="tab-content hidden">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Inventory Turnover Analysis</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Inventory</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">COGS</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Turnover Ratio</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days in Inventory</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for item in turnover_analysis %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {{ item.product_name }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ item.avg_inventory|floatformat:0 }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                ${{ item.cogs|floatformat:0 }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ item.turnover_ratio|floatformat:2 }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ item.days_in_inventory|floatformat:0 }} days
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    {% if item.performance == 'Excellent' %}bg-green-100 text-green-800
+                                    {% elif item.performance == 'Good' %}bg-blue-100 text-blue-800
+                                    {% elif item.performance == 'Average' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ item.performance }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+});
+
+function showTab(tabName) {
+    // Hide all tabs
+    const tabs = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => tab.classList.add('hidden'));
+    
+    // Remove active class from all buttons
+    const buttons = document.querySelectorAll('.tab-button');
+    buttons.forEach(button => {
+        button.classList.remove('active', 'border-blue-500', 'text-blue-600');
+        button.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Show selected tab
+    document.getElementById(tabName + '-tab').classList.remove('hidden');
+    
+    // Add active class to selected button
+    event.target.classList.add('active', 'border-blue-500', 'text-blue-600');
+    event.target.classList.remove('border-transparent', 'text-gray-500');
+}
+
+function initializeCharts() {
+    // Inventory Value Chart
+    const inventoryValueCtx = document.getElementById('inventoryValueChart').getContext('2d');
+    new Chart(inventoryValueCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            datasets: [{
+                label: 'Inventory Value',
+                data: [120000, 135000, 128000, 142000, 138000, 155000],
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + (value / 1000) + 'K';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Stock Movement Chart
+    const stockMovementCtx = document.getElementById('stockMovementChart').getContext('2d');
+    new Chart(stockMovementCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Inbound', 'Outbound', 'Transfer', 'Adjustment'],
+            datasets: [{
+                label: 'Movements',
+                data: [450, 380, 120, 85],
+                backgroundColor: [
+                    'rgba(34, 197, 94, 0.8)',
+                    'rgba(239, 68, 68, 0.8)',
+                    'rgba(59, 130, 246, 0.8)',
+                    'rgba(147, 51, 234, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Warehouse Distribution Chart
+    const warehouseCtx = document.getElementById('warehouseDistributionChart').getContext('2d');
+    new Chart(warehouseCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for warehouse in warehouse_analytics %}'{{ warehouse.name }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                data: [{% for warehouse in warehouse_analytics %}{{ warehouse.total_value }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: [
+                    '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Category Distribution Chart
+    const categoryCtx = document.getElementById('categoryDistributionChart').getContext('2d');
+    new Chart(categoryCtx, {
+        type: 'pie',
+        data: {
+            labels: [{% for category in category_analytics %}'{{ category.name }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                data: [{% for category in category_analytics %}{{ category.total_value }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: [
+                    '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Movement Types Chart
+    const movementTypesCtx = document.getElementById('movementTypesChart').getContext('2d');
+    new Chart(movementTypesCtx, {
+        type: 'bar',
+        data: {
+            labels: [{% for movement in movement_analytics %}'{{ movement.movement_type|title }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Count',
+                data: [{% for movement in movement_analytics %}{{ movement.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: 'rgba(59, 130, 246, 0.8)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // ABC Analysis Chart
+    const abcCtx = document.getElementById('abcAnalysisChart').getContext('2d');
+    new Chart(abcCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Category A', 'Category B', 'Category C'],
+            datasets: [{
+                label: 'Value',
+                data: [{{ abc_analysis.A.value }}, {{ abc_analysis.B.value }}, {{ abc_analysis.C.value }}],
+                backgroundColor: ['#10B981', '#F59E0B', '#EF4444']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + (value / 1000) + 'K';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Aging Analysis Chart
+    const agingCtx = document.getElementById('agingAnalysisChart').getContext('2d');
+    new Chart(agingCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for age_group in aging_analysis %}'{{ age_group.label }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                data: [{% for age_group in aging_analysis %}{{ age_group.value }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: ['#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+}
+
+function exportReports() {
+    const activeTab = document.querySelector('.tab-content:not(.hidden)').id.replace('-tab', '');
+    window.open(`/inventory/reports/export/?type=${activeTab}`, '_blank');
+}
+
+function scheduleReport() {
+    alert('Report scheduling feature coming soon!');
+}
+
+function refreshData() {
+    location.reload();
+}
+</script>
+{% endblock %}

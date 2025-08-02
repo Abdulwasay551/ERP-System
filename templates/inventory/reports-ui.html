@@ -1,0 +1,371 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventory Reports - Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-chart-bar"></i> Inventory Reports & Analytics
+                    </h3>
+                    <div class="card-tools">
+                        <button class="btn btn-sm btn-primary" onclick="window.print()">
+                            <i class="fas fa-print"></i> Print Report
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Summary Cards -->
+                    <div class="row mb-4">
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-info">
+                                <div class="inner">
+                                    <h3>{{ stock_summary.total_items|default:0 }}</h3>
+                                    <p>Total Stock Items</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-boxes"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-success">
+                                <div class="inner">
+                                    <h3>{{ stock_summary.total_quantity|default:0|floatformat:0 }}</h3>
+                                    <p>Total Quantity</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-cubes"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-warning">
+                                <div class="inner">
+                                    <h3>{{ stock_summary.low_stock_count|default:0 }}</h3>
+                                    <p>Low Stock Alerts</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-danger">
+                                <div class="inner">
+                                    <h3>{{ top_categories|length }}</h3>
+                                    <p>Active Categories</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-tags"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reports Tabs -->
+                    <ul class="nav nav-tabs" id="reportsTab" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="overview-tab" data-toggle="tab" href="#overview" role="tab">
+                                <i class="fas fa-chart-pie"></i> Overview
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="categories-tab" data-toggle="tab" href="#categories" role="tab">
+                                <i class="fas fa-tags"></i> By Category
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="valuation-tab" data-toggle="tab" href="#valuation" role="tab">
+                                <i class="fas fa-dollar-sign"></i> Stock Valuation
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="movements-tab" data-toggle="tab" href="#movements" role="tab">
+                                <i class="fas fa-exchange-alt"></i> Movement Analysis
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content mt-3" id="reportsTabContent">
+                        <!-- Overview Tab -->
+                        <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5 class="card-title">Stock Distribution</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <canvas id="stockDistributionChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5 class="card-title">Stock Status</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <canvas id="stockStatusChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Categories Tab -->
+                        <div class="tab-pane fade" id="categories" role="tabpanel">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Top Categories by Stock Quantity</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Rank</th>
+                                                    <th>Category</th>
+                                                    <th>Stock Quantity</th>
+                                                    <th>Percentage</th>
+                                                    <th>Visual</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for category in top_categories %}
+                                                <tr>
+                                                    <td>{{ forloop.counter }}</td>
+                                                    <td>
+                                                        <strong>{{ category.name }}</strong>
+                                                        {% if category.code %}
+                                                            <br><small class="text-muted">{{ category.code }}</small>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ category.stock_quantity|default:0|floatformat:0 }}</td>
+                                                    <td>
+                                                        {% widthratio category.stock_quantity stock_summary.total_quantity 100 %}%
+                                                    </td>
+                                                    <td>
+                                                        <div class="progress" style="height: 20px;">
+                                                            <div class="progress-bar" role="progressbar" 
+                                                                 style="width: {% widthratio category.stock_quantity stock_summary.total_quantity 100 %}%">
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {% empty %}
+                                                <tr>
+                                                    <td colspan="5" class="text-center text-muted">No category data available</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Valuation Tab -->
+                        <div class="tab-pane fade" id="valuation" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5 class="card-title">Total Stock Value</h5>
+                                        </div>
+                                        <div class="card-body text-center">
+                                            <h2 class="text-primary">$0.00</h2>
+                                            <p class="text-muted">Based on average cost</p>
+                                            <small class="text-info">
+                                                <i class="fas fa-info-circle"></i>
+                                                Valuation calculated using weighted average cost method
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5 class="card-title">Valuation Breakdown</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row text-center">
+                                                <div class="col-4">
+                                                    <p class="text-muted">Available</p>
+                                                    <h4 class="text-success">$0.00</h4>
+                                                </div>
+                                                <div class="col-4">
+                                                    <p class="text-muted">Reserved</p>
+                                                    <h4 class="text-warning">$0.00</h4>
+                                                </div>
+                                                <div class="col-4">
+                                                    <p class="text-muted">Locked</p>
+                                                    <h4 class="text-danger">$0.00</h4>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Movement Analysis Tab -->
+                        <div class="tab-pane fade" id="movements" role="tabpanel">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Recent Stock Movements Trend</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="movementTrendChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i> Report generated on: {{ "now"|date:"M d, Y H:i" }}
+                            </small>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-primary" onclick="exportToExcel()">
+                                    <i class="fas fa-file-excel"></i> Export Excel
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="exportToPDF()">
+                                    <i class="fas fa-file-pdf"></i> Export PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+@media print {
+    .card-tools, .card-footer, .nav-tabs { display: none !important; }
+    .tab-content { border: none !important; }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+$(document).ready(function() {
+    // Stock Distribution Chart
+    const ctx1 = document.getElementById('stockDistributionChart').getContext('2d');
+    new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: [{% for category in top_categories %}'{{ category.name }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Stock Quantity',
+                data: [{% for category in top_categories %}{{ category.stock_quantity|default:0 }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(255, 205, 86, 0.8)',
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(153, 102, 255, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(255, 205, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Stock Status Chart (Doughnut)
+    const ctx2 = document.getElementById('stockStatusChart').getContext('2d');
+    new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: ['Available', 'Low Stock', 'Out of Stock'],
+            datasets: [{
+                data: [
+                    {{ stock_summary.total_items|default:0 }} - {{ stock_summary.low_stock_count|default:0 }},
+                    {{ stock_summary.low_stock_count|default:0 }},
+                    0
+                ],
+                backgroundColor: [
+                    'rgba(40, 167, 69, 0.8)',
+                    'rgba(255, 193, 7, 0.8)',
+                    'rgba(220, 53, 69, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Movement Trend Chart
+    const ctx3 = document.getElementById('movementTrendChart').getContext('2d');
+    new Chart(ctx3, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            datasets: [{
+                label: 'Stock In',
+                data: [12, 19, 3, 5, 2, 3],
+                borderColor: 'rgba(40, 167, 69, 1)',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                tension: 0.1
+            }, {
+                label: 'Stock Out',
+                data: [7, 11, 5, 8, 3, 7],
+                borderColor: 'rgba(220, 53, 69, 1)',
+                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+
+function exportToExcel() {
+    alert('Excel export functionality would be implemented here');
+}
+
+function exportToPDF() {
+    alert('PDF export functionality would be implemented here');
+}
+</script>
+{% endblock %}

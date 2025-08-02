@@ -375,25 +375,18 @@
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Volume Capacity (m³)</label>
-                        <input type="number" name="max_capacity_volume" min="0" step="0.01"
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Capacity (m³)</label>
+                        <input type="number" name="capacity" min="0" step="0.01"
                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                placeholder="0.00">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Warehouse Code</label>
-                    <input type="text" name="code"
-                           class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                           placeholder="Enter warehouse code (optional)">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                    <textarea name="address" rows="3"
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea name="description" rows="3"
                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                              placeholder="Enter full address..."></textarea>
+                              placeholder="Enter warehouse description..."></textarea>
                 </div>
 
                 <div>
@@ -419,311 +412,33 @@
     </div>
 </div>
 
-<!-- Edit Warehouse Modal -->
-<div id="editWarehouseModal" class="modal-overlay fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl">
-        <div class="p-8">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-blue-800">Edit Warehouse</h2>
-                <button id="closeEditWarehouseModal" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
-            </div>
-
-            <form id="editWarehouseForm" method="post">
-                {% csrf_token %}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Warehouse Name</label>
-                        <input type="text" name="name" required
-                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                               placeholder="Enter warehouse name">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                        <input type="text" name="location"
-                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                               placeholder="Enter location address">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Warehouse Type</label>
-                        <select name="warehouse_type"
-                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                            <option value="standard">Standard</option>
-                            <option value="cold_storage">Cold Storage</option>
-                            <option value="hazardous">Hazardous Materials</option>
-                            <option value="distribution">Distribution Center</option>
-                        </select>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Volume Capacity (m³)</label>
-                        <input type="number" name="max_capacity_volume" min="0" step="0.01"
-                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                               placeholder="0.00">
-                    </div>
-                </div>
-
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Warehouse Code</label>
-                    <input type="text" name="code"
-                           class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                           placeholder="Enter warehouse code (optional)">
-                </div>
-
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                    <textarea name="address" rows="3"
-                              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                              placeholder="Enter full address..."></textarea>
-                </div>
-
-                <div class="mb-6">
-                    <div class="flex items-center">
-                        <input type="checkbox" name="is_active" id="editIsActive" checked
-                               class="h-4 w-4 text-green-600 rounded border-gray-300">
-                        <label for="editIsActive" class="ml-2 text-sm text-gray-700">Active</label>
-                    </div>
-                </div>
-
-                <div class="flex justify-end space-x-4">
-                    <button type="button" id="cancelEditWarehouse"
-                            class="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50">
-                        Cancel
-                    </button>
-                    <button type="submit" 
-                            class="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:shadow-lg">
-                        Update Warehouse
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Inter-warehouse Transfer Modal -->
-<div id="transferModal" class="modal-overlay fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl">
-        <div class="p-8">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-blue-800">Inter-warehouse Transfer</h2>
-                <button id="closeTransferModal" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
-            </div>
-
-            <form id="transferForm" method="post" action="{% url 'inventory_stock_movement_add' %}" class="space-y-6">
-                {% csrf_token %}
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">From Warehouse</label>
-                        <select name="from_warehouse" required
-                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">Select Source Warehouse</option>
-                            {% for warehouse in warehouses %}
-                            <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">To Warehouse</label>
-                        <select name="to_warehouse" required
-                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">Select Destination Warehouse</option>
-                            {% for warehouse in warehouses %}
-                            <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Stock Item</label>
-                    <select name="stock_item" id="transferStockItem" required
-                            class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option value="">Select source warehouse first</option>
-                    </select>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Transfer Quantity</label>
-                        <input type="number" name="quantity" required min="0.01" step="0.01"
-                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                               placeholder="0.00">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Available Quantity</label>
-                        <input type="text" id="availableQuantity" readonly
-                               class="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50"
-                               placeholder="Select stock item">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Transfer Notes</label>
-                    <textarea name="notes" rows="3"
-                              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder="Enter transfer notes..."></textarea>
-                </div>
-
-                <div class="flex justify-end space-x-4 pt-6">
-                    <button type="button" id="cancelTransfer" 
-                            class="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50">
-                        Cancel
-                    </button>
-                    <button type="submit" 
-                            class="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:shadow-lg">
-                        Execute Transfer
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <script>
 // Modal functionality
 const addWarehouseBtn = document.getElementById('addWarehouseBtn');
 const addWarehouseModal = document.getElementById('addWarehouseModal');
-const editWarehouseModal = document.getElementById('editWarehouseModal');
-const transferBtn = document.getElementById('transferBtn');
-const transferModal = document.getElementById('transferModal');
-let currentEditId = null;
 
 addWarehouseBtn.addEventListener('click', function() {
     addWarehouseModal.classList.remove('hidden');
-});
-
-transferBtn.addEventListener('click', function() {
-    transferModal.classList.remove('hidden');
 });
 
 document.getElementById('closeAddWarehouseModal').addEventListener('click', function() {
     addWarehouseModal.classList.add('hidden');
 });
 
-document.getElementById('closeTransferModal').addEventListener('click', function() {
-    transferModal.classList.add('hidden');
-});
-
 document.getElementById('cancelAddWarehouse').addEventListener('click', function() {
     addWarehouseModal.classList.add('hidden');
 });
 
-document.getElementById('cancelTransfer').addEventListener('click', function() {
-    transferModal.classList.add('hidden');
-});
-
-// Edit warehouse modal event listeners
-document.getElementById('closeEditWarehouseModal').addEventListener('click', closeEditWarehouseModal);
-document.getElementById('cancelEditWarehouse').addEventListener('click', closeEditWarehouseModal);
-document.getElementById('editWarehouseForm').addEventListener('submit', handleEditWarehouse);
-
-// Handle warehouse form submission
-document.getElementById('addWarehouseForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    
-    try {
-        const response = await fetch(e.target.action, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            if (result.success) {
-                addWarehouseModal.classList.add('hidden');
-                showNotification('Warehouse added successfully!', 'success');
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                showNotification('Error: ' + (result.error || 'Unknown error'), 'error');
-            }
-        } else {
-            showNotification('Error adding warehouse', 'error');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showNotification('Error adding warehouse', 'error');
-    }
-});
-
 // Warehouse actions
-async function editWarehouse(id) {
-    currentEditId = id;
-    
-    try {
-        // Fetch warehouse data first
-        const response = await fetch(`/inventory/warehouse-edit/${id}/`, {
-            method: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.warehouse) {
-                // Populate edit form
-                const warehouse = data.warehouse;
-                document.querySelector('#editWarehouseForm input[name="name"]').value = warehouse.name || '';
-                document.querySelector('#editWarehouseForm input[name="location"]').value = warehouse.location || '';
-                document.querySelector('#editWarehouseForm input[name="code"]').value = warehouse.code || '';
-                document.querySelector('#editWarehouseForm textarea[name="address"]').value = warehouse.address || '';
-                document.querySelector('#editWarehouseForm select[name="warehouse_type"]').value = warehouse.warehouse_type || 'standard';
-                document.querySelector('#editWarehouseForm input[name="max_capacity_volume"]').value = warehouse.max_capacity_volume || '';
-                document.querySelector('#editWarehouseForm input[name="is_active"]').checked = warehouse.is_active;
-                
-                // Show edit modal
-                openEditWarehouseModal();
-            } else {
-                showNotification('Error loading warehouse data', 'error');
-            }
-        } else {
-            showNotification('Error fetching warehouse data', 'error');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showNotification('Error loading warehouse data', 'error');
-    }
+function editWarehouse(id) {
+    // Implement edit functionality
+    console.log('Edit warehouse:', id);
 }
 
-async function deleteWarehouse(id) {
+function deleteWarehouse(id) {
     if (confirm('Are you sure you want to delete this warehouse?')) {
-        try {
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-            
-            const response = await fetch(`/inventory/warehouse-delete/${id}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': csrfToken,
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-            
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success) {
-                    showNotification('Warehouse deleted successfully!', 'success');
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    showNotification('Error: ' + (result.error || 'Unknown error'), 'error');
-                }
-            } else {
-                showNotification('Error deleting warehouse', 'error');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            showNotification('Error deleting warehouse', 'error');
-        }
+        // Implement delete functionality
+        console.log('Delete warehouse:', id);
     }
 }
 
@@ -739,124 +454,10 @@ function openAddWarehouseModal() {
     addWarehouseModal.classList.remove('hidden');
 }
 
-function openEditWarehouseModal() {
-    editWarehouseModal.classList.remove('hidden');
-}
-
-function closeEditWarehouseModal() {
-    editWarehouseModal.classList.add('hidden');
-}
-
-// Handle edit warehouse form submission
-async function handleEditWarehouse(e) {
-    e.preventDefault();
-    
-    try {
-        const formData = new FormData(e.target);
-        const csrfToken = formData.get('csrfmiddlewaretoken');
-        
-        const response = await fetch(`/inventory/warehouse-edit/${currentEditId}/`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            if (result.success) {
-                closeEditWarehouseModal();
-                showNotification('Warehouse updated successfully!', 'success');
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                let errorMsg = 'Error updating warehouse';
-                if (result.errors) {
-                    const errors = Object.values(result.errors).flat();
-                    errorMsg = errors.join(', ');
-                } else if (result.error) {
-                    errorMsg = result.error;
-                }
-                showNotification(errorMsg, 'error');
-            }
-        } else {
-            showNotification('Error updating warehouse', 'error');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showNotification('Error updating warehouse', 'error');
-    }
-}
-
-// Notification Function
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
-        type === 'success' ? 'bg-green-500' : 
-        type === 'error' ? 'bg-red-500' : 
-        type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
-    } text-white`;
-    notification.textContent = message;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
-}
-
 // Close modal when clicking outside
 addWarehouseModal.addEventListener('click', function(e) {
     if (e.target === addWarehouseModal) {
         addWarehouseModal.classList.add('hidden');
-    }
-});
-
-transferModal.addEventListener('click', function(e) {
-    if (e.target === transferModal) {
-        transferModal.classList.add('hidden');
-    }
-});
-
-editWarehouseModal.addEventListener('click', function(e) {
-    if (e.target === editWarehouseModal) {
-        editWarehouseModal.classList.add('hidden');
-    }
-});
-
-// Handle transfer form submission
-document.getElementById('transferForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    
-    // Add movement type for transfer
-    formData.append('movement_type', 'transfer_out');
-    
-    try {
-        const response = await fetch(e.target.action, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            if (result.success) {
-                transferModal.classList.add('hidden');
-                showNotification('Transfer completed successfully!', 'success');
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                showNotification('Error: ' + (result.error || 'Unknown error'), 'error');
-            }
-        } else {
-            showNotification('Error executing transfer', 'error');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showNotification('Error executing transfer', 'error');
     }
 });
 </script>

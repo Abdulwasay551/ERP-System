@@ -1,0 +1,619 @@
+{% extends "base.html" %}
+{% load static %}
+{% csrf_token %}
+{% block title %}Item Categories | ERP System{% endblock %}
+{% block content %}
+<!-- Item Categories Management -->
+<div class="mt-16 p-8">
+    <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 text-emerald-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clip-rule="evenodd"/>
+            </svg>
+            <span class="text-emerald-800 font-medium">Item Categories System:</span>
+            <span class="text-emerald-700 ml-2">Organize your inventory with hierarchical categories for better management and reporting</span>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Item Categories</h1>
+            <p class="text-gray-600 mt-2">Manage and organize your product categories</p>
+        </div>
+        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mt-4 lg:mt-0">
+            <button onclick="openAddCategoryModal()" class="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-6 py-3 rounded-lg hover:from-emerald-700 hover:to-emerald-800 transition-all duration-200 shadow-md">
+                <i class="fas fa-plus mr-2"></i>Add Category
+            </button>
+            <button onclick="exportCategories()" class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md">
+                <i class="fas fa-download mr-2"></i>Export
+            </button>
+            <button onclick="importCategories()" class="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-md">
+                <i class="fas fa-upload mr-2"></i>Import
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">Total Categories</p>
+                    <p class="text-3xl font-bold">{{ total_categories }}</p>
+                </div>
+                <svg class="w-12 h-12 text-blue-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100">Active Categories</p>
+                    <p class="text-3xl font-bold">{{ active_categories }}</p>
+                </div>
+                <svg class="w-12 h-12 text-green-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100">With Products</p>
+                    <p class="text-3xl font-bold">{{ categories_with_products }}</p>
+                </div>
+                <svg class="w-12 h-12 text-purple-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2h4a1 1 0 110 2h-1v10a2 2 0 01-2 2H6a2 2 0 01-2-2V6H3a1 1 0 010-2h4zM9 3v1h6V3H9z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-orange-100">Parent Categories</p>
+                    <p class="text-3xl font-bold">{{ parent_categories.count }}</p>
+                </div>
+                <svg class="w-12 h-12 text-orange-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories Filter and Search -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Search Categories</label>
+                <input type="text" id="searchInput" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500" placeholder="Search by name or code...">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+                <select id="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
+                    <option value="">All Categories</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Parent</label>
+                <select id="parentFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
+                    <option value="">All Categories</option>
+                    <option value="parent">Parent Categories Only</option>
+                    <option value="subcategory">Subcategories Only</option>
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button onclick="clearFilters()" class="w-full bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+                    <i class="fas fa-times mr-2"></i>Clear Filters
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories Table -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parent</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Products</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Value</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="categoriesTableBody">
+                    {% for category in categories %}
+                    <tr class="hover:bg-gray-50 category-row" data-category-id="{{ category.id }}" data-category-name="{{ category.name|lower }}" data-category-code="{{ category.code|lower }}" data-status="{{ category.is_active|yesno:'active,inactive' }}" data-parent="{{ category.parent|yesno:'subcategory,parent' }}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                {% if category.parent %}
+                                <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center mr-3">
+                                    <i class="fas fa-arrow-right text-gray-400 text-sm"></i>
+                                </div>
+                                {% else %}
+                                <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center mr-3">
+                                    <i class="fas fa-folder text-emerald-600"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">{{ category.name }}</div>
+                                    {% if category.description %}
+                                    <div class="text-sm text-gray-500">{{ category.description|truncatechars:50 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if category.code %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    {{ category.code }}
+                                </span>
+                            {% else %}
+                                <span class="text-gray-400">No code</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if category.parent %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    {{ category.parent.name }}
+                                </span>
+                            {% else %}
+                                <span class="text-gray-400">Parent Category</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div class="flex items-center">
+                                <span class="font-medium">{{ category.product_count }}</span>
+                                {% if category.active_products %}
+                                <span class="ml-2 text-xs text-green-600">({{ category.active_products }} active)</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if category.total_stock_value %}
+                                ${{ category.total_stock_value|floatformat:2 }}
+                            {% else %}
+                                <span class="text-gray-400">$0.00</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if category.is_active %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Active
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    Inactive
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-2">
+                                <button onclick="viewCategoryDetails({{ category.id }})" class="text-blue-600 hover:text-blue-900" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="editCategory({{ category.id }})" class="text-emerald-600 hover:text-emerald-900" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteCategory({{ category.id }}, '{{ category.name }}')" class="text-red-600 hover:text-red-900" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% if not category.parent %}
+                                <button onclick="addSubcategory({{ category.id }}, '{{ category.name }}')" class="text-purple-600 hover:text-purple-900" title="Add Subcategory">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-8 text-center">
+                            <div class="text-gray-500">
+                                <i class="fas fa-folder-open text-6xl mb-4"></i>
+                                <p class="text-xl font-medium">No categories found</p>
+                                <p>Create your first category to get started</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Category Modal -->
+<div id="categoryModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between pb-3 border-b">
+                <h3 class="text-lg font-semibold text-gray-900" id="modalTitle">Add Category</h3>
+                <button onclick="closeModal('categoryModal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="categoryForm" class="mt-6">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Category Name *</label>
+                        <input type="text" name="name" id="categoryName" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Category Code</label>
+                        <input type="text" name="code" id="categoryCode" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500" placeholder="Optional unique code">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Parent Category</label>
+                        <select name="parent_id" id="categoryParent" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
+                            <option value="">No Parent (Root Category)</option>
+                            {% for parent in categories %}
+                                {% if not parent.parent %}
+                                <option value="{{ parent.id }}">{{ parent.name }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <textarea name="description" id="categoryDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500" placeholder="Optional description"></textarea>
+                    </div>
+                    <div id="statusField" class="hidden">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="is_active" id="categoryStatus" checked class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                            <span class="ml-2 text-sm text-gray-700">Active</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('categoryModal')" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700">
+                        <span id="submitButtonText">Create Category</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Category Details Modal -->
+<div id="categoryDetailsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-10 mx-auto p-5 border w-4/5 max-w-4xl shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between pb-3 border-b">
+                <h3 class="text-lg font-semibold text-gray-900" id="detailsModalTitle">Category Details</h3>
+                <button onclick="closeModal('categoryDetailsModal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="categoryDetailsContent" class="mt-6">
+                <!-- Content will be loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentCategoryId = null;
+let isEditMode = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    setupEventListeners();
+});
+
+function setupEventListeners() {
+    // Search and filter functionality
+    document.getElementById('searchInput').addEventListener('input', filterCategories);
+    document.getElementById('statusFilter').addEventListener('change', filterCategories);
+    document.getElementById('parentFilter').addEventListener('change', filterCategories);
+    
+    // Form submission
+    document.getElementById('categoryForm').addEventListener('submit', handleCategorySubmit);
+}
+
+function filterCategories() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value;
+    const parentFilter = document.getElementById('parentFilter').value;
+    
+    const rows = document.querySelectorAll('.category-row');
+    
+    rows.forEach(row => {
+        const name = row.dataset.categoryName;
+        const code = row.dataset.categoryCode;
+        const status = row.dataset.status;
+        const parent = row.dataset.parent;
+        
+        let visible = true;
+        
+        // Search filter
+        if (searchTerm && !name.includes(searchTerm) && !code.includes(searchTerm)) {
+            visible = false;
+        }
+        
+        // Status filter
+        if (statusFilter && status !== statusFilter) {
+            visible = false;
+        }
+        
+        // Parent filter
+        if (parentFilter) {
+            if (parentFilter === 'parent' && parent !== 'parent') {
+                visible = false;
+            } else if (parentFilter === 'subcategory' && parent !== 'subcategory') {
+                visible = false;
+            }
+        }
+        
+        row.style.display = visible ? '' : 'none';
+    });
+}
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('parentFilter').value = '';
+    filterCategories();
+}
+
+function openAddCategoryModal() {
+    currentCategoryId = null;
+    isEditMode = false;
+    document.getElementById('modalTitle').textContent = 'Add Category';
+    document.getElementById('submitButtonText').textContent = 'Create Category';
+    document.getElementById('statusField').classList.add('hidden');
+    document.getElementById('categoryForm').reset();
+    document.getElementById('categoryModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function addSubcategory(parentId, parentName) {
+    openAddCategoryModal();
+    document.getElementById('categoryParent').value = parentId;
+    document.getElementById('modalTitle').textContent = `Add Subcategory to ${parentName}`;
+}
+
+function editCategory(categoryId) {
+    currentCategoryId = categoryId;
+    isEditMode = true;
+    document.getElementById('modalTitle').textContent = 'Edit Category';
+    document.getElementById('submitButtonText').textContent = 'Update Category';
+    document.getElementById('statusField').classList.remove('hidden');
+    
+    // Get category details and populate form
+    fetch(`/inventory/categories/${categoryId}/detail/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const category = data.category;
+                document.getElementById('categoryName').value = category.name;
+                document.getElementById('categoryCode').value = category.code || '';
+                document.getElementById('categoryDescription').value = category.description || '';
+                document.getElementById('categoryStatus').checked = category.is_active;
+                
+                // Set parent if exists
+                const parentSelect = document.getElementById('categoryParent');
+                for (let option of parentSelect.options) {
+                    if (option.text === category.parent) {
+                        option.selected = true;
+                        break;
+                    }
+                }
+                
+                document.getElementById('categoryModal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            } else {
+                alert('Error loading category details: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading category details');
+        });
+}
+
+function deleteCategory(categoryId, categoryName) {
+    if (confirm(`Are you sure you want to delete the category "${categoryName}"?`)) {
+        fetch(`/inventory/categories/${categoryId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting category: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting category');
+        });
+    }
+}
+
+function viewCategoryDetails(categoryId) {
+    fetch(`/inventory/categories/${categoryId}/detail/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayCategoryDetails(data);
+                document.getElementById('categoryDetailsModal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            } else {
+                alert('Error loading category details: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading category details');
+        });
+}
+
+function displayCategoryDetails(data) {
+    const category = data.category;
+    const products = data.products;
+    const subcategories = data.subcategories;
+    
+    document.getElementById('detailsModalTitle').textContent = `${category.name} - Details`;
+    
+    const content = `
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h4 class="font-semibold text-gray-900 mb-2">Category Information</h4>
+                <div class="space-y-2">
+                    <p><span class="font-medium">Name:</span> ${category.name}</p>
+                    <p><span class="font-medium">Code:</span> ${category.code || 'Not set'}</p>
+                    <p><span class="font-medium">Parent:</span> ${category.parent || 'Root Category'}</p>
+                    <p><span class="font-medium">Status:</span> 
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${category.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${category.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                    </p>
+                    <p><span class="font-medium">Created:</span> ${category.created_at}</p>
+                </div>
+                ${category.description ? `<p class="mt-3"><span class="font-medium">Description:</span> ${category.description}</p>` : ''}
+            </div>
+            
+            <div class="bg-blue-50 rounded-lg p-4">
+                <h4 class="font-semibold text-gray-900 mb-2">Statistics</h4>
+                <div class="space-y-2">
+                    <p><span class="font-medium">Products:</span> ${category.product_count}</p>
+                    <p><span class="font-medium">Subcategories:</span> ${category.subcategory_count}</p>
+                    <p><span class="font-medium">Stock Value:</span> $${category.total_stock_value.toFixed(2)}</p>
+                </div>
+            </div>
+            
+            <div class="bg-green-50 rounded-lg p-4">
+                <h4 class="font-semibold text-gray-900 mb-2">Quick Actions</h4>
+                <div class="space-y-2">
+                    <button onclick="editCategory(${category.id})" class="w-full bg-emerald-600 text-white px-3 py-2 rounded text-sm hover:bg-emerald-700">
+                        Edit Category
+                    </button>
+                    <button onclick="addSubcategory(${category.id}, '${category.name}')" class="w-full bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700">
+                        Add Subcategory
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        ${subcategories.length > 0 ? `
+        <div class="mt-6">
+            <h4 class="font-semibold text-gray-900 mb-3">Subcategories (${subcategories.length})</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                ${subcategories.map(sub => `
+                    <div class="border rounded-lg p-3">
+                        <div class="flex items-center justify-between">
+                            <h5 class="font-medium">${sub.name}</h5>
+                            <span class="text-sm text-gray-500">${sub.product_count} products</span>
+                        </div>
+                        ${sub.code ? `<p class="text-sm text-gray-600">Code: ${sub.code}</p>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        ` : ''}
+        
+        ${products.length > 0 ? `
+        <div class="mt-6">
+            <h4 class="font-semibold text-gray-900 mb-3">Products (${category.product_count} total, showing first 10)</h4>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cost Price</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Selling Price</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${products.map(product => `
+                            <tr>
+                                <td class="px-4 py-2 text-sm font-medium text-gray-900">${product.name}</td>
+                                <td class="px-4 py-2 text-sm text-gray-500">${product.sku}</td>
+                                <td class="px-4 py-2 text-sm text-gray-900">${product.stock_quantity}</td>
+                                <td class="px-4 py-2 text-sm text-gray-900">$${product.cost_price.toFixed(2)}</td>
+                                <td class="px-4 py-2 text-sm text-gray-900">$${product.selling_price.toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        ` : '<div class="mt-6 text-center text-gray-500">No products in this category</div>'}
+    `;
+    
+    document.getElementById('categoryDetailsContent').innerHTML = content;
+}
+
+function handleCategorySubmit(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const url = isEditMode 
+        ? `/inventory/categories/${currentCategoryId}/update/`
+        : '/inventory/categories/create/';
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeModal('categoryModal');
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving category');
+    });
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    if (modalId === 'categoryModal') {
+        document.getElementById('categoryForm').reset();
+        currentCategoryId = null;
+        isEditMode = false;
+    }
+}
+
+function exportCategories() {
+    alert('Export functionality coming soon!');
+}
+
+function importCategories() {
+    alert('Import functionality coming soon!');
+}
+</script>
+{% endblock %}

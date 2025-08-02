@@ -44,9 +44,9 @@
         </a>
 
         <!-- Product Tracking -->
-        <a href="{% url 'products:tracking_list' %}" class="sidebar-item">
-            <i class="fas fa-barcode sidebar-icon"></i>
-            <span class="sidebar-text">Inventory Tracking</span>
+        <a href="{% url 'products:tracking_list' %}" class="sidebar-item {% if request.resolver_match.url_name == 'tracking_list' %}active{% endif %}">
+            <i class="fas fa-qrcode sidebar-icon"></i>
+            <span class="sidebar-text">Product Tracking</span>
         </a>
 
         <!-- Product Attributes -->

@@ -1,0 +1,536 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventory Locks - Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">
+                        <i class="fas fa-lock"></i> Inventory Locks Management
+                    </h3>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" data-toggle="modal" data-target="#addLockModal">
+                            <i class="fas fa-plus"></i> New Lock
+                        </button>
+                        <button class="btn btn-warning" onclick="showExpiredLocks()">
+                            <i class="fas fa-clock"></i> Expired Locks
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Summary Stats -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-warning">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Active Locks</span>
+                                    <span class="info-box-number">{{ active_locks|default:0 }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info">
+                                    <i class="fas fa-receipt"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">GRN Pending Bill</span>
+                                    <span class="info-box-number">{{ grn_pending_locks|default:0 }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-secondary">
+                                    <i class="fas fa-vial"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Quality Inspection</span>
+                                    <span class="info-box-number">{{ quality_locks|default:0 }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-danger">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Expired Locks</span>
+                                    <span class="info-box-number">{{ expired_locks|default:0 }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filter Controls -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <select class="form-control" id="lockTypeFilter">
+                                <option value="">All Lock Types</option>
+                                <option value="grn_pending_bill">GRN Pending Bill</option>
+                                <option value="quality_inspection">Quality Inspection</option>
+                                <option value="sales_order">Sales Order</option>
+                                <option value="production_order">Production Order</option>
+                                <option value="manual">Manual Lock</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-control" id="statusFilter">
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="expired">Expired</option>
+                                <option value="auto_unlock">Auto Unlock Ready</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" id="productSearch" placeholder="Search product...">
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-secondary btn-block" onclick="clearFilters()">
+                                <i class="fas fa-times"></i> Clear Filters
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Locks Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="locksTable">
+                            <thead>
+                                <tr>
+                                    <th>Lock ID</th>
+                                    <th>Product</th>
+                                    <th>Locked Quantity</th>
+                                    <th>Lock Type</th>
+                                    <th>Reference</th>
+                                    <th>Locked By</th>
+                                    <th>Locked Date</th>
+                                    <th>Expires</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lock in locks %}
+                                <tr class="{% if lock.is_expired %}table-danger{% elif lock.auto_unlock_on_bill %}table-info{% endif %}">
+                                    <td><strong>#{{ lock.id }}</strong></td>
+                                    <td>
+                                        <strong>{{ lock.stock_item.product.name }}</strong>
+                                        <br><small class="text-muted">{{ lock.stock_item.product.sku }}</small>
+                                        <br><small class="text-muted">@ {{ lock.stock_item.warehouse.name }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ lock.locked_quantity }}</strong>
+                                        <br><small class="text-muted">{{ lock.stock_item.product.unit_of_measure|default:"units" }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{% if lock.lock_type == 'grn_pending_bill' %}info{% elif lock.lock_type == 'quality_inspection' %}secondary{% elif lock.lock_type == 'manual' %}warning{% else %}primary{% endif %}">
+                                            {{ lock.get_lock_type_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if lock.reference_number %}
+                                            <strong>{{ lock.reference_number }}</strong>
+                                            <br><small class="text-muted">{{ lock.get_reference_type_display }}</small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ lock.locked_by.get_full_name|default:lock.locked_by.email }}
+                                        <br><small class="text-muted">{{ lock.locked_by.email }}</small>
+                                    </td>
+                                    <td>{{ lock.locked_at|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        {% if lock.expires_at %}
+                                            {{ lock.expires_at|date:"M d, Y H:i" }}
+                                            {% if lock.is_expired %}
+                                                <br><span class="badge badge-danger">Expired</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">No expiry</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if not lock.is_active %}
+                                            <span class="badge badge-success">Unlocked</span>
+                                        {% elif lock.is_expired %}
+                                            <span class="badge badge-danger">Expired</span>
+                                        {% elif lock.auto_unlock_on_bill %}
+                                            <span class="badge badge-info">Auto Unlock Ready</span>
+                                        {% else %}
+                                            <span class="badge badge-warning">Active</span>
+                                        {% endif %}
+                                        {% if lock.priority %}
+                                            <br><small class="text-muted">Priority: {{ lock.priority }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-info btn-sm" onclick="viewLock({{ lock.id }})" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            {% if lock.is_active %}
+                                                {% if not lock.requires_approval_to_unlock %}
+                                                <button class="btn btn-success btn-sm" onclick="unlockInventory({{ lock.id }})" title="Unlock">
+                                                    <i class="fas fa-unlock"></i>
+                                                </button>
+                                                {% else %}
+                                                <button class="btn btn-warning btn-sm" onclick="requestUnlock({{ lock.id }})" title="Request Unlock">
+                                                    <i class="fas fa-paper-plane"></i>
+                                                </button>
+                                                {% endif %}
+                                                <button class="btn btn-primary btn-sm" onclick="editLock({{ lock.id }})" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="10" class="text-center text-muted">
+                                        <i class="fas fa-lock fa-3x mb-3"></i>
+                                        <p>No inventory locks found</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Lock Modal -->
+<div class="modal fade" id="addLockModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Create Inventory Lock</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <form id="addLockForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Product</label>
+                                <select name="stock_item" class="form-control select2" required>
+                                    <option value="">Select Product</option>
+                                    {% for item in stock_items %}
+                                    <option value="{{ item.id }}" data-available="{{ item.available_quantity }}">
+                                        {{ item.product.name }} - {{ item.warehouse.name }} ({{ item.available_quantity }} available)
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Quantity to Lock</label>
+                                <input type="number" name="locked_quantity" class="form-control" step="0.01" min="0.01" required>
+                                <small class="text-muted">Available: <span id="availableQtyLock">0</span></small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Lock Type</label>
+                                <select name="lock_type" class="form-control" required>
+                                    <option value="">Select Type</option>
+                                    <option value="grn_pending_bill">GRN Pending Bill</option>
+                                    <option value="quality_inspection">Quality Inspection</option>
+                                    <option value="sales_order">Sales Order</option>
+                                    <option value="production_order">Production Order</option>
+                                    <option value="audit_hold">Audit Hold</option>
+                                    <option value="manual">Manual Lock</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Priority (1=Highest, 10=Lowest)</label>
+                                <input type="number" name="priority" class="form-control" min="1" max="10" value="5">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Reference Type</label>
+                                <select name="reference_type" class="form-control">
+                                    <option value="">Select Reference Type</option>
+                                    <option value="grn">Goods Receipt Note</option>
+                                    <option value="bill">Purchase Bill</option>
+                                    <option value="quality_check">Quality Check</option>
+                                    <option value="sales_order">Sales Order</option>
+                                    <option value="production_order">Production Order</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Reference Number</label>
+                                <input type="text" name="reference_number" class="form-control" placeholder="Document reference">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Expires At (Optional)</label>
+                                <input type="datetime-local" name="expires_at" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Auto Unlock Options</label>
+                                <div class="form-check">
+                                    <input type="checkbox" name="auto_unlock_on_bill" class="form-check-input" id="autoUnlockBill">
+                                    <label class="form-check-label" for="autoUnlockBill">Auto unlock when bill is created</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" name="auto_unlock_on_quality_pass" class="form-check-input" id="autoUnlockQuality">
+                                    <label class="form-check-label" for="autoUnlockQuality">Auto unlock on quality approval</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" name="requires_approval_to_unlock" class="form-check-input" id="requiresApproval">
+                                    <label class="form-check-label" for="requiresApproval">Requires approval to unlock</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Reason for Lock</label>
+                        <textarea name="reason" class="form-control" rows="3" placeholder="Reason for locking inventory..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="Additional notes..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Lock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Lock Details Modal -->
+<div class="modal fade" id="lockDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Lock Details</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body" id="lockDetailsContent">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Unlock Confirmation Modal -->
+<div class="modal fade" id="unlockModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Unlock Inventory</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <form id="unlockForm">
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Are you sure you want to unlock this inventory?
+                    </div>
+                    <div class="form-group">
+                        <label>Unlock Reason</label>
+                        <textarea name="unlock_reason" class="form-control" rows="3" placeholder="Reason for unlocking..." required></textarea>
+                    </div>
+                    <input type="hidden" name="lock_id" id="unlockLockId">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Unlock Inventory</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize DataTable
+    $('#locksTable').DataTable({
+        order: [[6, 'desc']], // Sort by locked date descending
+        pageLength: 25,
+        responsive: true,
+        columnDefs: [
+            { orderable: false, targets: [9] } // Actions column
+        ]
+    });
+
+    // Initialize Select2
+    $('.select2').select2({
+        theme: 'bootstrap4'
+    });
+
+    // Update available quantity when product changes
+    $('select[name="stock_item"]').on('change', function() {
+        const available = $(this).find(':selected').data('available') || 0;
+        $('#availableQtyLock').text(available);
+        $('input[name="locked_quantity"]').attr('max', available);
+    });
+
+    // Handle lock form submission
+    $('#addLockForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const quantity = parseFloat($('input[name="locked_quantity"]').val());
+        const available = parseFloat($('#availableQtyLock').text());
+        
+        if (quantity > available) {
+            alert('Lock quantity cannot exceed available quantity');
+            return;
+        }
+        
+        // In a real implementation, submit to backend
+        alert('Inventory lock functionality would be implemented here');
+        $('#addLockModal').modal('hide');
+    });
+
+    // Handle unlock form submission
+    $('#unlockForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const lockId = $('#unlockLockId').val();
+        const reason = $('textarea[name="unlock_reason"]').val();
+        
+        if (!reason.trim()) {
+            alert('Please provide a reason for unlocking');
+            return;
+        }
+        
+        // In a real implementation, submit to backend
+        alert('Inventory unlocked successfully');
+        $('#unlockModal').modal('hide');
+        location.reload();
+    });
+
+    // Filter functionality
+    $('#lockTypeFilter, #statusFilter').on('change', function() {
+        applyFilters();
+    });
+    
+    $('#productSearch').on('keyup', function() {
+        applyFilters();
+    });
+});
+
+function applyFilters() {
+    const table = $('#locksTable').DataTable();
+    const search = $('#productSearch').val();
+    
+    // Apply search
+    table.search(search);
+    
+    // Apply custom filters (in real implementation, would filter server-side)
+    table.draw();
+}
+
+function clearFilters() {
+    $('#lockTypeFilter, #statusFilter').val('');
+    $('#productSearch').val('');
+    $('#locksTable').DataTable().search('').draw();
+}
+
+function viewLock(lockId) {
+    $('#lockDetailsContent').html('<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</div>');
+    $('#lockDetailsModal').modal('show');
+    
+    // In real implementation, load from backend
+    setTimeout(() => {
+        $('#lockDetailsContent').html(`
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Lock Information</h5>
+                    <table class="table table-sm">
+                        <tr><td><strong>Lock ID:</strong></td><td>#${lockId}</td></tr>
+                        <tr><td><strong>Type:</strong></td><td>GRN Pending Bill</td></tr>
+                        <tr><td><strong>Status:</strong></td><td><span class="badge badge-warning">Active</span></td></tr>
+                        <tr><td><strong>Priority:</strong></td><td>5</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h5>Product Details</h5>
+                    <table class="table table-sm">
+                        <tr><td><strong>Product:</strong></td><td>Sample Product</td></tr>
+                        <tr><td><strong>Warehouse:</strong></td><td>Main Warehouse</td></tr>
+                        <tr><td><strong>Locked Quantity:</strong></td><td>100 units</td></tr>
+                    </table>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <h5>Timeline</h5>
+                    <table class="table table-sm">
+                        <tr><td><strong>Locked Date:</strong></td><td>Jan 15, 2024 10:30 AM</td></tr>
+                        <tr><td><strong>Locked By:</strong></td><td>John Doe</td></tr>
+                        <tr><td><strong>Expires:</strong></td><td>Jan 30, 2024</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h5>Reference</h5>
+                    <table class="table table-sm">
+                        <tr><td><strong>Reference Type:</strong></td><td>GRN</td></tr>
+                        <tr><td><strong>Reference Number:</strong></td><td>GRN-001</td></tr>
+                        <tr><td><strong>Auto Unlock:</strong></td><td>On Bill Creation</td></tr>
+                    </table>
+                </div>
+            </div>
+            <div class="mt-3">
+                <h5>Reason & Notes</h5>
+                <p><strong>Reason:</strong> Goods received pending bill creation</p>
+                <p><strong>Notes:</strong> Awaiting vendor bill for GRN-001</p>
+            </div>
+        `);
+    }, 1000);
+}
+
+function unlockInventory(lockId) {
+    $('#unlockLockId').val(lockId);
+    $('#unlockModal').modal('show');
+}
+
+function requestUnlock(lockId) {
+    if (confirm('Send unlock request to supervisor?')) {
+        alert('Unlock request sent successfully');
+    }
+}
+
+function editLock(lockId) {
+    alert('Edit lock functionality would be implemented here');
+}
+
+function showExpiredLocks() {
+    $('#statusFilter').val('expired');
+    applyFilters();
+}
+</script>
+{% endblock %}

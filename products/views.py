@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.views.generic import ListView, DetailView, CreateView, UpdateView
 from django.urls import reverse_lazy, reverse
 from django.http import JsonResponse, HttpResponse
-from django.db.models import Q, Count, Sum, Avg
+from django.db.models import Q, Count, Sum, Avg, F
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
 import json
@@ -35,16 +35,51 @@ class ProductDashboardView(LoginRequiredMixin, ListView):
         active_products = all_products.filter(is_active=True)
         categories = ProductCategory.objects.filter(company=company, is_active=True)
         
+        # Get inventory stats if inventory app is available
+        try:
+            from inventory.models import StockItem
+            stockable_products = active_products.filter(is_stockable=True)
+            stock_items = StockItem.objects.filter(
+                company=company,
+                product__in=stockable_products
+            ).select_related('product')
+            
+            low_stock_count = stock_items.filter(
+                quantity__lte=F('min_stock'),
+                min_stock__gt=0
+            ).count()
+            
+            out_of_stock_count = stock_items.filter(quantity=0).count()
+            
+            # Products ready for sale vs manufacturing
+            ready_for_sale = stockable_products.filter(
+                is_saleable=True,
+                is_active=True
+            ).count()
+            
+            manufacturing_items = stockable_products.filter(
+                is_manufacturable=True,
+                is_active=True
+            ).count()
+            
+        except ImportError:
+            # Inventory app not available
+            low_stock_count = 0
+            out_of_stock_count = 0
+            ready_for_sale = active_products.filter(is_saleable=True).count()
+            manufacturing_items = active_products.filter(is_manufacturable=True).count()
+        
         context.update({
             'stats': {
                 'total_products': all_products.count(),
                 'active_products': active_products.count(),
                 'total_categories': categories.count(),
-                'low_stock_count': all_products.filter(
-                    is_stockable=True, 
-                    minimum_stock__gt=0,
-                    is_active=True
-                ).count(),  # Simplified - actual implementation would check current stock
+                'low_stock_count': low_stock_count,
+                'out_of_stock_count': out_of_stock_count,
+                'ready_for_sale': ready_for_sale,
+                'manufacturing_items': manufacturing_items,
+                'stockable_products': active_products.filter(is_stockable=True).count(),
+                'service_products': active_products.filter(product_type='service').count(),
             },
             'recent_products': active_products.order_by('-created_at')[:5],
             'top_categories': categories.annotate(
@@ -139,10 +174,68 @@ class ProductDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         product = self.object
+        
+        # Get inventory information if available
+        try:
+            from inventory.models import StockItem, StockMovement
+            
+            # Get stock items for this product across all warehouses
+            stock_items = StockItem.objects.filter(
+                company=self.request.user.company,
+                product=product
+            ).select_related('warehouse')
+            
+            total_stock = sum(item.quantity for item in stock_items)
+            total_available = sum(item.available_quantity for item in stock_items)
+            total_locked = sum(item.locked_quantity for item in stock_items)
+            total_reserved = sum(item.reserved_quantity for item in stock_items)
+            
+            # Recent stock movements
+            recent_movements = StockMovement.objects.filter(
+                stock_item__product=product,
+                company=self.request.user.company
+            ).select_related('stock_item__warehouse').order_by('-timestamp')[:10]
+            
+            # Purchase information if available
+            try:
+                from purchase.models import GRNItem, BillItem, PurchaseOrderItem
+                
+                recent_purchases = GRNItem.objects.filter(
+                    product=product,
+                    grn__company=self.request.user.company
+                ).select_related('grn__supplier').order_by('-created_at')[:5]
+                
+                recent_bills = BillItem.objects.filter(
+                    product=product,
+                    bill__company=self.request.user.company
+                ).select_related('bill__supplier').order_by('-created_at')[:5]
+                
+            except ImportError:
+                recent_purchases = []
+                recent_bills = []
+            
+            inventory_context = {
+                'stock_items': stock_items,
+                'total_stock': total_stock,
+                'total_available': total_available,
+                'total_locked': total_locked,
+                'total_reserved': total_reserved,
+                'recent_movements': recent_movements,
+                'recent_purchases': recent_purchases,
+                'recent_bills': recent_bills,
+                'stock_status': 'Available' if total_available > 0 else ('Locked' if total_locked > 0 else 'Out of Stock'),
+            }
+            
+        except ImportError:
+            inventory_context = {
+                'inventory_available': False,
+            }
+        
         context.update({
             'variants': product.variants.filter(is_active=True),
             'tracking_units': product.tracking_units.filter(is_active=True).order_by('-created_at'),
             'product_attributes': product.product_attributes.select_related('attribute'),
+            **inventory_context,
         })
         return context
 
@@ -853,7 +946,27 @@ def product_tracking_list(request):
     
     tracking_units = ProductTracking.objects.filter(
         product__company=company
-    ).select_related('product', 'current_warehouse', 'supplier')
+    ).select_related('product', 'current_warehouse', 'supplier', 'variant')
+    
+    # Calculate statistics
+    from django.db.models import Count, Case, When, IntegerField
+    from datetime import datetime, timedelta
+    
+    today = timezone.now().date()
+    month_from_now = today + timedelta(days=30)
+    
+    stats = tracking_units.aggregate(
+        available_count=Count(Case(When(status='available', then=1), output_field=IntegerField())),
+        sold_count=Count(Case(When(status='sold', then=1), output_field=IntegerField())),
+        expiring_count=Count(Case(
+            When(expiry_date__lte=month_from_now, expiry_date__gte=today, then=1), 
+            output_field=IntegerField()
+        )),
+        issues_count=Count(Case(
+            When(status__in=['damaged', 'expired', 'quarantined'], then=1), 
+            output_field=IntegerField()
+        ))
+    )
     
     # Filtering
     product_filter = request.GET.get('product')
@@ -896,7 +1009,7 @@ def product_tracking_list(request):
     
     # Pagination
     from django.core.paginator import Paginator
-    paginator = Paginator(tracking_units, 25)
+    paginator = Paginator(tracking_units.order_by('-created_at'), 25)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -905,10 +1018,10 @@ def product_tracking_list(request):
         company=company,
         tracking_method__in=['serial', 'imei', 'barcode', 'batch'],
         is_active=True
-    )
+    ).order_by('name')
     
     from inventory.models import Warehouse
-    warehouses = Warehouse.objects.filter(company=company, is_active=True)
+    warehouses = Warehouse.objects.filter(company=company, is_active=True).order_by('name')
     
     context = {
         'page_obj': page_obj,
@@ -916,15 +1029,39 @@ def product_tracking_list(request):
         'warehouses': warehouses,
         'tracking_types': Product.PRODUCT_TRACKING_CHOICES,
         'status_choices': ProductTracking._meta.get_field('status').choices,
-        'title': 'Product Tracking Units'
+        'title': 'Product Tracking Units',
+        'today': today,
+        'month_from_now': month_from_now,
+        **stats
     }
     
-    return render(request, 'products/tracking-list.html', context)
+    return render(request, 'products/tracking-list-enhanced.html', context)
 
 
 @login_required
 def product_tracking_detail(request, pk):
     """Detail view for a specific tracking unit"""
+    tracking_unit = get_object_or_404(ProductTracking, pk=pk, product__company=request.user.company)
+    
+    context = {
+        'tracking_unit': tracking_unit,
+        'title': f'Tracking Unit Details - {tracking_unit.product.name}'
+    }
+    
+    return render(request, 'products/tracking-detail.html', context)
+
+
+@login_required
+def product_tracking_label(request, pk):
+    """Generate a printable label for a tracking unit"""
+    tracking_unit = get_object_or_404(ProductTracking, pk=pk, product__company=request.user.company)
+    
+    context = {
+        'tracking_unit': tracking_unit,
+        'title': 'Tracking Label'
+    }
+    
+    return render(request, 'products/tracking-label.html', context)
     tracking_unit = get_object_or_404(
         ProductTracking,
         pk=pk,

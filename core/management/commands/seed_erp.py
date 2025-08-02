@@ -1,5 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth.hashers import make_password
+from django.core.management.base import BaseCommand
+from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 from datetime import date, timedelta
 from decimal import Decimal
@@ -9,14 +11,18 @@ import random
 from user_auth.models import Company, User, Role, ActivityLog
 from crm.models import Customer, Partner
 from products.models import Product, ProductCategory, ProductVariant, Attribute, AttributeValue, ProductAttribute, ProductTracking
-from inventory.models import Warehouse, StockItem, StockMovement, StockLot, StockReservation
+from inventory.models import (
+    Warehouse, WarehouseZone, WarehouseBin, StockItem, StockMovement, 
+    StockLot, StockReservation, StockAlert, InventoryLock, StockAdjustment, StockAdjustmentItem
+)
 from accounting.models import Account, AccountCategory, AccountGroup, JournalEntry, JournalItem
 from purchase.models import (
     Supplier, UnitOfMeasure, PurchaseRequisition, PurchaseRequisitionItem,
     RequestForQuotation, RFQItem, SupplierQuotation, SupplierQuotationItem,
     PurchaseOrder, PurchaseOrderItem, GoodsReceiptNote, GRNItem, GRNItemTracking,
     Bill, BillItem, PurchasePayment, PurchaseReturn, PurchaseReturnItem,
-    QualityInspection, QualityInspectionResult, PurchaseApproval, TaxChargesTemplate
+    QualityInspection, QualityInspectionResult, PurchaseApproval, TaxChargesTemplate,
+    GRNInventoryLock
 )
 from sales.models import Product as SalesProduct, SalesOrder, SalesOrderItem, Invoice, Payment, Quotation, QuotationItem, Tax
 from hr.models import Employee, Payroll, Leave, Attendance
@@ -435,7 +441,9 @@ class Command(BaseCommand):
             company=company1, name='Main Warehouse',
             defaults={
                 'code': 'WH-001',
-                'address': '789 Storage Street, Industrial Zone',
+                'location': '789 Storage Street, Industrial Zone',
+                'address': '789 Storage Street, Industrial Zone, Storage City, SC 12345',
+                'warehouse_type': 'main',
                 'manager': inventory_user,
                 'is_active': True
             }
@@ -445,20 +453,49 @@ class Command(BaseCommand):
             company=company1, name='Secondary Warehouse',
             defaults={
                 'code': 'WH-002',
-                'address': '456 Backup Lane, Storage District',
+                'location': '456 Backup Lane, Storage District',
+                'address': '456 Backup Lane, Storage District, Backup City, BC 67890',
+                'warehouse_type': 'distribution',
                 'manager': inventory_user,
                 'is_active': True
             }
         )
         
-        # Stock Items
+        # Raw Material Warehouse
+        raw_material_warehouse, _ = Warehouse.objects.get_or_create(
+            company=company1, name='Raw Materials Warehouse',
+            defaults={
+                'code': 'WH-003',
+                'location': 'Raw Materials Section',
+                'address': '123 Raw Materials Avenue, Component City, CC 11111',
+                'warehouse_type': 'raw_material',
+                'default_for_raw_material': True,
+                'manager': inventory_user,
+                'is_active': True
+            }
+        )
+        
+        # Stock Items with Enhanced Tracking
         laptop_stock, _ = StockItem.objects.get_or_create(
             company=company1, product=laptop_product, warehouse=main_warehouse,
             defaults={
+                'category': electronics_cat,
                 'quantity': Decimal('25'),
                 'available_quantity': Decimal('20'),
                 'reserved_quantity': Decimal('5'),
+                'locked_quantity': Decimal('0'),
+                'quarantine_quantity': Decimal('0'),
+                'min_stock': Decimal('5'),
+                'max_stock': Decimal('50'),
+                'reorder_point': Decimal('10'),
+                'valuation_method': 'weighted_avg',
                 'average_cost': Decimal('800.00'),
+                'last_purchase_cost': Decimal('800.00'),
+                'stock_status': 'available',
+                'purchase_status': 'ready_for_use',
+                'tracking_type': 'serial',
+                'suitable_for_sale': True,
+                'suitable_for_manufacturing': False,
                 'is_active': True,
                 'account': inventory_acc
             }
@@ -467,10 +504,71 @@ class Command(BaseCommand):
         desk_stock, _ = StockItem.objects.get_or_create(
             company=company1, product=desk_product, warehouse=main_warehouse,
             defaults={
+                'category': furniture_cat,
                 'quantity': Decimal('15'),
                 'available_quantity': Decimal('13'),
                 'reserved_quantity': Decimal('2'),
+                'locked_quantity': Decimal('0'),
+                'quarantine_quantity': Decimal('0'),
+                'min_stock': Decimal('2'),
+                'max_stock': Decimal('20'),
+                'reorder_point': Decimal('5'),
+                'valuation_method': 'weighted_avg',
                 'average_cost': Decimal('300.00'),
+                'last_purchase_cost': Decimal('300.00'),
+                'stock_status': 'available',
+                'purchase_status': 'ready_for_use',
+                'tracking_type': 'none',
+                'suitable_for_sale': True,
+                'suitable_for_manufacturing': False,
+                'is_active': True,
+                'account': inventory_acc
+            }
+        )
+        
+        # Raw Material Stock Item
+        raw_material_product, _ = Product.objects.get_or_create(
+            company=company1, sku='RAW-001',
+            defaults={
+                'name': 'Electronic Components',
+                'description': 'Various electronic components for laptop assembly',
+                'product_type': 'product',
+                'category': electronics_cat,
+                'unit_of_measure': 'pcs',
+                'cost_price': Decimal('50.00'),
+                'selling_price': Decimal('0.00'),
+                'is_active': True,
+                'is_saleable': False,
+                'is_purchasable': True,
+                'is_stockable': True,
+                'minimum_stock': Decimal('100'),
+                'maximum_stock': Decimal('1000'),
+                'reorder_level': Decimal('200'),
+                'created_by': admin_user,
+                'tracking_method': 'batch'
+            }
+        )
+        
+        raw_material_stock, _ = StockItem.objects.get_or_create(
+            company=company1, product=raw_material_product, warehouse=raw_material_warehouse,
+            defaults={
+                'category': electronics_cat,
+                'quantity': Decimal('500'),
+                'available_quantity': Decimal('450'),
+                'reserved_quantity': Decimal('50'),
+                'locked_quantity': Decimal('0'),
+                'quarantine_quantity': Decimal('0'),
+                'min_stock': Decimal('100'),
+                'max_stock': Decimal('1000'),
+                'reorder_point': Decimal('200'),
+                'valuation_method': 'fifo',
+                'average_cost': Decimal('50.00'),
+                'last_purchase_cost': Decimal('50.00'),
+                'stock_status': 'available',
+                'purchase_status': 'ready_for_use',
+                'tracking_type': 'batch',
+                'suitable_for_sale': False,
+                'suitable_for_manufacturing': True,
                 'is_active': True,
                 'account': inventory_acc
             }
@@ -518,12 +616,15 @@ class Command(BaseCommand):
             company=company1, name='Electronics Supply Co.',
             defaults={
                 'partner_type': 'company',
+                'contact_person': 'John Electronics',
                 'email': 'sales@electronicsupply.com',
                 'phone': '+1-555-0789',
                 'street': '789 Supply Chain St',
                 'city': 'Manufacturer District',
                 'state': 'TX',
                 'zip_code': '75001',
+                'payment_terms': 'net_30',
+                'credit_limit': Decimal('100000.00'),
                 'is_customer': False,
                 'is_supplier': True,
                 'created_by': purchase_user
@@ -566,35 +667,56 @@ class Command(BaseCommand):
         supplier1, _ = Supplier.objects.get_or_create(
             company=company1, supplier_code='SUP-001',
             defaults={
-                'name': 'Electronics Supply Co.',
-                'email': 'sales@electronicsupply.com',
-                'phone': '+1-555-0789',
-                'address': '789 Supply Chain St, Manufacturer District, TX 75001',
-                'contact_person': 'John Electronics',
-                'payment_terms': 'net_30',
-                'credit_limit': Decimal('100000.00'),
+                'partner': supplier_partner,
+                'supplier_type': 'vendor',
+                'status': 'active',
                 'delivery_lead_time': 7,
+                'minimum_order_value': Decimal('1000.00'),
+                'preferred_shipping_method': 'ground',
                 'quality_rating': Decimal('4.5'),
                 'delivery_rating': Decimal('4.2'),
+                'price_rating': Decimal('4.0'),
+                'service_rating': Decimal('4.3'),
+                'overall_rating': Decimal('4.25'),
                 'is_active': True,
-                'created_by': purchase_user,
-                'partner': supplier_partner
+                'created_by': purchase_user
+            }
+        )
+        
+        # Create second supplier partner
+        furniture_supplier_partner, _ = Partner.objects.get_or_create(
+            company=company1, name='Furniture Wholesale Ltd.',
+            defaults={
+                'partner_type': 'company',
+                'contact_person': 'Sarah Furniture',
+                'email': 'sales@furniturewholesale.com',
+                'phone': '+1-555-0234',
+                'street': '234 Furniture Row',
+                'city': 'Wood City',
+                'state': 'NC',
+                'zip_code': '28001',
+                'payment_terms': 'net_45',
+                'credit_limit': Decimal('75000.00'),
+                'is_customer': False,
+                'is_supplier': True,
+                'created_by': purchase_user
             }
         )
         
         supplier2, _ = Supplier.objects.get_or_create(
             company=company1, supplier_code='SUP-002',
             defaults={
-                'name': 'Furniture Wholesale Ltd.',
-                'email': 'sales@furniturewholesale.com',
-                'phone': '+1-555-0234',
-                'address': '234 Furniture Row, Wood City, NC 28001',
-                'contact_person': 'Sarah Furniture',
-                'payment_terms': 'net_45',
-                'credit_limit': Decimal('75000.00'),
+                'partner': furniture_supplier_partner,
+                'supplier_type': 'vendor',
+                'status': 'active',
                 'delivery_lead_time': 14,
+                'minimum_order_value': Decimal('500.00'),
+                'preferred_shipping_method': 'ground',
                 'quality_rating': Decimal('4.0'),
                 'delivery_rating': Decimal('3.8'),
+                'price_rating': Decimal('4.2'),
+                'service_rating': Decimal('3.9'),
+                'overall_rating': Decimal('4.0'),
                 'is_active': True,
                 'created_by': purchase_user
             }
@@ -773,6 +895,40 @@ class Command(BaseCommand):
             }
         )
         
+        # Enhanced Stock Movements for GRN
+        grn_stock_movement, _ = StockMovement.objects.get_or_create(
+            company=company1, stock_item=laptop_stock,
+            defaults={
+                'movement_type': 'grn_receipt',
+                'quantity': Decimal('25'),
+                'unit_cost': Decimal('800.00'),
+                'total_cost': Decimal('20000.00'),
+                'to_warehouse': main_warehouse,
+                'reference_type': 'grn',
+                'reference_id': grn1.id,
+                'reference_number': grn1.grn_number,
+                'grn_item': grn_item1,
+                'po_item': po_item1,
+                'performed_by': inventory_user,
+                'timestamp': timezone.now() - timedelta(days=5),
+                'notes': 'Initial GRN receipt - items locked pending bill'
+            }
+        )
+        
+        # GRN Inventory Lock (using existing model)
+        grn_lock, _ = GRNInventoryLock.objects.get_or_create(
+            grn=grn1, grn_item=grn_item1,
+            defaults={
+                'locked_quantity': Decimal('23'),
+                'lock_reason': 'pending_invoice',
+                'locked_at': timezone.now() - timedelta(days=5),
+                'locked_by': inventory_user,
+                'is_active': True,
+                'is_released': False,
+                'lock_notes': 'Inventory locked pending supplier bill processing'
+            }
+        )
+        
         # Quality Inspections
         qi1, _ = QualityInspection.objects.get_or_create(
             company=company1, inspection_number='QI-2024-001',
@@ -814,6 +970,142 @@ class Command(BaseCommand):
                 'status': 'open',
                 'three_way_match_status': True,
                 'created_by': finance_user
+            }
+        )
+        
+        # Create Bill Items
+        bill_item1, _ = BillItem.objects.get_or_create(
+            bill=bill1, product=laptop_product,
+            defaults={
+                'po_item': po_item1,
+                'grn_item': grn_item1,
+                'quantity': Decimal('23'),
+                'unit_price': Decimal('800.00'),
+                'line_total': Decimal('18400.00'),
+                'item_source': 'grn',  # Changed from 'purchase_order' to 'grn' (max 10 chars)
+                'tracking_required': True,
+                'tracking_type': 'serial',
+                'po_quantity_variance': Decimal('0.00'),
+                'grn_quantity_variance': Decimal('0.00'),
+                'is_additional_item': False,
+                'notes': 'Standard laptop procurement as per PO'
+            }
+        )
+        
+        # Unlock Movement after Bill Creation
+        unlock_movement, _ = StockMovement.objects.get_or_create(
+            company=company1, stock_item=laptop_stock,
+            defaults={
+                'movement_type': 'unlock',
+                'quantity': Decimal('23'),
+                'unit_cost': Decimal('800.00'),
+                'reference_type': 'bill',
+                'reference_id': bill1.id,
+                'reference_number': bill1.bill_number,
+                'bill_item': bill_item1,
+                'performed_by': finance_user,
+                'timestamp': timezone.now() - timedelta(days=3),
+                'notes': 'Inventory unlocked after bill creation - ready for use'
+            }
+        )
+        
+        # Update GRN Lock status (simulate bill processing)
+        if grn_lock:
+            grn_lock.is_active = False
+            grn_lock.is_released = True
+            grn_lock.released_at = timezone.now() - timedelta(days=3)
+            grn_lock.released_by = finance_user
+            grn_lock.released_for_bill = bill1
+            grn_lock.release_notes = 'Bill processed and approved'
+            grn_lock.save()
+            
+        # ===============================
+        # 8a. ADDITIONAL INVENTORY TRACKING
+        # ===============================
+        self.stdout.write('Creating additional inventory tracking data...')
+        
+        # Stock Lots for Batch Tracking
+        if raw_material_stock:
+            stock_lot1, _ = StockLot.objects.get_or_create(
+                stock_item=raw_material_stock, lot_number='LOT-2024-001',
+                defaults={
+                    'batch_number': 'BATCH-EC-001',
+                    'quantity': Decimal('300'),
+                    'remaining_quantity': Decimal('250'),
+                    'unit_cost': Decimal('50.00'),
+                    'landed_cost': Decimal('52.00'),
+                    'received_date': timezone.now() - timedelta(days=30),
+                    'expiry_date': date.today() + timedelta(days=365),
+                    'quality_approved': True,
+                    'quality_approved_by': inventory_user,
+                    'quality_approved_date': timezone.now() - timedelta(days=29),
+                    'supplier': supplier1,
+                    'is_active': True
+                }
+            )
+            
+            stock_lot2, _ = StockLot.objects.get_or_create(
+                stock_item=raw_material_stock, lot_number='LOT-2024-002',
+                defaults={
+                    'batch_number': 'BATCH-EC-002',
+                    'quantity': Decimal('200'),
+                    'remaining_quantity': Decimal('200'),
+                    'unit_cost': Decimal('50.00'),
+                    'landed_cost': Decimal('51.50'),
+                    'received_date': timezone.now() - timedelta(days=15),
+                    'expiry_date': date.today() + timedelta(days=365),
+                    'quality_approved': True,
+                    'quality_approved_by': inventory_user,
+                    'quality_approved_date': timezone.now() - timedelta(days=14),
+                    'supplier': supplier1,
+                    'is_active': True
+                }
+            )
+        
+        # Stock Reservations
+        stock_reservation1, _ = StockReservation.objects.get_or_create(
+            stock_item=laptop_stock,
+            defaults={
+                'quantity': Decimal('5'),
+                'reservation_type': 'sales_order',
+                'reference_number': 'SO-2024-001',
+                'reserved_by': sales_user,
+                'expires_at': timezone.now() + timedelta(days=30),
+                'priority': 2,
+                'notes': 'Reserved for upcoming customer order',
+                'is_active': True
+            }
+        )
+        
+        # Stock Alerts
+        low_stock_alert, _ = StockAlert.objects.get_or_create(
+            company=company1, stock_item=desk_stock,
+            defaults={
+                'alert_type': 'low_stock',
+                'severity': 'medium',
+                'current_quantity': Decimal('15'),
+                'threshold_quantity': Decimal('20'),
+                'message': 'Desk stock is running low',
+                'detailed_message': 'Executive Desk stock level is below recommended threshold',
+                'warehouse': main_warehouse,
+                'resolved': False
+            }
+        )
+        
+        # Quality passed movement for raw materials
+        quality_movement, _ = StockMovement.objects.get_or_create(
+            company=company1, stock_item=raw_material_stock,
+            defaults={
+                'movement_type': 'quality_pass',
+                'quantity': Decimal('500'),
+                'unit_cost': Decimal('50.00'),
+                'to_warehouse': raw_material_warehouse,
+                'reference_type': 'quality_inspection',
+                'reference_number': 'QI-RAW-001',
+                'quality_status': 'passed',
+                'performed_by': inventory_user,
+                'timestamp': timezone.now() - timedelta(days=29),
+                'notes': 'Raw materials passed quality inspection and moved to warehouse'
             }
         )
         
@@ -1044,15 +1336,29 @@ class Command(BaseCommand):
                 '- 8 User roles and 8 users\n'
                 '- Complete Chart of Accounts (Categories, Groups, Accounts)\n'
                 '- Product catalog with categories, attributes, and variants\n'
-                '- Inventory management (warehouses, stock items)\n'
+                '- Enhanced inventory management:\n'
+                '  * 3 Warehouses with different types (main, distribution, raw materials)\n'
+                '  * Stock items with advanced tracking (batch, serial, quality status)\n'
+                '  * Stock movements with purchase integration\n'
+                '  * GRN inventory locks and unlock workflow\n'
+                '  * Stock lots for batch tracking\n'
+                '  * Stock reservations and alerts\n'
                 '- Customer and supplier relationships\n'
-                '- Complete purchase cycle (PR → RFQ → PO → GRN → Bill)\n'
+                '- Complete purchase cycle (PR → RFQ → PO → GRN → Bill) with inventory integration\n'
                 '- Sales quotations, orders, and invoices\n'
                 '- HR data (departments, employees)\n'
                 '- Manufacturing BOMs and work orders\n'
                 '- Project management with tasks and time tracking\n'
                 '- Quality control and inspection workflows\n'
                 '- Activity logs and audit trails\n\n'
+                'Enhanced Inventory Features:\n'
+                '- Purchase status tracking (received_unbilled → received_billed → ready_for_use)\n'
+                '- Inventory locking system for GRN → Bill workflow\n'
+                '- Quality control integration with stock movements\n'
+                '- Batch and lot tracking for raw materials\n'
+                '- Stock reservations for sales orders\n'
+                '- Automated stock alerts for low inventory\n'
+                '- Multi-warehouse support with warehouse types\n\n'
                 'Login credentials:\n'
                 '- Admin: admin@techcorp.com / admin123\n'
                 '- Finance: finance@techcorp.com / finance123\n'
@@ -1061,6 +1367,8 @@ class Command(BaseCommand):
                 '- Inventory: inventory@techcorp.com / inventory123\n'
                 '- HR: hr@techcorp.com / hr123\n'
                 '- Production: production@techcorp.com / production123\n'
-                '- Projects: projects@techcorp.com / projects123'
+                '- Projects: projects@techcorp.com / projects123\n\n'
+                'Access the enhanced inventory dashboard at:\n'
+                'http://127.0.0.1:8000/inventory/dashboard/'
             )
         ) 

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracking Label - {{ tracking_unit.product.name }}</title>
+    <style>
+        @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: white;
+        }
+        
+        .label {
+            border: 2px solid #000;
+            padding: 15px;
+            width: 300px;
+            margin: 0 auto;
+            background: white;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+        }
+        
+        .company-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .label-title {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .content {
+            font-size: 11px;
+        }
+        
+        .field {
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .field-label {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .field-value {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        
+        .tracking-number {
+            text-align: center;
+            margin: 15px 0;
+            padding: 8px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .qr-placeholder {
+            width: 60px;
+            height: 60px;
+            border: 1px solid #ccc;
+            margin: 10px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            color: #999;
+        }
+        
+        .print-button {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-button no-print">
+        <button class="btn" onclick="window.print()">🖨️ Print Label</button>
+        <button class="btn" onclick="window.close()" style="background: #6c757d; margin-left: 10px;">❌ Close</button>
+    </div>
+
+    <div class="label">
+        <div class="header">
+            <div class="company-name">{{ tracking_unit.product.company.name|default:"ERP System" }}</div>
+            <div class="label-title">Product Tracking Label</div>
+        </div>
+        
+        <div class="content">
+            <div class="field">
+                <span class="field-label">Product:</span>
+                <span class="field-value">{{ tracking_unit.product.name }}</span>
+            </div>
+            
+            <div class="field">
+                <span class="field-label">SKU:</span>
+                <span class="field-value">{{ tracking_unit.product.sku }}</span>
+            </div>
+            
+            {% if tracking_unit.variant %}
+            <div class="field">
+                <span class="field-label">Variant:</span>
+                <span class="field-value">{{ tracking_unit.variant.name }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="tracking-number">
+                {% if tracking_unit.serial_number %}
+                    Serial: {{ tracking_unit.serial_number }}
+                {% elif tracking_unit.imei_number %}
+                    IMEI: {{ tracking_unit.imei_number }}
+                {% elif tracking_unit.barcode %}
+                    Barcode: {{ tracking_unit.barcode }}
+                {% elif tracking_unit.batch_number %}
+                    Batch: {{ tracking_unit.batch_number }}
+                {% endif %}
+            </div>
+            
+            <div class="qr-placeholder">
+                QR Code
+            </div>
+            
+            {% if tracking_unit.manufacturing_date %}
+            <div class="field">
+                <span class="field-label">Mfg Date:</span>
+                <span class="field-value">{{ tracking_unit.manufacturing_date|date:"M d, Y" }}</span>
+            </div>
+            {% endif %}
+            
+            {% if tracking_unit.expiry_date %}
+            <div class="field">
+                <span class="field-label">Exp Date:</span>
+                <span class="field-value">{{ tracking_unit.expiry_date|date:"M d, Y" }}</span>
+            </div>
+            {% endif %}
+            
+            {% if tracking_unit.current_warehouse %}
+            <div class="field">
+                <span class="field-label">Location:</span>
+                <span class="field-value">{{ tracking_unit.current_warehouse.name }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="field">
+                <span class="field-label">Status:</span>
+                <span class="field-value">{{ tracking_unit.get_status_display }}</span>
+            </div>
+            
+            <div class="field" style="margin-top: 15px; font-size: 9px; color: #666;">
+                <span class="field-label">Generated:</span>
+                <span class="field-value">{{ "now"|date:"M d, Y H:i" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-print when page loads if opened in new window
+        if (window.opener) {
+            setTimeout(() => {
+                window.print();
+            }, 500);
+        }
+    </script>
+</body>
+</html>

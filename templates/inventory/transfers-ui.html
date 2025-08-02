@@ -1,0 +1,662 @@
+{% extends "base.html" %}
+{% block title %}Stock Transfers | ERP System{% endblock %}
+{% block content %}
+<!-- COA Integration Notice -->
+<div class="mt-16 p-8">
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            <span class="text-blue-800 font-medium">Stock Transfer System:</span>
+            <span class="text-blue-700 ml-2">Transfer stock between warehouses with full tracking and approval workflow</span>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Stock Transfers</h1>
+            <p class="text-gray-600 mt-2">Manage inter-warehouse stock transfers</p>
+        </div>
+        <button id="addTransferBtn" class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md">
+            <i class="fas fa-exchange-alt mr-2"></i>New Transfer
+        </button>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">Total Transfers</p>
+                    <p class="text-3xl font-bold">{{ total_transfers|default:0 }}</p>
+                </div>
+                <svg class="w-12 h-12 text-blue-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M7 14l5-5 5 5z"/>
+                    <path d="M17 10l-5 5-5-5z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-yellow-100">Pending</p>
+                    <p class="text-3xl font-bold">{{ pending_transfers|default:0 }}</p>
+                </div>
+                <svg class="w-12 h-12 text-yellow-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100">Completed Today</p>
+                    <p class="text-3xl font-bold">{{ transfers_today|default:0 }}</p>
+                </div>
+                <svg class="w-12 h-12 text-green-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100">In Transit</p>
+                    <p class="text-3xl font-bold">{{ in_transit|default:0 }}</p>
+                </div>
+                <svg class="w-12 h-12 text-purple-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select id="filterStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="in_transit">In Transit</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">From Warehouse</label>
+                <select id="filterFromWarehouse" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All Warehouses</option>
+                    {% for warehouse in warehouses %}
+                    <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">To Warehouse</label>
+                <select id="filterToWarehouse" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All Warehouses</option>
+                    {% for warehouse in warehouses %}
+                    <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                <input type="date" id="filterDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+            </div>
+        </div>
+        <div class="mt-4 flex space-x-3">
+            <button id="applyFilters" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                Apply Filters
+            </button>
+            <button id="clearFilters" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+                Clear
+            </button>
+        </div>
+    </div>
+    <!-- Transfers Table -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transfer ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transfer Route</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Initiated By</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for transfer in transfers %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            #TF-{{ transfer.id }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div>{{ transfer.timestamp|date:"M d, Y" }}</div>
+                            <div class="text-xs text-gray-500">{{ transfer.timestamp|time:"g:i A" }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-cube text-blue-600 text-sm"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">{{ transfer.stock_item.product.name }}</div>
+                                    <div class="text-xs text-gray-500">SKU: {{ transfer.stock_item.product.sku|default:"-" }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-blue-600">{{ transfer.quantity }}</div>
+                            <div class="text-xs text-gray-500">{{ transfer.stock_item.product.unit_of_measure|default:"units" }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div class="flex items-center space-x-2">
+                                {% if transfer.from_warehouse %}
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                        {{ transfer.from_warehouse.name }}
+                                    </span>
+                                {% endif %}
+                                <i class="fas fa-arrow-right text-gray-400"></i>
+                                {% if transfer.to_warehouse %}
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                        {{ transfer.to_warehouse.name }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if transfer.movement_type == 'transfer_out' %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-clock mr-1"></i>In Transit
+                                </span>
+                            {% elif transfer.movement_type == 'inter_warehouse_transfer' %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i>Completed
+                                </span>
+                            {% else %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    <i class="fas fa-info-circle mr-1"></i>{{ transfer.get_movement_type_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if transfer.performed_by %}
+                                {{ transfer.performed_by.get_full_name|default:transfer.performed_by.email }}
+                            {% else %}
+                                <span class="text-gray-500">System</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex justify-end space-x-2">
+                                <button onclick="viewTransfer({{ transfer.id }})" class="text-blue-600 hover:text-blue-900" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                {% if transfer.movement_type == 'transfer_out' %}
+                                <button onclick="completeTransfer({{ transfer.id }})" class="text-green-600 hover:text-green-900" title="Complete Transfer">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                {% endif %}
+                                {% if not transfer.is_reversed %}
+                                <button onclick="reverseTransfer({{ transfer.id }})" class="text-red-600 hover:text-red-900" title="Reverse Transfer">
+                                    <i class="fas fa-undo"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-4 text-center text-gray-500">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-exchange-alt text-4xl text-gray-300 mb-2"></i>
+                                <span>No stock transfers found</span>
+                                <span class="text-sm">Click "New Transfer" to create your first transfer</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <button onclick="quickTransfer('receipt')" class="bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors text-center">
+            <i class="fas fa-arrow-down mb-2 block text-xl"></i>
+            <span class="text-sm">Quick Receipt</span>
+        </button>
+        <button onclick="quickTransfer('issue')" class="bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 transition-colors text-center">
+            <i class="fas fa-arrow-up mb-2 block text-xl"></i>
+            <span class="text-sm">Quick Issue</span>
+        </button>
+        <button onclick="openBulkTransferModal()" class="bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 transition-colors text-center">
+            <i class="fas fa-layer-group mb-2 block text-xl"></i>
+            <span class="text-sm">Bulk Transfer</span>
+        </button>
+        <button onclick="generateTransferReport()" class="bg-gray-600 text-white px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors text-center">
+            <i class="fas fa-file-alt mb-2 block text-xl"></i>
+            <span class="text-sm">Transfer Report</span>
+        </button>
+    </div>
+</div>
+
+<!-- Add Transfer Modal -->
+<div id="addTransferModal" class="modal-overlay fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl">
+        <div class="p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-blue-800">Create Stock Transfer</h2>
+                <button id="closeAddTransferModal" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+
+            <form id="addTransferForm" method="post" action="{% url 'inventory_stock_movement_add' %}">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Product to Transfer</label>
+                        <select name="stock_item" id="productSelect" required
+                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select Product</option>
+                            {% for item in stock_items %}
+                            <option value="{{ item.id }}" data-available="{{ item.quantity }}" data-warehouse="{{ item.warehouse.id }}">
+                                {{ item.product.name }} - {{ item.warehouse.name }} ({{ item.quantity }} available)
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quantity to Transfer</label>
+                        <input type="number" name="quantity" id="transferQuantity" step="0.01" min="0.01" required
+                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="0.00">
+                        <small class="text-gray-500">Available: <span id="availableQty">0</span></small>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">From Warehouse</label>
+                        <select name="from_warehouse" id="fromWarehouse" required
+                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Auto-detect from product</option>
+                            {% for warehouse in warehouses %}
+                            <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">To Warehouse</label>
+                        <select name="to_warehouse" id="toWarehouse" required
+                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select Destination Warehouse</option>
+                            {% for warehouse in warehouses %}
+                            <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Transfer Type</label>
+                    <select name="movement_type" required
+                            class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="inter_warehouse_transfer">Complete Transfer (Direct)</option>
+                        <option value="transfer_out">Initiate Transfer (Two-Step)</option>
+                    </select>
+                    <small class="text-gray-500">Direct transfer completes immediately. Two-step requires confirmation at destination.</small>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Reference Number</label>
+                        <input type="text" name="reference"
+                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Transfer reference number">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                        <select name="priority" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="normal">Normal</option>
+                            <option value="urgent">Urgent</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Transfer Reason / Notes</label>
+                    <textarea name="notes" rows="3"
+                              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Enter transfer reason, special instructions, or notes..."></textarea>
+                </div>
+
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                        <div class="text-sm text-blue-800">
+                            <strong>Transfer Notes:</strong>
+                            <ul class="mt-1 space-y-1">
+                                <li>• This will reduce stock from source warehouse</li>
+                                <li>• Two-step transfers require confirmation at destination</li>
+                                <li>• Direct transfers complete immediately</li>
+                                <li>• All transfers are tracked and auditable</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="cancelAddTransfer"
+                            class="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:shadow-lg">
+                        Create Transfer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Transfer Details Modal -->
+<div id="transferDetailsModal" class="modal-overlay fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl">
+        <div class="p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-blue-800">Transfer Details</h2>
+                <button id="closeTransferDetailsModal" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div id="transferDetailsContent">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Modal elements
+const addTransferBtn = document.getElementById('addTransferBtn');
+const addTransferModal = document.getElementById('addTransferModal');
+const transferDetailsModal = document.getElementById('transferDetailsModal');
+
+// Event listeners for modals
+addTransferBtn.addEventListener('click', function() {
+    addTransferModal.classList.remove('hidden');
+});
+
+document.getElementById('closeAddTransferModal').addEventListener('click', function() {
+    addTransferModal.classList.add('hidden');
+});
+
+document.getElementById('cancelAddTransfer').addEventListener('click', function() {
+    addTransferModal.classList.add('hidden');
+});
+
+document.getElementById('closeTransferDetailsModal').addEventListener('click', function() {
+    transferDetailsModal.classList.add('hidden');
+});
+
+// Close modals when clicking outside
+addTransferModal.addEventListener('click', function(e) {
+    if (e.target === addTransferModal) {
+        addTransferModal.classList.add('hidden');
+    }
+});
+
+transferDetailsModal.addEventListener('click', function(e) {
+    if (e.target === transferDetailsModal) {
+        transferDetailsModal.classList.add('hidden');
+    }
+});
+
+// Product selection handling
+document.getElementById('productSelect').addEventListener('change', function() {
+    const selected = this.options[this.selectedIndex];
+    if (selected.value) {
+        const available = selected.dataset.available || 0;
+        const warehouseId = selected.dataset.warehouse;
+        
+        document.getElementById('availableQty').textContent = available;
+        document.getElementById('transferQuantity').setAttribute('max', available);
+        
+        // Auto-select from warehouse
+        const fromWarehouse = document.getElementById('fromWarehouse');
+        fromWarehouse.value = warehouseId;
+        
+        // Disable the same warehouse in "to" dropdown
+        updateToWarehouseOptions(warehouseId);
+    } else {
+        document.getElementById('availableQty').textContent = '0';
+        document.getElementById('transferQuantity').removeAttribute('max');
+        updateToWarehouseOptions(null);
+    }
+});
+
+// Update "To Warehouse" options based on "From Warehouse"
+function updateToWarehouseOptions(fromWarehouseId) {
+    const toWarehouse = document.getElementById('toWarehouse');
+    const options = toWarehouse.querySelectorAll('option');
+    
+    options.forEach(option => {
+        if (option.value === fromWarehouseId) {
+            option.disabled = true;
+            option.style.display = 'none';
+        } else {
+            option.disabled = false;
+            option.style.display = 'block';
+        }
+    });
+    
+    // Reset selection if currently selected warehouse is disabled
+    if (toWarehouse.value === fromWarehouseId) {
+        toWarehouse.value = '';
+    }
+}
+
+// Handle transfer form submission
+document.getElementById('addTransferForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const fromWarehouse = formData.get('from_warehouse');
+    const toWarehouse = formData.get('to_warehouse');
+    const quantity = parseFloat(formData.get('quantity'));
+    const available = parseFloat(document.getElementById('availableQty').textContent);
+    
+    // Validation
+    if (fromWarehouse === toWarehouse) {
+        showNotification('Source and destination warehouses cannot be the same', 'error');
+        return;
+    }
+    
+    if (quantity > available) {
+        showNotification('Transfer quantity cannot exceed available quantity', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(e.target.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+                addTransferModal.classList.add('hidden');
+                showNotification('Stock transfer created successfully!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showNotification('Error: ' + (result.error || 'Unknown error'), 'error');
+            }
+        } else {
+            showNotification('Error creating transfer', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error creating transfer', 'error');
+    }
+});
+
+// Transfer action functions
+function viewTransfer(transferId) {
+    document.getElementById('transferDetailsContent').innerHTML = `
+        <div class="flex justify-center items-center h-32">
+            <i class="fas fa-spinner fa-spin text-2xl text-blue-600"></i>
+            <span class="ml-2">Loading transfer details...</span>
+        </div>
+    `;
+    transferDetailsModal.classList.remove('hidden');
+    
+    // Simulate loading transfer details
+    setTimeout(() => {
+        document.getElementById('transferDetailsContent').innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Transfer Information</h3>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <dl class="space-y-2">
+                            <div class="flex justify-between">
+                                <dt class="font-medium text-gray-600">Transfer ID:</dt>
+                                <dd class="text-gray-900">#TF-${transferId}</dd>
+                            </div>
+                            <div class="flex justify-between">
+                                <dt class="font-medium text-gray-600">Status:</dt>
+                                <dd><span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">In Transit</span></dd>
+                            </div>
+                            <div class="flex justify-between">
+                                <dt class="font-medium text-gray-600">Created:</dt>
+                                <dd class="text-gray-900">Jan 15, 2024 10:30 AM</dd>
+                            </div>
+                            <div class="flex justify-between">
+                                <dt class="font-medium text-gray-600">Reference:</dt>
+                                <dd class="text-gray-900">REF-2024-001</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Product & Route</h3>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <dl class="space-y-2">
+                            <div class="flex justify-between">
+                                <dt class="font-medium text-gray-600">Product:</dt>
+                                <dd class="text-gray-900">Sample Product</dd>
+                            </div>
+                            <div class="flex justify-between">
+                                <dt class="font-medium text-gray-600">Quantity:</dt>
+                                <dd class="text-gray-900">100 units</dd>
+                            </div>
+                            <div class="flex justify-between">
+                                <dt class="font-medium text-gray-600">From:</dt>
+                                <dd class="text-gray-900">Main Warehouse</dd>
+                            </div>
+                            <div class="flex justify-between">
+                                <dt class="font-medium text-gray-600">To:</dt>
+                                <dd class="text-gray-900">Branch Warehouse</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-center">
+                <button onclick="completeTransfer(${transferId})" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 mr-2">
+                    Complete Transfer
+                </button>
+                <button onclick="reverseTransfer(${transferId})" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                    Cancel Transfer
+                </button>
+            </div>
+        `;
+    }, 1000);
+}
+
+function completeTransfer(transferId) {
+    if (confirm('Are you sure you want to complete this transfer?')) {
+        showNotification('Transfer completed successfully', 'success');
+        setTimeout(() => location.reload(), 1000);
+    }
+}
+
+function reverseTransfer(transferId) {
+    if (confirm('Are you sure you want to reverse this transfer?')) {
+        showNotification('Transfer reversed successfully', 'success');
+        setTimeout(() => location.reload(), 1000);
+    }
+}
+
+// Quick action functions
+function quickTransfer(type) {
+    // Pre-populate modal with specific type
+    addTransferModal.classList.remove('hidden');
+    if (type === 'receipt') {
+        document.querySelector('select[name="movement_type"]').value = 'transfer_in';
+    } else if (type === 'issue') {
+        document.querySelector('select[name="movement_type"]').value = 'transfer_out';
+    }
+}
+
+function openBulkTransferModal() {
+    showNotification('Bulk transfer feature coming soon!', 'info');
+}
+
+function generateTransferReport() {
+    showNotification('Transfer report feature coming soon!', 'info');
+}
+
+// Filter functionality
+document.getElementById('applyFilters').addEventListener('click', function() {
+    // Implement filtering logic
+    showNotification('Filters applied', 'info');
+});
+
+document.getElementById('clearFilters').addEventListener('click', function() {
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterFromWarehouse').value = '';
+    document.getElementById('filterToWarehouse').value = '';
+    document.getElementById('filterDate').value = '';
+    showNotification('Filters cleared', 'info');
+});
+
+// Notification Function
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
+        type === 'success' ? 'bg-green-500' : 
+        type === 'error' ? 'bg-red-500' : 
+        type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+    } text-white`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+</script>
+{% endblock %}

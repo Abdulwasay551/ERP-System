@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}{{ warehouse.name }} - Warehouse Details | FutureERP{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Breadcrumb -->
+        <nav class="flex mb-6" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                <li class="inline-flex items-center">
+                    <a href="{% url 'inventory_dashboard' %}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-green-600">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                        </svg>
+                        Inventory
+                    </a>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        <a href="{% url 'inventory_warehouses_ui' %}" class="ml-1 text-sm font-medium text-gray-700 hover:text-green-600 md:ml-2">Warehouses</a>
+                    </div>
+                </li>
+                <li aria-current="page">
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2">{{ warehouse.name }}</span>
+                    </div>
+                </li>
+            </ol>
+        </nav>
+
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">
+                    <svg class="w-10 h-10 inline mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                    {{ warehouse.name }}
+                </h1>
+                <p class="text-gray-600">{{ warehouse.location|default:"No location specified" }}</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'inventory_warehouses_ui' %}" class="action-btn bg-gray-500 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to Warehouses
+                </a>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total Items</p>
+                        <p class="text-3xl font-bold text-blue-800">{{ total_items }}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total Quantity</p>
+                        <p class="text-3xl font-bold text-green-800">{{ total_quantity|floatformat:0 }}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total Value</p>
+                        <p class="text-3xl font-bold text-purple-800">₨{{ total_value|floatformat:2 }}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Warehouse Information -->
+        <div class="bg-white rounded-3xl shadow-lg p-8 mb-8">
+            <h3 class="text-2xl font-bold text-green-800 mb-6">Warehouse Information</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600 font-medium">Name:</span>
+                        <span class="font-semibold">{{ warehouse.name }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600 font-medium">Code:</span>
+                        <span class="font-semibold">{{ warehouse.code|default:"N/A" }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600 font-medium">Type:</span>
+                        <span class="font-semibold">{{ warehouse.get_warehouse_type_display }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600 font-medium">Location:</span>
+                        <span class="font-semibold">{{ warehouse.location|default:"No location" }}</span>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600 font-medium">Address:</span>
+                        <span class="font-semibold">{{ warehouse.address|default:"N/A" }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600 font-medium">Status:</span>
+                        {% if warehouse.is_active %}
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                        {% else %}
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Inactive</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600 font-medium">Max Capacity:</span>
+                        <span class="font-semibold">{{ warehouse.max_capacity_volume|default:"Unlimited" }}{% if warehouse.max_capacity_volume %} m³{% endif %}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600 font-medium">Temperature Control:</span>
+                        <span class="font-semibold">{% if warehouse.temperature_controlled %}Yes{% else %}No{% endif %}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stock Items in this Warehouse -->
+        <div class="bg-white rounded-3xl shadow-lg overflow-hidden mb-8">
+            <div class="bg-gradient-to-r from-green-50 to-emerald-50 px-8 py-6">
+                <h3 class="text-2xl font-bold text-green-800">Stock Items</h3>
+            </div>
+            
+            <div class="p-8">
+                {% if stock_items %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Product</th>
+                                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Quantity</th>
+                                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Available</th>
+                                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-100">
+                                {% for item in stock_items %}
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ item.product.name }}</div>
+                                        <div class="text-sm text-gray-500">{{ item.product.sku|default:"N/A" }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ item.quantity|floatformat:2 }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ item.available_quantity|floatformat:2 }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {% if item.is_active %}
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                                        {% else %}
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <a href="{% url 'inventory_stockitem_detail' item.pk %}" class="text-indigo-600 hover:text-indigo-900">View</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293L17 15.586a1 1 0 01-.707.293h-4.586a1 1 0 01-.707-.293L9.293 13.707A1 1 0 008.586 13H6"></path>
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">No stock items</h3>
+                        <p class="mt-1 text-sm text-gray-500">This warehouse doesn't have any stock items yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

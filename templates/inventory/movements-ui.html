@@ -132,10 +132,11 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
+                    {% for movement in movements %}
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <div>Nov 20, 2024</div>
-                            <div class="text-xs text-gray-500">10:30 AM</div>
+                            <div>{{ movement.timestamp|date:"M d, Y" }}</div>
+                            <div class="text-xs text-gray-500">{{ movement.timestamp|time:"g:i A" }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
@@ -143,91 +144,62 @@
                                     <i class="fas fa-cube text-blue-600 text-sm"></i>
                                 </div>
                                 <div>
-                                    <div class="text-sm font-medium text-gray-900">Raw Material A</div>
-                                    <div class="text-xs text-gray-500">SKU: RM-001</div>
+                                    <div class="text-sm font-medium text-gray-900">{{ movement.stock_item.product.name }}</div>
+                                    <div class="text-xs text-gray-500">{{ movement.stock_item.warehouse.name }}</div>
                                 </div>
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                <i class="fas fa-arrow-up mr-1"></i>Receipt
-                            </span>
+                            {% if movement.movement_type == 'grn_receipt' or movement.movement_type == 'adjustment_in' or movement.movement_type == 'transfer_in' %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    <i class="fas fa-arrow-up mr-1"></i>{{ movement.get_movement_type_display }}
+                                </span>
+                            {% elif movement.movement_type == 'sale' or movement.movement_type == 'adjustment_out' or movement.movement_type == 'transfer_out' %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                    <i class="fas fa-arrow-down mr-1"></i>{{ movement.get_movement_type_display }}
+                                </span>
+                            {% else %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    <i class="fas fa-exchange-alt mr-1"></i>{{ movement.get_movement_type_display }}
+                                </span>
+                            {% endif %}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Main Warehouse</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-green-600">+100 kg</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₨125.00</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">PO-2024-001</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button class="text-emerald-600 hover:text-emerald-900 mr-3">View</button>
-                            <button class="text-blue-600 hover:text-blue-900">Edit</button>
-                        </td>
-                    </tr>
-                    <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <div>Nov 20, 2024</div>
-                            <div class="text-xs text-gray-500">09:15 AM</div>
+                            {% if movement.from_warehouse and movement.to_warehouse %}
+                                {{ movement.from_warehouse.name }} → {{ movement.to_warehouse.name }}
+                            {% elif movement.from_warehouse %}
+                                {{ movement.from_warehouse.name }}
+                            {% elif movement.to_warehouse %}
+                                {{ movement.to_warehouse.name }}
+                            {% else %}
+                                {{ movement.stock_item.warehouse.name }}
+                            {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                                    <i class="fas fa-box text-purple-600 text-sm"></i>
-                                </div>
-                                <div>
-                                    <div class="text-sm font-medium text-gray-900">Finished Product X</div>
-                                    <div class="text-xs text-gray-500">SKU: FG-001</div>
-                                </div>
-                            </div>
+                            {% if movement.movement_type == 'grn_receipt' or movement.movement_type == 'adjustment_in' or movement.movement_type == 'transfer_in' %}
+                                <div class="text-sm font-medium text-green-600">+{{ movement.quantity }}</div>
+                            {% else %}
+                                <div class="text-sm font-medium text-red-600">-{{ movement.quantity }}</div>
+                            {% endif %}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                                <i class="fas fa-arrow-down mr-1"></i>Issue
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Main Warehouse</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-red-600">-25 pcs</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₨850.00</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">SO-2024-015</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₨{{ movement.unit_cost|floatformat:2 }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ movement.reference_number|default:"-" }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <button class="text-emerald-600 hover:text-emerald-900 mr-3">View</button>
                             <button class="text-blue-600 hover:text-blue-900">Edit</button>
                         </td>
                     </tr>
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <div>Nov 19, 2024</div>
-                            <div class="text-xs text-gray-500">03:45 PM</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                                    <i class="fas fa-cog text-green-600 text-sm"></i>
-                                </div>
-                                <div>
-                                    <div class="text-sm font-medium text-gray-900">Component Y</div>
-                                    <div class="text-xs text-gray-500">SKU: CM-002</div>
-                                </div>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-4 text-center text-gray-500">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-box-open text-4xl text-gray-300 mb-2"></i>
+                                <span>No stock movements found</span>
+                                <span class="text-sm">Click "Record Movement" to add your first movement</span>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                <i class="fas fa-exchange-alt mr-1"></i>Transfer
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Main → Branch</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-blue-600">50 pcs</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₨45.00</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">TF-2024-003</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button class="text-emerald-600 hover:text-emerald-900 mr-3">View</button>
-                            <button class="text-blue-600 hover:text-blue-900">Edit</button>
-                        </td>
                     </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
@@ -266,4 +238,204 @@
         </div>
     </div>
 </div>
+
+<!-- Add Stock Movement Modal -->
+<div id="addMovementModal" class="modal-overlay fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl">
+        <div class="p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-emerald-800">Record Stock Movement</h2>
+                <button id="closeAddMovementModal" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+
+            <form id="addMovementForm" method="post" action="{% url 'inventory_stock_movement_add' %}">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Stock Item</label>
+                        <select name="stock_item" required
+                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                            <option value="">Select Stock Item</option>
+                            {% for stock_item in stock_items %}
+                            <option value="{{ stock_item.id }}">{{ stock_item.product.name }} - {{ stock_item.warehouse.name }} ({{ stock_item.quantity }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Movement Type</label>
+                        <select name="movement_type" required
+                                class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                            <option value="">Select Movement Type</option>
+                            <optgroup label="Receipts">
+                                <option value="grn_receipt">GRN Receipt</option>
+                                <option value="purchase_return">Purchase Return</option>
+                                <option value="opening_stock">Opening Stock</option>
+                            </optgroup>
+                            <optgroup label="Issues">
+                                <option value="sale">Sale</option>
+                                <option value="material_issue">Material Issue</option>
+                                <option value="scrap">Scrap/Write-off</option>
+                            </optgroup>
+                            <optgroup label="Transfers">
+                                <option value="transfer_in">Transfer In</option>
+                                <option value="transfer_out">Transfer Out</option>
+                                <option value="inter_warehouse_transfer">Inter-Warehouse Transfer</option>
+                            </optgroup>
+                            <optgroup label="Adjustments">
+                                <option value="adjustment_in">Adjustment In</option>
+                                <option value="adjustment_out">Adjustment Out</option>
+                                <option value="stock_correction">Stock Correction</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                        <input type="number" name="quantity" step="0.01" min="0.01" required
+                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                               placeholder="0.00">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Unit Cost</label>
+                        <input type="number" name="unit_cost" step="0.01" min="0"
+                               class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                               placeholder="0.00">
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">From Warehouse</label>
+                    <select name="from_warehouse"
+                            class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                        <option value="">Select From Warehouse (for transfers)</option>
+                        {% for warehouse in warehouses %}
+                        <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">To Warehouse</label>
+                    <select name="to_warehouse"
+                            class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                        <option value="">Select To Warehouse (for transfers)</option>
+                        {% for warehouse in warehouses %}
+                        <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Reference</label>
+                    <input type="text" name="reference"
+                           class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                           placeholder="Reference number (PO, SO, etc.)">
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                    <textarea name="notes" rows="3"
+                              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                              placeholder="Enter notes or remarks..."></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="cancelAddMovement"
+                            class="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg">
+                        Record Movement
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Modal elements
+const addMovementBtn = document.getElementById('addMovementBtn');
+const addMovementModal = document.getElementById('addMovementModal');
+
+// Event listeners
+addMovementBtn.addEventListener('click', function() {
+    addMovementModal.classList.remove('hidden');
+});
+
+document.getElementById('closeAddMovementModal').addEventListener('click', function() {
+    addMovementModal.classList.add('hidden');
+});
+
+document.getElementById('cancelAddMovement').addEventListener('click', function() {
+    addMovementModal.classList.add('hidden');
+});
+
+// Close modal when clicking outside
+addMovementModal.addEventListener('click', function(e) {
+    if (e.target === addMovementModal) {
+        addMovementModal.classList.add('hidden');
+    }
+});
+
+// Handle movement form submission
+document.getElementById('addMovementForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    
+    try {
+        const response = await fetch(e.target.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+                addMovementModal.classList.add('hidden');
+                showNotification('Stock movement recorded successfully!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showNotification('Error: ' + (result.error || 'Unknown error'), 'error');
+            }
+        } else {
+            showNotification('Error recording movement', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error recording movement', 'error');
+    }
+});
+
+// Notification Function
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
+        type === 'success' ? 'bg-green-500' : 
+        type === 'error' ? 'bg-red-500' : 
+        type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+    } text-white`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// Update today's movements count
+document.addEventListener('DOMContentLoaded', function() {
+    const todayMovements = {{ movements_today_count|default:0 }};
+    document.getElementById('todayMovements').textContent = todayMovements;
+});
+</script>
 {% endblock %}

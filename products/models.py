@@ -82,6 +82,47 @@ class Product(models.Model):
     is_stockable = models.BooleanField(default=True, help_text="Tracked in inventory")
     is_variant = models.BooleanField(default=False, help_text="This product has variants")
     
+    # Inventory Management
+    valuation_method = models.CharField(max_length=20, choices=[
+        ('fifo', 'First In First Out'),
+        ('lifo', 'Last In First Out'),
+        ('weighted_avg', 'Weighted Average'),
+        ('standard', 'Standard Cost'),
+        ('landed_cost', 'Landed Cost'),
+    ], default='weighted_avg', help_text="Default valuation method for inventory")
+    
+    auto_reorder = models.BooleanField(default=False, help_text="Auto-create purchase requisitions")
+    lead_time_days = models.IntegerField(default=0, help_text="Procurement lead time in days")
+    safety_stock = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Safety stock level")
+    
+    # Quality Control
+    requires_quality_inspection = models.BooleanField(default=False, help_text="Requires QC before use")
+    quality_parameters = models.TextField(blank=True, help_text="Quality check parameters")
+    
+    # Manufacturing (optional fields)
+    bill_of_materials = models.JSONField(null=True, blank=True, help_text="BOM for manufacturing")
+    manufacturing_type = models.CharField(max_length=30, choices=[
+        ('make_to_stock', 'Make to Stock'),
+        ('make_to_order', 'Make to Order'),
+        ('engineer_to_order', 'Engineer to Order'),
+    ], blank=True, null=True)
+    
+    # Default warehouse assignments (optional)
+    default_purchase_warehouse = models.ForeignKey(
+        'inventory.Warehouse', 
+        on_delete=models.SET_NULL, 
+        null=True, blank=True,
+        related_name='default_purchase_products',
+        help_text="Default warehouse for purchases"
+    )
+    default_sales_warehouse = models.ForeignKey(
+        'inventory.Warehouse', 
+        on_delete=models.SET_NULL, 
+        null=True, blank=True,
+        related_name='default_sales_products',
+        help_text="Default warehouse for sales"
+    )
+    
     # Tracking Method
     tracking_method = models.CharField(
         max_length=20,
