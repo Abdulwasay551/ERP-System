@@ -1,0 +1,309 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}MRP - Manufacturing{% endblock %}
+
+{% block extra_css %}
+<style>
+    .mrp-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+    }
+    
+    .mrp-card:hover {
+        border-color: #8b5cf6;
+        box-shadow: 0 10px 25px rgba(139, 92, 246, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .requirement-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 0.5rem;
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-pending { background-color: #fef3c7; color: #d97706; }
+    .status-approved { background-color: #d1fae5; color: #059669; }
+    .status-ordered { background-color: #dbeafe; color: #1d4ed8; }
+    .status-received { background-color: #f3e8ff; color: #7c3aed; }
+    
+    .priority-high { color: #dc2626; }
+    .priority-medium { color: #d97706; }
+    .priority-low { color: #059669; }
+    
+    .chart-container {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div class="mb-6 lg:mb-0">
+                    <h1 class="text-4xl font-bold text-gray-900 mb-2">
+                        <i class="fas fa-chart-line text-purple-600 mr-3"></i>
+                        Material Requirements Planning
+                    </h1>
+                    <p class="text-gray-600">Plan and manage material requirements for production</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Run MRP
+                    </button>
+                    <button class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-download mr-2"></i>Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Total Plans</p>
+                        <p class="text-3xl font-bold text-purple-600">{{ mrp_plans|length }}</p>
+                    </div>
+                    <div class="p-3 bg-purple-100 rounded-full">
+                        <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Pending Requirements</p>
+                        <p class="text-3xl font-bold text-orange-600">{{ pending_requirements|length }}</p>
+                    </div>
+                    <div class="p-3 bg-orange-100 rounded-full">
+                        <i class="fas fa-clock text-orange-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Critical Items</p>
+                        <p class="text-3xl font-bold text-red-600">
+                            {% for req in pending_requirements %}
+                                {% if req.required_date <= "2025-08-11"|date %}{{ forloop.counter0|add:1 }}{% endif %}
+                            {% empty %}0{% endfor %}
+                        </p>
+                    </div>
+                    <div class="p-3 bg-red-100 rounded-full">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Total Value</p>
+                        <p class="text-3xl font-bold text-green-600">
+                            ${% for req in pending_requirements %}{{ req.quantity|default:0|floatformat:0 }}{% empty %}0{% endfor %}K
+                        </p>
+                    </div>
+                    <div class="p-3 bg-green-100 rounded-full">
+                        <i class="fas fa-dollar-sign text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Recent MRP Plans -->
+            <div class="chart-container">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900">Recent MRP Plans</h3>
+                    <button class="text-purple-600 hover:text-purple-800">View All</button>
+                </div>
+                
+                {% if mrp_plans %}
+                    {% for plan in mrp_plans %}
+                    <div class="mrp-card">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <h4 class="font-medium text-gray-900 mb-2">
+                                    MRP Plan #{{ plan.id }} - {{ plan.plan_date|date:"M d, Y" }}
+                                </h4>
+                                <div class="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
+                                    <div>
+                                        <span class="font-medium">Planning Horizon:</span> 
+                                        {{ plan.planning_horizon_days|default:30 }} days
+                                    </div>
+                                    <div>
+                                        <span class="font-medium">Status:</span> 
+                                        <span class="capitalize">{{ plan.status|default:"Draft" }}</span>
+                                    </div>
+                                </div>
+                                {% if plan.notes %}
+                                <p class="text-gray-600 text-sm">{{ plan.notes|truncatewords:10 }}</p>
+                                {% endif %}
+                                <div class="text-xs text-gray-500 mt-2">
+                                    Created: {{ plan.created_at|date:"M d, Y H:i" }}
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-2 ml-4">
+                                <button class="bg-purple-600 text-white px-3 py-1 text-sm rounded hover:bg-purple-700">
+                                    View
+                                </button>
+                                <button class="bg-gray-100 text-gray-700 px-3 py-1 text-sm rounded hover:bg-gray-200">
+                                    Edit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-8">
+                        <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <i class="fas fa-chart-line text-gray-400 text-2xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No MRP Plans</h3>
+                        <p class="text-gray-600 mb-4">Start by running your first MRP plan</p>
+                        <button class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                            <i class="fas fa-plus mr-2"></i>Run MRP
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Pending Requirements -->
+            <div class="chart-container">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900">Pending Requirements</h3>
+                    <button class="text-purple-600 hover:text-purple-800">View All</button>
+                </div>
+                
+                {% if pending_requirements %}
+                    <div class="space-y-3 max-h-96 overflow-y-auto">
+                        {% for requirement in pending_requirements %}
+                        <div class="requirement-card {% if requirement.required_date <= "2025-08-11"|date %}border-red-200{% endif %}">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <h5 class="font-medium text-gray-900 mb-1">
+                                        {{ requirement.product.name|default:"Product Name" }}
+                                    </h5>
+                                    <div class="grid grid-cols-2 gap-2 text-sm text-gray-600 mb-2">
+                                        <div>Qty: {{ requirement.quantity|default:0|floatformat:0 }}</div>
+                                        <div>Required: {{ requirement.required_date|date:"M d" }}</div>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <span class="status-badge status-{{ requirement.status|default:'pending' }}">
+                                            {{ requirement.get_status_display|default:requirement.status|title }}
+                                        </span>
+                                        {% if requirement.required_date <= "2025-08-11"|date %}
+                                        <span class="text-xs text-red-600">
+                                            <i class="fas fa-exclamation-triangle mr-1"></i>Urgent
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-1 ml-4">
+                                    <button class="bg-blue-600 text-white px-2 py-1 text-xs rounded hover:bg-blue-700">
+                                        Create PO
+                                    </button>
+                                    <button class="bg-gray-100 text-gray-700 px-2 py-1 text-xs rounded hover:bg-gray-200">
+                                        Details
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-8">
+                        <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <i class="fas fa-check-circle text-gray-400 text-2xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No Pending Requirements</h3>
+                        <p class="text-gray-600">All material requirements are fulfilled</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- MRP Actions -->
+        <div class="chart-container mt-8">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6">MRP Actions</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="text-center p-6 border border-gray-200 rounded-lg hover:border-purple-300 transition-colors cursor-pointer">
+                    <div class="mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-play text-purple-600 text-2xl"></i>
+                    </div>
+                    <h4 class="font-medium text-gray-900 mb-2">Run MRP</h4>
+                    <p class="text-gray-600 text-sm mb-4">Generate new material requirements plan</p>
+                    <button class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+                        Start MRP Run
+                    </button>
+                </div>
+
+                <div class="text-center p-6 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors cursor-pointer">
+                    <div class="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-shopping-cart text-blue-600 text-2xl"></i>
+                    </div>
+                    <h4 class="font-medium text-gray-900 mb-2">Create Purchase Orders</h4>
+                    <p class="text-gray-600 text-sm mb-4">Generate POs from requirements</p>
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                        Create POs
+                    </button>
+                </div>
+
+                <div class="text-center p-6 border border-gray-200 rounded-lg hover:border-green-300 transition-colors cursor-pointer">
+                    <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-chart-bar text-green-600 text-2xl"></i>
+                    </div>
+                    <h4 class="font-medium text-gray-900 mb-2">View Reports</h4>
+                    <p class="text-gray-600 text-sm mb-4">Analyze MRP performance and trends</p>
+                    <button class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                        View Reports
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('MRP UI loaded');
+    
+    // Auto-refresh pending requirements every 5 minutes
+    setInterval(function() {
+        console.log('Refreshing MRP data...');
+        // Add AJAX call to refresh data
+    }, 300000);
+});
+</script>
+{% endblock %}

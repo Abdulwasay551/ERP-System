@@ -1,0 +1,568 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Opportunities | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(29, 78, 216, 0.05));
+        border: 1px solid rgba(59, 130, 246, 0.1);
+    }
+    .opportunity-card {
+        background: white;
+        border: 1px solid rgba(229, 231, 235, 1);
+        transition: all 0.3s ease;
+    }
+    .opportunity-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        border-color: rgba(59, 130, 246, 0.3);
+    }
+    .progress-bar {
+        background: linear-gradient(90deg, #ef4444, #f97316, #eab308, #22c55e);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">Opportunity Management</h1>
+                <p class="text-gray-600">Track and manage sales opportunities through the pipeline</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="createNewOpportunity()" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-plus mr-2"></i>
+                    New Opportunity
+                </button>
+                <button onclick="exportOpportunities()" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-download mr-2"></i>
+                    Export
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-card rounded-2xl p-6 mb-8">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Search opportunities..." 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Stage</label>
+                    <select name="stage" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Stages</option>
+                        {% for value, label in stage_choices %}
+                        <option value="{{ value }}" {% if request.GET.stage == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                    <select name="priority" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Priorities</option>
+                        {% for value, label in priority_choices %}
+                        <option value="{{ value }}" {% if request.GET.priority == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Assigned To</label>
+                    <select name="assigned_to" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Users</option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}" {% if request.GET.assigned_to == user.id|stringformat:"s" %}selected{% endif %}>{{ user.get_full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                    <select name="date_range" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Time</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="quarter">This Quarter</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-search mr-2"></i>Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Total Opportunities</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ total_opportunities }}</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-bullseye text-blue-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Pipeline Value</p>
+                        <p class="text-2xl font-bold text-green-600">₨{{ pipeline_value|floatformat:0 }}</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg">
+                        <i class="fas fa-dollar-sign text-green-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Won This Month</p>
+                        <p class="text-2xl font-bold text-purple-600">{{ won_opportunities }}</p>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-lg">
+                        <i class="fas fa-trophy text-purple-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Win Rate</p>
+                        <p class="text-2xl font-bold text-indigo-600">{{ win_rate }}%</p>
+                    </div>
+                    <div class="bg-indigo-100 p-3 rounded-lg">
+                        <i class="fas fa-chart-line text-indigo-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Avg Deal Size</p>
+                        <p class="text-2xl font-bold text-orange-600">₨{{ avg_deal_size|floatformat:0 }}</p>
+                    </div>
+                    <div class="bg-orange-100 p-3 rounded-lg">
+                        <i class="fas fa-calculator text-orange-600"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Opportunities List -->
+        <div class="space-y-6">
+            {% for opportunity in opportunities %}
+            <div class="opportunity-card rounded-2xl p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-4 mb-2">
+                            <h3 class="text-xl font-bold text-gray-900">{{ opportunity.name }}</h3>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                {% if opportunity.stage == 'prospecting' %}bg-blue-100 text-blue-800
+                                {% elif opportunity.stage == 'qualification' %}bg-yellow-100 text-yellow-800
+                                {% elif opportunity.stage == 'proposal' %}bg-orange-100 text-orange-800
+                                {% elif opportunity.stage == 'negotiation' %}bg-purple-100 text-purple-800
+                                {% elif opportunity.stage == 'closed_won' %}bg-green-100 text-green-800
+                                {% elif opportunity.stage == 'closed_lost' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ opportunity.get_stage_display }}
+                            </span>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                {% if opportunity.priority == 'urgent' %}bg-red-100 text-red-800
+                                {% elif opportunity.priority == 'high' %}bg-orange-100 text-orange-800
+                                {% elif opportunity.priority == 'medium' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ opportunity.get_priority_display }}
+                            </span>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-3">
+                            <div>
+                                <i class="fas fa-user mr-1"></i>
+                                {% if opportunity.customer %}{{ opportunity.customer.name }}{% else %}No customer{% endif %}
+                            </div>
+                            <div>
+                                <i class="fas fa-money-bill-wave mr-1"></i>
+                                ₨{{ opportunity.estimated_value|floatformat:0 }}
+                            </div>
+                            <div>
+                                <i class="fas fa-calendar-alt mr-1"></i>
+                                {{ opportunity.expected_close_date|date:"M d, Y"|default:"No date set" }}
+                            </div>
+                            <div>
+                                <i class="fas fa-percentage mr-1"></i>
+                                {{ opportunity.probability }}% probability
+                            </div>
+                        </div>
+                        
+                        {% if opportunity.description %}
+                        <p class="text-gray-700 mb-3">{{ opportunity.description|truncatechars:150 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="flex space-x-2 ml-4">
+                        <button onclick="viewOpportunity({{ opportunity.id }})" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-eye mr-2"></i>View
+                        </button>
+                        {% if opportunity.stage == 'negotiation' %}
+                        <button onclick="closeWon({{ opportunity.id }})" class="bg-green-100 hover:bg-green-200 text-green-700 px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-handshake mr-2"></i>Close Won
+                        </button>
+                        {% endif %}
+                        <div class="relative">
+                            <button onclick="toggleOpportunityMenu({{ opportunity.id }})" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg transition-colors">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <div id="opportunity-menu-{{ opportunity.id }}" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border hidden z-10">
+                                <a href="#" onclick="editOpportunity({{ opportunity.id }})" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                    <i class="fas fa-edit mr-2"></i>Edit
+                                </a>
+                                <a href="#" onclick="addActivity({{ opportunity.id }})" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                    <i class="fas fa-tasks mr-2"></i>Add Activity
+                                </a>
+                                <a href="#" onclick="scheduleFollowup({{ opportunity.id }})" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                    <i class="fas fa-calendar-plus mr-2"></i>Schedule Follow-up
+                                </a>
+                                <a href="#" onclick="closeLost({{ opportunity.id }})" class="block px-4 py-2 text-red-700 hover:bg-red-50">
+                                    <i class="fas fa-times mr-2"></i>Close Lost
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Opportunity Progress -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Progress</p>
+                        <div class="flex items-center">
+                            <div class="w-full bg-gray-200 rounded-full h-2 mr-3">
+                                <div class="progress-bar h-2 rounded-full" style="width: {{ opportunity.probability }}%"></div>
+                            </div>
+                            <span class="font-bold text-sm text-gray-900">{{ opportunity.probability }}%</span>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Days in Stage</p>
+                        <p class="font-bold text-gray-900">{{ opportunity.days_in_stage }} days</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Source</p>
+                        <p class="font-bold text-gray-900">{{ opportunity.source|default:"Unknown" }}</p>
+                    </div>
+                </div>
+
+                <!-- Assignment and Activities -->
+                <div class="flex justify-between items-center text-sm text-gray-600 pt-4 border-t border-gray-200">
+                    <div class="flex items-center space-x-4">
+                        <span>
+                            {% if opportunity.assigned_to %}
+                                <i class="fas fa-user mr-1"></i>{{ opportunity.assigned_to.get_full_name }}
+                            {% else %}
+                                <i class="fas fa-user-slash mr-1"></i>Unassigned
+                            {% endif %}
+                        </span>
+                        <span>
+                            <i class="fas fa-clock mr-1"></i>Last updated: {{ opportunity.updated_at|date:"M d, Y" }}
+                        </span>
+                    </div>
+                    <span>
+                        <i class="fas fa-tasks mr-1"></i>{{ opportunity.activities_count }} activities
+                    </span>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-12">
+                <div class="mb-4">
+                    <i class="fas fa-bullseye text-gray-400 text-6xl"></i>
+                </div>
+                <h3 class="text-xl font-medium text-gray-900 mb-2">No opportunities found</h3>
+                <p class="text-gray-600 mb-6">Create your first opportunity to start tracking deals</p>
+                <button onclick="createNewOpportunity()" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all">
+                    <i class="fas fa-plus mr-2"></i>Create First Opportunity
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="flex justify-center mt-8">
+            <nav class="flex items-center space-x-2">
+                {% if page_obj.has_previous %}
+                <a href="?page=1" class="px-3 py-2 text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:border-blue-300">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:border-blue-300">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <span class="px-4 py-2 bg-blue-600 text-white rounded-lg">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}" class="px-4 py-2 text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:border-blue-300">{{ num }}</a>
+                {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:border-blue-300">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+                <a href="?page={{ paginator.num_pages }}" class="px-3 py-2 text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:border-blue-300">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Opportunity Modal -->
+<div id="opportunityModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-8 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-900" id="modalTitle">Add New Opportunity</h2>
+            <button onclick="closeOpportunityModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="opportunityForm" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                    <input type="text" id="opportunityName" name="name" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Customer</label>
+                    <select id="opportunityCustomer" name="customer"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Select Customer</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}">{{ customer.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Estimated Value</label>
+                    <input type="number" id="opportunityValue" name="estimated_value" step="0.01"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Stage</label>
+                    <select id="opportunityStage" name="stage"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="prospecting">Prospecting</option>
+                        <option value="qualification">Qualification</option>
+                        <option value="proposal">Proposal</option>
+                        <option value="negotiation">Negotiation</option>
+                        <option value="closed_won">Closed Won</option>
+                        <option value="closed_lost">Closed Lost</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Probability (%)</label>
+                    <input type="number" id="opportunityProbability" name="probability" min="0" max="100"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Expected Close Date</label>
+                    <input type="date" id="opportunityCloseDate" name="expected_close_date"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea id="opportunityDescription" name="description" rows="4"
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Describe the opportunity details..."></textarea>
+            </div>
+            
+            <div class="flex justify-end space-x-4">
+                <button type="button" onclick="closeOpportunityModal()" 
+                        class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    Save Opportunity
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Opportunity management functions
+let currentOpportunityId = null;
+
+function createNewOpportunity() {
+    openOpportunityModal();
+}
+
+function exportOpportunities() {
+    alert('Export feature coming soon!');
+}
+
+function viewOpportunity(opportunityId) {
+    window.location.href = `/crm/opportunities/${opportunityId}/`;
+}
+
+function editOpportunity(opportunityId) {
+    openOpportunityModal(opportunityId);
+}
+
+function closeWon(opportunityId) {
+    if (confirm('Mark this opportunity as Won?')) {
+        updateOpportunityStage(opportunityId, 'closed_won');
+    }
+}
+
+function closeLost(opportunityId) {
+    const reason = prompt('Reason for marking as lost:');
+    if (reason) {
+        updateOpportunityStage(opportunityId, 'closed_lost', reason);
+    }
+}
+
+function updateOpportunityStage(opportunityId, stage, reason = null) {
+    fetch(`/crm/opportunities/${opportunityId}/update-stage/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ stage: stage, reason: reason })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error updating opportunity stage');
+        }
+    });
+}
+
+function toggleOpportunityMenu(opportunityId) {
+    const menu = document.getElementById(`opportunity-menu-${opportunityId}`);
+    menu.classList.toggle('hidden');
+    
+    // Close other open menus
+    document.querySelectorAll('[id^="opportunity-menu-"]').forEach(m => {
+        if (m.id !== `opportunity-menu-${opportunityId}`) {
+            m.classList.add('hidden');
+        }
+    });
+}
+
+function addActivity(opportunityId) {
+    alert('Activity feature coming soon!');
+}
+
+function scheduleFollowup(opportunityId) {
+    alert('Follow-up scheduling feature coming soon!');
+}
+
+function openOpportunityModal(opportunityId = null) {
+    currentOpportunityId = opportunityId;
+    const modal = document.getElementById('opportunityModal');
+    const title = document.getElementById('modalTitle');
+    
+    if (opportunityId) {
+        title.textContent = 'Edit Opportunity';
+        loadOpportunityData(opportunityId);
+    } else {
+        title.textContent = 'Add New Opportunity';
+        document.getElementById('opportunityForm').reset();
+    }
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeOpportunityModal() {
+    const modal = document.getElementById('opportunityModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    currentOpportunityId = null;
+}
+
+function loadOpportunityData(opportunityId) {
+    fetch(`/crm/opportunities/${opportunityId}/api/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('opportunityName').value = data.name || '';
+            document.getElementById('opportunityCustomer').value = data.customer || '';
+            document.getElementById('opportunityValue').value = data.estimated_value || '';
+            document.getElementById('opportunityStage').value = data.stage || '';
+            document.getElementById('opportunityProbability').value = data.probability || '';
+            document.getElementById('opportunityCloseDate').value = data.expected_close_date || '';
+            document.getElementById('opportunityDescription').value = data.description || '';
+        })
+        .catch(error => {
+            console.error('Error loading opportunity data:', error);
+            alert('Error loading opportunity data');
+        });
+}
+
+document.getElementById('opportunityForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const url = currentOpportunityId ? `/crm/opportunities/${currentOpportunityId}/api/` : '/crm/opportunities/api/';
+    const method = currentOpportunityId ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method: method,
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success || data.id) {
+            closeOpportunityModal();
+            location.reload();
+        } else {
+            alert('Error saving opportunity: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error saving opportunity:', error);
+        alert('Error saving opportunity');
+    });
+});
+
+// Close modal when clicking outside
+document.getElementById('opportunityModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeOpportunityModal();
+    }
+});
+
+// Close menus when clicking elsewhere
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('[onclick*="toggleOpportunityMenu"]') && !e.target.closest('[id^="opportunity-menu-"]')) {
+        document.querySelectorAll('[id^="opportunity-menu-"]').forEach(menu => {
+            menu.classList.add('hidden');
+        });
+    }
+});
+</script>
+{% endblock %}
+             

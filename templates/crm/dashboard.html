@@ -4,17 +4,25 @@
 {% block extra_css %}
 <style>
     .metric-card {
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(185, 28, 28, 0.1));
-        border: 1px solid rgba(239, 68, 68, 0.2);
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
         transition: all 0.3s ease;
     }
     .metric-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(239, 68, 68, 0.15);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
     }
     .activity-card {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
-        border: 1px solid rgba(16, 185, 129, 0.2);
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(6, 95, 70, 0.05));
+        border: 1px solid rgba(16, 185, 129, 0.1);
+    }
+    .pipeline-stage {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(29, 78, 216, 0.1));
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+    .integration-card {
+        background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(124, 58, 237, 0.1));
+        border: 1px solid rgba(168, 85, 247, 0.2);
     }
 </style>
 {% endblock %}
@@ -25,29 +33,211 @@
         <!-- Header -->
         <div class="flex justify-between items-center mb-8">
             <div>
-                <h1 class="text-4xl font-bold accounting-highlight mb-2">CRM Dashboard</h1>
-                <p class="text-gray-600">Customer relationship management and sales pipeline</p>
+                <h1 class="text-4xl font-bold text-emerald-700 mb-2">CRM Dashboard</h1>
+                <p class="text-gray-600">Customer relationship management, sales pipeline, and business insights</p>
             </div>
             <div class="flex gap-4">
-                <a href="{% url 'customer_add' %}" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
-                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    Add Customer
+                <a href="{% url 'crm:customer_page' %}" class="bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-users mr-2"></i>
+                    Customers
                 </a>
-                <a href="{% url 'customer_list' %}" class="action-btn bg-gradient-to-r from-purple-500 to-pink-600 text-white px-6 py-3 rounded-2xl hover-lift">
-                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                    </svg>
-                    Manage Customers
+                <a href="{% url 'crm:lead_page' %}" class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-user-plus mr-2"></i>
+                    Leads
+                </a>
+                <a href="{% url 'crm:opportunity_page' %}" class="bg-gradient-to-r from-purple-500 to-pink-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-chart-line mr-2"></i>
+                    Opportunities
                 </a>
             </div>
         </div>
 
-        <!-- Key Metrics -->
+        <!-- Key Metrics Row 1 -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div class="metric-card rounded-2xl p-6">
                 <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total Customers</p>
+                        <p class="text-3xl font-bold text-emerald-600">{{ total_customers }}</p>
+                        <p class="text-xs text-gray-500 mt-1">+{{ new_customers_this_month }} this month</p>
+                    </div>
+                    <div class="p-3 bg-emerald-100 rounded-full">
+                        <i class="fas fa-users text-emerald-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Active Leads</p>
+                        <p class="text-3xl font-bold text-blue-600">{{ total_leads }}</p>
+                        <p class="text-xs text-gray-500 mt-1">{{ conversion_rate }}% conversion rate</p>
+                    </div>
+                    <div class="p-3 bg-blue-100 rounded-full">
+                        <i class="fas fa-user-plus text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Opportunities</p>
+                        <p class="text-3xl font-bold text-purple-600">{{ total_opportunities }}</p>
+                        <p class="text-xs text-gray-500 mt-1">₨{{ total_opportunity_value|floatformat:0 }} pipeline</p>
+                    </div>
+                    <div class="p-3 bg-purple-100 rounded-full">
+                        <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Partners</p>
+                        <p class="text-3xl font-bold text-orange-600">{{ total_partners }}</p>
+                        <p class="text-xs text-gray-500 mt-1">{{ total_suppliers }} suppliers</p>
+                    </div>
+                    <div class="p-3 bg-orange-100 rounded-full">
+                        <i class="fas fa-handshake text-orange-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Metrics Row 2 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Campaigns</p>
+                        <p class="text-3xl font-bold text-pink-600">{{ total_campaigns }}</p>
+                        <p class="text-xs text-gray-500 mt-1">Active campaigns</p>
+                    </div>
+                    <div class="p-3 bg-pink-100 rounded-full">
+                        <i class="fas fa-bullhorn text-pink-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Calls This Week</p>
+                        <p class="text-3xl font-bold text-indigo-600">{{ calls_this_week }}</p>
+                        <p class="text-xs text-gray-500 mt-1">Communication activity</p>
+                    </div>
+                    <div class="p-3 bg-indigo-100 rounded-full">
+                        <i class="fas fa-phone text-indigo-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Follow-ups Due</p>
+                        <p class="text-3xl font-bold text-red-600">{{ pending_followups }}</p>
+                        <p class="text-xs text-gray-500 mt-1">Requires attention</p>
+                    </div>
+                    <div class="p-3 bg-red-100 rounded-full">
+                        <i class="fas fa-clock text-red-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Won Opportunities</p>
+                        <p class="text-3xl font-bold text-green-600">{{ won_opportunities }}</p>
+                        <p class="text-xs text-gray-500 mt-1">Closed deals</p>
+                    </div>
+                    <div class="p-3 bg-green-100 rounded-full">
+                        <i class="fas fa-trophy text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pipeline Stages and Integration Status -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Pipeline by Stage -->
+            <div class="pipeline-stage rounded-2xl p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-funnel-dollar mr-2 text-blue-600"></i>
+                    Sales Pipeline
+                </h3>
+                <div class="space-y-3">
+                    {% for stage in pipeline_by_stage %}
+                    <div class="flex items-center justify-between p-4 bg-white rounded-lg border">
+                        <div>
+                            <p class="font-medium text-gray-800">{{ stage.stage|title }}</p>
+                            <p class="text-sm text-gray-600">{{ stage.count }} opportunities</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-blue-600">₨{{ stage.total_value|floatformat:0|default:"0" }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-gray-500 text-center py-4">No pipeline data available</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Integration Status -->
+            <div class="integration-card rounded-2xl p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-link mr-2 text-purple-600"></i>
+                    Module Integration
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-4 bg-white rounded-lg border">
+                        <div class="flex items-center">
+                            <i class="fas fa-shopping-cart text-blue-600 mr-3"></i>
+                            <div>
+                                <p class="font-medium text-gray-800">Sales Orders</p>
+                                <p class="text-sm text-gray-600">Connected to CRM</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-blue-600">{{ total_sales_orders }}</p>
+                            <p class="text-xs text-green-600">Active</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-4 bg-white rounded-lg border">
+                        <div class="flex items-center">
+                            <i class="fas fa-file-alt text-orange-600 mr-3"></i>
+                            <div>
+                                <p class="font-medium text-gray-800">Quotations</p>
+                                <p class="text-sm text-gray-600">Pending review</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-orange-600">{{ pending_quotations }}</p>
+                            <p class="text-xs text-orange-600">Pending</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-4 bg-white rounded-lg border">
+                        <div class="flex items-center">
+                            <i class="fas fa-truck text-green-600 mr-3"></i>
+                            <div>
+                                <p class="font-medium text-gray-800">Suppliers</p>
+                                <p class="text-sm text-gray-600">Purchase integration</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-green-600">{{ total_suppliers }}</p>
+                            <p class="text-xs text-green-600">Active</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
                     <div>
                         <p class="text-sm font-medium text-gray-600">Total Customers</p>
                         <p class="text-3xl font-bold text-red-600">{{ total_customers }}</p>
@@ -107,63 +297,137 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Recent Customers -->
             <div class="activity-card rounded-2xl p-6">
-                <h3 class="text-xl font-bold text-gray-800 mb-4">Recent Customers</h3>
+                <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-users mr-2 text-emerald-600"></i>
+                    Recent Customers
+                </h3>
                 <div class="space-y-3">
                     {% for customer in recent_customers %}
-                    <div class="flex items-center justify-between p-3 bg-white rounded-lg border">
+                    <div class="flex items-center justify-between p-3 bg-white rounded-lg border hover:shadow-md transition-shadow">
                         <div>
                             <p class="font-medium text-gray-800">{{ customer.name }}</p>
-                            <p class="text-sm text-gray-600">{{ customer.email }}</p>
+                            <p class="text-sm text-gray-600">{{ customer.email|default:"No email" }}</p>
                         </div>
                         <div class="text-right">
                             <p class="text-xs text-gray-500">{{ customer.created_at|date:"M d, Y" }}</p>
+                            <a href="{% url 'crm:customer_page' %}" class="text-xs text-emerald-600 hover:underline">View</a>
                         </div>
                     </div>
                     {% empty %}
-                    <p class="text-gray-500 text-center py-4">No recent customers</p>
+                    <div class="text-center py-8">
+                        <i class="fas fa-users text-gray-300 text-4xl mb-2"></i>
+                        <p class="text-gray-500">No recent customers</p>
+                        <a href="{% url 'crm:customer_page' %}" class="text-emerald-600 hover:underline text-sm">Add first customer</a>
+                    </div>
                     {% endfor %}
                 </div>
             </div>
 
             <!-- Recent Leads -->
             <div class="activity-card rounded-2xl p-6">
-                <h3 class="text-xl font-bold text-gray-800 mb-4">Recent Leads</h3>
+                <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-user-plus mr-2 text-blue-600"></i>
+                    Recent Leads
+                </h3>
                 <div class="space-y-3">
                     {% for lead in recent_leads %}
-                    <div class="flex items-center justify-between p-3 bg-white rounded-lg border">
+                    <div class="flex items-center justify-between p-3 bg-white rounded-lg border hover:shadow-md transition-shadow">
                         <div>
                             <p class="font-medium text-gray-800">{{ lead.name }}</p>
-                            <p class="text-sm text-gray-600">{{ lead.email }}</p>
+                            <p class="text-sm text-gray-600">{{ lead.company_name|default:"Individual" }}</p>
+                            <p class="text-xs text-gray-500">{{ lead.email|default:"No email" }}</p>
                         </div>
                         <div class="text-right">
-                            <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-600">{{ lead.status|title }}</span>
+                            <span class="px-2 py-1 text-xs rounded-full 
+                                {% if lead.status == 'new' %}bg-blue-100 text-blue-600
+                                {% elif lead.status == 'qualified' %}bg-green-100 text-green-600
+                                {% elif lead.status == 'converted' %}bg-purple-100 text-purple-600
+                                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                {{ lead.status|title }}
+                            </span>
+                            <p class="text-xs text-gray-500 mt-1">{{ lead.created_at|date:"M d" }}</p>
                         </div>
                     </div>
                     {% empty %}
-                    <p class="text-gray-500 text-center py-4">No recent leads</p>
+                    <div class="text-center py-8">
+                        <i class="fas fa-user-plus text-gray-300 text-4xl mb-2"></i>
+                        <p class="text-gray-500">No recent leads</p>
+                        <a href="{% url 'crm:lead_page' %}" class="text-blue-600 hover:underline text-sm">Add first lead</a>
+                    </div>
                     {% endfor %}
                 </div>
             </div>
 
-            <!-- Recent Opportunities -->
+            <!-- Recent Communications -->
             <div class="activity-card rounded-2xl p-6">
-                <h3 class="text-xl font-bold text-gray-800 mb-4">Recent Opportunities</h3>
+                <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-comments mr-2 text-indigo-600"></i>
+                    Recent Communications
+                </h3>
                 <div class="space-y-3">
-                    {% for opportunity in recent_opportunities %}
-                    <div class="flex items-center justify-between p-3 bg-white rounded-lg border">
-                        <div>
-                            <p class="font-medium text-gray-800">{{ opportunity.name }}</p>
-                            <p class="text-sm text-gray-600">{{ opportunity.customer.name }}</p>
+                    {% for comm in recent_communications %}
+                    <div class="flex items-start p-3 bg-white rounded-lg border hover:shadow-md transition-shadow">
+                        <div class="mr-3 mt-1">
+                            {% if comm.type == 'call' %}
+                                <i class="fas fa-phone text-green-600"></i>
+                            {% elif comm.type == 'email' %}
+                                <i class="fas fa-envelope text-blue-600"></i>
+                            {% elif comm.type == 'meeting' %}
+                                <i class="fas fa-calendar text-purple-600"></i>
+                            {% else %}
+                                <i class="fas fa-comment text-gray-600"></i>
+                            {% endif %}
                         </div>
-                        <div class="text-right">
-                            <p class="font-medium text-green-600">₨{{ opportunity.value|floatformat:0 }}</p>
-                            <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-600">{{ opportunity.stage|title }}</span>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-800 text-sm">{{ comm.subject|truncatechars:30 }}</p>
+                            <p class="text-xs text-gray-600">
+                                {% if comm.customer %}
+                                    {{ comm.customer.name }}
+                                {% elif comm.lead %}
+                                    {{ comm.lead.name }}
+                                {% elif comm.partner %}
+                                    {{ comm.partner.name }}
+                                {% else %}
+                                    Unknown contact
+                                {% endif %}
+                            </p>
+                            <p class="text-xs text-gray-500">{{ comm.timestamp|date:"M d, H:i" }}</p>
                         </div>
                     </div>
                     {% empty %}
-                    <p class="text-gray-500 text-center py-4">No recent opportunities</p>
+                    <div class="text-center py-8">
+                        <i class="fas fa-comments text-gray-300 text-4xl mb-2"></i>
+                        <p class="text-gray-500">No recent communications</p>
+                        <a href="{% url 'crm:communicationlog_page' %}" class="text-indigo-600 hover:underline text-sm">Add communication</a>
+                    </div>
                     {% endfor %}
                 </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="mt-8 bg-gradient-to-r from-emerald-50 to-blue-50 rounded-2xl p-6 border border-emerald-200">
+            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-bolt mr-2 text-yellow-600"></i>
+                Quick Actions
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <a href="{% url 'crm:customer_page' %}" class="bg-white p-4 rounded-lg border hover:shadow-md transition-all text-center">
+                    <i class="fas fa-user-plus text-emerald-600 text-2xl mb-2"></i>
+                    <p class="font-medium text-gray-800">Add Customer</p>
+                </a>
+                <a href="{% url 'crm:lead_page' %}" class="bg-white p-4 rounded-lg border hover:shadow-md transition-all text-center">
+                    <i class="fas fa-bullseye text-blue-600 text-2xl mb-2"></i>
+                    <p class="font-medium text-gray-800">Create Lead</p>
+                </a>
+                <a href="{% url 'crm:opportunity_page' %}" class="bg-white p-4 rounded-lg border hover:shadow-md transition-all text-center">
+                    <i class="fas fa-chart-line text-purple-600 text-2xl mb-2"></i>
+                    <p class="font-medium text-gray-800">New Opportunity</p>
+                </a>
+                <a href="{% url 'crm:communicationlog_page' %}" class="bg-white p-4 rounded-lg border hover:shadow-md transition-all text-center">
+                    <i class="fas fa-phone text-indigo-600 text-2xl mb-2"></i>
+                    <p class="font-medium text-gray-800">Log Communication</p>
+                </a>
             </div>
         </div>
     </div>

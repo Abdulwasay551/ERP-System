@@ -1,0 +1,366 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Work Centers - Manufacturing{% endblock %}
+
+{% block extra_css %}
+<style>
+    .work-center-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+    }
+    
+    .work-center-card:hover {
+        border-color: #10b981;
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-active { background-color: #d1fae5; color: #059669; }
+    .status-idle { background-color: #f3f4f6; color: #6b7280; }
+    .status-warning { background-color: #fef3c7; color: #d97706; }
+    .status-maintenance { background-color: #fee2e2; color: #dc2626; }
+    
+    .metric-item {
+        text-align: center;
+        padding: 1rem;
+        background: #f9fafb;
+        border-radius: 0.5rem;
+    }
+    
+    .utilization-bar {
+        height: 0.5rem;
+        background-color: #e5e7eb;
+        border-radius: 0.25rem;
+        overflow: hidden;
+    }
+    
+    .utilization-fill {
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+    
+    .efficiency-high { background: linear-gradient(90deg, #10b981, #059669); }
+    .efficiency-medium { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .efficiency-low { background: linear-gradient(90deg, #ef4444, #dc2626); }
+    
+    .filter-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div class="mb-6 lg:mb-0">
+                    <h1 class="text-4xl font-bold text-gray-900 mb-2">
+                        <i class="fas fa-industry text-blue-600 mr-3"></i>
+                        Work Centers
+                    </h1>
+                    <p class="text-gray-600">Manage production capacity and work center operations</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button onclick="openAddWorkCenterModal()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Add Work Center
+                    </button>
+                    <button class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-download mr-2"></i>Export Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Total Centers</p>
+                        <p class="text-3xl font-bold text-blue-600">{{ work_centers.count|default:0 }}</p>
+                    </div>
+                    <div class="p-3 bg-blue-100 rounded-full">
+                        <i class="fas fa-industry text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Active</p>
+                        <p class="text-3xl font-bold text-green-600">{{ active_centers|default:0 }}</p>
+                    </div>
+                    <div class="p-3 bg-green-100 rounded-full">
+                        <i class="fas fa-play text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Avg Utilization</p>
+                        <p class="text-3xl font-bold text-purple-600">{{ avg_utilization|default:0 }}%</p>
+                    </div>
+                    <div class="p-3 bg-purple-100 rounded-full">
+                        <i class="fas fa-chart-pie text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Total Capacity</p>
+                        <p class="text-3xl font-bold text-orange-600">{{ total_capacity|default:0 }}</p>
+                    </div>
+                    <div class="p-3 bg-orange-100 rounded-full">
+                        <i class="fas fa-gauge text-orange-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-card">
+            <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="idle">Idle</option>
+                        <option value="maintenance">Maintenance</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                    <select name="department" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept }}">{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-search mr-2"></i>Filter
+                    </button>
+                </div>
+                <div class="flex items-end">
+                    <a href="{% url 'manufacturing:work_centers_ui' %}" class="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-center">
+                        <i class="fas fa-times mr-2"></i>Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Work Centers List -->
+        <div class="bg-white rounded-lg shadow">
+            {% if work_centers %}
+                {% for work_center in work_centers %}
+                <div class="work-center-card">
+                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-3">
+                                <h3 class="text-xl font-semibold text-gray-900 mr-4">
+                                    {{ work_center.name }}
+                                </h3>
+                                <span class="status-badge status-{{ work_center.status|default:'idle' }}">
+                                    {{ work_center.get_status_display|default:work_center.status|title }}
+                                </span>
+                                {% if work_center.location %}
+                                <span class="ml-2 text-sm text-gray-600">
+                                    <i class="fas fa-map-marker-alt mr-1"></i>{{ work_center.location }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if work_center.description %}
+                            <p class="text-gray-600 mb-4">{{ work_center.description|truncatewords:20 }}</p>
+                            {% endif %}
+                            
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                <div class="metric-item">
+                                    <div class="text-2xl font-bold text-blue-600">{{ work_center.active_operations|default:0 }}</div>
+                                    <div class="text-sm text-gray-600">Active Operations</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="text-2xl font-bold text-green-600">{{ work_center.efficiency|default:0 }}%</div>
+                                    <div class="text-sm text-gray-600">Efficiency</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="text-2xl font-bold text-purple-600">{{ work_center.capacity_per_hour|default:0 }}</div>
+                                    <div class="text-sm text-gray-600">Units/Hour</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="text-2xl font-bold text-orange-600">{{ work_center.operating_hours_per_day|default:0 }}h</div>
+                                    <div class="text-sm text-gray-600">Operating Hours</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="flex justify-between text-sm text-gray-600 mb-1">
+                                    <span>Capacity Utilization</span>
+                                    <span>{{ work_center.utilization_percentage|default:0 }}%</span>
+                                </div>
+                                <div class="utilization-bar">
+                                    <div class="utilization-fill {% if work_center.utilization_percentage >= 80 %}efficiency-high{% elif work_center.utilization_percentage >= 50 %}efficiency-medium{% else %}efficiency-low{% endif %}" 
+                                         style="width: {{ work_center.utilization_percentage|default:0 }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-col sm:flex-row gap-2 mt-4 lg:mt-0 lg:ml-6">
+                            <button onclick="viewWorkCenter({{ work_center.id }})" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-eye mr-1"></i>View
+                            </button>
+                            <button onclick="editWorkCenter({{ work_center.id }})" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                                <i class="fas fa-edit mr-1"></i>Edit
+                            </button>
+                            <button onclick="manageWorkCenter({{ work_center.id }})" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                                <i class="fas fa-cogs mr-1"></i>Manage
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <!-- Empty State -->
+                <div class="text-center py-12">
+                    <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-industry text-gray-400 text-3xl"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Work Centers Found</h3>
+                    <p class="text-gray-600 mb-6">Create your first work center to start managing production capacity</p>
+                    <button onclick="openAddWorkCenterModal()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Create Work Center
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Pagination -->
+        {% if work_centers.has_other_pages %}
+        <div class="flex justify-center mt-6">
+            <nav class="flex space-x-2">
+                {% if work_centers.has_previous %}
+                    <a href="?page={{ work_centers.previous_page_number }}" 
+                       class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Previous
+                    </a>
+                {% endif %}
+                
+                <span class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg">
+                    {{ work_centers.number }}
+                </span>
+                
+                {% if work_centers.has_next %}
+                    <a href="?page={{ work_centers.next_page_number }}" 
+                       class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Next
+                    </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Work Center Form Modal -->
+<div id="addWorkCenterModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Add New Work Center</h3>
+            <form method="post" action="{% url 'manufacturing:work_center_create' %}">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                    <input type="text" name="name" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                    <input type="text" name="location" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Capacity per Hour</label>
+                    <input type="number" name="capacity_per_hour" min="0" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Operating Hours per Day</label>
+                    <input type="number" name="operating_hours_per_day" min="0" max="24" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea name="description" rows="3" 
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeAddWorkCenterModal()" 
+                            class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                        Create Work Center
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openAddWorkCenterModal() {
+    document.getElementById('addWorkCenterModal').classList.remove('hidden');
+}
+
+function closeAddWorkCenterModal() {
+    document.getElementById('addWorkCenterModal').classList.add('hidden');
+}
+
+function viewWorkCenter(id) {
+    window.location.href = `/manufacturing/work-centers/${id}/`;
+}
+
+function editWorkCenter(id) {
+    window.location.href = `/manufacturing/work-centers/${id}/edit/`;
+}
+
+function manageWorkCenter(id) {
+    window.location.href = `/manufacturing/work-centers/${id}/manage/`;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Work Centers UI loaded');
+});
+</script>
+{% endblock %}

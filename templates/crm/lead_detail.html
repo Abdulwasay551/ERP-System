@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ lead.name }} | Lead Details | FutureERP{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">{{ lead.name }}</h1>
+                <p class="text-gray-600">Lead details and activity overview</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'crm:lead_edit' lead.pk %}" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-edit mr-2"></i>
+                    Edit Lead
+                </a>
+                <a href="{% url 'crm:lead_list' %}" class="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Back to List
+                </a>
+            </div>
+        </div>
+
+        <!-- Lead Overview -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <!-- Lead Info -->
+            <div class="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Lead Information</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Lead Name</label>
+                        <p class="text-lg font-semibold text-gray-900">{{ lead.name }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Status</label>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                            {% if lead.status == 'new' %}bg-blue-100 text-blue-800
+                            {% elif lead.status == 'contacted' %}bg-yellow-100 text-yellow-800
+                            {% elif lead.status == 'qualified' %}bg-green-100 text-green-800
+                            {% elif lead.status == 'converted' %}bg-emerald-100 text-emerald-800
+                            {% elif lead.status == 'lost' %}bg-red-100 text-red-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ lead.get_status_display }}
+                        </span>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Email</label>
+                        <p class="text-lg text-gray-900">
+                            {% if lead.email %}
+                                <a href="mailto:{{ lead.email }}" class="text-blue-600 hover:underline">{{ lead.email }}</a>
+                            {% else %}
+                                Not provided
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Phone</label>
+                        <p class="text-lg text-gray-900">
+                            {% if lead.phone %}
+                                <a href="tel:{{ lead.phone }}" class="text-blue-600 hover:underline">{{ lead.phone }}</a>
+                            {% else %}
+                                Not provided
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Company</label>
+                        <p class="text-lg text-gray-900">{{ lead.company_name|default:"Not provided" }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Lead Source</label>
+                        <p class="text-lg text-gray-900">{{ lead.get_source_display|default:"Not specified" }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Priority</label>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                            {% if lead.priority == 'high' %}bg-red-100 text-red-800
+                            {% elif lead.priority == 'medium' %}bg-yellow-100 text-yellow-800
+                            {% elif lead.priority == 'low' %}bg-green-100 text-green-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ lead.get_priority_display }}
+                        </span>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Assigned To</label>
+                        <p class="text-lg text-gray-900">{{ lead.assigned_to.get_full_name|default:"Unassigned" }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Lead Score</label>
+                        <div class="flex items-center">
+                            <span class="text-lg font-semibold text-gray-900 mr-2">{{ lead.lead_score|default:0 }}</span>
+                            <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: {{ lead.lead_score|default:0 }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Industry</label>
+                        <p class="text-lg text-gray-900">{{ lead.industry|default:"Not specified" }}</p>
+                    </div>
+                </div>
+                
+                {% if lead.address %}
+                <div class="mt-6">
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Address</label>
+                    <p class="text-gray-900">{{ lead.address }}</p>
+                </div>
+                {% endif %}
+                
+                {% if lead.notes %}
+                <div class="mt-6">
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Notes</label>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <p class="text-gray-900">{{ lead.notes|linebreaks }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="space-y-6">
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">Lead Stats</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Created</span>
+                            <span class="font-medium">{{ lead.created_at|date:"M d, Y" }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Days Since Created</span>
+                            <span class="font-medium">{{ lead.created_at|timesince }}</span>
+                        </div>
+                        {% if lead.last_contact_date %}
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Last Contact</span>
+                            <span class="font-medium">{{ lead.last_contact_date|date:"M d, Y" }}</span>
+                        </div>
+                        {% endif %}
+                        {% if lead.next_follow_up_date %}
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Next Follow-up</span>
+                            <span class="font-medium">{{ lead.next_follow_up_date|date:"M d, Y" }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <button class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-phone mr-2"></i>Call Lead
+                        </button>
+                        <button class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-envelope mr-2"></i>Send Email
+                        </button>
+                        <button class="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                            <i class="fas fa-calendar mr-2"></i>Schedule Meeting
+                        </button>
+                        <button class="w-full bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors">
+                            <i class="fas fa-handshake mr-2"></i>Convert to Customer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Activity Timeline -->
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-6">Activity Timeline</h3>
+            <div class="space-y-4">
+                <!-- Communication logs would go here -->
+                <div class="flex items-center py-4 border-b border-gray-200">
+                    <div class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user-plus text-blue-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-900">Lead created</p>
+                        <p class="text-sm text-gray-500">{{ lead.created_at|date:"M d, Y g:i A" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

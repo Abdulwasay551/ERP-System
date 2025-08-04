@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sales Integration | FutureERP{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">Sales Integration</h1>
+                <p class="text-gray-600">Manage sales relationships and customer integration</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'crm:crm_dashboard' %}" class="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Back to CRM
+                </a>
+            </div>
+        </div>
+
+        <!-- Integration Status -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-green-700">Active Customers</p>
+                        <p class="text-3xl font-bold text-green-900">{{ active_customers }}</p>
+                    </div>
+                    <div class="p-3 bg-green-200 rounded-full">
+                        <i class="fas fa-users text-green-700"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-blue-700">Sales Orders</p>
+                        <p class="text-3xl font-bold text-blue-900">{{ total_sales_orders }}</p>
+                    </div>
+                    <div class="p-3 bg-blue-200 rounded-full">
+                        <i class="fas fa-chart-line text-blue-700"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-purple-700">Quotations</p>
+                        <p class="text-3xl font-bold text-purple-900">{{ pending_quotations }}</p>
+                    </div>
+                    <div class="p-3 bg-purple-200 rounded-full">
+                        <i class="fas fa-file-alt text-purple-700"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer List -->
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-6">Integrated Customers</h3>
+            
+            <div class="space-y-4">
+                {% for customer in customers %}
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div class="flex items-center space-x-4">
+                        <div class="p-3 bg-green-100 rounded-full">
+                            <i class="fas fa-user text-green-600"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900">{{ customer.name }}</p>
+                            <p class="text-sm text-gray-600">{{ customer.email|default:"No email" }}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-green-600">₨{{ customer.total_spent|default:"0"|floatformat:0 }}</p>
+                        <p class="text-sm text-gray-600">{{ customer.total_orders|default:"0" }} orders</p>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-8">
+                    <i class="fas fa-users text-gray-400 text-4xl mb-4"></i>
+                    <p class="text-gray-600">No customers found</p>
+                    <p class="text-sm text-gray-500">Customers from the sales module will appear here</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

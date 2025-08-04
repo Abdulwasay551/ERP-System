@@ -1,0 +1,539 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Work Orders | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(6, 95, 70, 0.05));
+        border: 1px solid rgba(16, 185, 129, 0.1);
+    }
+    .wo-card {
+        background: white;
+        border: 1px solid rgba(229, 231, 235, 1);
+        transition: all 0.3s ease;
+    }
+    .wo-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        border-color: rgba(16, 185, 129, 0.3);
+    }
+    .progress-bar {
+        background: linear-gradient(90deg, #10b981, #059669);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">Work Orders</h1>
+                <p class="text-gray-600">Manage your production work orders and track progress</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="createNewWorkOrder()" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-plus mr-2"></i>
+                    New Work Order
+                </button>
+                <button onclick="planProduction()" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-calendar-alt mr-2"></i>
+                    Plan Production
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-card rounded-2xl p-6 mb-8">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" name="search" value="{{ search }}" placeholder="Search work orders..." 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <option value="">All Status</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                    <select name="priority" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <option value="">All Priorities</option>
+                        {% for value, label in priority_choices %}
+                        <option value="{{ value }}" {% if priority == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                    <select name="date_range" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <option value="">All Dates</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-search mr-2"></i>Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Total Work Orders</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ work_orders.paginator.count }}</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-clipboard-list text-blue-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">In Progress</p>
+                        <p class="text-2xl font-bold text-blue-600">{{ in_progress_count|default:0 }}</p>
+                    </div>
+                    <div class="bg-orange-100 p-3 rounded-lg">
+                        <i class="fas fa-play text-orange-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Completed</p>
+                        <p class="text-2xl font-bold text-green-600">{{ completed_count|default:0 }}</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg">
+                        <i class="fas fa-check text-green-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Overdue</p>
+                        <p class="text-2xl font-bold text-red-600">{{ overdue_count|default:0 }}</p>
+                    </div>
+                    <div class="bg-red-100 p-3 rounded-lg">
+                        <i class="fas fa-exclamation-triangle text-red-600"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Work Orders List -->
+        <div class="space-y-6">
+            {% for wo in work_orders %}
+            <div class="wo-card rounded-2xl p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <div class="flex items-center space-x-4 mb-2">
+                            <h3 class="text-xl font-bold text-gray-900">{{ wo.wo_number }}</h3>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                {% if wo.status == 'completed' %}bg-green-100 text-green-800
+                                {% elif wo.status == 'in_progress' %}bg-blue-100 text-blue-800
+                                {% elif wo.status == 'planned' %}bg-yellow-100 text-yellow-800
+                                {% elif wo.status == 'cancelled' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ wo.get_status_display }}
+                            </span>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                {% if wo.priority == 'urgent' %}bg-red-100 text-red-800
+                                {% elif wo.priority == 'high' %}bg-orange-100 text-orange-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ wo.get_priority_display }}
+                            </span>
+                        </div>
+                        <p class="text-gray-600 mb-2">{{ wo.product.name }}</p>
+                        <p class="text-sm text-gray-500">BOM: {{ wo.bom.name }} v{{ wo.bom.version }}</p>
+                        {% if wo.sales_order %}
+                        <p class="text-sm text-blue-600">Sales Order: {{ wo.sales_order.order_number }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="viewWorkOrder({{ wo.id }})" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-eye mr-2"></i>View
+                        </button>
+                        {% if wo.status == 'planned' %}
+                        <button onclick="startWorkOrder({{ wo.id }})" class="bg-green-100 hover:bg-green-200 text-green-700 px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-play mr-2"></i>Start
+                        </button>
+                        {% elif wo.status == 'in_progress' %}
+                        <button onclick="completeWorkOrder({{ wo.id }})" class="bg-purple-100 hover:bg-purple-200 text-purple-700 px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-check mr-2"></i>Complete
+                        </button>
+                        {% endif %}
+                        <div class="relative">
+                            <button onclick="toggleMenu({{ wo.id }})" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg transition-colors">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <div id="menu-{{ wo.id }}" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border hidden z-10">
+                                <a href="#" onclick="editWorkOrder({{ wo.id }})" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                    <i class="fas fa-edit mr-2"></i>Edit
+                                </a>
+                                <a href="#" onclick="duplicateWorkOrder({{ wo.id }})" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                    <i class="fas fa-copy mr-2"></i>Duplicate
+                                </a>
+                                <a href="#" onclick="printWorkOrder({{ wo.id }})" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                    <i class="fas fa-print mr-2"></i>Print
+                                </a>
+                                {% if wo.status not in 'completed,cancelled' %}
+                                <a href="#" onclick="cancelWorkOrder({{ wo.id }})" class="block px-4 py-2 text-red-700 hover:bg-red-50">
+                                    <i class="fas fa-times mr-2"></i>Cancel
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Production Details -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Planned Quantity</p>
+                        <p class="font-bold text-lg text-gray-900">{{ wo.quantity_planned }}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Produced</p>
+                        <p class="font-bold text-lg text-green-600">{{ wo.quantity_produced }}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Remaining</p>
+                        <p class="font-bold text-lg text-orange-600">{{ wo.quantity_remaining }}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Progress</p>
+                        <div class="flex items-center">
+                            <div class="w-full bg-gray-200 rounded-full h-2 mr-3">
+                                <div class="progress-bar h-2 rounded-full" style="width: {{ wo.get_progress_percentage }}%"></div>
+                            </div>
+                            <span class="font-bold text-sm text-gray-900">{{ wo.get_progress_percentage }}%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <p class="text-sm text-blue-600 mb-1">Scheduled Start</p>
+                        <p class="font-medium text-gray-900">
+                            {% if wo.scheduled_start %}
+                                {{ wo.scheduled_start|date:"M d, Y H:i" }}
+                            {% else %}
+                                Not scheduled
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <p class="text-sm text-green-600 mb-1">Scheduled End</p>
+                        <p class="font-medium text-gray-900">
+                            {% if wo.scheduled_end %}
+                                {{ wo.scheduled_end|date:"M d, Y H:i" }}
+                            {% else %}
+                                Not scheduled
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Assigned To -->
+                <div class="flex justify-between items-center text-sm text-gray-600 pt-4 border-t border-gray-200">
+                    <span>
+                        {% if wo.assigned_to %}
+                            Assigned to {{ wo.assigned_to.get_full_name }}
+                        {% else %}
+                            Not assigned
+                        {% endif %}
+                    </span>
+                    <span>Created {{ wo.created_at|date:"M d, Y" }}</span>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-12">
+                <div class="mb-4">
+                    <i class="fas fa-clipboard-list text-gray-400 text-6xl"></i>
+                </div>
+                <h3 class="text-xl font-medium text-gray-900 mb-2">No work orders found</h3>
+                <p class="text-gray-600 mb-6">Get started by creating your first work order</p>
+                <button onclick="createNewWorkOrder()" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all">
+                    <i class="fas fa-plus mr-2"></i>Create First Work Order
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if work_orders.has_other_pages %}
+        <div class="flex justify-center mt-8">
+            <nav class="flex items-center space-x-2">
+                {% if work_orders.has_previous %}
+                <a href="?page={{ work_orders.previous_page_number }}&search={{ search }}&status={{ status }}&priority={{ priority }}" 
+                   class="px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                {% endif %}
+                
+                {% for num in work_orders.paginator.page_range %}
+                {% if work_orders.number == num %}
+                <span class="px-3 py-2 bg-green-600 text-white rounded-lg">{{ num }}</span>
+                {% elif num > work_orders.number|add:'-3' and num < work_orders.number|add:'3' %}
+                <a href="?page={{ num }}&search={{ search }}&status={{ status }}&priority={{ priority }}" 
+                   class="px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">{{ num }}</a>
+                {% endif %}
+                {% endfor %}
+                
+                {% if work_orders.has_next %}
+                <a href="?page={{ work_orders.next_page_number }}&search={{ search }}&status={{ status }}&priority={{ priority }}" 
+                   class="px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Work Order Creation Modal -->
+<div id="workOrderModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Create New Work Order</h2>
+                <button onclick="closeWorkOrderModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="workOrderForm" onsubmit="submitWorkOrder(event)">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">BOM *</label>
+                        <select name="bom" required 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                            <option value="">Select BOM</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quantity *</label>
+                        <input type="number" name="quantity_planned" required min="1" step="0.01"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                        <select name="priority" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                            {% for value, label in priority_choices %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Scheduled Start</label>
+                        <input type="datetime-local" name="scheduled_start" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Customer Reference</label>
+                        <input type="text" name="customer_reference" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                        <textarea name="notes" rows="3" 
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-4 mt-8">
+                    <button type="button" onclick="closeWorkOrderModal()" 
+                            class="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                        Create Work Order
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function createNewWorkOrder() {
+    document.getElementById('workOrderModal').classList.remove('hidden');
+    loadBOMs();
+}
+
+function closeWorkOrderModal() {
+    document.getElementById('workOrderModal').classList.add('hidden');
+    document.getElementById('workOrderForm').reset();
+}
+
+function loadBOMs() {
+    fetch('/manufacturing/api/boms/')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.querySelector('select[name="bom"]');
+            select.innerHTML = '<option value="">Select BOM</option>';
+            data.results.forEach(bom => {
+                const option = document.createElement('option');
+                option.value = bom.id;
+                option.textContent = `${bom.name} (${bom.product.name})`;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error loading BOMs:', error));
+}
+
+function submitWorkOrder(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    
+    fetch('/manufacturing/api/work-orders/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error creating work order: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while creating the work order');
+    });
+}
+
+function viewWorkOrder(woId) {
+    window.location.href = `/manufacturing/work-orders/${woId}/`;
+}
+
+function startWorkOrder(woId) {
+    if (confirm('Are you sure you want to start this work order?')) {
+        fetch(`/manufacturing/api/work-orders/${woId}/start/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error starting work order: ' + data.error);
+            }
+        });
+    }
+}
+
+function completeWorkOrder(woId) {
+    if (confirm('Are you sure you want to complete this work order?')) {
+        fetch(`/manufacturing/api/work-orders/${woId}/complete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error completing work order: ' + data.error);
+            }
+        });
+    }
+}
+
+function toggleMenu(woId) {
+    const menu = document.getElementById(`menu-${woId}`);
+    // Close all other menus
+    document.querySelectorAll('[id^="menu-"]').forEach(m => {
+        if (m !== menu) m.classList.add('hidden');
+    });
+    menu.classList.toggle('hidden');
+}
+
+function editWorkOrder(woId) {
+    window.location.href = `/manufacturing/work-orders/${woId}/edit/`;
+}
+
+function duplicateWorkOrder(woId) {
+    if (confirm('Are you sure you want to duplicate this work order?')) {
+        fetch(`/manufacturing/api/work-orders/${woId}/duplicate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error duplicating work order: ' + data.error);
+            }
+        });
+    }
+}
+
+function cancelWorkOrder(woId) {
+    if (confirm('Are you sure you want to cancel this work order?')) {
+        fetch(`/manufacturing/api/work-orders/${woId}/cancel/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error cancelling work order: ' + data.error);
+            }
+        });
+    }
+}
+
+function printWorkOrder(woId) {
+    window.open(`/manufacturing/work-orders/${woId}/print/`, '_blank');
+}
+
+function planProduction() {
+    window.location.href = '/manufacturing/production-plans/';
+}
+
+// Close menus when clicking outside
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('[id^="menu-"]') && !event.target.closest('button[onclick*="toggleMenu"]')) {
+        document.querySelectorAll('[id^="menu-"]').forEach(menu => {
+            menu.classList.add('hidden');
+        });
+    }
+});
+</script>
+{% endblock %}

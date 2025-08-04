@@ -1,0 +1,516 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quality Control | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .quality-card {
+        background: white;
+        border: 1px solid rgba(229, 231, 235, 1);
+        transition: all 0.3s ease;
+    }
+    .quality-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        border-color: rgba(16, 185, 129, 0.3);
+    }
+    .status-passed { background: linear-gradient(135deg, #10b981, #059669); }
+    .status-failed { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    .status-pending { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .status-in-progress { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+    
+    .gauge-chart {
+        transform: rotate(-90deg);
+    }
+    .inspection-timeline {
+        position: relative;
+    }
+    .timeline-line {
+        position: absolute;
+        left: 20px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e5e7eb;
+    }
+    .timeline-dot {
+        position: absolute;
+        left: 14px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid #10b981;
+        z-index: 2;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">Quality Control</h1>
+                <p class="text-gray-600">Manage quality inspections and control processes</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="createQualityCheck()" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-plus mr-2"></i>
+                    New Quality Check
+                </button>
+                <button onclick="generateQCReport()" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-chart-line mr-2"></i>
+                    QC Report
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Total Inspections</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ total_inspections|default:0 }}</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-clipboard-check text-blue-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Passed</p>
+                        <p class="text-2xl font-bold text-green-600">{{ passed_count|default:0 }}</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg">
+                        <i class="fas fa-check text-green-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Failed</p>
+                        <p class="text-2xl font-bold text-red-600">{{ failed_count|default:0 }}</p>
+                    </div>
+                    <div class="bg-red-100 p-3 rounded-lg">
+                        <i class="fas fa-times text-red-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Pending</p>
+                        <p class="text-2xl font-bold text-orange-600">{{ pending_count|default:0 }}</p>
+                    </div>
+                    <div class="bg-orange-100 p-3 rounded-lg">
+                        <i class="fas fa-clock text-orange-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Pass Rate</p>
+                        <p class="text-2xl font-bold text-purple-600">{{ pass_rate|default:0 }}%</p>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-lg">
+                        <i class="fas fa-percentage text-purple-600"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-2xl p-6 border border-gray-200 mb-8">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" name="search" value="{{ search }}" placeholder="Search quality checks..." 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <option value="">All Status</option>
+                        <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="in_progress" {% if status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                        <option value="passed" {% if status == 'passed' %}selected{% endif %}>Passed</option>
+                        <option value="failed" {% if status == 'failed' %}selected{% endif %}>Failed</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Check Type</label>
+                    <select name="check_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <option value="">All Types</option>
+                        <option value="incoming" {% if check_type == 'incoming' %}selected{% endif %}>Incoming</option>
+                        <option value="in_process" {% if check_type == 'in_process' %}selected{% endif %}>In Process</option>
+                        <option value="final" {% if check_type == 'final' %}selected{% endif %}>Final</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Inspector</label>
+                    <select name="inspector" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <option value="">All Inspectors</option>
+                        {% for inspector in inspectors %}
+                        <option value="{{ inspector.id }}" {% if inspector_id == inspector.id|stringformat:"s" %}selected{% endif %}>
+                            {{ inspector.get_full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-search mr-2"></i>Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Quality Checks List -->
+        <div class="space-y-6">
+            {% for qc in quality_checks %}
+            <div class="quality-card rounded-2xl p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <div class="flex items-center space-x-4 mb-2">
+                            <h3 class="text-xl font-bold text-gray-900">{{ qc.check_type|title }} Inspection</h3>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                {% if qc.status == 'passed' %}bg-green-100 text-green-800
+                                {% elif qc.status == 'failed' %}bg-red-100 text-red-800
+                                {% elif qc.status == 'in_progress' %}bg-blue-100 text-blue-800
+                                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ qc.get_status_display }}
+                            </span>
+                        </div>
+                        <p class="text-gray-600 mb-2">Work Order: {{ qc.work_order.wo_number }}</p>
+                        <p class="text-gray-600 mb-2">Product: {{ qc.work_order.product.name }}</p>
+                        {% if qc.description %}
+                        <p class="text-sm text-gray-500">{{ qc.description }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="viewQualityCheck({{ qc.id }})" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-eye mr-2"></i>View
+                        </button>
+                        {% if qc.status == 'pending' %}
+                        <button onclick="startInspection({{ qc.id }})" class="bg-green-100 hover:bg-green-200 text-green-700 px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-play mr-2"></i>Start
+                        </button>
+                        {% elif qc.status == 'in_progress' %}
+                        <button onclick="completeInspection({{ qc.id }})" class="bg-purple-100 hover:bg-purple-200 text-purple-700 px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-check mr-2"></i>Complete
+                        </button>
+                        {% endif %}
+                        <div class="relative">
+                            <button onclick="toggleQCMenu({{ qc.id }})" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg transition-colors">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <div id="qc-menu-{{ qc.id }}" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border hidden z-10">
+                                <a href="#" onclick="editQualityCheck({{ qc.id }})" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                    <i class="fas fa-edit mr-2"></i>Edit
+                                </a>
+                                <a href="#" onclick="duplicateQualityCheck({{ qc.id }})" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                    <i class="fas fa-copy mr-2"></i>Duplicate
+                                </a>
+                                <a href="#" onclick="printQCReport({{ qc.id }})" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                    <i class="fas fa-print mr-2"></i>Print Report
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quality Details -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <p class="text-sm text-blue-600 mb-1">Quantity Inspected</p>
+                        <p class="font-bold text-lg text-blue-900">{{ qc.quantity_inspected|default:0 }}</p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <p class="text-sm text-green-600 mb-1">Inspector</p>
+                        <p class="font-medium text-green-900">
+                            {% if qc.inspector %}
+                                {{ qc.inspector.get_full_name }}
+                            {% else %}
+                                Not assigned
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="bg-orange-50 p-4 rounded-lg">
+                        <p class="text-sm text-orange-600 mb-1">Inspection Date</p>
+                        <p class="font-medium text-orange-900">
+                            {% if qc.inspection_date %}
+                                {{ qc.inspection_date|date:"M d, Y H:i" }}
+                            {% else %}
+                                Not inspected
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-lg">
+                        <p class="text-sm text-purple-600 mb-1">Created</p>
+                        <p class="font-medium text-purple-900">{{ qc.created_at|date:"M d, Y" }}</p>
+                    </div>
+                </div>
+
+                <!-- Quality Parameters (if available) -->
+                {% if qc.quality_parameters.all %}
+                <div class="mb-4">
+                    <h4 class="font-medium text-gray-900 mb-3">Quality Parameters</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {% for param in qc.quality_parameters.all|slice:":6" %}
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">{{ param.parameter_name }}</span>
+                                <span class="font-medium text-gray-900">{{ param.actual_value }} {{ param.unit }}</span>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                Target: {{ param.target_value }} ± {{ param.tolerance }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Notes -->
+                {% if qc.notes %}
+                <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <p class="text-sm text-yellow-800 font-medium mb-1">Inspector Notes:</p>
+                    <p class="text-yellow-700">{{ qc.notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div class="text-center py-12">
+                <div class="mb-4">
+                    <i class="fas fa-clipboard-check text-gray-400 text-6xl"></i>
+                </div>
+                <h3 class="text-xl font-medium text-gray-900 mb-2">No quality checks found</h3>
+                <p class="text-gray-600 mb-6">Start your quality control process by creating a new inspection</p>
+                <button onclick="createQualityCheck()" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all">
+                    <i class="fas fa-plus mr-2"></i>Create First Quality Check
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if quality_checks.has_other_pages %}
+        <div class="flex justify-center mt-8">
+            <nav class="flex items-center space-x-2">
+                {% if quality_checks.has_previous %}
+                <a href="?page={{ quality_checks.previous_page_number }}" 
+                   class="px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                {% endif %}
+                
+                {% for num in quality_checks.paginator.page_range %}
+                {% if quality_checks.number == num %}
+                <span class="px-3 py-2 bg-green-600 text-white rounded-lg">{{ num }}</span>
+                {% elif num > quality_checks.number|add:'-3' and num < quality_checks.number|add:'3' %}
+                <a href="?page={{ num }}" class="px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">{{ num }}</a>
+                {% endif %}
+                {% endfor %}
+                
+                {% if quality_checks.has_next %}
+                <a href="?page={{ quality_checks.next_page_number }}" 
+                   class="px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quality Check Creation Modal -->
+<div id="qualityCheckModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Create Quality Check</h2>
+                <button onclick="closeQualityCheckModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="qualityCheckForm" onsubmit="submitQualityCheck(event)">
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Work Order *</label>
+                        <select name="work_order" required 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                            <option value="">Select Work Order</option>
+                            {% for wo in active_work_orders %}
+                            <option value="{{ wo.id }}">{{ wo.wo_number }} - {{ wo.product.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Check Type *</label>
+                            <select name="check_type" required 
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                <option value="">Select Type</option>
+                                <option value="incoming">Incoming Inspection</option>
+                                <option value="in_process">In-Process Inspection</option>
+                                <option value="final">Final Inspection</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Inspector</label>
+                            <select name="inspector" 
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                <option value="">Select Inspector</option>
+                                {% for inspector in inspectors %}
+                                <option value="{{ inspector.id }}">{{ inspector.get_full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <textarea name="description" rows="3" 
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quantity to Inspect</label>
+                        <input type="number" name="quantity_inspected" min="1" step="0.01"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-4 mt-8">
+                    <button type="button" onclick="closeQualityCheckModal()" 
+                            class="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                        Create Quality Check
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function createQualityCheck() {
+    document.getElementById('qualityCheckModal').classList.remove('hidden');
+}
+
+function closeQualityCheckModal() {
+    document.getElementById('qualityCheckModal').classList.add('hidden');
+    document.getElementById('qualityCheckForm').reset();
+}
+
+function submitQualityCheck(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    
+    fetch('/manufacturing/api/quality-checks/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error creating quality check: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while creating the quality check');
+    });
+}
+
+function viewQualityCheck(qcId) {
+    window.location.href = `/manufacturing/quality-checks/${qcId}/`;
+}
+
+function startInspection(qcId) {
+    if (confirm('Are you sure you want to start this inspection?')) {
+        fetch(`/manufacturing/api/quality-checks/${qcId}/start/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error starting inspection: ' + data.error);
+            }
+        });
+    }
+}
+
+function completeInspection(qcId) {
+    window.location.href = `/manufacturing/quality-checks/${qcId}/complete/`;
+}
+
+function toggleQCMenu(qcId) {
+    const menu = document.getElementById(`qc-menu-${qcId}`);
+    // Close all other menus
+    document.querySelectorAll('[id^="qc-menu-"]').forEach(m => {
+        if (m !== menu) m.classList.add('hidden');
+    });
+    menu.classList.toggle('hidden');
+}
+
+function editQualityCheck(qcId) {
+    window.location.href = `/manufacturing/quality-checks/${qcId}/edit/`;
+}
+
+function duplicateQualityCheck(qcId) {
+    if (confirm('Are you sure you want to duplicate this quality check?')) {
+        fetch(`/manufacturing/api/quality-checks/${qcId}/duplicate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error duplicating quality check: ' + data.error);
+            }
+        });
+    }
+}
+
+function printQCReport(qcId) {
+    window.open(`/manufacturing/quality-checks/${qcId}/print/`, '_blank');
+}
+
+function generateQCReport() {
+    window.open('/manufacturing/quality-control/report/', '_blank');
+}
+
+// Close menus when clicking outside
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('[id^="qc-menu-"]') && !event.target.closest('button[onclick*="toggleQCMenu"]')) {
+        document.querySelectorAll('[id^="qc-menu-"]').forEach(menu => {
+            menu.classList.add('hidden');
+        });
+    }
+});
+</script>
+{% endblock %}

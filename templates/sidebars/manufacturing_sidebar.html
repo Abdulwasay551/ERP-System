@@ -1,77 +1,88 @@
 {% load static %}
-
+<!-- Manufacturing Module Sidebar -->
 <div class="sidebar-content">
-    <!-- Logo -->
-    <div class="sidebar-logo p-6">
-        <a href="{% url 'dashboard' %}" class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur">
-                <img src="{% static 'logo.png' %}" alt="FutureERP Logo" class="w-8 h-8" style="border-radius: 50%;">
-            </div>
-            <span class="sidebar-text text-xl font-bold text-white">FutureERP</span>
-        </a>
+    <!-- Logo/Back Section -->
+    <div class="sidebar-logo p-4 border-b border-white/20">
+        <div class="flex items-center space-x-3 min-h-[3rem]">
+            <a href="{% url 'dashboard' %}" class="w-12 h-12 bg-white/20 backdrop-blur-md hover:bg-white/30 rounded-full flex items-center justify-center transition-all flex-shrink-0 border border-white/30">
+                <i class="fas fa-arrow-left text-white text-base"></i>
+            </a>
+            <span class="text-xl font-bold sidebar-text whitespace-nowrap text-white">Manufacturing</span>
+        </div>
     </div>
 
-    <!-- Navigation -->
-    <nav class="sidebar-nav">
-        <!-- Back to Dashboard -->
-        <a href="{% url 'dashboard' %}" class="sidebar-item bg-white/20 border border-white/20 mb-4">
-            <span class="sidebar-icon">
-                <i class="fas fa-arrow-left"></i>
-            </span>
-            <span class="sidebar-text">Back to Dashboard</span>
-        </a>
-
-        <!-- Manufacturing Dashboard -->
-        <a href="{% url 'manufacturing_dashboard' %}" class="sidebar-item">
-            <span class="sidebar-icon">
-                <i class="fas fa-tachometer-alt"></i>
-            </span>
-            <span class="sidebar-text">Manufacturing Dashboard</span>
+    <!-- Navigation Items -->
+    <nav class="sidebar-nav flex-1 py-4 space-y-2 mt-2">
+        <!-- Dashboard -->
+        <a href="{% url 'manufacturing:dashboard' %}" class="sidebar-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <i class="fas fa-tachometer-alt sidebar-icon"></i>
+            <span class="sidebar-text">Dashboard</span>
         </a>
 
         <!-- Bill of Materials -->
-        <div class="sidebar-section mb-4">
-            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Bill of Materials</h3>
-            <a href="{% url 'manufacturing_boms_ui' %}" class="sidebar-item">
-                <span class="sidebar-icon">
-                    <i class="fas fa-clipboard-list"></i>
-                </span>
-                <span class="sidebar-text">All BOMs</span>
-            </a>
-            <a href="{% url 'manufacturing_boms_add' %}" class="sidebar-item">
-                <span class="sidebar-icon">
-                    <i class="fas fa-plus-circle"></i>
-                </span>
-                <span class="sidebar-text">Create BOM</span>
-            </a>
-        </div>
+        <a href="{% url 'manufacturing:boms_ui' %}" class="sidebar-item {% if 'bom' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-clipboard-list sidebar-icon"></i>
+            <span class="sidebar-text">Bill of Materials</span>
+        </a>
 
-        <!-- Production -->
-        <div class="sidebar-section mb-4">
-            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Production</h3>
-            <a href="{% url 'manufacturing_workorders_ui' %}" class="sidebar-item">
-                <span class="sidebar-icon">
-                    <i class="fas fa-tasks"></i>
-                </span>
-                <span class="sidebar-text">Work Orders</span>
-            </a>
-            <a href="{% url 'manufacturing_production_ui' %}" class="sidebar-item">
-                <span class="sidebar-icon">
-                    <i class="fas fa-cogs"></i>
-                </span>
-                <span class="sidebar-text">Production</span>
-            </a>
-        </div>
+        <!-- Work Orders -->
+        <a href="{% url 'manufacturing:work_orders_ui' %}" class="sidebar-item {% if 'work_order' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-tasks sidebar-icon"></i>
+            <span class="sidebar-text">Work Orders</span>
+        </a>
+
+        <!-- Production Planning -->
+        <a href="{% url 'manufacturing:production_plans_ui' %}" class="sidebar-item {% if 'production' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-calendar-alt sidebar-icon"></i>
+            <span class="sidebar-text">Production Planning</span>
+        </a>
+
+        <!-- Work Centers -->
+        <a href="{% url 'manufacturing:work_centers_ui' %}" class="sidebar-item {% if 'work_center' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-industry sidebar-icon"></i>
+            <span class="sidebar-text">Work Centers</span>
+        </a>
 
         <!-- Quality Control -->
-        <div class="sidebar-section">
-            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Quality Control</h3>
-            <a href="{% url 'manufacturing_quality_ui' %}" class="sidebar-item">
-                <span class="sidebar-icon">
-                    <i class="fas fa-check-circle"></i>
-                </span>
-                <span class="sidebar-text">Quality Control</span>
-            </a>
-        </div>
+        <a href="{% url 'manufacturing:quality_checks_ui' %}" class="sidebar-item {% if 'quality' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-shield-alt sidebar-icon"></i>
+            <span class="sidebar-text">Quality Control</span>
+        </a>
+
+        <!-- Material Requirements Planning -->
+        <a href="{% url 'manufacturing:mrp_ui' %}" class="sidebar-item {% if 'mrp' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-chart-line sidebar-icon"></i>
+            <span class="sidebar-text">MRP</span>
+        </a>
+
+        <!-- Material Consumption -->
+        <a href="{% url 'manufacturing:material_tracking_ui' %}" class="sidebar-item {% if 'material' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-boxes sidebar-icon"></i>
+            <span class="sidebar-text">Material Tracking</span>
+        </a>
+
+        <!-- Job Cards -->
+        <a href="{% url 'manufacturing:job_cards_ui' %}" class="sidebar-item {% if 'job_card' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-id-card sidebar-icon"></i>
+            <span class="sidebar-text">Job Cards</span>
+        </a>
+
+        <!-- Subcontracting -->
+        <a href="{% url 'manufacturing:subcontracting_ui' %}" class="sidebar-item {% if 'subcontract' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-handshake sidebar-icon"></i>
+            <span class="sidebar-text">Subcontracting</span>
+        </a>
+
+        <!-- Manufacturing Reports -->
+        <a href="{% url 'manufacturing:reports_ui' %}" class="sidebar-item {% if 'reports' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-chart-pie sidebar-icon"></i>
+            <span class="sidebar-text">Reports</span>
+        </a>
+
+        <!-- Settings -->
+        <a href="{% url 'manufacturing:settings_ui' %}" class="sidebar-item {% if 'settings' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-cog sidebar-icon"></i>
+            <span class="sidebar-text">Settings</span>
+        </a>
     </nav>
 </div>

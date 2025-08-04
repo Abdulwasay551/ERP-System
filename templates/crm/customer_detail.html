@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ customer.name }} | Customer Details | FutureERP{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">{{ customer.name }}</h1>
+                <p class="text-gray-600">Customer details and relationship overview</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'crm:customer_edit' customer.pk %}" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-edit mr-2"></i>
+                    Edit Customer
+                </a>
+                <a href="{% url 'crm:customer_list' %}" class="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Back to List
+                </a>
+            </div>
+        </div>
+
+        <!-- Customer Overview -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <!-- Customer Info -->
+            <div class="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Customer Information</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Customer Name</label>
+                        <p class="text-lg font-semibold text-gray-900">{{ customer.name }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Customer Type</label>
+                        <p class="text-lg text-gray-900">{{ customer.get_customer_type_display|default:"Not specified" }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Email</label>
+                        <p class="text-lg text-gray-900">
+                            {% if customer.email %}
+                                <a href="mailto:{{ customer.email }}" class="text-blue-600 hover:underline">{{ customer.email }}</a>
+                            {% else %}
+                                Not provided
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Phone</label>
+                        <p class="text-lg text-gray-900">
+                            {% if customer.phone %}
+                                <a href="tel:{{ customer.phone }}" class="text-blue-600 hover:underline">{{ customer.phone }}</a>
+                            {% else %}
+                                Not provided
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Address</label>
+                        <p class="text-lg text-gray-900">{{ customer.address|default:"Not provided" }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Customer Since</label>
+                        <p class="text-lg text-gray-900">{{ customer.created_at|date:"F d, Y" }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Last Updated</label>
+                        <p class="text-lg text-gray-900">{{ customer.updated_at|date:"F d, Y" }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="space-y-6">
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-blue-700">Total Orders</p>
+                            <p class="text-2xl font-bold text-blue-900">{{ customer.total_orders|default:"0" }}</p>
+                        </div>
+                        <div class="p-3 bg-blue-200 rounded-full">
+                            <i class="fas fa-shopping-cart text-blue-700"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-green-700">Total Spent</p>
+                            <p class="text-2xl font-bold text-green-900">₨{{ customer.total_spent|default:"0"|floatformat:0 }}</p>
+                        </div>
+                        <div class="p-3 bg-green-200 rounded-full">
+                            <i class="fas fa-money-bill-wave text-green-700"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-purple-700">Lifetime Value</p>
+                            <p class="text-2xl font-bold text-purple-900">₨{{ customer.lifetime_value|default:"0"|floatformat:0 }}</p>
+                        </div>
+                        <div class="p-3 bg-purple-200 rounded-full">
+                            <i class="fas fa-gem text-purple-700"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Recent Orders -->
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Recent Orders</h3>
+                <div class="space-y-4">
+                    {% comment %}
+                    {% for order in recent_orders %}
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                            <p class="font-medium text-gray-900">Order #{{ order.order_number }}</p>
+                            <p class="text-sm text-gray-600">{{ order.created_at|date:"M d, Y" }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-green-600">₨{{ order.total_amount|floatformat:0 }}</p>
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                {% if order.status == 'completed' %}bg-green-100 text-green-800
+                                {% elif order.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    {% endcomment %}
+                    <div class="text-center py-8">
+                        <i class="fas fa-shopping-cart text-gray-400 text-4xl mb-4"></i>
+                        <p class="text-gray-600">No orders found</p>
+                        <a href="#" class="text-blue-600 hover:underline text-sm">Create first order</a>
+                    </div>
+                    {% comment %}
+                    {% endfor %}
+                    {% endcomment %}
+                </div>
+            </div>
+            
+            <!-- Communication Log -->
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Communication History</h3>
+                <div class="space-y-4">
+                    {% comment %}
+                    {% for communication in recent_communications %}
+                    <div class="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
+                        <div class="p-2 bg-blue-100 rounded-full">
+                            {% if communication.type == 'email' %}
+                            <i class="fas fa-envelope text-blue-600"></i>
+                            {% elif communication.type == 'phone' %}
+                            <i class="fas fa-phone text-blue-600"></i>
+                            {% elif communication.type == 'meeting' %}
+                            <i class="fas fa-calendar text-blue-600"></i>
+                            {% else %}
+                            <i class="fas fa-comment text-blue-600"></i>
+                            {% endif %}
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between">
+                                <p class="font-medium text-gray-900">{{ communication.subject }}</p>
+                                <span class="text-xs text-gray-500">{{ communication.timestamp|date:"M d, Y" }}</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mt-1">{{ communication.notes|truncatechars:100 }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    {% endcomment %}
+                    <div class="text-center py-8">
+                        <i class="fas fa-comments text-gray-400 text-4xl mb-4"></i>
+                        <p class="text-gray-600">No communications recorded</p>
+                        <a href="#" class="text-blue-600 hover:underline text-sm">Log first communication</a>
+                    </div>
+                    {% comment %}
+                    {% endfor %}
+                    {% endcomment %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mt-8 flex flex-wrap gap-4">
+            <button class="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all flex items-center">
+                <i class="fas fa-plus mr-2"></i>
+                Create Order
+            </button>
+            <button class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all flex items-center">
+                <i class="fas fa-file-invoice-dollar mr-2"></i>
+                Generate Quote
+            </button>
+            <button class="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all flex items-center">
+                <i class="fas fa-comments mr-2"></i>
+                Log Communication
+            </button>
+            <button class="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all flex items-center">
+                <i class="fas fa-chart-bar mr-2"></i>
+                View Reports
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

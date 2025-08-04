@@ -1,0 +1,287 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Production Plans - Manufacturing{% endblock %}
+
+{% block extra_css %}
+<style>
+    .plan-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+    }
+    
+    .plan-card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-draft { background-color: #f3f4f6; color: #6b7280; }
+    .status-approved { background-color: #d1fae5; color: #059669; }
+    .status-in-progress { background-color: #dbeafe; color: #1d4ed8; }
+    .status-completed { background-color: #f3e8ff; color: #7c3aed; }
+    .status-cancelled { background-color: #fee2e2; color: #dc2626; }
+    
+    .filter-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div class="mb-6 lg:mb-0">
+                    <h1 class="text-4xl font-bold text-gray-900 mb-2">
+                        <i class="fas fa-calendar-alt text-blue-600 mr-3"></i>
+                        Production Plans
+                    </h1>
+                    <p class="text-gray-600">Manage and track production planning schedules</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="{% url 'manufacturing:production_plan_create' %}" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors text-center">
+                        <i class="fas fa-plus mr-2"></i>New Production Plan
+                    </a>
+                    <button class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-download mr-2"></i>Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Total Plans</p>
+                        <p class="text-3xl font-bold text-blue-600">{{ production_plans.paginator.count|default:0 }}</p>
+                    </div>
+                    <div class="p-3 bg-blue-100 rounded-full">
+                        <i class="fas fa-calendar-alt text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">In Progress</p>
+                        <p class="text-3xl font-bold text-green-600">
+                            {% with in_progress=production_plans.object_list|default_if_none:''|length %}
+                                {% for plan in production_plans %}
+                                    {% if plan.status == 'in_progress' %}{{ forloop.counter0|add:1 }}{% endif %}
+                                {% empty %}0{% endfor %}
+                            {% endwith %}
+                        </p>
+                    </div>
+                    <div class="p-3 bg-green-100 rounded-full">
+                        <i class="fas fa-play-circle text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Completed</p>
+                        <p class="text-3xl font-bold text-purple-600">
+                            {% for plan in production_plans %}
+                                {% if plan.status == 'completed' %}{{ forloop.counter0|add:1 }}{% endif %}
+                            {% empty %}0{% endfor %}
+                        </p>
+                    </div>
+                    <div class="p-3 bg-purple-100 rounded-full">
+                        <i class="fas fa-check-circle text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">This Month</p>
+                        <p class="text-3xl font-bold text-orange-600">
+                            {% now "Y-m" as current_month %}
+                            {% for plan in production_plans %}
+                                {% if plan.start_date|date:"Y-m" == current_month %}{{ forloop.counter0|add:1 }}{% endif %}
+                            {% empty %}0{% endfor %}
+                        </p>
+                    </div>
+                    <div class="p-3 bg-orange-100 rounded-full">
+                        <i class="fas fa-clock text-orange-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-card">
+            <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Status</option>
+                        {% for choice in status_choices %}
+                            <option value="{{ choice.0 }}" {% if choice.0 == status %}selected{% endif %}>{{ choice.1 }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Plan Type</label>
+                    <select name="plan_type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Types</option>
+                        {% for choice in plan_type_choices %}
+                            <option value="{{ choice.0 }}" {% if choice.0 == plan_type %}selected{% endif %}>{{ choice.1 }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-search mr-2"></i>Filter
+                    </button>
+                </div>
+                <div class="flex items-end">
+                    <a href="{% url 'manufacturing:production_plans_ui' %}" class="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-center">
+                        <i class="fas fa-times mr-2"></i>Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Production Plans List -->
+        <div class="bg-white rounded-lg shadow">
+            {% if production_plans %}
+                {% for plan in production_plans %}
+                <div class="plan-card">
+                    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-3">
+                                <h3 class="text-lg font-semibold text-gray-900 mr-4">
+                                    {{ plan.plan_name|default:"Production Plan" }} #{{ plan.id }}
+                                </h3>
+                                <span class="status-badge status-{{ plan.status|default:'draft' }}">
+                                    {{ plan.get_status_display|default:plan.status|title }}
+                                </span>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-4">
+                                <div>
+                                    <span class="font-medium">Plan Type:</span> 
+                                    {{ plan.get_plan_type_display|default:plan.plan_type|title }}
+                                </div>
+                                <div>
+                                    <span class="font-medium">Start Date:</span> 
+                                    {{ plan.start_date|date:"M d, Y" }}
+                                </div>
+                                <div>
+                                    <span class="font-medium">End Date:</span> 
+                                    {{ plan.end_date|date:"M d, Y" }}
+                                </div>
+                                <div>
+                                    <span class="font-medium">Created By:</span> 
+                                    {{ plan.created_by.get_full_name|default:plan.created_by.username }}
+                                </div>
+                            </div>
+
+                            {% if plan.description %}
+                            <p class="text-gray-600 text-sm mb-3">{{ plan.description|truncatewords:20 }}</p>
+                            {% endif %}
+
+                            <div class="flex items-center space-x-4 text-xs text-gray-500">
+                                <span><i class="fas fa-calendar mr-1"></i>Created: {{ plan.created_at|date:"M d, Y" }}</span>
+                                {% if plan.approved_by %}
+                                <span><i class="fas fa-user-check mr-1"></i>Approved by: {{ plan.approved_by.get_full_name|default:plan.approved_by.username }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-col sm:flex-row gap-2 mt-4 lg:mt-0 lg:ml-6">
+                            <a href="{% url 'manufacturing:production_plan_detail' plan.id %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-center">
+                                <i class="fas fa-eye mr-1"></i>View
+                            </a>
+                            {% if plan.status == 'draft' %}
+                            <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors" 
+                                    onclick="approvePlan({{ plan.id }})">
+                                <i class="fas fa-check mr-1"></i>Approve
+                            </button>
+                            {% endif %}
+                            <a href="{% url 'manufacturing:production_plan_edit' plan.id %}" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-center">
+                                <i class="fas fa-edit mr-1"></i>Edit
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <!-- Empty State -->
+                <div class="text-center py-12">
+                    <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-calendar-alt text-gray-400 text-3xl"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Production Plans Found</h3>
+                    <p class="text-gray-600 mb-6">Get started by creating your first production plan</p>
+                    <a href="{% url 'manufacturing:production_plan_create' %}" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Create Production Plan
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Pagination -->
+        {% if production_plans.has_other_pages %}
+        <div class="flex justify-center mt-6">
+            <nav class="flex space-x-2">
+                {% if production_plans.has_previous %}
+                    <a href="?page={{ production_plans.previous_page_number }}&status={{ status }}&plan_type={{ plan_type }}" 
+                       class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Previous
+                    </a>
+                {% endif %}
+                
+                <span class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg">
+                    {{ production_plans.number }}
+                </span>
+                
+                {% if production_plans.has_next %}
+                    <a href="?page={{ production_plans.next_page_number }}&status={{ status }}&plan_type={{ plan_type }}" 
+                       class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Next
+                    </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function approvePlan(planId) {
+    if (confirm('Are you sure you want to approve this production plan? This action may automatically create work orders.')) {
+        // In a real implementation, this would be an AJAX call to approve the plan
+        window.location.href = '/manufacturing/production-plans/' + planId + '/edit/';
+    }
+}
+</script>
+{% endblock %}

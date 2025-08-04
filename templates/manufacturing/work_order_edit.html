@@ -1,0 +1,383 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Work Order #{{ work_order.wo_number }} - Manufacturing{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .form-textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+    
+    .form-input:disabled {
+        background-color: #f9fafb;
+        color: #6b7280;
+        cursor: not-allowed;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        padding: 0.75rem 1.5rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-block;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        text-decoration: none;
+    }
+    
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .status-draft { background: #f3f4f6; color: #374151; }
+    .status-scheduled { background: #dbeafe; color: #1e40af; }
+    .status-in_progress { background: #fef3c7; color: #d97706; }
+    .status-completed { background: #dcfce7; color: #16a34a; }
+    .status-cancelled { background: #fee2e2; color: #dc2626; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <!-- Header -->
+    <div class="container mx-auto px-6 mb-8">
+        <nav class="text-sm text-gray-600 mb-4">
+            <a href="{% url 'manufacturing:work_orders_ui' %}" class="hover:text-blue-600">Work Orders</a>
+            <span class="mx-2">/</span>
+            <span class="text-gray-900">Edit #{{ work_order.wo_number }}</span>
+        </nav>
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">
+                    <i class="fas fa-edit text-blue-600 mr-3"></i>
+                    Edit Work Order #{{ work_order.wo_number }}
+                </h1>
+                <p class="text-gray-600 mt-2">Modify work order details and status</p>
+            </div>
+            <div class="status-badge status-{{ work_order.status }}">
+                <i class="fas fa-circle mr-2 text-xs"></i>
+                {{ work_order.get_status_display }}
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6">
+        <div class="max-w-2xl mx-auto">
+            <div class="form-card">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Basic Information -->
+                        <div class="md:col-span-2">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                                Basic Information
+                            </h3>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="wo_number" class="form-label">
+                                Work Order Number
+                            </label>
+                            <input type="text" id="wo_number" name="wo_number" 
+                                   value="{{ work_order.wo_number }}" 
+                                   class="form-input" disabled>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="status" class="form-label">
+                                Status
+                            </label>
+                            <select id="status" name="status" class="form-input">
+                                <option value="draft" {% if work_order.status == 'draft' %}selected{% endif %}>Draft</option>
+                                <option value="scheduled" {% if work_order.status == 'scheduled' %}selected{% endif %}>Scheduled</option>
+                                <option value="in_progress" {% if work_order.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                <option value="completed" {% if work_order.status == 'completed' %}selected{% endif %}>Completed</option>
+                                <option value="cancelled" {% if work_order.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="product" class="form-label">
+                                Product <span class="text-red-500">*</span>
+                            </label>
+                            <select id="product" name="product" class="form-input" required>
+                                {% for product in products %}
+                                <option value="{{ product.id }}" 
+                                        {% if product.id == work_order.product.id %}selected{% endif %}>
+                                    {{ product.name }} ({{ product.product_code }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="quantity" class="form-label">
+                                Quantity <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" id="quantity" name="quantity" 
+                                   value="{{ work_order.quantity }}"
+                                   min="1" step="1" class="form-input" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="priority" class="form-label">
+                                Priority
+                            </label>
+                            <select id="priority" name="priority" class="form-input">
+                                <option value="low" {% if work_order.priority == 'low' %}selected{% endif %}>Low</option>
+                                <option value="medium" {% if work_order.priority == 'medium' %}selected{% endif %}>Medium</option>
+                                <option value="high" {% if work_order.priority == 'high' %}selected{% endif %}>High</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Scheduling -->
+                        <div class="md:col-span-2">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                                Scheduling
+                            </h3>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="planned_start" class="form-label">
+                                Planned Start Date
+                            </label>
+                            <input type="datetime-local" id="planned_start" name="planned_start" 
+                                   value="{{ work_order.planned_start|date:'Y-m-d\TH:i' }}"
+                                   class="form-input">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="planned_end" class="form-label">
+                                Planned End Date
+                            </label>
+                            <input type="datetime-local" id="planned_end" name="planned_end" 
+                                   value="{{ work_order.planned_end|date:'Y-m-d\TH:i' }}"
+                                   class="form-input">
+                        </div>
+                        
+                        {% if work_order.actual_start %}
+                        <div class="form-group">
+                            <label for="actual_start" class="form-label">
+                                Actual Start Date
+                            </label>
+                            <input type="datetime-local" id="actual_start" name="actual_start" 
+                                   value="{{ work_order.actual_start|date:'Y-m-d\TH:i' }}"
+                                   class="form-input">
+                        </div>
+                        {% endif %}
+                        
+                        {% if work_order.actual_end %}
+                        <div class="form-group">
+                            <label for="actual_end" class="form-label">
+                                Actual End Date
+                            </label>
+                            <input type="datetime-local" id="actual_end" name="actual_end" 
+                                   value="{{ work_order.actual_end|date:'Y-m-d\TH:i' }}"
+                                   class="form-input">
+                        </div>
+                        {% endif %}
+                        
+                        <div class="form-group md:col-span-2">
+                            <label for="description" class="form-label">
+                                Description
+                            </label>
+                            <textarea id="description" name="description" 
+                                      class="form-input form-textarea" 
+                                      placeholder="Enter work order description or special instructions">{{ work_order.description }}</textarea>
+                        </div>
+                        
+                        <!-- Progress Information -->
+                        {% if work_order.status == 'in_progress' or work_order.status == 'completed' %}
+                        <div class="md:col-span-2">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                                Progress Information
+                            </h3>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="progress_percentage" class="form-label">
+                                Progress Percentage
+                            </label>
+                            <input type="number" id="progress_percentage" name="progress_percentage" 
+                                   value="{{ work_order.progress_percentage|default:0 }}"
+                                   min="0" max="100" step="1" class="form-input">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="produced_quantity" class="form-label">
+                                Produced Quantity
+                            </label>
+                            <input type="number" id="produced_quantity" name="produced_quantity" 
+                                   value="{{ work_order.produced_quantity|default:0 }}"
+                                   min="0" step="1" class="form-input">
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-gray-200">
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save mr-2"></i>
+                            Update Work Order
+                        </button>
+                        <a href="{% url 'manufacturing:work_orders_ui' %}" class="btn-secondary text-center">
+                            <i class="fas fa-times mr-2"></i>
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Status-based field management
+    const statusSelect = document.getElementById('status');
+    const progressFields = document.querySelectorAll('#progress_percentage, #produced_quantity');
+    
+    function toggleProgressFields() {
+        const status = statusSelect.value;
+        const showProgress = status === 'in_progress' || status === 'completed';
+        
+        progressFields.forEach(field => {
+            if (field) {
+                field.closest('.form-group').style.display = showProgress ? 'block' : 'none';
+            }
+        });
+    }
+    
+    statusSelect.addEventListener('change', toggleProgressFields);
+    toggleProgressFields(); // Initial state
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const product = document.getElementById('product').value;
+        const quantity = document.getElementById('quantity').value;
+        const progressPercentage = document.getElementById('progress_percentage');
+        const producedQuantity = document.getElementById('produced_quantity');
+        
+        if (!product) {
+            e.preventDefault();
+            alert('Please select a product');
+            return;
+        }
+        
+        if (!quantity || quantity <= 0) {
+            e.preventDefault();
+            alert('Please enter a valid quantity');
+            return;
+        }
+        
+        // Validate progress fields if visible
+        if (progressPercentage && progressPercentage.style.display !== 'none') {
+            const progress = parseInt(progressPercentage.value);
+            if (progress < 0 || progress > 100) {
+                e.preventDefault();
+                alert('Progress percentage must be between 0 and 100');
+                return;
+            }
+        }
+        
+        if (producedQuantity && producedQuantity.style.display !== 'none') {
+            const produced = parseInt(producedQuantity.value);
+            const total = parseInt(quantity);
+            if (produced > total) {
+                e.preventDefault();
+                alert('Produced quantity cannot exceed total quantity');
+                return;
+            }
+        }
+    });
+    
+    // Auto-update progress based on produced quantity
+    const quantityInput = document.getElementById('quantity');
+    const producedInput = document.getElementById('produced_quantity');
+    const progressInput = document.getElementById('progress_percentage');
+    
+    if (producedInput && progressInput) {
+        function updateProgress() {
+            const total = parseInt(quantityInput.value) || 0;
+            const produced = parseInt(producedInput.value) || 0;
+            
+            if (total > 0) {
+                const percentage = Math.round((produced / total) * 100);
+                progressInput.value = Math.min(percentage, 100);
+            }
+        }
+        
+        producedInput.addEventListener('input', updateProgress);
+        quantityInput.addEventListener('input', updateProgress);
+    }
+});
+</script>
+{% endblock %}

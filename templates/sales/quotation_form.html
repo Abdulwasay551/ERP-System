@@ -1,0 +1,414 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{% if quotation %}Edit Quotation{% else %}New Quotation{% endif %} | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e5e7eb;
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-label {
+        display: block;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+    .form-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+    .form-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        border: none;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        padding: 12px 24px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .btn-secondary:hover {
+        background: #e5e7eb;
+    }
+    .line-item-row {
+        background: #f9fafb;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        border: 1px solid #e5e7eb;
+    }
+    .error-message {
+        color: #dc2626;
+        font-size: 12px;
+        margin-top: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8 max-w-7xl">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">
+                    {% if quotation %}Edit Quotation{% else %}New Quotation{% endif %}
+                </h1>
+                <p class="text-gray-600">
+                    {% if quotation %}Update quotation details and line items{% else %}Create a new sales quotation{% endif %}
+                </p>
+            </div>
+            <a href="{% url 'sales:quotations' %}" class="btn-secondary">
+                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back to Quotations
+            </a>
+        </div>
+
+        <form method="POST" id="quotationForm">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div class="form-section">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6">Basic Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="form-group">
+                        <label class="form-label">Customer *</label>
+                        <select name="customer_id" class="form-input" required>
+                            <option value="">Select Customer</option>
+                            {% for customer in customers %}
+                            <option value="{{ customer.id }}" 
+                                {% if quotation and quotation.customer.id == customer.id %}selected{% endif %}>
+                                {{ customer.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Quotation Date</label>
+                        <input type="date" name="date" class="form-input" 
+                               value="{% if quotation %}{{ quotation.date|date:'Y-m-d' }}{% else %}{{ today|date:'Y-m-d' }}{% endif %}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Valid Until</label>
+                        <input type="date" name="valid_until" class="form-input" 
+                               value="{% if quotation and quotation.valid_until %}{{ quotation.valid_until|date:'Y-m-d' }}{% endif %}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Currency</label>
+                        <select name="currency_id" class="form-input">
+                            <option value="">Select Currency</option>
+                            {% for currency in currencies %}
+                            <option value="{{ currency.id }}"
+                                {% if quotation and quotation.currency and quotation.currency.id == currency.id %}selected{% endif %}>
+                                {{ currency.code }} - {{ currency.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-input">
+                            <option value="draft" {% if not quotation or quotation.status == 'draft' %}selected{% endif %}>Draft</option>
+                            <option value="sent" {% if quotation and quotation.status == 'sent' %}selected{% endif %}>Sent</option>
+                            <option value="accepted" {% if quotation and quotation.status == 'accepted' %}selected{% endif %}>Accepted</option>
+                            <option value="lost" {% if quotation and quotation.status == 'lost' %}selected{% endif %}>Lost</option>
+                            <option value="expired" {% if quotation and quotation.status == 'expired' %}selected{% endif %}>Expired</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Line Items -->
+            <div class="form-section">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900">Line Items</h2>
+                    <button type="button" onclick="addLineItem()" class="btn-primary">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Add Item
+                    </button>
+                </div>
+                
+                <div id="lineItemsContainer">
+                    {% if quotation %}
+                        {% for item in quotation.items.all %}
+                        <div class="line-item-row" data-item-id="{{ item.id }}">
+                            <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
+                                <div>
+                                    <label class="form-label">Product</label>
+                                    <select name="items[{{ forloop.counter0 }}][product_id]" class="form-input product-select" required>
+                                        <option value="">Select Product</option>
+                                        {% for product in products %}
+                                        <option value="{{ product.id }}" data-price="{{ product.price }}"
+                                            {% if item.product.id == product.id %}selected{% endif %}>
+                                            {{ product.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label">Quantity</label>
+                                    <input type="number" name="items[{{ forloop.counter0 }}][quantity]" 
+                                           class="form-input quantity-input" step="0.01" min="0" 
+                                           value="{{ item.quantity }}" required>
+                                </div>
+                                <div>
+                                    <label class="form-label">Unit Price</label>
+                                    <input type="number" name="items[{{ forloop.counter0 }}][price]" 
+                                           class="form-input price-input" step="0.01" min="0" 
+                                           value="{{ item.price }}" required>
+                                </div>
+                                <div>
+                                    <label class="form-label">Tax</label>
+                                    <select name="items[{{ forloop.counter0 }}][tax_id]" class="form-input tax-select">
+                                        <option value="">No Tax</option>
+                                        {% for tax in taxes %}
+                                        <option value="{{ tax.id }}" data-rate="{{ tax.rate }}"
+                                            {% if item.tax and item.tax.id == tax.id %}selected{% endif %}>
+                                            {{ tax.name }} ({{ tax.rate }}%)
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label">Total</label>
+                                    <input type="text" class="form-input line-total" readonly value="{{ item.total }}">
+                                </div>
+                                <div class="flex justify-center">
+                                    <button type="button" onclick="removeLineItem(this)" 
+                                            class="text-red-600 hover:text-red-800 p-2">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                
+                <!-- Totals -->
+                <div class="mt-6 bg-gray-50 p-6 rounded-lg">
+                    <div class="flex justify-end">
+                        <div class="w-64">
+                            <div class="flex justify-between mb-2">
+                                <span>Subtotal:</span>
+                                <span id="subtotal">$0.00</span>
+                            </div>
+                            <div class="flex justify-between mb-2">
+                                <span>Tax:</span>
+                                <span id="taxTotal">$0.00</span>
+                            </div>
+                            <div class="flex justify-between font-semibold text-lg border-t pt-2">
+                                <span>Total:</span>
+                                <span id="grandTotal">$0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Information -->
+            <div class="form-section">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6">Additional Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label">Terms and Conditions</label>
+                        <textarea name="terms_and_conditions" class="form-input" rows="4" 
+                                  placeholder="Enter terms and conditions...">{% if quotation %}{{ quotation.terms_and_conditions }}{% endif %}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" class="form-input" rows="4" 
+                                  placeholder="Enter any additional notes...">{% if quotation %}{{ quotation.notes }}{% endif %}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="flex justify-end space-x-4">
+                <a href="{% url 'sales:quotations' %}" class="btn-secondary">Cancel</a>
+                <button type="submit" class="btn-primary">
+                    {% if quotation %}Update Quotation{% else %}Create Quotation{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let itemIndex = {% if quotation %}{{ quotation.items.count }}{% else %}0{% endif %};
+
+function addLineItem() {
+    const container = document.getElementById('lineItemsContainer');
+    const itemHtml = `
+        <div class="line-item-row">
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
+                <div>
+                    <label class="form-label">Product</label>
+                    <select name="items[${itemIndex}][product_id]" class="form-input product-select" required>
+                        <option value="">Select Product</option>
+                        {% for product in products %}
+                        <option value="{{ product.id }}" data-price="{{ product.price }}">{{ product.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Quantity</label>
+                    <input type="number" name="items[${itemIndex}][quantity]" class="form-input quantity-input" 
+                           step="0.01" min="0" value="1" required>
+                </div>
+                <div>
+                    <label class="form-label">Unit Price</label>
+                    <input type="number" name="items[${itemIndex}][price]" class="form-input price-input" 
+                           step="0.01" min="0" value="0" required>
+                </div>
+                <div>
+                    <label class="form-label">Tax</label>
+                    <select name="items[${itemIndex}][tax_id]" class="form-input tax-select">
+                        <option value="">No Tax</option>
+                        {% for tax in taxes %}
+                        <option value="{{ tax.id }}" data-rate="{{ tax.rate }}">{{ tax.name }} ({{ tax.rate }}%)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Total</label>
+                    <input type="text" class="form-input line-total" readonly value="0.00">
+                </div>
+                <div class="flex justify-center">
+                    <button type="button" onclick="removeLineItem(this)" class="text-red-600 hover:text-red-800 p-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', itemHtml);
+    itemIndex++;
+    attachLineItemEvents();
+    calculateTotals();
+}
+
+function removeLineItem(button) {
+    button.closest('.line-item-row').remove();
+    calculateTotals();
+}
+
+function attachLineItemEvents() {
+    // Product selection change
+    document.querySelectorAll('.product-select').forEach(select => {
+        select.addEventListener('change', function() {
+            const option = this.options[this.selectedIndex];
+            const price = option.getAttribute('data-price') || 0;
+            const row = this.closest('.line-item-row');
+            const priceInput = row.querySelector('.price-input');
+            priceInput.value = price;
+            calculateLineTotal(row);
+        });
+    });
+
+    // Quantity and price change
+    document.querySelectorAll('.quantity-input, .price-input').forEach(input => {
+        input.addEventListener('input', function() {
+            const row = this.closest('.line-item-row');
+            calculateLineTotal(row);
+        });
+    });
+
+    // Tax change
+    document.querySelectorAll('.tax-select').forEach(select => {
+        select.addEventListener('change', function() {
+            const row = this.closest('.line-item-row');
+            calculateLineTotal(row);
+        });
+    });
+}
+
+function calculateLineTotal(row) {
+    const quantity = parseFloat(row.querySelector('.quantity-input').value) || 0;
+    const price = parseFloat(row.querySelector('.price-input').value) || 0;
+    const taxSelect = row.querySelector('.tax-select');
+    const taxRate = taxSelect.options[taxSelect.selectedIndex]?.getAttribute('data-rate') || 0;
+    
+    const subtotal = quantity * price;
+    const taxAmount = subtotal * (parseFloat(taxRate) / 100);
+    const total = subtotal + taxAmount;
+    
+    row.querySelector('.line-total').value = total.toFixed(2);
+    calculateTotals();
+}
+
+function calculateTotals() {
+    let subtotal = 0;
+    let taxTotal = 0;
+    
+    document.querySelectorAll('.line-item-row').forEach(row => {
+        const quantity = parseFloat(row.querySelector('.quantity-input').value) || 0;
+        const price = parseFloat(row.querySelector('.price-input').value) || 0;
+        const taxSelect = row.querySelector('.tax-select');
+        const taxRate = taxSelect.options[taxSelect.selectedIndex]?.getAttribute('data-rate') || 0;
+        
+        const lineSubtotal = quantity * price;
+        const lineTax = lineSubtotal * (parseFloat(taxRate) / 100);
+        
+        subtotal += lineSubtotal;
+        taxTotal += lineTax;
+    });
+    
+    const grandTotal = subtotal + taxTotal;
+    
+    document.getElementById('subtotal').textContent = '$' + subtotal.toFixed(2);
+    document.getElementById('taxTotal').textContent = '$' + taxTotal.toFixed(2);
+    document.getElementById('grandTotal').textContent = '$' + grandTotal.toFixed(2);
+}
+
+// Initialize events on page load
+document.addEventListener('DOMContentLoaded', function() {
+    attachLineItemEvents();
+    calculateTotals();
+});
+</script>
+{% endblock %}

@@ -1,217 +1,623 @@
-{% extends "base.html" %}
-{% block title %}Manufacturing Dashboard | FutureERP{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manufacturing Dashboard - ERP System{% endblock %}
 
 {% block extra_css %}
 <style>
-    .metric-card {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
-        border: 1px solid rgba(16, 185, 129, 0.2);
+    .gradient-bg {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .card-shadow {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    
+    .hover-lift:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         transition: all 0.3s ease;
     }
-    .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
+    
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
     }
-    .activity-card {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
-        border: 1px solid rgba(59, 130, 246, 0.2);
+    
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100px;
+        height: 100px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        transform: translate(30px, -30px);
+    }
+    
+    .quick-action-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .action-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .action-card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .action-icon {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        font-size: 1.25rem;
+        color: white;
+    }
+    
+    .icon-blue { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+    .icon-green { background: linear-gradient(135deg, #10b981, #059669); }
+    .icon-purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+    .icon-orange { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .icon-red { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    .icon-indigo { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+    
+    .status-indicator {
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 0.5rem;
+    }
+    
+    .status-active { background-color: #10b981; animation: pulse 2s infinite; }
+    .status-warning { background-color: #f59e0b; }
+    .status-error { background-color: #ef4444; }
+    .status-idle { background-color: #6b7280; }
+    
+    .chart-container {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .progress-bar {
+        height: 0.5rem;
+        background-color: #e5e7eb;
+        border-radius: 9999px;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        border-radius: 9999px;
+        transition: width 0.5s ease;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-left: 2rem;
+        padding-bottom: 1.5rem;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 0.375rem;
+        top: 0.5rem;
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 50%;
+        background-color: #3b82f6;
+        border: 2px solid white;
+        box-shadow: 0 0 0 3px #dbeafe;
+    }
+    
+    .timeline-line {
+        position: absolute;
+        left: 0.75rem;
+        top: 1.5rem;
+        bottom: 0;
+        width: 2px;
+        background-color: #e5e7eb;
+    }
+    
+    .timeline-item:last-child .timeline-line {
+        display: none;
+    }
+    
+    .notification-badge {
+        position: absolute;
+        top: -0.5rem;
+        right: -0.5rem;
+        background: #ef4444;
+        color: white;
+        border-radius: 50%;
+        width: 1.5rem;
+        height: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .animate-fade-in {
+        animation: fadeIn 0.6s ease-in-out;
+    }
+    
+    .animate-slide-up {
+        animation: slideUp 0.6s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="pt-24 pb-8">
-    <div class="mx-auto px-8">
-        <!-- Header -->
-        <div class="flex justify-between items-center mb-8">
-            <div>
-                <h1 class="text-4xl font-bold accounting-highlight mb-2">Manufacturing Dashboard</h1>
-                <p class="text-gray-600">Production management and bill of materials overview</p>
+<div class="min-h-screen bg-gray-50">
+    <!-- Header Section -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div class="mb-6 lg:mb-0">
+                    <h1 class="text-4xl font-bold text-gray-900 mb-2 animate-fade-in">
+                        <i class="fas fa-industry text-blue-600 mr-3"></i>
+                        Manufacturing Dashboard
+                    </h1>
+                    <p class="text-gray-600 animate-fade-in">Monitor and control your entire manufacturing operation</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4 animate-slide-up">
+                    <button class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Quick Actions
+                    </button>
+                    <button class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-download mr-2"></i>Export Reports
+                    </button>
+                </div>
             </div>
-            <div class="flex gap-4">
-                <a href="{% url 'manufacturing_boms_add' %}" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
-                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    Create BOM
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Key Performance Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="metric-card animate-slide-up hover-lift">
+                <div class="flex items-center justify-between relative z-10">
+                    <div>
+                        <p class="text-blue-100 text-sm font-medium">Active Work Orders</p>
+                        <p class="text-3xl font-bold text-white">{{ active_work_orders|default:24 }}</p>
+                        <p class="text-blue-200 text-sm">+3 from yesterday</p>
+                    </div>
+                    <div class="text-blue-200">
+                        <i class="fas fa-clipboard-list text-3xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl card-shadow hover-lift animate-slide-up">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Production Efficiency</p>
+                        <p class="text-3xl font-bold text-green-600">{{ production_efficiency|default:87 }}%</p>
+                        <p class="text-sm text-green-600 flex items-center mt-1">
+                            <i class="fas fa-arrow-up mr-1"></i>+5% this week
+                        </p>
+                    </div>
+                    <div class="p-3 bg-green-100 rounded-full">
+                        <i class="fas fa-chart-line text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl card-shadow hover-lift animate-slide-up">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Quality Pass Rate</p>
+                        <p class="text-3xl font-bold text-blue-600">{{ quality_pass_rate|default:94.5 }}%</p>
+                        <p class="text-sm text-blue-600 flex items-center mt-1">
+                            <i class="fas fa-check mr-1"></i>Above target
+                        </p>
+                    </div>
+                    <div class="p-3 bg-blue-100 rounded-full">
+                        <i class="fas fa-shield-alt text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl card-shadow hover-lift animate-slide-up">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">On-Time Delivery</p>
+                        <p class="text-3xl font-bold text-purple-600">{{ on_time_delivery|default:92 }}%</p>
+                        <p class="text-sm text-purple-600 flex items-center mt-1">
+                            <i class="fas fa-clock mr-1"></i>Improved
+                        </p>
+                    </div>
+                    <div class="p-3 bg-purple-100 rounded-full">
+                        <i class="fas fa-truck text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions Grid -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6 animate-fade-in">
+                <i class="fas fa-bolt text-yellow-500 mr-2"></i>
+                Quick Actions
+            </h2>
+            <div class="quick-action-grid">
+                <a href="#" class="action-card animate-slide-up">
+                    <div class="action-icon icon-blue">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-2">Create Work Order</h3>
+                    <p class="text-sm text-gray-600">Start a new production work order</p>
+                </a>
+
+                <a href="{% url 'manufacturing:bom_create' %}" class="action-card animate-slide-up">
+                    <div class="action-icon icon-green">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-2">Manage BOMs</h3>
+                    <p class="text-sm text-gray-600">Create and edit Bill of Materials</p>
+                </a>
+
+                <a href="#" class="action-card animate-slide-up">
+                    <div class="action-icon icon-purple">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-2">Quality Inspection</h3>
+                    <p class="text-sm text-gray-600">Start quality control process</p>
+                </a>
+
+                <a href="#" class="action-card animate-slide-up">
+                    <div class="action-icon icon-orange">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-2">Production Planning</h3>
+                    <p class="text-sm text-gray-600">Schedule production activities</p>
+                </a>
+
+                <a href="{% url 'manufacturing:work_centers_ui' %}" class="action-card animate-slide-up">
+                    <div class="action-icon icon-red">
+                        <i class="fas fa-industry"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-2">Work Centers</h3>
+                    <p class="text-sm text-gray-600">Monitor production stations</p>
+                </a>
+
+                <a href="#" class="action-card animate-slide-up">
+                    <div class="action-icon icon-indigo">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-2">Material Tracking</h3>
+                    <p class="text-sm text-gray-600">Track material consumption</p>
                 </a>
             </div>
         </div>
 
-        <!-- Key Metrics -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="metric-card rounded-2xl p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">Total BOMs</p>
-                        <p class="text-3xl font-bold text-emerald-600">{{ total_boms }}</p>
-                    </div>
-                    <div class="p-3 bg-emerald-100 rounded-full">
-                        <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <div class="metric-card rounded-2xl p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">Active Work Orders</p>
-                        <p class="text-3xl font-bold text-blue-600">{{ active_work_orders }}</p>
-                    </div>
-                    <div class="p-3 bg-blue-100 rounded-full">
-                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <div class="metric-card rounded-2xl p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">Production Units</p>
-                        <p class="text-3xl font-bold text-green-600">{{ production_units }}</p>
-                    </div>
-                    <div class="p-3 bg-green-100 rounded-full">
-                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <div class="metric-card rounded-2xl p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">Quality Checks</p>
-                        <p class="text-3xl font-bold text-purple-600">{{ quality_checks }}</p>
-                    </div>
-                    <div class="p-3 bg-purple-100 rounded-full">
-                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- BOMs and Recent Activity -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <!-- Recent BOMs -->
-            <div class="activity-card rounded-2xl p-6">
-                <h3 class="text-xl font-bold text-gray-800 mb-6">Recent Bill of Materials</h3>
+        <!-- Production Status & Recent Activities -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Production Line Status -->
+            <div class="chart-container animate-fade-in">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">
+                    <i class="fas fa-cogs text-blue-600 mr-2"></i>
+                    Production Line Status
+                </h3>
                 <div class="space-y-4">
-                    {% for bom in recent_boms %}
-                    <div class="flex items-center p-4 bg-white rounded-xl">
-                        <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mr-4">
-                            <span class="text-emerald-600 font-bold">{{ bom.code|slice:":2" }}</span>
+                    {% if work_centers %}
+                        {% for work_center in work_centers %}
+                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                            <div class="flex items-center">
+                                <span class="status-indicator status-{{ work_center.status|default:'idle' }}"></span>
+                                <div>
+                                    <div class="font-medium text-gray-900">{{ work_center.name }}</div>
+                                    <div class="text-sm text-gray-500">{{ work_center.description|default:"Work Center"|truncatewords:4 }}</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm font-medium {% if work_center.status == 'active' %}text-green-600{% elif work_center.status == 'maintenance' %}text-orange-600{% else %}text-gray-600{% endif %}">
+                                    {{ work_center.get_status_display|default:work_center.status|title }}
+                                </div>
+                                <div class="text-xs text-gray-500">{{ work_center.efficiency|default:0 }}% efficiency</div>
+                            </div>
                         </div>
-                        <div class="flex-1">
-                            <p class="font-medium text-gray-800">{{ bom.name }}</p>
-                            <p class="text-sm text-gray-500">{{ bom.code }}</p>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-8">
+                            <div class="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-industry text-gray-400"></i>
+                            </div>
+                            <p class="text-gray-600">No work centers configured</p>
+                            <a href="{% url 'manufacturing:work_centers_ui' %}" class="text-blue-600 hover:text-blue-700 text-sm mt-2 inline-block">
+                                Set up work centers →
+                            </a>
                         </div>
-                        <div class="text-right">
-                            <p class="text-sm {% if bom.is_active %}text-green-600{% else %}text-red-600{% endif %}">
-                                {% if bom.is_active %}Active{% else %}Inactive{% endif %}
-                            </p>
+                    {% endif %}
                         </div>
                     </div>
-                    {% endfor %}
+
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex items-center">
+                            <span class="status-indicator status-idle"></span>
+                            <div>
+                                <div class="font-medium text-gray-900">Quality Control Station</div>
+                                <div class="text-sm text-gray-500">Inspection Line</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-gray-600">Idle</div>
+                            <div class="text-xs text-gray-500">Awaiting batch</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Production Statistics -->
-            <div class="activity-card rounded-2xl p-6">
-                <h3 class="text-xl font-bold text-gray-800 mb-6">Production Statistics</h3>
+            <!-- Recent Activities -->
+            <div class="chart-container animate-fade-in">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-clock text-green-600 mr-2"></i>
+                        Recent Activities
+                    </h3>
+                    <div class="relative">
+                        <i class="fas fa-bell text-gray-400"></i>
+                        <span class="notification-badge">3</span>
+                    </div>
+                </div>
                 <div class="space-y-4">
-                    <div class="flex items-center justify-between p-4 bg-white rounded-xl">
-                        <div>
-                            <p class="font-medium text-gray-800">New BOMs This Month</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-lg font-bold text-blue-600">{{ new_boms_this_month }}</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between p-4 bg-white rounded-xl">
-                        <div>
-                            <p class="font-medium text-gray-800">Completed Orders</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-lg font-bold text-green-600">0</p>
+                    <div class="timeline-item">
+                        <div class="timeline-line"></div>
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <div class="font-medium text-green-900">Work Order Completed</div>
+                            <div class="text-sm text-green-700">{{ recent_work_orders.0.product.name|default:"Production order" }}: {{ recent_work_orders.0.quantity|default:0 }} units finished</div>
+                            <div class="text-xs text-green-600 mt-1">{{ recent_work_orders.0.updated_at|timesince|default:"Recently" }} ago</div>
                         </div>
                     </div>
-                    <div class="flex items-center justify-between p-4 bg-white rounded-xl">
-                        <div>
-                            <p class="font-medium text-gray-800">Pending Orders</p>
+
+                    <div class="timeline-item">
+                        <div class="timeline-line"></div>
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <div class="font-medium text-blue-900">Quality Check Passed</div>
+                            <div class="text-sm text-blue-700">Batch QC-2025-089 approved for shipment</div>
+                            <div class="text-xs text-blue-600 mt-1">4 hours ago</div>
                         </div>
-                        <div class="text-right">
-                            <p class="text-lg font-bold text-orange-600">0</p>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-line"></div>
+                        <div class="bg-orange-50 p-4 rounded-lg">
+                            <div class="font-medium text-orange-900">Material Alert</div>
+                            <div class="text-sm text-orange-700">Low inventory: Steel plates running low</div>
+                            <div class="text-xs text-orange-600 mt-1">6 hours ago</div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="bg-purple-50 p-4 rounded-lg">
+                            <div class="font-medium text-purple-900">New BOM Created</div>
+                            <div class="text-sm text-purple-700">BOM-2025-156 for Product X added</div>
+                            <div class="text-xs text-purple-600 mt-1">8 hours ago</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <a href="{% url 'manufacturing_boms_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
-                <div class="flex items-center">
-                    <div class="p-3 bg-emerald-100 rounded-full mr-4">
-                        <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-                        </svg>
+        <!-- Production Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Weekly Production Output -->
+            <div class="chart-container animate-fade-in">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">
+                    <i class="fas fa-chart-bar text-purple-600 mr-2"></i>
+                    Weekly Production Output
+                </h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Monday</span>
+                        <span class="text-sm text-gray-600">850 units</span>
                     </div>
-                    <div>
-                        <h4 class="font-semibold text-gray-800">Bill of Materials</h4>
-                        <p class="text-sm text-gray-500">Manage BOMs</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill bg-gradient-to-r from-blue-500 to-blue-600" style="width: 85%"></div>
                     </div>
-                </div>
-            </a>
 
-            <a href="{% url 'manufacturing_workorders_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
-                <div class="flex items-center">
-                    <div class="p-3 bg-blue-100 rounded-full mr-4">
-                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
-                        </svg>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Tuesday</span>
+                        <span class="text-sm text-gray-600">920 units</span>
                     </div>
-                    <div>
-                        <h4 class="font-semibold text-gray-800">Work Orders</h4>
-                        <p class="text-sm text-gray-500">Manage production</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill bg-gradient-to-r from-green-500 to-green-600" style="width: 92%"></div>
                     </div>
-                </div>
-            </a>
 
-            <a href="{% url 'manufacturing_production_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
-                <div class="flex items-center">
-                    <div class="p-3 bg-green-100 rounded-full mr-4">
-                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
-                        </svg>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Wednesday</span>
+                        <span class="text-sm text-gray-600">780 units</span>
                     </div>
-                    <div>
-                        <h4 class="font-semibold text-gray-800">Production</h4>
-                        <p class="text-sm text-gray-500">Monitor production</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill bg-gradient-to-r from-yellow-500 to-yellow-600" style="width: 78%"></div>
                     </div>
-                </div>
-            </a>
 
-            <a href="{% url 'manufacturing_quality_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
-                <div class="flex items-center">
-                    <div class="p-3 bg-purple-100 rounded-full mr-4">
-                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Thursday</span>
+                        <span class="text-sm text-gray-600">1050 units</span>
                     </div>
-                    <div>
-                        <h4 class="font-semibold text-gray-800">Quality Control</h4>
-                        <p class="text-sm text-gray-500">Quality assurance</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill bg-gradient-to-r from-purple-500 to-purple-600" style="width: 100%"></div>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Friday</span>
+                        <span class="text-sm text-gray-600">890 units</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill bg-gradient-to-r from-indigo-500 to-indigo-600" style="width: 89%"></div>
                     </div>
                 </div>
-            </a>
+            </div>
+
+            <!-- Resource Utilization -->
+            <div class="chart-container animate-fade-in">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">
+                    <i class="fas fa-chart-pie text-orange-600 mr-2"></i>
+                    Resource Utilization
+                </h3>
+                <div class="space-y-6">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-700">Labor Efficiency</span>
+                            <span class="text-sm text-gray-600">87%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill bg-gradient-to-r from-blue-500 to-blue-600" style="width: 87%"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-700">Machine Utilization</span>
+                            <span class="text-sm text-gray-600">73%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill bg-gradient-to-r from-green-500 to-green-600" style="width: 73%"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-700">Material Usage</span>
+                            <span class="text-sm text-gray-600">91%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill bg-gradient-to-r from-purple-500 to-purple-600" style="width: 91%"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-700">Energy Efficiency</span>
+                            <span class="text-sm text-gray-600">82%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill bg-gradient-to-r from-orange-500 to-orange-600" style="width: 82%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts and Notifications -->
+        <div class="bg-white rounded-xl card-shadow p-6 animate-fade-in">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6">
+                <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+                Alerts & Notifications
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-circle text-red-600 mr-3"></i>
+                        <div>
+                            <div class="font-medium text-red-900">Critical Alert</div>
+                            <div class="text-sm text-red-700">Machine downtime on Line 2</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-warning text-yellow-600 mr-3"></i>
+                        <div>
+                            <div class="font-medium text-yellow-900">Material Warning</div>
+                            <div class="text-sm text-yellow-700">Low stock: Steel plates</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-info-circle text-blue-600 mr-3"></i>
+                        <div>
+                            <div class="font-medium text-blue-900">Information</div>
+                            <div class="text-sm text-blue-700">Maintenance scheduled tomorrow</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate progress bars on page load
+    const progressBars = document.querySelectorAll('.progress-fill');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const width = entry.target.style.width;
+                entry.target.style.width = '0%';
+                setTimeout(() => {
+                    entry.target.style.width = width;
+                }, 200);
+            }
+        });
+    });
+    
+    progressBars.forEach(bar => observer.observe(bar));
+    
+    // Auto-refresh dashboard data every 30 seconds
+    setInterval(function() {
+        // Add AJAX call to refresh dashboard data
+        console.log('Refreshing dashboard data...');
+    }, 30000);
+    
+    // Add click handlers for action cards
+    document.querySelectorAll('.action-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            if (!e.target.closest('a')) {
+                // Add click animation
+                this.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    this.style.transform = 'translateY(-2px)';
+                }, 100);
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

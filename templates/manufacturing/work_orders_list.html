@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Work Orders - Manufacturing{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .work-order-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+    }
+    
+    .work-order-card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-planned { background-color: #dbeafe; color: #1d4ed8; }
+    .status-released { background-color: #fef3c7; color: #d97706; }
+    .status-in-progress { background-color: #d1fae5; color: #059669; }
+    .status-completed { background-color: #f3e8ff; color: #7c3aed; }
+    .status-cancelled { background-color: #fee2e2; color: #dc2626; }
+    
+    .priority-high { color: #dc2626; }
+    .priority-medium { color: #d97706; }
+    .priority-low { color: #059669; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div class="mb-6 lg:mb-0">
+                    <h1 class="text-4xl font-bold text-gray-900 mb-2">
+                        <i class="fas fa-tasks text-blue-600 mr-3"></i>
+                        Work Orders
+                    </h1>
+                    <p class="text-gray-600">Manage and track production work orders</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="{% url 'manufacturing:work_order_create' %}" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors text-center">
+                        <i class="fas fa-plus mr-2"></i>Create Work Order
+                    </a>
+                    <button class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-download mr-2"></i>Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Filters -->
+        <div class="filter-card">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" placeholder="Search work orders..." 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Status</option>
+                        <option value="planned">Planned</option>
+                        <option value="released">Released</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                    <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Priorities</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-search mr-2"></i>Filter
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Work Orders List -->
+        <div class="bg-white rounded-lg shadow">
+            {% if work_orders %}
+                {% for work_order in work_orders %}
+                <div class="work-order-card">
+                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-2">
+                                <h3 class="text-lg font-semibold text-gray-900 mr-3">
+                                    {{ work_order.wo_number|default:"WO-"}}{{ work_order.id|stringformat:"03d" }}
+                                </h3>
+                                <span class="status-badge status-{{ work_order.status|default:'planned' }}">{{ work_order.get_status_display|default:work_order.status|title }}</span>
+                                <span class="ml-2 text-sm priority-{{ work_order.priority|default:'medium' }}">
+                                    <i class="fas fa-flag mr-1"></i>{{ work_order.get_priority_display|default:work_order.priority|title }} Priority
+                                </span>
+                            </div>
+                            <p class="text-gray-600 mb-2">
+                                <strong>Product:</strong> {{ work_order.product.name|default:"Product not assigned" }}
+                            </p>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
+                                <div>
+                                    <span class="font-medium">Planned Qty:</span> {{ work_order.quantity|default:0 }}
+                                </div>
+                                <div>
+                                    <span class="font-medium">Produced:</span> {{ work_order.produced_quantity|default:0 }}
+                                </div>
+                                <div>
+                                    <span class="font-medium">Start Date:</span> {{ work_order.planned_start|date:"M d, Y"|default:"Not scheduled" }}
+                                </div>
+                                <div>
+                                    <span class="font-medium">End Date:</span> {{ work_order.planned_end|date:"M d, Y"|default:"Not scheduled" }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2 mt-4 lg:mt-0">
+                            {% if work_order.status == 'planned' or work_order.status == 'released' %}
+                            <button onclick="startWorkOrder({{ work_order.id }})" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                                <i class="fas fa-play mr-1"></i>Start
+                            </button>
+                            {% endif %}
+                            <a href="{% url 'manufacturing:work_order_detail' work_order.id %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-center">
+                                <i class="fas fa-eye mr-1"></i>View
+                            </a>
+                            <a href="{% url 'manufacturing:work_order_edit' work_order.id %}" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-center">
+                                <i class="fas fa-edit mr-1"></i>Edit
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="mt-4">
+                        <div class="flex justify-between text-sm text-gray-600 mb-1">
+                            <span>Progress</span>
+                            <span>0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <!-- Empty State -->
+                <div class="text-center py-12">
+                    <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-tasks text-gray-400 text-3xl"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Work Orders Found</h3>
+                    <p class="text-gray-600 mb-6">Get started by creating your first work order</p>
+                    <button class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Create Work Order
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Pagination -->
+        <div class="flex justify-center mt-6">
+            <nav class="flex space-x-2">
+                <button class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Previous
+                </button>
+                <button class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg">
+                    1
+                </button>
+                <button class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    2
+                </button>
+                <button class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Next
+                </button>
+            </nav>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function startWorkOrder(id) {
+    if (confirm('Are you sure you want to start this work order?')) {
+        fetch(`/manufacturing/work-orders/${id}/start/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error starting work order: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error starting work order');
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Work Orders UI loaded');
+});
+</script>
+{% endblock %}

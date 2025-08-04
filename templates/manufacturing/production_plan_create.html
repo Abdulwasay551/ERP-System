@@ -1,0 +1,352 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Production Plan - Manufacturing{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .form-textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+    
+    .form-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .checkbox {
+        width: 1.25rem;
+        height: 1.25rem;
+        border: 2px solid #d1d5db;
+        border-radius: 0.25rem;
+        cursor: pointer;
+    }
+    
+    .checkbox:checked {
+        background-color: #3b82f6;
+        border-color: #3b82f6;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        padding: 0.75rem 1.5rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-block;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        text-decoration: none;
+    }
+    
+    .info-box {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-box h4 {
+        color: #1e40af;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .info-box p {
+        color: #1e40af;
+        font-size: 0.875rem;
+        margin: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <!-- Header -->
+    <div class="container mx-auto px-6 mb-8">
+        <nav class="text-sm text-gray-600 mb-4">
+            <a href="{% url 'manufacturing:production_plans_ui' %}" class="hover:text-blue-600">Production Plans</a>
+            <span class="mx-2">/</span>
+            <span class="text-gray-900">Create</span>
+        </nav>
+        <h1 class="text-3xl font-bold text-gray-900">
+            <i class="fas fa-plus text-blue-600 mr-3"></i>
+            Create Production Plan
+        </h1>
+        <p class="text-gray-600 mt-2">Create a new production plan to organize manufacturing activities</p>
+    </div>
+
+    <div class="container mx-auto px-6">
+        <div class="max-w-2xl mx-auto">
+            <!-- Information Box -->
+            <div class="info-box">
+                <h4><i class="fas fa-info-circle mr-2"></i>Production Planning</h4>
+                <p>Production plans help organize and schedule manufacturing activities across multiple products and time periods. You can configure capacity considerations, lead times, and automatic work order creation.</p>
+            </div>
+            
+            <div class="form-card">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Basic Information -->
+                        <div class="md:col-span-2">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                                Basic Information
+                            </h3>
+                        </div>
+                        
+                        <div class="form-group md:col-span-2">
+                            <label for="name" class="form-label">
+                                Plan Name <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" id="name" name="name" 
+                                   class="form-input" required
+                                   placeholder="e.g., Q1 2024 Production Plan">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="start_date" class="form-label">
+                                Start Date <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" id="start_date" name="start_date" 
+                                   class="form-input" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="end_date" class="form-label">
+                                End Date <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" id="end_date" name="end_date" 
+                                   class="form-input" required>
+                        </div>
+                        
+                        <div class="form-group md:col-span-2">
+                            <label for="plan_type" class="form-label">
+                                Plan Type
+                            </label>
+                            <select id="plan_type" name="plan_type" class="form-input">
+                                {% for value, label in plan_types %}
+                                <option value="{{ value }}" {% if value == 'forecast' %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Planning Options -->
+                        <div class="md:col-span-2">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                                Planning Options
+                            </h3>
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <div class="form-checkbox">
+                                <input type="checkbox" id="consider_capacity" name="consider_capacity" 
+                                       class="checkbox" checked>
+                                <label for="consider_capacity" class="form-label mb-0">
+                                    Consider Work Center Capacity
+                                </label>
+                            </div>
+                            <p class="text-sm text-gray-600 ml-7">Take into account work center capacity when scheduling operations</p>
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <div class="form-checkbox">
+                                <input type="checkbox" id="consider_lead_times" name="consider_lead_times" 
+                                       class="checkbox" checked>
+                                <label for="consider_lead_times" class="form-label mb-0">
+                                    Consider Lead Times
+                                </label>
+                            </div>
+                            <p class="text-sm text-gray-600 ml-7">Factor in procurement and manufacturing lead times</p>
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <div class="form-checkbox">
+                                <input type="checkbox" id="auto_create_work_orders" name="auto_create_work_orders" 
+                                       class="checkbox">
+                                <label for="auto_create_work_orders" class="form-label mb-0">
+                                    Auto-create Work Orders
+                                </label>
+                            </div>
+                            <p class="text-sm text-gray-600 ml-7">Automatically generate work orders when the plan is approved</p>
+                        </div>
+                        
+                        <!-- Notes -->
+                        <div class="md:col-span-2">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                                Additional Information
+                            </h3>
+                        </div>
+                        
+                        <div class="form-group md:col-span-2">
+                            <label for="notes" class="form-label">
+                                Notes
+                            </label>
+                            <textarea id="notes" name="notes" 
+                                      class="form-input form-textarea" 
+                                      placeholder="Enter any additional notes or requirements for this production plan"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-gray-200">
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save mr-2"></i>
+                            Create Production Plan
+                        </button>
+                        <a href="{% url 'manufacturing:production_plans_ui' %}" class="btn-secondary text-center">
+                            <i class="fas fa-times mr-2"></i>
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default dates
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+    
+    if (!startDateInput.value) {
+        const today = new Date();
+        startDateInput.value = today.toISOString().split('T')[0];
+    }
+    
+    // Auto-set end date when start date changes
+    startDateInput.addEventListener('change', function() {
+        if (this.value && !endDateInput.value) {
+            const startDate = new Date(this.value);
+            const endDate = new Date(startDate);
+            endDate.setMonth(endDate.getMonth() + 3); // Default to 3 months later
+            endDateInput.value = endDate.toISOString().split('T')[0];
+        }
+    });
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const name = document.getElementById('name').value.trim();
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+        
+        if (!name) {
+            e.preventDefault();
+            alert('Please enter a plan name');
+            return;
+        }
+        
+        if (!startDate || !endDate) {
+            e.preventDefault();
+            alert('Please select both start and end dates');
+            return;
+        }
+        
+        if (new Date(endDate) <= new Date(startDate)) {
+            e.preventDefault();
+            alert('End date must be after start date');
+            return;
+        }
+    });
+    
+    // Plan type descriptions
+    const planTypeSelect = document.getElementById('plan_type');
+    const descriptions = {
+        'forecast': 'Based on demand forecasting and market predictions',
+        'sales_order': 'Generate production requirements from existing sales orders',
+        'reorder': 'Create plans based on minimum stock levels and reorder points',
+        'custom': 'Manually define production requirements'
+    };
+    
+    function updatePlanTypeDescription() {
+        const selectedType = planTypeSelect.value;
+        const description = descriptions[selectedType] || '';
+        
+        // Remove existing description
+        const existingDesc = planTypeSelect.parentNode.querySelector('.plan-type-desc');
+        if (existingDesc) {
+            existingDesc.remove();
+        }
+        
+        // Add new description
+        if (description) {
+            const descElement = document.createElement('p');
+            descElement.className = 'plan-type-desc text-sm text-gray-600 mt-1';
+            descElement.textContent = description;
+            planTypeSelect.parentNode.appendChild(descElement);
+        }
+    }
+    
+    planTypeSelect.addEventListener('change', updatePlanTypeDescription);
+    updatePlanTypeDescription(); // Initial description
+});
+</script>
+{% endblock %}

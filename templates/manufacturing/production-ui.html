@@ -1,526 +1,703 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Production Planning - Manufacturing{% endblock %}
 
 {% block extra_css %}
-<script>
-    tailwind.config = {
-        theme: {
-            extend: {
-                colors: {
-                    primary: '#10B981',
-                    secondary: '#059669',
-                    accent: '#065F46'
-                }
-            }
-        }
+<style>
+    .gradient-bg {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
-</script>
+    
+    .card-shadow {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    
+    .hover-lift:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        transition: all 0.3s ease;
+    }
+    
+    .production-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        color: white;
+    }
+    
+    .status-indicator {
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 0.5rem;
+    }
+    
+    .status-planned { background-color: #3b82f6; }
+    .status-in-progress { background-color: #f59e0b; }
+    .status-completed { background-color: #10b981; }
+    .status-delayed { background-color: #ef4444; }
+    
+    .capacity-bar {
+        height: 1.5rem;
+        background-color: #e5e7eb;
+        border-radius: 0.75rem;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .capacity-fill {
+        height: 100%;
+        border-radius: 0.75rem;
+        transition: width 0.5s ease;
+        background: linear-gradient(90deg, #10b981, #059669);
+    }
+    
+    .capacity-overload {
+        background: linear-gradient(90deg, #ef4444, #dc2626);
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-left: 2rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 0.375rem;
+        top: 0.5rem;
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 50%;
+        background-color: #3b82f6;
+        border: 2px solid white;
+        box-shadow: 0 0 0 3px #dbeafe;
+    }
+    
+    .timeline-line {
+        position: absolute;
+        left: 0.75rem;
+        top: 1.5rem;
+        bottom: -1.5rem;
+        width: 2px;
+        background-color: #e5e7eb;
+    }
+    
+    .modal-overlay {
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+    }
+    
+    .resource-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+    }
+    
+    .resource-card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .gantt-chart {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .gantt-bar {
+        height: 2rem;
+        border-radius: 0.25rem;
+        margin-bottom: 0.5rem;
+        position: relative;
+        color: white;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        padding: 0 0.5rem;
+    }
+    
+    .gantt-bar-blue { background: linear-gradient(90deg, #3b82f6, #1d4ed8); }
+    .gantt-bar-green { background: linear-gradient(90deg, #10b981, #059669); }
+    .gantt-bar-orange { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .gantt-bar-purple { background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
+    
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-        <!-- Header -->
-        <header class="bg-white shadow-sm border-b border-gray-200">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center py-4">
-                    <div class="flex items-center">
-                        <h1 class="text-2xl font-bold text-gray-900">Production Tracking</h1>
-                        <span class="ml-2 px-2 py-1 bg-primary text-white text-xs rounded-full">Manufacturing Module</span>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary transition-colors">
-                            <i class="fas fa-plus mr-2"></i>New Production Run
-                        </button>
-                        <button class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-                            <i class="fas fa-download mr-2"></i>Export Report
-                        </button>
-                    </div>
+<div class="min-h-screen bg-gray-50">
+    <!-- Header Section -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div class="mb-6 lg:mb-0">
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                        <i class="fas fa-calendar-alt text-blue-600 mr-3"></i>
+                        Production Planning
+                    </h1>
+                    <p class="text-gray-600">Plan and schedule your production activities</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button id="newProductionPlanBtn" class="btn-primary">
+                        <i class="fas fa-plus mr-2"></i>New Production Plan
+                    </button>
+                    <button class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-calendar-week mr-2"></i>Schedule View
+                    </button>
                 </div>
             </div>
-        </header>
+        </div>
+    </div>
 
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <!-- Production Statistics -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-blue-100 rounded-lg">
-                            <i class="fas fa-cogs text-blue-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-2xl font-bold text-gray-900">24</p>
-                            <p class="text-sm text-gray-600">Active Production Lines</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-green-100 rounded-lg">
-                            <i class="fas fa-chart-line text-green-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-2xl font-bold text-gray-900">87%</p>
-                            <p class="text-sm text-gray-600">Overall Efficiency</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-yellow-100 rounded-lg">
-                            <i class="fas fa-clock text-yellow-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-2xl font-bold text-gray-900">156</p>
-                            <p class="text-sm text-gray-600">Hours This Week</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-red-100 rounded-lg">
-                            <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-2xl font-bold text-gray-900">3</p>
-                            <p class="text-sm text-gray-600">Quality Issues</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tab Navigation -->
-            <div class="bg-white rounded-lg shadow mb-6">
-                <div class="border-b border-gray-200">
-                    <nav class="-mb-px flex space-x-8 px-6">
-                        <button class="tab-button py-4 px-1 border-b-2 border-primary font-medium text-sm text-primary" data-tab="active">
-                            Active Production
-                        </button>
-                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="completed">
-                            Completed Runs
-                        </button>
-                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="analytics">
-                            Production Analytics
-                        </button>
-                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="resources">
-                            Resource Utilization
-                        </button>
-                    </nav>
-                </div>
-
-                <!-- Active Production Tab -->
-                <div id="active-tab" class="tab-content p-6">
-                    <div class="mb-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-semibold text-gray-900">Real-time Production Status</h3>
-                            <div class="flex space-x-2">
-                                <input type="text" placeholder="Search production runs..." class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                                <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                                    <option>All Lines</option>
-                                    <option>Line A</option>
-                                    <option>Line B</option>
-                                    <option>Line C</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Production Line</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target Qty</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produced</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Line A-01</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Widget Pro Max</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1,000</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">750</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                                                    <div class="bg-primary h-2 rounded-full" style="width: 75%"></div>
-                                                </div>
-                                                <span class="text-sm text-gray-600">75%</span>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Running</span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <button class="text-blue-600 hover:text-blue-900 mr-2">View</button>
-                                            <button class="text-green-600 hover:text-green-900 mr-2">Pause</button>
-                                            <button class="text-red-600 hover:text-red-900">Stop</button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Line B-02</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Standard Widget</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2,500</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2,100</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                                                    <div class="bg-primary h-2 rounded-full" style="width: 84%"></div>
-                                                </div>
-                                                <span class="text-sm text-gray-600">84%</span>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Running</span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <button class="text-blue-600 hover:text-blue-900 mr-2">View</button>
-                                            <button class="text-green-600 hover:text-green-900 mr-2">Pause</button>
-                                            <button class="text-red-600 hover:text-red-900">Stop</button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Line C-03</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Mini Widget</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">5,000</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1,250</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                                                    <div class="bg-yellow-500 h-2 rounded-full" style="width: 25%"></div>
-                                                </div>
-                                                <span class="text-sm text-gray-600">25%</span>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Maintenance</span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <button class="text-blue-600 hover:text-blue-900 mr-2">View</button>
-                                            <button class="text-green-600 hover:text-green-900 mr-2">Resume</button>
-                                            <button class="text-red-600 hover:text-red-900">Stop</button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Completed Runs Tab -->
-                <div id="completed-tab" class="tab-content p-6 hidden">
-                    <div class="mb-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-semibold text-gray-900">Completed Production Runs</h3>
-                            <div class="flex space-x-2">
-                                <input type="date" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                                <input type="date" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                                <button class="bg-primary text-white px-4 py-2 rounded-lg text-sm hover:bg-secondary">Filter</button>
-                            </div>
-                        </div>
-                        
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Run ID</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Planned Qty</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actual Qty</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Efficiency</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">PR-2024-001</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Widget Pro Max</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1,000</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">985</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">98.5%</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024-01-15</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <button class="text-blue-600 hover:text-blue-900 mr-2">View Report</button>
-                                            <button class="text-green-600 hover:text-green-900">Rerun</button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">PR-2024-002</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Standard Widget</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2,500</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2,450</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">98.0%</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024-01-14</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <button class="text-blue-600 hover:text-blue-900 mr-2">View Report</button>
-                                            <button class="text-green-600 hover:text-green-900">Rerun</button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Analytics Tab -->
-                <div id="analytics-tab" class="tab-content p-6 hidden">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Production Efficiency Chart -->
-                        <div class="bg-white border rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Production Efficiency Trend</h3>
-                            <div class="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-                                <div class="text-center">
-                                    <i class="fas fa-chart-line text-gray-400 text-4xl mb-2"></i>
-                                    <p class="text-gray-500">Chart placeholder - Production efficiency over time</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Output by Product -->
-                        <div class="bg-white border rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Output by Product (This Month)</h3>
-                            <div class="space-y-4">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-600">Widget Pro Max</span>
-                                    <div class="flex items-center">
-                                        <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
-                                            <div class="bg-blue-600 h-2 rounded-full" style="width: 85%"></div>
-                                        </div>
-                                        <span class="text-sm font-medium">8,500</span>
-                                    </div>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-600">Standard Widget</span>
-                                    <div class="flex items-center">
-                                        <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
-                                            <div class="bg-green-600 h-2 rounded-full" style="width: 92%"></div>
-                                        </div>
-                                        <span class="text-sm font-medium">23,000</span>
-                                    </div>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-600">Mini Widget</span>
-                                    <div class="flex items-center">
-                                        <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
-                                            <div class="bg-yellow-600 h-2 rounded-full" style="width: 68%"></div>
-                                        </div>
-                                        <span class="text-sm font-medium">34,000</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Quality Metrics -->
-                        <div class="bg-white border rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Quality Metrics</h3>
-                            <div class="space-y-3">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">First Pass Yield</span>
-                                    <span class="font-medium text-green-600">96.8%</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Defect Rate</span>
-                                    <span class="font-medium text-red-600">2.1%</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Rework Rate</span>
-                                    <span class="font-medium text-yellow-600">1.1%</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Customer Returns</span>
-                                    <span class="font-medium text-blue-600">0.3%</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Downtime Analysis -->
-                        <div class="bg-white border rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Downtime Analysis</h3>
-                            <div class="space-y-3">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Planned Maintenance</span>
-                                    <span class="font-medium">24h</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Unplanned Downtime</span>
-                                    <span class="font-medium text-red-600">8h</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Changeover Time</span>
-                                    <span class="font-medium">16h</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Material Shortage</span>
-                                    <span class="font-medium text-yellow-600">4h</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Resources Tab -->
-                <div id="resources-tab" class="tab-content p-6 hidden">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Machine Utilization -->
-                        <div class="bg-white border rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Machine Utilization</h3>
-                            <div class="space-y-4">
-                                <div>
-                                    <div class="flex justify-between mb-1">
-                                        <span class="text-sm text-gray-600">Line A - CNC Machine</span>
-                                        <span class="text-sm font-medium">89%</span>
-                                    </div>
-                                    <div class="w-full bg-gray-200 rounded-full h-2">
-                                        <div class="bg-green-600 h-2 rounded-full" style="width: 89%"></div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div class="flex justify-between mb-1">
-                                        <span class="text-sm text-gray-600">Line B - Assembly</span>
-                                        <span class="text-sm font-medium">92%</span>
-                                    </div>
-                                    <div class="w-full bg-gray-200 rounded-full h-2">
-                                        <div class="bg-green-600 h-2 rounded-full" style="width: 92%"></div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div class="flex justify-between mb-1">
-                                        <span class="text-sm text-gray-600">Line C - Packaging</span>
-                                        <span class="text-sm font-medium">65%</span>
-                                    </div>
-                                    <div class="w-full bg-gray-200 rounded-full h-2">
-                                        <div class="bg-yellow-600 h-2 rounded-full" style="width: 65%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Labor Efficiency -->
-                        <div class="bg-white border rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Labor Efficiency</h3>
-                            <div class="space-y-3">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Morning Shift</span>
-                                    <span class="font-medium text-green-600">94%</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Afternoon Shift</span>
-                                    <span class="font-medium text-green-600">91%</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Night Shift</span>
-                                    <span class="font-medium text-yellow-600">87%</span>
-                                </div>
-                                <div class="flex justify-between border-t pt-2">
-                                    <span class="font-medium text-gray-900">Overall Efficiency</span>
-                                    <span class="font-bold text-primary">91%</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Material Consumption -->
-                        <div class="bg-white border rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Material Consumption Today</h3>
-                            <div class="space-y-3">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Raw Steel</span>
-                                    <span class="font-medium">2,450 kg</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Plastic Components</span>
-                                    <span class="font-medium">1,280 units</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Electronic Parts</span>
-                                    <span class="font-medium">890 units</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Packaging Materials</span>
-                                    <span class="font-medium">3,200 units</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Energy Consumption -->
-                        <div class="bg-white border rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Energy Consumption</h3>
-                            <div class="space-y-3">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Electricity Usage</span>
-                                    <span class="font-medium">1,245 kWh</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Gas Consumption</span>
-                                    <span class="font-medium">485 m³</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Compressed Air</span>
-                                    <span class="font-medium">2,100 m³</span>
-                                </div>
-                                <div class="flex justify-between border-t pt-2">
-                                    <span class="font-medium text-gray-900">Total Cost</span>
-                                    <span class="font-bold text-primary">$2,850</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Manufacturing Integration Notice -->
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
-                <div class="flex items-start">
-                    <i class="fas fa-info-circle text-blue-600 text-lg mr-3 mt-1"></i>
+    <div class="container mx-auto px-6 py-8">
+        <!-- Key Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="production-card animate-fade-in">
+                <div class="flex items-center justify-between">
                     <div>
-                        <h4 class="text-blue-900 font-medium mb-2">Manufacturing Integration</h4>
-                        <p class="text-blue-800 text-sm">
-                            Production tracking integrates with Work Orders, Inventory, and Quality Control modules. 
-                            Real-time data flows automatically update material consumption, quality metrics, and schedule adherence for comprehensive manufacturing visibility.
+                        <p class="text-blue-100 text-sm font-medium">Total Plans</p>
+                        <p class="text-3xl font-bold text-white">{{ total_plans|default:15 }}</p>
+                        <p class="text-blue-200 text-sm">+3 this week</p>
+                    </div>
+                    <div class="text-blue-200">
+                        <i class="fas fa-calendar-check text-3xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl card-shadow hover-lift animate-fade-in">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Active Plans</p>
+                        <p class="text-3xl font-bold text-green-600">{{ active_plans|default:8 }}</p>
+                        <p class="text-sm text-green-600 flex items-center mt-1">
+                            <i class="fas fa-play mr-1"></i>In progress
                         </p>
+                    </div>
+                    <div class="p-3 bg-green-100 rounded-full">
+                        <i class="fas fa-cog text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl card-shadow hover-lift animate-fade-in">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Completed</p>
+                        <p class="text-3xl font-bold text-blue-600">{{ completed_plans|default:42 }}</p>
+                        <p class="text-sm text-blue-600 flex items-center mt-1">
+                            <i class="fas fa-check mr-1"></i>This month
+                        </p>
+                    </div>
+                    <div class="p-3 bg-blue-100 rounded-full">
+                        <i class="fas fa-check-circle text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl card-shadow hover-lift animate-fade-in">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Efficiency</p>
+                        <p class="text-3xl font-bold text-purple-600">{{ efficiency|default:87 }}%</p>
+                        <p class="text-sm text-purple-600 flex items-center mt-1">
+                            <i class="fas fa-chart-line mr-1"></i>+5% improvement
+                        </p>
+                    </div>
+                    <div class="p-3 bg-purple-100 rounded-full">
+                        <i class="fas fa-chart-bar text-purple-600 text-xl"></i>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Production Plans Table -->
+        <div class="bg-white rounded-xl card-shadow mb-8">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4 lg:mb-0">
+                        <i class="fas fa-list text-blue-600 mr-2"></i>
+                        Production Plans
+                    </h2>
+                    <div class="flex flex-wrap gap-4">
+                        <div class="relative">
+                            <input type="text" placeholder="Search plans..." 
+                                   class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64">
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                        <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>All Status</option>
+                            <option>Planned</option>
+                            <option>In Progress</option>
+                            <option>Completed</option>
+                            <option>Delayed</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Plan Details
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Product
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Quantity
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Progress
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Timeline
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for plan in production_plans %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ plan.plan_number }}
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        Created: {{ plan.created_at|date:"M d, Y" }}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ plan.product.name }}</div>
+                                <div class="text-sm text-gray-500">SKU: {{ plan.product.sku }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ plan.planned_quantity }} {{ plan.product.unit_of_measure }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="status-indicator status-{{ plan.status|lower }}"></span>
+                                <span class="text-sm text-gray-900">{{ plan.get_status_display }}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="capacity-fill h-2 rounded-full" style="width: {{ plan.completion_percentage }}%"></div>
+                                </div>
+                                <span class="text-xs text-gray-500 mt-1">{{ plan.completion_percentage }}%</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <div>Start: {{ plan.planned_start_date|date:"M d" }}</div>
+                                <div>End: {{ plan.planned_end_date|date:"M d" }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex items-center space-x-2">
+                                    <button class="text-blue-600 hover:text-blue-900 p-1 rounded" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="text-green-600 hover:text-green-900 p-1 rounded" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="text-purple-600 hover:text-purple-900 p-1 rounded" title="Schedule">
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center">
+                                <div class="text-gray-500">
+                                    <i class="fas fa-calendar-plus text-4xl mb-4"></i>
+                                    <p class="text-lg font-medium">No production plans found</p>
+                                    <p class="text-sm">Create your first production plan to get started</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Production Timeline & Resource Overview -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Timeline -->
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">
+                    <i class="fas fa-timeline text-blue-600 mr-2"></i>
+                    Production Timeline
+                </h3>
+                <div class="space-y-4">
+                    {% for plan in production_plans %}
+                    <div class="timeline-item">
+                        {% if not forloop.last %}<div class="timeline-line"></div>{% endif %}
+                        <div class="bg-{% if plan.status == 'planned' %}blue{% elif plan.status == 'in_progress' %}green{% elif plan.status == 'completed' %}gray{% else %}orange{% endif %}-50 p-4 rounded-lg">
+                            <div class="font-medium text-{% if plan.status == 'planned' %}blue{% elif plan.status == 'in_progress' %}green{% elif plan.status == 'completed' %}gray{% else %}orange{% endif %}-900">{{ plan.product.name|default:"Unknown Product" }} Manufacturing</div>
+                            <div class="text-sm text-{% if plan.status == 'planned' %}blue{% elif plan.status == 'in_progress' %}green{% elif plan.status == 'completed' %}gray{% else %}orange{% endif %}-700">
+                                {% if plan.status == 'planned' %}
+                                    Starts {{ plan.start_date|date:"M d, Y" }}
+                                {% elif plan.status == 'in_progress' %}
+                                    In progress - {{ plan.completion_percentage|default:0 }}% complete
+                                {% elif plan.status == 'completed' %}
+                                    Completed {{ plan.end_date|date:"M d, Y" }}
+                                {% else %}
+                                    Status: {{ plan.get_status_display }}
+                                {% endif %}
+                            </div>
+                            <div class="text-xs text-{% if plan.status == 'planned' %}blue{% elif plan.status == 'in_progress' %}green{% elif plan.status == 'completed' %}gray{% else %}orange{% endif %}-600 mt-1">Work Center: {{ plan.work_center.name|default:"Not assigned" }}</div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-calendar-times text-4xl mb-4"></i>
+                        <p>No production plans scheduled</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Resource Utilization -->
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">
+                    <i class="fas fa-chart-pie text-green-600 mr-2"></i>
+                    Resource Utilization
+                </h3>
+                <div class="space-y-4">
+                    {% for work_center in work_centers %}
+                    <div class="resource-card">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-700">{{ work_center.name }}</span>
+                            <span class="text-sm {% if work_center.utilization_percentage > 100 %}text-red-600{% else %}text-gray-600{% endif %}">{{ work_center.utilization_percentage|default:0 }}%</span>
+                        </div>
+                        <div class="capacity-bar">
+                            <div class="capacity-fill {% if work_center.utilization_percentage > 100 %}capacity-overload{% endif %}" style="width: {% if work_center.utilization_percentage > 100 %}100{% else %}{{ work_center.utilization_percentage|default:0 }}{% endif %}%"></div>
+                        </div>
+                        {% if work_center.utilization_percentage > 100 %}
+                        <div class="text-xs text-red-600 mt-1">Over capacity - requires attention</div>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-industry text-4xl mb-4"></i>
+                        <p>No work centers configured</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Gantt Chart View -->
+        <div class="gantt-chart mb-8">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6">
+                <i class="fas fa-bars text-purple-600 mr-2"></i>
+                Production Schedule (Gantt View)
+            </h3>
+            <div class="space-y-3">
+                <div class="flex items-center">
+                    <div class="w-32 text-sm font-medium text-gray-700">Assembly Line</div>
+                    <div class="flex-1 relative">
+                        {% for work_order in work_orders %}
+                        {% if work_order.work_center.name == "Assembly Line" %}
+                        <div class="gantt-bar gantt-bar-{% if work_order.status == 'completed' %}green{% elif work_order.status == 'in_progress' %}blue{% else %}orange{% endif %}" style="width: {{ work_order.completion_percentage|default:0 }}%; margin-left: 10%;">
+                            {{ work_order.product.name|default:"Work Order" }} ({{ work_order.estimated_duration|default:"N/A" }}h)
+                        </div>
+                        {% endif %}
+                        {% empty %}
+                        <div class="text-xs text-gray-500">No scheduled work</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="flex items-center">
+                    <div class="w-32 text-sm font-medium text-gray-700">Machining</div>
+                    <div class="flex-1 relative">
+                        {% for work_order in work_orders %}
+                        {% if work_order.work_center.name == "Machining" %}
+                        <div class="gantt-bar gantt-bar-{% if work_order.status == 'completed' %}green{% elif work_order.status == 'in_progress' %}blue{% else %}orange{% endif %}" style="width: {{ work_order.completion_percentage|default:0 }}%; margin-left: 20%;">
+                            {{ work_order.product.name|default:"Work Order" }} ({{ work_order.estimated_duration|default:"N/A" }}h)
+                        </div>
+                        {% endif %}
+                        {% empty %}
+                        <div class="text-xs text-gray-500">No scheduled work</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="flex items-center">
+                    <div class="w-32 text-sm font-medium text-gray-700">Packaging</div>
+                    <div class="flex-1 relative">
+                        {% for work_order in work_orders %}
+                        {% if work_order.work_center.name == "Packaging" %}
+                        <div class="gantt-bar gantt-bar-{% if work_order.status == 'completed' %}green{% elif work_order.status == 'in_progress' %}blue{% else %}orange{% endif %}" style="width: {{ work_order.completion_percentage|default:0 }}%; margin-left: 65%;">
+                            {{ work_order.product.name|default:"Work Order" }} ({{ work_order.estimated_duration|default:"N/A" }}h)
+                        </div>
+                        {% endif %}
+                        {% empty %}
+                        <div class="text-xs text-gray-500">No scheduled work</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="flex items-center">
+                    <div class="w-32 text-sm font-medium text-gray-700">Quality</div>
+                    <div class="flex-1 relative">
+                        {% for work_order in work_orders %}
+                        {% if work_order.work_center.name == "Quality" %}
+                        <div class="gantt-bar gantt-bar-{% if work_order.status == 'completed' %}green{% elif work_order.status == 'in_progress' %}blue{% else %}orange{% endif %}" style="width: {{ work_order.completion_percentage|default:0 }}%; margin-left: 45%;">
+                            {{ work_order.product.name|default:"Work Order" }} ({{ work_order.estimated_duration|default:"N/A" }}h)
+                        </div>
+                        {% endif %}
+                        {% empty %}
+                        <div class="text-xs text-gray-500">No scheduled work</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 flex justify-center space-x-6 text-xs text-gray-500">
+                <span>08:00</span>
+                <span>10:00</span>
+                <span>12:00</span>
+                <span>14:00</span>
+                <span>16:00</span>
+                <span>18:00</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Production Plan Modal -->
+<div id="productionPlanModal" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-4xl m-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-900">
+                <i class="fas fa-plus-circle text-blue-600 mr-2"></i>
+                Create Production Plan
+            </h2>
+            <button id="closeProductionPlanModal" class="text-gray-400 hover:text-gray-600 text-2xl">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form id="productionPlanForm" method="post" action="{% url 'manufacturing:production_plan_create' %}" class="space-y-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-box mr-1"></i>Product *
+                    </label>
+                    <select name="product" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">Select Product</option>
+                        {% for product in products %}
+                        <option value="{{ product.id }}">{{ product.name }} ({{ product.sku }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-sort-numeric-up mr-1"></i>Planned Quantity *
+                    </label>
+                    <input type="number" name="planned_quantity" min="1" step="0.01" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-calendar-plus mr-1"></i>Planned Start Date *
+                    </label>
+                    <input type="datetime-local" name="planned_start_date" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-calendar-check mr-1"></i>Planned End Date *
+                    </label>
+                    <input type="datetime-local" name="planned_end_date" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-flag mr-1"></i>Priority
+                    </label>
+                    <select name="priority"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="LOW">Low</option>
+                        <option value="MEDIUM" selected>Medium</option>
+                        <option value="HIGH">High</option>
+                        <option value="URGENT">Urgent</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-industry mr-1"></i>Primary Work Center
+                    </label>
+                    <select name="work_center"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">Select Work Center</option>
+                        {% for work_center in work_centers %}
+                        <option value="{{ work_center.id }}">{{ work_center.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-clipboard mr-1"></i>Description
+                </label>
+                <textarea name="description" rows="3"
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Plan description and special requirements..."></textarea>
+            </div>
+
+            <div class="flex gap-4 pt-6 border-t">
+                <button type="submit" class="flex-1 btn-primary">
+                    <i class="fas fa-save mr-2"></i>Create Production Plan
+                </button>
+                <button type="button" id="cancelProductionPlanBtn" 
+                        class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-times mr-2"></i>Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
-    <script>
-        // Tab functionality
-        function initTabs() {
-            const tabButtons = document.querySelectorAll('.tab-button');
-            const tabContents = document.querySelectorAll('.tab-content');
-
-            tabButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const tabName = button.getAttribute('data-tab');
-                    
-                    // Remove active classes
-                    tabButtons.forEach(btn => {
-                        btn.classList.remove('border-primary', 'text-primary');
-                        btn.classList.add('border-transparent', 'text-gray-500');
-                    });
-                    
-                    tabContents.forEach(content => {
-                        content.classList.add('hidden');
-                    });
-                    
-                    // Add active classes
-                    button.classList.remove('border-transparent', 'text-gray-500');
-                    button.classList.add('border-primary', 'text-primary');
-                    
-                    // Show selected tab content
-                    document.getElementById(tabName + '-tab').classList.remove('hidden');
-                });
-            });
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Modal functionality
+    const modal = document.getElementById('productionPlanModal');
+    const openBtn = document.getElementById('newProductionPlanBtn');
+    const closeBtn = document.getElementById('closeProductionPlanModal');
+    const cancelBtn = document.getElementById('cancelProductionPlanBtn');
+    
+    // Open modal
+    openBtn.addEventListener('click', function() {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    });
+    
+    // Close modal
+    function closeModal() {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+    
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeModal();
         }
-
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            initTabs();
+    });
+    
+    // Auto-set end date when start date changes
+    const startDateInput = document.querySelector('input[name="planned_start_date"]');
+    const endDateInput = document.querySelector('input[name="planned_end_date"]');
+    
+    if (startDateInput && endDateInput) {
+        startDateInput.addEventListener('change', function() {
+            if (this.value && !endDateInput.value) {
+                const startDate = new Date(this.value);
+                startDate.setDate(startDate.getDate() + 14); // Add 14 days
+                endDateInput.value = startDate.toISOString().slice(0, 16);
+            }
         });
-    </script>
+    }
+    
+    // Animate capacity bars on load
+    const capacityBars = document.querySelectorAll('.capacity-fill');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const width = entry.target.style.width;
+                entry.target.style.width = '0%';
+                setTimeout(() => {
+                    entry.target.style.width = width;
+                }, 100);
+            }
+        });
+    });
+    
+    capacityBars.forEach(bar => observer.observe(bar));
+    
+    // Real-time search functionality
+    const searchInput = document.querySelector('input[placeholder="Search plans..."]');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                // Implement search functionality here
+                console.log('Searching for:', this.value);
+            }, 300);
+        });
+    }
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + N for new production plan
+        if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+            e.preventDefault();
+            openBtn.click();
+        }
+        
+        // Escape to close modal
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+});
+</script>
 {% endblock %}

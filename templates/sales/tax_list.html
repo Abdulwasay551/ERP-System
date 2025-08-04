@@ -1,0 +1,441 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Taxes | ERP System{% endblock %}
+{% block content %}
+<div class="pt-24 pb-8">
+    <!-- Header Section -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-3xl font-bold text-emerald-700">Tax Management</h2>
+            <p class="text-emerald-600 mt-1">Configure tax rates and settings</p>
+        </div>
+        <button id="addTaxBtn" class="quick-action-btn">
+            <i class="fas fa-percent mr-2"></i>Add Tax Rate
+        </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="stat-card">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-emerald-100 text-emerald-600">
+                    <i class="fas fa-percent text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Tax Rates</p>
+                    <p class="text-2xl font-bold text-emerald-700">{{ taxes.count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                    <i class="fas fa-check-circle text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Active Rates</p>
+                    <p class="text-2xl font-bold text-green-700">{{ active_taxes_count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                    <i class="fas fa-calculator text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Avg Tax Rate</p>
+                    <p class="text-2xl font-bold text-blue-700">{{ average_tax_rate|floatformat:1 }}%</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                    <i class="fas fa-chart-line text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Highest Rate</p>
+                    <p class="text-2xl font-bold text-purple-700">{{ highest_tax_rate|floatformat:1 }}%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COA Integration Notice -->
+    <div class="coa-integration mb-6">
+        <div class="flex items-center">
+            <i class="fas fa-book text-emerald-600 mr-3"></i>
+            <div>
+                <h4 class="font-semibold text-emerald-700">Tax Liability & Compliance</h4>
+                <p class="text-sm text-emerald-600">Tax rates are automatically applied to transactions and linked to tax liability accounts</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tax Rates Table -->
+    <div class="bg-white rounded-xl shadow-lg p-6 accounting-highlight">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-emerald-700">Tax Rate Configuration</h3>
+            <div class="flex space-x-3">
+                <input type="text" id="searchInput" placeholder="Search tax rates..." 
+                       class="px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <select id="statusFilter" class="px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="">All Status</option>
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-emerald-200">
+                <thead class="bg-emerald-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-emerald-700 uppercase tracking-wider">Tax Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-emerald-700 uppercase tracking-wider">Rate (%)</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-emerald-700 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-emerald-700 uppercase tracking-wider">Company</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-emerald-700 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-emerald-700 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-emerald-100">
+                    {% for tax in taxes %}
+                    <tr class="hover:bg-emerald-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    <div class="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                                        <i class="fas fa-percent text-yellow-600"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">{{ tax.name }}</div>
+                                    <div class="text-sm text-gray-500">{{ tax.description|truncatechars:50|default:"—" }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-lg font-bold text-emerald-600">{{ tax.rate|floatformat:2 }}%</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ tax.tax_type|default:"Standard" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ tax.company.name|default:"All Companies" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if tax.is_active %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    Active
+                                </span>
+                            {% else %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                    Inactive
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button onclick="editTax({{ tax.id }})" 
+                                    class="text-emerald-600 hover:text-emerald-900 mr-3" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteTax({{ tax.id }})" 
+                                    class="text-red-600 hover:text-red-900" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                            <div class="flex flex-col items-center py-12">
+                                <i class="fas fa-percent text-4xl text-gray-300 mb-4"></i>
+                                <p class="text-lg font-medium text-gray-500">No tax rates configured</p>
+                                <p class="text-sm text-gray-400">Add your first tax rate to get started</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Modal for Add/Edit Tax -->
+<div id="taxModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-2xl relative transform transition-all">
+        <button id="closeTaxModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <h3 id="taxModalTitle" class="text-2xl font-bold text-emerald-700 mb-6">
+            <i class="fas fa-percent mr-2"></i>Add Tax Rate
+        </h3>
+        
+        <form id="taxForm" class="space-y-6">
+            {% csrf_token %}
+            <input type="hidden" id="taxId" name="id">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="tax_name" class="block text-sm font-medium text-gray-700 mb-2">
+                        Tax Name <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="tax_name" name="name" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                           placeholder="e.g., Sales Tax, VAT, GST">
+                </div>
+                
+                <div>
+                    <label for="tax_rate" class="block text-sm font-medium text-gray-700 mb-2">
+                        Tax Rate (%) <span class="text-red-500">*</span>
+                    </label>
+                    <input type="number" id="tax_rate" name="rate" required step="0.01" min="0" max="100"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                           placeholder="0.00">
+                </div>
+                
+                <div>
+                    <label for="tax_type" class="block text-sm font-medium text-gray-700 mb-2">Tax Type</label>
+                    <select id="tax_type" name="tax_type"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                        <option value="sales">Sales Tax</option>
+                        <option value="vat">VAT</option>
+                        <option value="gst">GST</option>
+                        <option value="excise">Excise Tax</option>
+                        <option value="customs">Customs Duty</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="tax_company" class="block text-sm font-medium text-gray-700 mb-2">Company</label>
+                    <select id="tax_company" name="company"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                        <option value="">All Companies</option>
+                        {% for company in companies %}
+                        <option value="{{ company.id }}">{{ company.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div>
+                <label for="tax_description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea id="tax_description" name="description" rows="3"
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                          placeholder="Brief description of this tax rate..."></textarea>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="tax_account" class="block text-sm font-medium text-gray-700 mb-2">Tax Liability Account</label>
+                    <select id="tax_account" name="tax_account"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                        <option value="">Select Account</option>
+                        {% for account in tax_accounts %}
+                        <option value="{{ account.id }}">{{ account.code }} - {{ account.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="flex items-center space-x-6 pt-8">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="tax_is_active" name="is_active" checked
+                               class="rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-300 focus:ring focus:ring-emerald-200 focus:ring-opacity-50">
+                        <span class="ml-2 text-sm font-medium text-gray-700">Active</span>
+                    </label>
+                    
+                    <label class="flex items-center">
+                        <input type="checkbox" id="tax_is_default" name="is_default"
+                               class="rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-300 focus:ring focus:ring-emerald-200 focus:ring-opacity-50">
+                        <span class="ml-2 text-sm font-medium text-gray-700">Default Tax</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                <button type="button" id="cancelTaxBtn" 
+                        class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="quick-action-btn">
+                    <i class="fas fa-save mr-2"></i>Save Tax Rate
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Enhanced Tax Management
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('taxModal');
+    const addBtn = document.getElementById('addTaxBtn');
+    const closeModalBtn = document.getElementById('closeTaxModalBtn');
+    const cancelBtn = document.getElementById('cancelTaxBtn');
+    const form = document.getElementById('taxForm');
+    const modalTitle = document.getElementById('taxModalTitle');
+    const taxIdInput = document.getElementById('taxId');
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+
+    // Modal functions
+    function showModal(edit = false, data = {}) {
+        modal.classList.remove('hidden');
+        modalTitle.innerHTML = edit ? '<i class="fas fa-edit mr-2"></i>Edit Tax Rate' : '<i class="fas fa-plus mr-2"></i>Add Tax Rate';
+        form.reset();
+        
+        if (edit && data) {
+            taxIdInput.value = data.id || '';
+            document.getElementById('tax_name').value = data.name || '';
+            document.getElementById('tax_rate').value = data.rate || '';
+            document.getElementById('tax_type').value = data.tax_type || 'sales';
+            document.getElementById('tax_company').value = data.company || '';
+            document.getElementById('tax_description').value = data.description || '';
+            document.getElementById('tax_account').value = data.tax_account || '';
+            document.getElementById('tax_is_active').checked = data.is_active !== false;
+            document.getElementById('tax_is_default').checked = data.is_default === true;
+        } else {
+            // Set defaults for new tax
+            document.getElementById('tax_is_active').checked = true;
+            document.getElementById('tax_is_default').checked = false;
+        }
+    }
+
+    function hideModal() {
+        modal.classList.add('hidden');
+    }
+
+    // Event listeners
+    addBtn.addEventListener('click', () => showModal(false));
+    closeModalBtn.addEventListener('click', hideModal);
+    cancelBtn.addEventListener('click', hideModal);
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) hideModal();
+    });
+
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const isEdit = taxIdInput.value !== '';
+        const url = isEdit ? `/sales/taxes/${taxIdInput.value}/edit/` : '/sales/taxes/add/';
+        
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                hideModal();
+                location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Failed to save tax rate'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while saving the tax rate');
+        });
+    });
+
+    // Search and filter functionality
+    if (searchInput) {
+        searchInput.addEventListener('input', filterTable);
+    }
+    if (statusFilter) {
+        statusFilter.addEventListener('change', filterTable);
+    }
+
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const statusValue = statusFilter.value;
+        const rows = document.querySelectorAll('tbody tr');
+        
+        rows.forEach(row => {
+            const taxName = row.querySelector('td:first-child .text-sm.font-medium')?.textContent.toLowerCase() || '';
+            const taxType = row.querySelector('td:nth-child(3)')?.textContent.toLowerCase() || '';
+            const status = row.querySelector('.inline-flex')?.textContent.toLowerCase().includes('active');
+            
+            const matchesSearch = taxName.includes(searchTerm) || taxType.includes(searchTerm);
+            const matchesStatus = statusValue === '' || 
+                                  (statusValue === 'true' && status) || 
+                                  (statusValue === 'false' && !status);
+            
+            row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+        });
+    }
+
+    // Tax rate input validation
+    const rateInput = document.getElementById('tax_rate');
+    rateInput.addEventListener('input', function() {
+        const value = parseFloat(this.value);
+        if (value < 0) this.value = 0;
+        if (value > 100) this.value = 100;
+    });
+});
+
+// Global functions
+window.editTax = function(taxId) {
+    fetch(`/sales/taxes/${taxId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show modal with data
+                document.getElementById('taxModal').classList.remove('hidden');
+                document.getElementById('taxModalTitle').innerHTML = '<i class="fas fa-edit mr-2"></i>Edit Tax Rate';
+                document.getElementById('taxId').value = data.tax.id;
+                document.getElementById('tax_name').value = data.tax.name;
+                document.getElementById('tax_rate').value = data.tax.rate;
+                document.getElementById('tax_type').value = data.tax.tax_type || 'sales';
+                document.getElementById('tax_company').value = data.tax.company || '';
+                document.getElementById('tax_description').value = data.tax.description || '';
+                document.getElementById('tax_account').value = data.tax.tax_account || '';
+                document.getElementById('tax_is_active').checked = data.tax.is_active;
+                document.getElementById('tax_is_default').checked = data.tax.is_default || false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to load tax data');
+        });
+};
+
+window.deleteTax = function(taxId) {
+    if (!confirm('Are you sure you want to delete this tax rate? This action cannot be undone.')) {
+        return;
+    }
+    
+    fetch(`/sales/taxes/${taxId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to delete tax rate'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while deleting the tax rate');
+    });
+};
+</script>
+{% endblock %} 

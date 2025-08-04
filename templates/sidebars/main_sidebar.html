@@ -38,7 +38,7 @@
         </a>
 
         <!-- Sales -->
-        <a href="/sales/dashboard-ui/" class="sidebar-item {% if 'sales' in request.resolver_match.app_name %}active{% endif %}">
+        <a href="{% url 'sales:dashboard' %}" class="sidebar-item {% if 'sales' in request.resolver_match.app_name %}active{% endif %}">
             <i class="fas fa-chart-line sidebar-icon"></i>
             <span class="sidebar-text">Sales</span>
         </a>

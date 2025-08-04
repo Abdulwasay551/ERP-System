@@ -1,0 +1,538 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ bom.name }} - BOM Details | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-card {
+        background: white;
+        border: 1px solid rgba(229, 231, 235, 1);
+        transition: all 0.3s ease;
+    }
+    .detail-card:hover {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    .tab-content {
+        display: none;
+    }
+    .tab-content.active {
+        display: block;
+    }
+    .tab-button {
+        transition: all 0.3s ease;
+    }
+    .tab-button.active {
+        background: linear-gradient(135deg, #10b981, #065f46);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-start mb-8">
+            <div>
+                <div class="flex items-center mb-4">
+                    <a href="{% url 'manufacturing:boms_ui' %}" class="text-gray-500 hover:text-gray-700 mr-4">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </a>
+                    <h1 class="text-4xl font-bold text-gray-900">{{ bom.name }}</h1>
+                    <div class="ml-4 flex space-x-2">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                            {% if bom.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                            {% if bom.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                        {% if bom.is_default %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                            Default
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <p class="text-gray-600 text-lg">{{ bom.product.name }} - Version {{ bom.version }}</p>
+                <p class="text-gray-500">{{ bom.get_manufacturing_type_display }}</p>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="editBOM()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg transition-all flex items-center">
+                    <i class="fas fa-edit mr-2"></i>Edit
+                </button>
+                <button onclick="duplicateBOM()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition-all flex items-center">
+                    <i class="fas fa-copy mr-2"></i>Duplicate
+                </button>
+                <button onclick="createWorkOrder()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-all flex items-center">
+                    <i class="fas fa-play mr-2"></i>Create Work Order
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="detail-card rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Total Components</p>
+                        <p class="text-2xl font-bold text-blue-600">{{ bom.items.count }}</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-list text-blue-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="detail-card rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Operations</p>
+                        <p class="text-2xl font-bold text-purple-600">{{ bom.operations.count }}</p>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-lg">
+                        <i class="fas fa-cogs text-purple-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="detail-card rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Total Cost</p>
+                        <p class="text-2xl font-bold text-green-600">${{ bom.total_cost|floatformat:2 }}</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg">
+                        <i class="fas fa-dollar-sign text-green-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="detail-card rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Lead Time</p>
+                        <p class="text-2xl font-bold text-orange-600">{{ bom.lead_time_days }} days</p>
+                    </div>
+                    <div class="bg-orange-100 p-3 rounded-lg">
+                        <i class="fas fa-clock text-orange-600"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="mb-8">
+            <nav class="flex space-x-1 bg-gray-100 p-1 rounded-xl">
+                <button onclick="showTab('components')" class="tab-button active px-6 py-3 rounded-lg font-medium">
+                    <i class="fas fa-list mr-2"></i>Components
+                </button>
+                <button onclick="showTab('operations')" class="tab-button px-6 py-3 rounded-lg font-medium">
+                    <i class="fas fa-cogs mr-2"></i>Operations
+                </button>
+                <button onclick="showTab('costing')" class="tab-button px-6 py-3 rounded-lg font-medium">
+                    <i class="fas fa-calculator mr-2"></i>Costing
+                </button>
+                <button onclick="showTab('work-orders')" class="tab-button px-6 py-3 rounded-lg font-medium">
+                    <i class="fas fa-clipboard-list mr-2"></i>Work Orders
+                </button>
+            </nav>
+        </div>
+
+        <!-- Components Tab -->
+        <div id="components" class="tab-content active">
+            <div class="detail-card rounded-xl p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">BOM Components</h3>
+                    <button onclick="addComponent()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-all">
+                        <i class="fas fa-plus mr-2"></i>Add Component
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Seq</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Component</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Quantity</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Effective Qty</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Unit Cost</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Total Cost</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Waste %</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in bom.items.all %}
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">{{ item.sequence }}</td>
+                                <td class="py-3 px-4">
+                                    <div>
+                                        <p class="font-medium text-gray-900">{{ item.component.name }}</p>
+                                        <p class="text-sm text-gray-600">{{ item.component.code }}</p>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4">{{ item.quantity }} {{ item.component.unit_of_measure }}</td>
+                                <td class="py-3 px-4">{{ item.effective_quantity|floatformat:2 }}</td>
+                                <td class="py-3 px-4">${{ item.unit_cost|floatformat:2 }}</td>
+                                <td class="py-3 px-4 font-medium">${{ item.total_cost|floatformat:2 }}</td>
+                                <td class="py-3 px-4">{{ item.waste_percentage }}%</td>
+                                <td class="py-3 px-4">
+                                    <div class="flex space-x-2">
+                                        <button onclick="editComponent({{ item.id }})" class="text-blue-600 hover:text-blue-700">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button onclick="deleteComponent({{ item.id }})" class="text-red-600 hover:text-red-700">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="py-8 text-center text-gray-500">
+                                    No components added yet. <button onclick="addComponent()" class="text-green-600 hover:text-green-700">Add the first component</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Operations Tab -->
+        <div id="operations" class="tab-content">
+            <div class="detail-card rounded-xl p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">BOM Operations</h3>
+                    <button onclick="addOperation()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-all">
+                        <i class="fas fa-plus mr-2"></i>Add Operation
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Seq</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Operation</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Work Center</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Setup Time</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Run Time/Unit</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Operators</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Cost/Hour</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for operation in bom.operations.all %}
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">{{ operation.sequence }}</td>
+                                <td class="py-3 px-4">
+                                    <div>
+                                        <p class="font-medium text-gray-900">{{ operation.operation_name }}</p>
+                                        <p class="text-sm text-gray-600">{{ operation.description|truncatechars:50 }}</p>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4">{{ operation.work_center.name }}</td>
+                                <td class="py-3 px-4">{{ operation.setup_time_minutes }} min</td>
+                                <td class="py-3 px-4">{{ operation.run_time_per_unit_minutes }} min</td>
+                                <td class="py-3 px-4">{{ operation.operators_required }}</td>
+                                <td class="py-3 px-4">${{ operation.cost_per_hour|floatformat:2 }}</td>
+                                <td class="py-3 px-4">
+                                    <div class="flex space-x-2">
+                                        <button onclick="editOperation({{ operation.id }})" class="text-blue-600 hover:text-blue-700">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button onclick="deleteOperation({{ operation.id }})" class="text-red-600 hover:text-red-700">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="py-8 text-center text-gray-500">
+                                    No operations defined yet. <button onclick="addOperation()" class="text-green-600 hover:text-green-700">Add the first operation</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Costing Tab -->
+        <div id="costing" class="tab-content">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="detail-card rounded-xl p-6">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6">Cost Breakdown</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                            <span class="font-medium text-gray-700">Material Cost</span>
+                            <span class="font-bold text-blue-600">${{ bom.material_cost|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                            <span class="font-medium text-gray-700">Labor Cost</span>
+                            <span class="font-bold text-purple-600">${{ bom.labor_cost|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
+                            <span class="font-medium text-gray-700">Overhead Cost</span>
+                            <span class="font-bold text-orange-600">${{ bom.overhead_cost|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-4 bg-green-100 rounded-lg border-2 border-green-200">
+                            <span class="font-bold text-gray-800 text-lg">Total Cost</span>
+                            <span class="font-bold text-green-600 text-xl">${{ bom.total_cost|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                    <button onclick="recalculateCosts()" class="w-full mt-6 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg transition-all">
+                        <i class="fas fa-calculator mr-2"></i>Recalculate Costs
+                    </button>
+                </div>
+                
+                <div class="detail-card rounded-xl p-6">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6">Cost Analysis</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <span>Material</span>
+                                <span>{{ material_percentage|floatformat:1 }}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: {{ material_percentage }}%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <span>Labor</span>
+                                <span>{{ labor_percentage|floatformat:1 }}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-purple-600 h-2 rounded-full" style="width: {{ labor_percentage }}%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <span>Overhead</span>
+                                <span>{{ overhead_percentage|floatformat:1 }}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-orange-600 h-2 rounded-full" style="width: {{ overhead_percentage }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Work Orders Tab -->
+        <div id="work-orders" class="tab-content">
+            <div class="detail-card rounded-xl p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">Related Work Orders</h3>
+                    <button onclick="createWorkOrder()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all">
+                        <i class="fas fa-plus mr-2"></i>Create Work Order
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">WO Number</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Quantity</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Status</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Priority</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Start Date</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Progress</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-600">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for wo in bom.work_orders.all %}
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">
+                                    <a href="{% url 'manufacturing:work_order_detail' wo.id %}" class="font-medium text-blue-600 hover:text-blue-700">
+                                        {{ wo.wo_number }}
+                                    </a>
+                                </td>
+                                <td class="py-3 px-4">{{ wo.quantity_planned }}</td>
+                                <td class="py-3 px-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                        {% if wo.status == 'completed' %}bg-green-100 text-green-800
+                                        {% elif wo.status == 'in_progress' %}bg-blue-100 text-blue-800
+                                        {% elif wo.status == 'planned' %}bg-yellow-100 text-yellow-800
+                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ wo.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                        {% if wo.priority == 'urgent' %}bg-red-100 text-red-800
+                                        {% elif wo.priority == 'high' %}bg-orange-100 text-orange-800
+                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ wo.get_priority_display }}
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4">{{ wo.scheduled_start|date:"M d, Y" }}</td>
+                                <td class="py-3 px-4">
+                                    <div class="flex items-center">
+                                        <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-green-600 h-2 rounded-full" style="width: {{ wo.get_progress_percentage }}%"></div>
+                                        </div>
+                                        <span class="text-sm text-gray-600">{{ wo.get_progress_percentage }}%</span>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <a href="{% url 'manufacturing:work_order_detail' wo.id %}" class="text-blue-600 hover:text-blue-700">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="py-8 text-center text-gray-500">
+                                    No work orders yet. <button onclick="createWorkOrder()" class="text-blue-600 hover:text-blue-700">Create the first work order</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOM Info -->
+        <div class="detail-card rounded-xl p-6 mt-8">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">BOM Information</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 mb-1">Created By</p>
+                    <p class="text-gray-900">{{ bom.created_by.get_full_name }}</p>
+                    <p class="text-sm text-gray-500">{{ bom.created_at|date:"M d, Y H:i" }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600 mb-1">Last Updated</p>
+                    <p class="text-gray-900">{{ bom.updated_at|date:"M d, Y H:i" }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600 mb-1">Scrap Percentage</p>
+                    <p class="text-gray-900">{{ bom.scrap_percentage }}%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+    });
+    
+    // Show selected tab content
+    document.getElementById(tabName).classList.add('active');
+    
+    // Add active class to clicked tab button
+    event.target.classList.add('active');
+}
+
+function editBOM() {
+    window.location.href = `{% url 'manufacturing:boms_ui' %}{{ bom.id }}/edit/`;
+}
+
+function duplicateBOM() {
+    if (confirm('Are you sure you want to duplicate this BOM?')) {
+        fetch(`/manufacturing/api/boms/{{ bom.id }}/duplicate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = `/manufacturing/boms/${data.new_bom_id}/`;
+            } else {
+                alert('Error duplicating BOM: ' + data.error);
+            }
+        });
+    }
+}
+
+function createWorkOrder() {
+    window.location.href = `/manufacturing/work-orders/create/?bom={{ bom.id }}`;
+}
+
+function addComponent() {
+    // Open component modal or navigate to add component page
+    window.location.href = `{% url 'manufacturing:boms_ui' %}{{ bom.id }}/components/add/`;
+}
+
+function editComponent(componentId) {
+    window.location.href = `{% url 'manufacturing:boms_ui' %}{{ bom.id }}/components/${componentId}/edit/`;
+}
+
+function deleteComponent(componentId) {
+    if (confirm('Are you sure you want to delete this component?')) {
+        fetch(`/manufacturing/api/bom-items/${componentId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error deleting component');
+            }
+        });
+    }
+}
+
+function addOperation() {
+    window.location.href = `{% url 'manufacturing:boms_ui' %}{{ bom.id }}/operations/add/`;
+}
+
+function editOperation(operationId) {
+    window.location.href = `{% url 'manufacturing:boms_ui' %}{{ bom.id }}/operations/${operationId}/edit/`;
+}
+
+function deleteOperation(operationId) {
+    if (confirm('Are you sure you want to delete this operation?')) {
+        fetch(`/manufacturing/api/bom-operations/${operationId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error deleting operation');
+            }
+        });
+    }
+}
+
+function recalculateCosts() {
+    fetch(`/manufacturing/api/boms/{{ bom.id }}/recalculate-costs/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error recalculating costs: ' + data.error);
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bill of Materials | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(6, 95, 70, 0.05));
+        border: 1px solid rgba(16, 185, 129, 0.1);
+    }
+    .bom-card {
+        background: white;
+        border: 1px solid rgba(229, 231, 235, 1);
+        transition: all 0.3s ease;
+    }
+    .bom-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        border-color: rgba(16, 185, 129, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">Bill of Materials</h1>
+                <p class="text-gray-600">Manage your product BOMs and manufacturing processes</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="createNewBOM()" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-plus mr-2"></i>
+                    New BOM
+                </button>
+                <button onclick="importBOMs()" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-upload mr-2"></i>
+                    Import
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-card rounded-2xl p-6 mb-8">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" name="search" value="{{ search }}" placeholder="Search BOMs..." 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <option value="">All Status</option>
+                        <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Manufacturing Type</label>
+                    <select name="manufacturing_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <option value="">All Types</option>
+                        {% for value, label in manufacturing_types %}
+                        <option value="{{ value }}" {% if manufacturing_type == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-search mr-2"></i>Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- BOMs List -->
+        <div class="space-y-6">
+            {% for bom in boms %}
+            <div class="bom-card rounded-2xl p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">{{ bom.name }}</h3>
+                        <p class="text-gray-600 mb-2">{{ bom.product.name }} - Version {{ bom.version }}</p>
+                        <div class="flex items-center space-x-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if bom.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                {% if bom.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {{ bom.get_manufacturing_type_display }}
+                            </span>
+                            {% if bom.is_default %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Default
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="viewBOM({{ bom.id }})" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-eye mr-2"></i>View
+                        </button>
+                        <button onclick="editBOM({{ bom.id }})" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-edit mr-2"></i>Edit
+                        </button>
+                        <button onclick="duplicateBOM({{ bom.id }})" class="bg-green-100 hover:bg-green-200 text-green-700 px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-copy mr-2"></i>Duplicate
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Components</p>
+                        <p class="font-bold text-lg text-gray-900">{{ bom.items.count }}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Operations</p>
+                        <p class="font-bold text-lg text-gray-900">{{ bom.operations.count }}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Total Cost</p>
+                        <p class="font-bold text-lg text-green-600">${{ bom.total_cost|floatformat:2 }}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Lead Time</p>
+                        <p class="font-bold text-lg text-blue-600">{{ bom.lead_time_days }} days</p>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <div class="flex justify-between items-center text-sm text-gray-600">
+                        <span>Created by {{ bom.created_by.get_full_name }} on {{ bom.created_at|date:"M d, Y" }}</span>
+                        <span>Last updated {{ bom.updated_at|date:"M d, Y" }}</span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-12">
+                <div class="mb-4">
+                    <i class="fas fa-cogs text-gray-400 text-6xl"></i>
+                </div>
+                <h3 class="text-xl font-medium text-gray-900 mb-2">No BOMs found</h3>
+                <p class="text-gray-600 mb-6">Get started by creating your first Bill of Materials</p>
+                <button onclick="createNewBOM()" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all">
+                    <i class="fas fa-plus mr-2"></i>Create First BOM
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if boms.has_other_pages %}
+        <div class="flex justify-center mt-8">
+            <nav class="flex items-center space-x-2">
+                {% if boms.has_previous %}
+                <a href="?page={{ boms.previous_page_number }}&search={{ search }}&status={{ status }}&manufacturing_type={{ manufacturing_type }}" 
+                   class="px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                {% endif %}
+                
+                {% for num in boms.paginator.page_range %}
+                {% if boms.number == num %}
+                <span class="px-3 py-2 bg-green-600 text-white rounded-lg">{{ num }}</span>
+                {% elif num > boms.number|add:'-3' and num < boms.number|add:'3' %}
+                <a href="?page={{ num }}&search={{ search }}&status={{ status }}&manufacturing_type={{ manufacturing_type }}" 
+                   class="px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">{{ num }}</a>
+                {% endif %}
+                {% endfor %}
+                
+                {% if boms.has_next %}
+                <a href="?page={{ boms.next_page_number }}&search={{ search }}&status={{ status }}&manufacturing_type={{ manufacturing_type }}" 
+                   class="px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- BOM Creation Modal -->
+<div id="bomModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Create New BOM</h2>
+                <button onclick="closeBOMModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="bomForm" onsubmit="submitBOM(event)">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">BOM Name *</label>
+                        <input type="text" name="name" required 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Product *</label>
+                        <select name="product" required 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                            <option value="">Select Product</option>
+                            <!-- Products will be loaded via JavaScript -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Version</label>
+                        <input type="text" name="version" value="1.0" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Manufacturing Type</label>
+                        <select name="manufacturing_type" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                            {% for value, label in manufacturing_types %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Lead Time (Days)</label>
+                        <input type="number" name="lead_time_days" value="1" min="1" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="is_active" checked class="mr-2">
+                            <span class="text-sm font-medium text-gray-700">Active</span>
+                        </label>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="is_default" class="mr-2">
+                            <span class="text-sm font-medium text-gray-700">Set as Default BOM</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-4 mt-8">
+                    <button type="button" onclick="closeBOMModal()" 
+                            class="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                        Create BOM
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function createNewBOM() {
+    document.getElementById('bomModal').classList.remove('hidden');
+    loadProducts();
+}
+
+function closeBOMModal() {
+    document.getElementById('bomModal').classList.add('hidden');
+    document.getElementById('bomForm').reset();
+}
+
+function loadProducts() {
+    // Load products via AJAX
+    fetch('/api/products/')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.querySelector('select[name="product"]');
+            select.innerHTML = '<option value="">Select Product</option>';
+            data.results.forEach(product => {
+                const option = document.createElement('option');
+                option.value = product.id;
+                option.textContent = product.name;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error loading products:', error));
+}
+
+function submitBOM(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    
+    fetch('/manufacturing/api/boms/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error creating BOM: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while creating the BOM');
+    });
+}
+
+function viewBOM(bomId) {
+    window.location.href = `/manufacturing/boms/${bomId}/`;
+}
+
+function editBOM(bomId) {
+    window.location.href = `/manufacturing/boms/${bomId}/edit/`;
+}
+
+function duplicateBOM(bomId) {
+    if (confirm('Are you sure you want to duplicate this BOM?')) {
+        fetch(`/manufacturing/api/boms/${bomId}/duplicate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error duplicating BOM: ' + data.error);
+            }
+        });
+    }
+}
+
+function importBOMs() {
+    // Implement BOM import functionality
+    alert('BOM import functionality will be implemented soon');
+}
+</script>
+{% endblock %}

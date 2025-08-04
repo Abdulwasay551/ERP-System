@@ -1,0 +1,340 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Job Cards - Manufacturing{% endblock %}
+
+{% block extra_css %}
+<style>
+    .job-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+    }
+    
+    .job-card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-open { background-color: #dbeafe; color: #1d4ed8; }
+    .status-in-progress { background-color: #d1fae5; color: #059669; }
+    .status-completed { background-color: #f3e8ff; color: #7c3aed; }
+    .status-on-hold { background-color: #fef3c7; color: #d97706; }
+    
+    .priority-high { color: #dc2626; }
+    .priority-medium { color: #d97706; }
+    .priority-low { color: #059669; }
+    
+    .time-tracker {
+        background: #f9fafb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .filter-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div class="mb-6 lg:mb-0">
+                    <h1 class="text-4xl font-bold text-gray-900 mb-2">
+                        <i class="fas fa-id-card text-blue-600 mr-3"></i>
+                        Job Cards
+                    </h1>
+                    <p class="text-gray-600">Track and manage production job cards</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Create Job Card
+                    </button>
+                    <button class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-download mr-2"></i>Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Total Job Cards</p>
+                        <p class="text-3xl font-bold text-blue-600">{{ job_cards.count|default:0 }}</p>
+                    </div>
+                    <div class="p-3 bg-blue-100 rounded-full">
+                        <i class="fas fa-id-card text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">In Progress</p>
+                        <p class="text-3xl font-bold text-green-600">{{ in_progress_count|default:0 }}</p>
+                    </div>
+                    <div class="p-3 bg-green-100 rounded-full">
+                        <i class="fas fa-play-circle text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Completed Today</p>
+                        <p class="text-3xl font-bold text-purple-600">{{ completed_today|default:0 }}</p>
+                    </div>
+                    <div class="p-3 bg-purple-100 rounded-full">
+                        <i class="fas fa-check-circle text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Active Employees</p>
+                        <p class="text-3xl font-bold text-orange-600">{{ active_employees|default:0 }}</p>
+                    </div>
+                    <div class="p-3 bg-orange-100 rounded-full">
+                        <i class="fas fa-users text-orange-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-card">
+            <form method="get" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" name="search" value="{{ request.GET.search }}" 
+                           placeholder="Search job cards..." 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Status</option>
+                        <option value="open" {% if request.GET.status == 'open' %}selected{% endif %}>Open</option>
+                        <option value="in_progress" {% if request.GET.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                        <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Completed</option>
+                        <option value="on_hold" {% if request.GET.status == 'on_hold' %}selected{% endif %}>On Hold</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Employee</label>
+                    <select name="employee" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Employees</option>
+                        {% for employee in employees %}
+                        <option value="{{ employee.id }}" {% if request.GET.employee == employee.id|stringformat:"s" %}selected{% endif %}>
+                            {{ employee.name|default:employee.user.get_full_name|default:"Employee" }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Work Center</label>
+                    <select name="work_center" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Work Centers</option>
+                        {% for center in work_centers %}
+                        <option value="{{ center.id }}" {% if request.GET.work_center == center.id|stringformat:"s" %}selected{% endif %}>
+                            {{ center.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-search mr-2"></i>Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Job Cards List -->
+        <div class="bg-white rounded-lg shadow">
+            {% if job_cards %}
+                {% for job_card in job_cards %}
+                <div class="job-card">
+                    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-3">
+                                <h3 class="text-lg font-semibold text-gray-900 mr-4">
+                                    {{ job_card.job_card_number|default:"JC-"|add:job_card.id|stringformat:"03d" }}
+                                </h3>
+                                <span class="status-badge status-{{ job_card.status|default:'open' }}">
+                                    {{ job_card.get_status_display|default:job_card.status|title }}
+                                </span>
+                                <span class="ml-2 text-sm priority-{{ job_card.priority|default:'medium' }}">
+                                    <i class="fas fa-flag mr-1"></i>{{ job_card.get_priority_display|default:job_card.priority|title }} Priority
+                                </span>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-4">
+                                <div>
+                                    <span class="font-medium">Work Order:</span> 
+                                    {{ job_card.work_order.wo_number|default:"Not assigned" }}
+                                </div>
+                                <div>
+                                    <span class="font-medium">Employee:</span> 
+                                    {{ job_card.employee.name|default:job_card.employee.user.get_full_name|default:"Unassigned" }}
+                                </div>
+                                <div>
+                                    <span class="font-medium">Work Center:</span> 
+                                    {{ job_card.work_center.name|default:"No Work Center" }}
+                                </div>
+                                <div>
+                                    <span class="font-medium">Started:</span> 
+                                    {{ job_card.start_time|date:"M d, H:i"|default:"Not started" }}
+                                </div>
+                            </div>
+
+                            <!-- Time Tracker -->
+                            <div class="time-tracker">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-medium text-gray-700">Time Tracking</span>
+                                    <span class="text-sm text-gray-600">
+                                        {% if job_card.elapsed_time %}{{ job_card.elapsed_time }}{% else %}Not started{% endif %}
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-3 gap-4 text-sm">
+                                    <div class="text-center">
+                                        <div class="font-medium text-gray-900">Planned</div>
+                                        <div class="text-gray-600">{{ job_card.planned_duration|default:"0h 0m" }}</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="font-medium text-gray-900">Actual</div>
+                                        <div class="text-gray-600">{{ job_card.actual_duration|default:"0h 0m" }}</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="font-medium text-gray-900">Remaining</div>
+                                        <div class="text-gray-600">{{ job_card.remaining_time|default:"-" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-col sm:flex-row gap-2 mt-4 lg:mt-0 lg:ml-6">
+                            {% if job_card.status == 'open' %}
+                                <button onclick="startJobCard({{ job_card.id }})" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                                    <i class="fas fa-play mr-1"></i>Start
+                                </button>
+                            {% elif job_card.status == 'in_progress' %}
+                                <button onclick="pauseJobCard({{ job_card.id }})" class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors">
+                                    <i class="fas fa-pause mr-1"></i>Pause
+                                </button>
+                                <button onclick="completeJobCard({{ job_card.id }})" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                                    <i class="fas fa-stop mr-1"></i>Complete
+                                </button>
+                            {% endif %}
+                            <button onclick="viewJobCard({{ job_card.id }})" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-eye mr-1"></i>View
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <!-- Empty State -->
+                <div class="text-center py-12">
+                    <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-clipboard-list text-gray-400 text-3xl"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Job Cards Found</h3>
+                    <p class="text-gray-600 mb-6">Create work orders to generate job cards for production tracking</p>
+                    <a href="{% url 'manufacturing:work_orders_ui' %}" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Create Work Order
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Pagination -->
+        {% if job_cards.has_other_pages %}
+        <div class="flex justify-center mt-6">
+            <nav class="flex space-x-2">
+                {% if job_cards.has_previous %}
+                    <a href="?page={{ job_cards.previous_page_number }}" 
+                       class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Previous
+                    </a>
+                {% endif %}
+                
+                <span class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg">
+                    {{ job_cards.number }}
+                </span>
+                
+                {% if job_cards.has_next %}
+                    <a href="?page={{ job_cards.next_page_number }}" 
+                       class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Next
+                    </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function startJobCard(id) {
+    if (confirm('Are you sure you want to start this job card?')) {
+        // TODO: Implement start functionality
+        window.location.href = `/manufacturing/job-cards/${id}/start/`;
+    }
+}
+
+function pauseJobCard(id) {
+    if (confirm('Are you sure you want to pause this job card?')) {
+        // TODO: Implement pause functionality
+        window.location.href = `/manufacturing/job-cards/${id}/pause/`;
+    }
+}
+
+function completeJobCard(id) {
+    if (confirm('Are you sure you want to complete this job card?')) {
+        // TODO: Implement complete functionality
+        window.location.href = `/manufacturing/job-cards/${id}/complete/`;
+    }
+}
+
+function viewJobCard(id) {
+    window.location.href = `/manufacturing/job-cards/${id}/`;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Job Cards UI loaded');
+});
+</script>
+{% endblock %}

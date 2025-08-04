@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if object %}Edit Partner{% else %}Add Partner{% endif %} | FutureERP{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">
+                    {% if object %}Edit Partner{% else %}Add New Partner{% endif %}
+                </h1>
+                <p class="text-gray-600">Manage business partner information and relationships</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'crm:partner_list' %}" class="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Back to Partners
+                </a>
+            </div>
+        </div>
+
+        <!-- Partner Form -->
+        <div class="bg-white rounded-2xl shadow-lg p-8">
+            <form method="post" enctype="multipart/form-data" class="space-y-8">
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div class="border-b border-gray-200 pb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Partner Name *</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Display Name</label>
+                            {{ form.display_name }}
+                            {% if form.display_name.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.display_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Partner Type</label>
+                            {{ form.partner_type }}
+                            {% if form.partner_type.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.partner_type.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Contact Person</label>
+                            {{ form.contact_person }}
+                            {% if form.contact_person.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.contact_person.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Contact Information -->
+                <div class="border-b border-gray-200 pb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.email.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                            {{ form.phone }}
+                            {% if form.phone.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.phone.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Mobile</label>
+                            {{ form.mobile }}
+                            {% if form.mobile.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.mobile.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Website</label>
+                            {{ form.website }}
+                            {% if form.website.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.website.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Address Information -->
+                <div class="border-b border-gray-200 pb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Address Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
+                            {{ form.street }}
+                            {% if form.street.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.street.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">City</label>
+                            {{ form.city }}
+                            {% if form.city.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.city.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">State/Province</label>
+                            {{ form.state }}
+                            {% if form.state.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.state.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Postal Code</label>
+                            {{ form.zip_code }}
+                            {% if form.zip_code.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.zip_code.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                            {{ form.country }}
+                            {% if form.country.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.country.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Business Information -->
+                <div class="border-b border-gray-200 pb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Business Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tax ID</label>
+                            {{ form.tax_id }}
+                            {% if form.tax_id.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.tax_id.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Payment Terms</label>
+                            {{ form.payment_terms }}
+                            {% if form.payment_terms.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.payment_terms.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Preferred Currency</label>
+                            {{ form.preferred_currency }}
+                            {% if form.preferred_currency.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.preferred_currency.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Credit Limit</label>
+                            {{ form.credit_limit }}
+                            {% if form.credit_limit.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ form.credit_limit.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Partner Roles -->
+                <div class="border-b border-gray-200 pb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Partner Roles</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="flex items-center">
+                            {{ form.is_customer }}
+                            <label for="{{ form.is_customer.id_for_label }}" class="ml-2 text-sm text-gray-700">Customer</label>
+                        </div>
+                        <div class="flex items-center">
+                            {{ form.is_supplier }}
+                            <label for="{{ form.is_supplier.id_for_label }}" class="ml-2 text-sm text-gray-700">Supplier</label>
+                        </div>
+                        <div class="flex items-center">
+                            {{ form.is_employee }}
+                            <label for="{{ form.is_employee.id_for_label }}" class="ml-2 text-sm text-gray-700">Employee</label>
+                        </div>
+                        <div class="flex items-center">
+                            {{ form.is_lead }}
+                            <label for="{{ form.is_lead.id_for_label }}" class="ml-2 text-sm text-gray-700">Lead</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Additional Information -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.notes.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                    <a href="{% url 'crm:partner_list' %}" 
+                       class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                        <i class="fas fa-save mr-2"></i>Save Partner
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Form styling */
+.form-input, .form-select, .form-textarea {
+    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500;
+}
+</style>
+{% endblock %}

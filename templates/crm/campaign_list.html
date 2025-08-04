@@ -1,0 +1,672 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Campaigns | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(29, 78, 216, 0.05));
+        border: 1px solid rgba(59, 130, 246, 0.1);
+    }
+    .campaign-card {
+        background: white;
+        border: 1px solid rgba(229, 231, 235, 1);
+        transition: all 0.3s ease;
+    }
+    .campaign-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        border-color: rgba(59, 130, 246, 0.3);
+    }
+    .progress-bar {
+        background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+    }
+    .roi-positive {
+        color: #059669;
+    }
+    .roi-negative {
+        color: #dc2626;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">Campaign Management</h1>
+                <p class="text-gray-600">Track and manage marketing campaigns and their performance</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="createNewCampaign()" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-bullhorn mr-2"></i>
+                    New Campaign
+                </button>
+                <button onclick="exportCampaigns()" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-download mr-2"></i>
+                    Export
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-card rounded-2xl p-6 mb-8">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Search campaigns..." 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                    <select name="campaign_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Types</option>
+                        {% for value, label in type_choices %}
+                        <option value="{{ value }}" {% if request.GET.campaign_type == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Status</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Channel</label>
+                    <select name="channel" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Channels</option>
+                        {% for channel in channels %}
+                        <option value="{{ channel }}" {% if request.GET.channel == channel %}selected{% endif %}>{{ channel }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                    <select name="date_range" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Time</option>
+                        <option value="active" {% if request.GET.date_range == 'active' %}selected{% endif %}>Currently Active</option>
+                        <option value="this_month" {% if request.GET.date_range == 'this_month' %}selected{% endif %}>This Month</option>
+                        <option value="last_month" {% if request.GET.date_range == 'last_month' %}selected{% endif %}>Last Month</option>
+                        <option value="this_quarter" {% if request.GET.date_range == 'this_quarter' %}selected{% endif %}>This Quarter</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-search mr-2"></i>Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Total Campaigns</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ total_campaigns }}</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-bullhorn text-blue-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Active Campaigns</p>
+                        <p class="text-2xl font-bold text-green-600">{{ active_campaigns }}</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg">
+                        <i class="fas fa-play-circle text-green-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Total Reach</p>
+                        <p class="text-2xl font-bold text-purple-600">{{ total_reach|default:"0"|floatformat:0 }}</p>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-lg">
+                        <i class="fas fa-users text-purple-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Total Budget</p>
+                        <p class="text-2xl font-bold text-orange-600">₨{{ total_budget|default:"0"|floatformat:0 }}</p>
+                    </div>
+                    <div class="bg-orange-100 p-3 rounded-lg">
+                        <i class="fas fa-money-bill-wave text-orange-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Avg ROI</p>
+                        <p class="text-2xl font-bold {% if avg_roi >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {{ avg_roi|default:"0"|floatformat:1 }}%
+                        </p>
+                    </div>
+                    <div class="bg-yellow-100 p-3 rounded-lg">
+                        <i class="fas fa-chart-line text-yellow-600"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Campaigns List -->
+        <div class="space-y-6">
+            {% for campaign in campaigns %}
+            <div class="campaign-card rounded-2xl p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-4 mb-2">
+                            <h3 class="text-xl font-bold text-gray-900">{{ campaign.name }}</h3>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                {% if campaign.campaign_type == 'email' %}bg-blue-100 text-blue-800
+                                {% elif campaign.campaign_type == 'social' %}bg-purple-100 text-purple-800
+                                {% elif campaign.campaign_type == 'ppc' %}bg-green-100 text-green-800
+                                {% elif campaign.campaign_type == 'content' %}bg-orange-100 text-orange-800
+                                {% elif campaign.campaign_type == 'event' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ campaign.get_campaign_type_display }}
+                            </span>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                {% if campaign.status == 'active' %}bg-green-100 text-green-800
+                                {% elif campaign.status == 'draft' %}bg-gray-100 text-gray-800
+                                {% elif campaign.status == 'paused' %}bg-yellow-100 text-yellow-800
+                                {% elif campaign.status == 'completed' %}bg-blue-100 text-blue-800
+                                {% elif campaign.status == 'cancelled' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ campaign.get_status_display }}
+                            </span>
+                        </div>
+                        
+                        {% if campaign.description %}
+                        <p class="text-gray-700 mb-3">{{ campaign.description|truncatechars:200 }}</p>
+                        {% endif %}
+                        
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-4">
+                            <div>
+                                <i class="fas fa-calendar-alt mr-1"></i>
+                                {{ campaign.start_date|date:"M d, Y" }}
+                                {% if campaign.end_date %}
+                                - {{ campaign.end_date|date:"M d, Y" }}
+                                {% endif %}
+                            </div>
+                            <div>
+                                <i class="fas fa-bullseye mr-1"></i>
+                                Target: {{ campaign.target_audience|default:"Not defined" }}
+                            </div>
+                            <div>
+                                <i class="fas fa-dollar-sign mr-1"></i>
+                                Budget: ₨{{ campaign.budget|default:"0"|floatformat:0 }}
+                            </div>
+                            <div>
+                                <i class="fas fa-chart-bar mr-1"></i>
+                                ROI: <span class="{% if campaign.roi >= 0 %}roi-positive{% else %}roi-negative{% endif %}">
+                                    {{ campaign.roi|default:"0"|floatformat:1 }}%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-2 ml-4">
+                        <button onclick="viewCampaign({{ campaign.id }})" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-eye mr-2"></i>View
+                        </button>
+                        {% if campaign.status == 'active' %}
+                        <button onclick="pauseCampaign({{ campaign.id }})" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-pause mr-2"></i>Pause
+                        </button>
+                        {% elif campaign.status == 'paused' %}
+                        <button onclick="resumeCampaign({{ campaign.id }})" class="bg-green-100 hover:bg-green-200 text-green-700 px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-play mr-2"></i>Resume
+                        </button>
+                        {% endif %}
+                        <div class="relative">
+                            <button onclick="toggleCampaignMenu({{ campaign.id }})" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg transition-colors">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <div id="campaign-menu-{{ campaign.id }}" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border hidden z-10">
+                                <a href="#" onclick="editCampaign({{ campaign.id }})" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                    <i class="fas fa-edit mr-2"></i>Edit
+                                </a>
+                                <a href="#" onclick="duplicateCampaign({{ campaign.id }})" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                    <i class="fas fa-copy mr-2"></i>Duplicate
+                                </a>
+                                <a href="#" onclick="viewAnalytics({{ campaign.id }})" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                    <i class="fas fa-chart-line mr-2"></i>Analytics
+                                </a>
+                                <a href="#" onclick="exportCampaignData({{ campaign.id }})" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                    <i class="fas fa-download mr-2"></i>Export Data
+                                </a>
+                                {% if campaign.status != 'completed' and campaign.status != 'cancelled' %}
+                                <a href="#" onclick="completeCampaign({{ campaign.id }})" class="block px-4 py-2 text-green-700 hover:bg-green-50">
+                                    <i class="fas fa-check mr-2"></i>Complete
+                                </a>
+                                <a href="#" onclick="cancelCampaign({{ campaign.id }})" class="block px-4 py-2 text-red-700 hover:bg-red-50">
+                                    <i class="fas fa-times mr-2"></i>Cancel
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Campaign Metrics -->
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Impressions</p>
+                        <p class="font-bold text-gray-900">{{ campaign.impressions|default:"0"|floatformat:0 }}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Clicks</p>
+                        <p class="font-bold text-blue-600">{{ campaign.clicks|default:"0"|floatformat:0 }}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">CTR</p>
+                        <p class="font-bold text-purple-600">{{ campaign.ctr|default:"0"|floatformat:2 }}%</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Conversions</p>
+                        <p class="font-bold text-green-600">{{ campaign.conversions|default:"0"|floatformat:0 }}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Conversion Rate</p>
+                        <p class="font-bold text-orange-600">{{ campaign.conversion_rate|default:"0"|floatformat:2 }}%</p>
+                    </div>
+                </div>
+
+                <!-- Campaign Progress -->
+                {% if campaign.status == 'active' and campaign.end_date %}
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm text-gray-600 mb-2">
+                        <span>Campaign Progress</span>
+                        <span>{{ campaign.progress|default:"0"|floatformat:0 }}% Complete</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="progress-bar h-2 rounded-full transition-all duration-300" 
+                             style="width: {{ campaign.progress|default:"0" }}%"></div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Campaign Details -->
+                <div class="flex justify-between items-center text-sm text-gray-600 pt-4 border-t border-gray-200">
+                    <div class="flex items-center space-x-4">
+                        {% if campaign.channel %}
+                        <span>
+                            <i class="fas fa-broadcast-tower mr-1"></i>{{ campaign.channel }}
+                        </span>
+                        {% endif %}
+                        {% if campaign.created_by %}
+                        <span>
+                            <i class="fas fa-user mr-1"></i>Created by {{ campaign.created_by.get_full_name|default:campaign.created_by.username }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <span>
+                        <i class="fas fa-clock mr-1"></i>
+                        {% if campaign.status == 'active' %}
+                            {% if campaign.end_date %}
+                                Ends {{ campaign.end_date|timeuntil }}
+                            {% else %}
+                                Running
+                            {% endif %}
+                        {% elif campaign.status == 'completed' %}
+                            Completed {{ campaign.updated_at|timesince }} ago
+                        {% elif campaign.status == 'draft' %}
+                            Created {{ campaign.created_at|timesince }} ago
+                        {% else %}
+                            {{ campaign.get_status_display }}
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-12">
+                <div class="mb-4">
+                    <i class="fas fa-bullhorn text-gray-400 text-6xl"></i>
+                </div>
+                <h3 class="text-xl font-medium text-gray-900 mb-2">No campaigns found</h3>
+                <p class="text-gray-600 mb-6">Create your first marketing campaign to reach more customers</p>
+                <button onclick="createNewCampaign()" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all">
+                    <i class="fas fa-bullhorn mr-2"></i>Create First Campaign
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="flex justify-center mt-8">
+            <nav class="flex items-center space-x-2">
+                {% if page_obj.has_previous %}
+                <a href="?page=1" class="px-3 py-2 text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:border-blue-300">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:border-blue-300">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <span class="px-4 py-2 bg-blue-600 text-white rounded-lg">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}" class="px-4 py-2 text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:border-blue-300">{{ num }}</a>
+                {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:border-blue-300">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+                <a href="?page={{ paginator.num_pages }}" class="px-3 py-2 text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:border-blue-300">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Campaign Modal -->
+<div id="campaignModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-8 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-900" id="modalTitle">Create New Campaign</h2>
+            <button onclick="closeCampaignModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="campaignForm" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Campaign Name *</label>
+                    <input type="text" id="campaignName" name="name" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Type *</label>
+                    <select id="campaignType" name="campaign_type" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Select Type</option>
+                        <option value="email">Email Marketing</option>
+                        <option value="social">Social Media</option>
+                        <option value="ppc">Pay-Per-Click</option>
+                        <option value="content">Content Marketing</option>
+                        <option value="event">Event Marketing</option>
+                        <option value="print">Print Advertising</option>
+                        <option value="radio">Radio Advertising</option>
+                        <option value="tv">TV Advertising</option>
+                        <option value="outdoor">Outdoor Advertising</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Start Date *</label>
+                    <input type="date" id="startDate" name="start_date" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                    <input type="date" id="endDate" name="end_date"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Budget</label>
+                    <input type="number" id="campaignBudget" name="budget" step="0.01" min="0"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Channel</label>
+                    <input type="text" id="campaignChannel" name="channel"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="e.g., Facebook, Google Ads, Newsletter">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Target Audience</label>
+                <input type="text" id="targetAudience" name="target_audience"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       placeholder="Describe your target audience...">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea id="campaignDescription" name="description" rows="4"
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Campaign description and objectives..."></textarea>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Expected Outcomes</label>
+                <textarea id="expectedOutcomes" name="expected_outcomes" rows="3"
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="What do you expect to achieve with this campaign?"></textarea>
+            </div>
+            
+            <div class="flex justify-end space-x-4">
+                <button type="button" onclick="closeCampaignModal()" 
+                        class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    Save Campaign
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Campaign management functions
+let currentCampaignId = null;
+
+function createNewCampaign() {
+    openCampaignModal();
+}
+
+function exportCampaigns() {
+    window.location.href = '/crm/campaigns/export/';
+}
+
+function viewCampaign(campaignId) {
+    window.location.href = `/crm/campaigns/${campaignId}/`;
+}
+
+function editCampaign(campaignId) {
+    openCampaignModal(campaignId);
+}
+
+function duplicateCampaign(campaignId) {
+    if (confirm('Are you sure you want to duplicate this campaign?')) {
+        fetch(`/crm/campaigns/${campaignId}/duplicate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error duplicating campaign');
+            }
+        });
+    }
+}
+
+function pauseCampaign(campaignId) {
+    updateCampaignStatus(campaignId, 'paused');
+}
+
+function resumeCampaign(campaignId) {
+    updateCampaignStatus(campaignId, 'active');
+}
+
+function completeCampaign(campaignId) {
+    if (confirm('Are you sure you want to mark this campaign as completed?')) {
+        updateCampaignStatus(campaignId, 'completed');
+    }
+}
+
+function cancelCampaign(campaignId) {
+    const reason = prompt('Reason for cancelling the campaign:');
+    if (reason) {
+        updateCampaignStatus(campaignId, 'cancelled', reason);
+    }
+}
+
+function updateCampaignStatus(campaignId, status, reason = null) {
+    const payload = { status: status };
+    if (reason) payload.reason = reason;
+    
+    fetch(`/crm/campaigns/${campaignId}/status/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error updating campaign status');
+        }
+    });
+}
+
+function viewAnalytics(campaignId) {
+    window.location.href = `/crm/campaigns/${campaignId}/analytics/`;
+}
+
+function exportCampaignData(campaignId) {
+    window.location.href = `/crm/campaigns/${campaignId}/export/`;
+}
+
+function toggleCampaignMenu(campaignId) {
+    const menu = document.getElementById(`campaign-menu-${campaignId}`);
+    menu.classList.toggle('hidden');
+    
+    // Close other open menus
+    document.querySelectorAll('[id^="campaign-menu-"]').forEach(m => {
+        if (m.id !== `campaign-menu-${campaignId}`) {
+            m.classList.add('hidden');
+        }
+    });
+}
+
+function openCampaignModal(campaignId = null) {
+    currentCampaignId = campaignId;
+    const modal = document.getElementById('campaignModal');
+    const title = document.getElementById('modalTitle');
+    
+    if (campaignId) {
+        title.textContent = 'Edit Campaign';
+        loadCampaignData(campaignId);
+    } else {
+        title.textContent = 'Create New Campaign';
+        document.getElementById('campaignForm').reset();
+    }
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeCampaignModal() {
+    const modal = document.getElementById('campaignModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    currentCampaignId = null;
+}
+
+function loadCampaignData(campaignId) {
+    fetch(`/crm/campaigns/${campaignId}/api/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('campaignName').value = data.name || '';
+            document.getElementById('campaignType').value = data.campaign_type || '';
+            document.getElementById('startDate').value = data.start_date || '';
+            document.getElementById('endDate').value = data.end_date || '';
+            document.getElementById('campaignBudget').value = data.budget || '';
+            document.getElementById('campaignChannel').value = data.channel || '';
+            document.getElementById('targetAudience').value = data.target_audience || '';
+            document.getElementById('campaignDescription').value = data.description || '';
+            document.getElementById('expectedOutcomes').value = data.expected_outcomes || '';
+        })
+        .catch(error => {
+            console.error('Error loading campaign data:', error);
+            alert('Error loading campaign data');
+        });
+}
+
+document.getElementById('campaignForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const url = currentCampaignId ? `/crm/campaigns/${currentCampaignId}/api/` : '/crm/campaigns/api/';
+    const method = currentCampaignId ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method: method,
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success || data.id) {
+            closeCampaignModal();
+            location.reload();
+        } else {
+            alert('Error saving campaign: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error saving campaign:', error);
+        alert('Error saving campaign');
+    });
+});
+
+// Close modal when clicking outside
+document.getElementById('campaignModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeCampaignModal();
+    }
+});
+
+// Close menus when clicking elsewhere
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('[onclick*="toggleCampaignMenu"]') && !e.target.closest('[id^="campaign-menu-"]')) {
+        document.querySelectorAll('[id^="campaign-menu-"]').forEach(menu => {
+            menu.classList.add('hidden');
+        });
+    }
+});
+</script>
+{% endblock %}

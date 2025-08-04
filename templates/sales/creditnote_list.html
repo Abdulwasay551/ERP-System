@@ -1,0 +1,503 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Credit Notes Management{% endblock %}
+
+{% block content %}
+<div class="p-6 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Credit Notes Management</h1>
+        <p class="text-gray-600">Manage customer credit notes and refunds</p>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+            <div class="flex items-center">
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-600">Total Credit Notes</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_credit_notes|floatformat:0 }}</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-file-invoice-dollar text-blue-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-red-500">
+            <div class="flex items-center">
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-600">Total Credit Amount</p>
+                    <p class="text-2xl font-bold text-gray-900">${{ total_credit_amount|floatformat:2|intcomma }}</p>
+                </div>
+                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-minus-circle text-red-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
+            <div class="flex items-center">
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-600">Returns</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ return_credit_notes|floatformat:0 }}</p>
+                </div>
+                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-undo text-yellow-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-orange-500">
+            <div class="flex items-center">
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-600">Damage</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ damage_credit_notes|floatformat:0 }}</p>
+                </div>
+                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-orange-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Action Bar -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div class="flex flex-col sm:flex-row gap-4">
+                <div class="relative">
+                    <input type="text" id="searchInput" placeholder="Search credit notes..." 
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                </div>
+                <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">All Reasons</option>
+                    <option value="return">Returns</option>
+                    <option value="damage">Damage</option>
+                    <option value="discount">Discount</option>
+                    <option value="error">Error</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="openCreditNoteModal()" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-200 flex items-center">
+                    <i class="fas fa-plus mr-2"></i>New Credit Note
+                </button>
+                <button onclick="exportCreditNotes()" 
+                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition duration-200 flex items-center">
+                    <i class="fas fa-download mr-2"></i>Export
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Credit Notes Table -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200" id="creditNotesTable">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Credit Note</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for credit_note in credit_notes %}
+                    <tr class="hover:bg-gray-50 transition-colors duration-200">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ credit_note.credit_note_number }}</div>
+                            <div class="text-sm text-gray-500">{{ credit_note.credit_date|date:"M d, Y" }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user text-purple-600"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">{{ credit_note.customer.name }}</div>
+                                    <div class="text-sm text-gray-500">{{ credit_note.customer.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if credit_note.invoice %}
+                                <div class="text-sm font-medium text-blue-600">{{ credit_note.invoice.invoice_number }}</div>
+                                <div class="text-sm text-gray-500">${{ credit_note.invoice.total|floatformat:2|intcomma }}</div>
+                            {% else %}
+                                <span class="text-sm text-gray-400">No invoice</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-lg font-bold text-red-600">${{ credit_note.total|floatformat:2|intcomma }}</span>
+                            {% if credit_note.tax_amount %}
+                            <div class="text-sm text-gray-500">+${{ credit_note.tax_amount|floatformat:2 }} tax</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900 max-w-xs truncate" title="{{ credit_note.reason }}">
+                                {{ credit_note.reason }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if credit_note.reason == 'return' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    <i class="fas fa-undo mr-1"></i>Return
+                                </span>
+                            {% elif credit_note.reason == 'damage' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>Damage
+                                </span>
+                            {% elif credit_note.reason == 'discount' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-percentage mr-1"></i>Discount
+                                </span>
+                            {% elif credit_note.reason == 'error' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                    <i class="fas fa-bug mr-1"></i>Error
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    <i class="fas fa-question mr-1"></i>Other
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ credit_note.created_at|date:"M d, Y" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex items-center space-x-2">
+                                <button onclick="viewCreditNote({{ credit_note.id }})" 
+                                        class="text-blue-600 hover:text-blue-900 transition duration-200">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="editCreditNote({{ credit_note.id }})" 
+                                        class="text-green-600 hover:text-green-900 transition duration-200">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteCreditNote({{ credit_note.id }})" 
+                                        class="text-red-600 hover:text-red-900 transition duration-200">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center">
+                            <div class="text-gray-500">
+                                <i class="fas fa-file-invoice-dollar text-4xl mb-4"></i>
+                                <p class="text-lg">No credit notes found</p>
+                                <button onclick="openCreditNoteModal()" 
+                                        class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-200">
+                                    Create First Credit Note
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Credit Note Modal -->
+<div id="creditNoteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+            <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+        </div>
+        
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+            <form id="creditNoteForm">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="modalTitle">
+                                Add New Credit Note
+                            </h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Customer</label>
+                                    <select name="customer_id" required 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="">Select Customer</option>
+                                        {% for customer in customers %}
+                                        <option value="{{ customer.id }}">{{ customer.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Invoice (Optional)</label>
+                                    <select name="invoice_id" 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="">Select Invoice</option>
+                                        <!-- Will be populated via AJAX -->
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Credit Note Number</label>
+                                    <input type="text" name="credit_number" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Credit Date</label>
+                                    <input type="date" name="credit_date" required 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Reason</label>
+                                    <select name="reason" required 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="return">Product Return</option>
+                                        <option value="damage">Damaged Goods</option>
+                                        <option value="discount">Additional Discount</option>
+                                        <option value="error">Billing Error</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Subtotal</label>
+                                    <input type="number" name="subtotal" step="0.01" required 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Tax Amount</label>
+                                    <input type="number" name="tax_amount" step="0.01" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Total Amount</label>
+                                    <input type="number" name="total" step="0.01" required 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                                    <textarea name="notes" rows="3" 
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="submit" 
+                            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Save Credit Note
+                    </button>
+                    <button type="button" onclick="closeCreditNoteModal()" 
+                            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentCreditNoteId = null;
+
+// Search and filter functionality
+document.getElementById('searchInput').addEventListener('keyup', filterTable);
+document.getElementById('statusFilter').addEventListener('change', filterTable);
+
+function filterTable() {
+    const searchValue = document.getElementById('searchInput').value.toLowerCase();
+    const statusValue = document.getElementById('statusFilter').value.toLowerCase();
+    const table = document.getElementById('creditNotesTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        if (row.cells.length === 1) continue; // Skip empty state row
+        
+        const creditNoteNumber = row.cells[0].textContent.toLowerCase();
+        const customerName = row.cells[1].textContent.toLowerCase();
+        const reason = row.cells[4].textContent.toLowerCase();
+        const reason = row.cells[4].textContent.toLowerCase();
+        
+        const matchesSearch = creditNoteNumber.includes(searchValue) || 
+                            customerName.includes(searchValue) || 
+                            reason.includes(searchValue);
+        const matchesStatus = statusValue === '' || reason.includes(statusValue);
+        
+        row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+    }
+}
+
+function openCreditNoteModal() {
+    document.getElementById('modalTitle').textContent = 'Add New Credit Note';
+    document.getElementById('creditNoteForm').reset();
+    document.querySelector('input[name="credit_date"]').value = new Date().toISOString().split('T')[0];
+    currentCreditNoteId = null;
+    document.getElementById('creditNoteModal').classList.remove('hidden');
+    loadInvoices();
+}
+
+function closeCreditNoteModal() {
+    document.getElementById('creditNoteModal').classList.add('hidden');
+    currentCreditNoteId = null;
+}
+
+function loadInvoices() {
+    // Load invoices dynamically based on selected customer
+    const customerSelect = document.querySelector('select[name="customer_id"]');
+    const invoiceSelect = document.querySelector('select[name="invoice_id"]');
+    
+    customerSelect.addEventListener('change', function() {
+        const customerId = this.value;
+        if (customerId) {
+            fetch(`/sales/api/customer-invoices/${customerId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    invoiceSelect.innerHTML = '<option value="">Select Invoice</option>';
+                    data.invoices.forEach(invoice => {
+                        invoiceSelect.innerHTML += `<option value="${invoice.id}">${invoice.invoice_number} - $${invoice.total}</option>`;
+                    });
+                })
+                .catch(error => console.error('Error loading invoices:', error));
+        } else {
+            invoiceSelect.innerHTML = '<option value="">Select Invoice</option>';
+        }
+    });
+}
+
+// Auto-calculate total
+function setupCalculations() {
+    const subtotalInput = document.querySelector('input[name="subtotal"]');
+    const taxInput = document.querySelector('input[name="tax_amount"]');
+    const totalInput = document.querySelector('input[name="total"]');
+    
+    function calculateTotal() {
+        const subtotal = parseFloat(subtotalInput.value) || 0;
+        const tax = parseFloat(taxInput.value) || 0;
+        totalInput.value = (subtotal + tax).toFixed(2);
+    }
+    
+    subtotalInput.addEventListener('input', calculateTotal);
+    taxInput.addEventListener('input', calculateTotal);
+}
+
+// Form submission
+document.getElementById('creditNoteForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const url = currentCreditNoteId ? 
+        `/sales/credit-notes/${currentCreditNoteId}/update/` : 
+        '/sales/credit-notes/create/';
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+});
+
+function viewCreditNote(id) {
+    fetch(`/sales/credit-notes/${id}/detail/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const cn = data.credit_note;
+                alert(`Credit Note Details:\n\nNumber: ${cn.credit_number}\nCustomer: ${cn.customer_name}\nAmount: $${cn.total}\nReason: ${cn.reason}\nDate: ${cn.credit_date}`);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+function editCreditNote(id) {
+    fetch(`/sales/credit-notes/${id}/detail/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const cn = data.credit_note;
+                document.getElementById('modalTitle').textContent = 'Edit Credit Note';
+                document.querySelector('select[name="customer_id"]').value = cn.customer_id;
+                document.querySelector('select[name="invoice_id"]').value = cn.invoice_id;
+                document.querySelector('input[name="credit_number"]').value = cn.credit_number;
+                document.querySelector('input[name="credit_date"]').value = cn.credit_date;
+                document.querySelector('select[name="reason"]').value = cn.reason;
+                document.querySelector('input[name="subtotal"]').value = cn.subtotal;
+                document.querySelector('input[name="tax_amount"]').value = cn.tax_amount;
+                document.querySelector('input[name="total"]').value = cn.total;
+                document.querySelector('textarea[name="notes"]').value = cn.notes;
+                
+                currentCreditNoteId = id;
+                document.getElementById('creditNoteModal').classList.remove('hidden');
+                loadInvoices();
+            }
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+function deleteCreditNote(id) {
+    if (confirm('Are you sure you want to delete this credit note?')) {
+        fetch(`/sales/credit-notes/${id}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+}
+
+function exportCreditNotes() {
+    window.open('/sales/credit-notes/export/', '_blank');
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    loadInvoices();
+    setupCalculations();
+});
+
+// Close modal when clicking outside
+document.getElementById('creditNoteModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeCreditNoteModal();
+    }
+});
+</script>
+{% endblock %}

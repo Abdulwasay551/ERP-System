@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Receipt - {{ payment.payment_number }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: white;
+        }
+        .receipt {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border: 2px solid #ddd;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .company-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        .receipt-title {
+            font-size: 18px;
+            color: #666;
+            margin-top: 10px;
+        }
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .detail-section {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .detail-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+        }
+        .amount-section {
+            background: #e8f5e8;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+            border: 2px solid #4CAF50;
+        }
+        .amount-label {
+            font-size: 14px;
+            color: #666;
+        }
+        .amount-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 12px;
+            color: #888;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+        @media print {
+            body { margin: 0; padding: 10px; }
+            .receipt { border: none; box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt">
+        <div class="header">
+            <div class="company-name">{{ payment.company.name|default:"Your Company Name" }}</div>
+            <div class="receipt-title">PAYMENT RECEIPT</div>
+            <div style="margin-top: 10px; font-size: 14px; color: #666;">
+                Receipt #{{ payment.payment_number }}
+            </div>
+        </div>
+
+        <div class="details-grid">
+            <div class="detail-section">
+                <div class="detail-title">Payment Details</div>
+                <div class="detail-item">
+                    <span>Receipt No:</span>
+                    <strong>{{ payment.payment_number }}</strong>
+                </div>
+                <div class="detail-item">
+                    <span>Payment Date:</span>
+                    <strong>{{ payment.payment_date|date:"M d, Y" }}</strong>
+                </div>
+                <div class="detail-item">
+                    <span>Payment Method:</span>
+                    <strong>{{ payment.get_method_display }}</strong>
+                </div>
+                {% if payment.reference %}
+                <div class="detail-item">
+                    <span>Reference:</span>
+                    <strong>{{ payment.reference }}</strong>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="detail-section">
+                <div class="detail-title">Customer Information</div>
+                {% if payment.customer %}
+                <div class="detail-item">
+                    <span>Customer:</span>
+                    <strong>{{ payment.customer.name }}</strong>
+                </div>
+                {% if payment.customer.email %}
+                <div class="detail-item">
+                    <span>Email:</span>
+                    <span>{{ payment.customer.email }}</span>
+                </div>
+                {% endif %}
+                {% if payment.customer.phone %}
+                <div class="detail-item">
+                    <span>Phone:</span>
+                    <span>{{ payment.customer.phone }}</span>
+                </div>
+                {% endif %}
+                {% if payment.customer.address %}
+                <div class="detail-item">
+                    <span>Address:</span>
+                    <span>{{ payment.customer.address }}</span>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="detail-item">
+                    <span>Type:</span>
+                    <strong>Advance Payment</strong>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if payment.invoice %}
+        <div class="detail-section" style="margin-bottom: 30px;">
+            <div class="detail-title">Invoice Information</div>
+            <div class="detail-item">
+                <span>Invoice Number:</span>
+                <strong>{{ payment.invoice.invoice_number }}</strong>
+            </div>
+            <div class="detail-item">
+                <span>Invoice Date:</span>
+                <strong>{{ payment.invoice.issue_date|date:"M d, Y" }}</strong>
+            </div>
+            <div class="detail-item">
+                <span>Invoice Total:</span>
+                <strong>₹{{ payment.invoice.total|floatformat:2|add:0 }}</strong>
+            </div>
+            <div class="detail-item">
+                <span>Total Paid:</span>
+                <strong>₹{{ payment.invoice.paid_amount|floatformat:2|add:0 }}</strong>
+            </div>
+            <div class="detail-item">
+                <span>Balance Due:</span>
+                <strong>₹{{ payment.invoice.balance_due|floatformat:2|add:0 }}</strong>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="amount-section">
+            <div class="amount-label">Amount Received</div>
+            <div class="amount-value">₹{{ payment.amount|floatformat:2|add:0 }}</div>
+        </div>
+
+        {% if payment.notes %}
+        <div class="detail-section" style="margin-top: 30px;">
+            <div class="detail-title">Notes</div>
+            <p style="margin: 10px 0; line-height: 1.5;">{{ payment.notes }}</p>
+        </div>
+        {% endif %}
+
+        <div class="footer">
+            <p>Thank you for your payment!</p>
+            <p>Generated on {{ payment.created_at|date:"M d, Y H:i" }}
+            {% if payment.received_by %} by {{ payment.received_by.get_full_name|default:payment.received_by.username }}{% endif %}</p>
+            <p style="margin-top: 15px; font-size: 10px;">
+                This is a computer-generated receipt and does not require a signature.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Auto-print when page loads
+        window.onload = function() {
+            window.print();
+        }
+    </script>
+</body>
+</html>

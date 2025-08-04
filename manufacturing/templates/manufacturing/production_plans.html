@@ -1,0 +1,705 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Production Planning | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .plan-card {
+        background: white;
+        border: 1px solid rgba(229, 231, 235, 1);
+        transition: all 0.3s ease;
+    }
+    .plan-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        border-color: rgba(16, 185, 129, 0.3);
+    }
+    .gantt-bar {
+        background: linear-gradient(90deg, #10b981, #059669);
+        height: 20px;
+        border-radius: 10px;
+        position: relative;
+    }
+    .resource-utilization {
+        background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+    }
+    .capacity-gauge {
+        transform: rotate(-90deg);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">Production Planning</h1>
+                <p class="text-gray-600">Plan and schedule your manufacturing operations</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="createNewPlan()" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-plus mr-2"></i>
+                    New Plan
+                </button>
+                <button onclick="runMRP()" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-calculator mr-2"></i>
+                    Run MRP
+                </button>
+                <button onclick="viewCapacityPlanning()" class="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-chart-bar mr-2"></i>
+                    Capacity Planning
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Active Plans</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ active_plans_count|default:0 }}</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-calendar-alt text-blue-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Scheduled Work Orders</p>
+                        <p class="text-2xl font-bold text-green-600">{{ scheduled_wo_count|default:0 }}</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg">
+                        <i class="fas fa-clipboard-list text-green-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Resource Utilization</p>
+                        <p class="text-2xl font-bold text-orange-600">{{ avg_utilization|default:0 }}%</p>
+                    </div>
+                    <div class="bg-orange-100 p-3 rounded-lg">
+                        <i class="fas fa-cogs text-orange-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">On-Time Delivery</p>
+                        <p class="text-2xl font-bold text-purple-600">{{ ontime_percentage|default:0 }}%</p>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-lg">
+                        <i class="fas fa-clock text-purple-600"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="bg-white rounded-t-2xl border border-gray-200 border-b-0">
+            <div class="flex space-x-1 p-1">
+                <button onclick="showTab('plans')" id="tab-plans" 
+                        class="tab-btn flex-1 py-3 px-4 text-center font-medium rounded-lg transition-all active">
+                    <i class="fas fa-list mr-2"></i>Production Plans
+                </button>
+                <button onclick="showTab('schedule')" id="tab-schedule" 
+                        class="tab-btn flex-1 py-3 px-4 text-center font-medium rounded-lg transition-all">
+                    <i class="fas fa-calendar mr-2"></i>Schedule View
+                </button>
+                <button onclick="showTab('resources')" id="tab-resources" 
+                        class="tab-btn flex-1 py-3 px-4 text-center font-medium rounded-lg transition-all">
+                    <i class="fas fa-industry mr-2"></i>Resource Planning
+                </button>
+                <button onclick="showTab('mrp')" id="tab-mrp" 
+                        class="tab-btn flex-1 py-3 px-4 text-center font-medium rounded-lg transition-all">
+                    <i class="fas fa-calculator mr-2"></i>MRP Analysis
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab Contents -->
+        <div class="bg-white rounded-b-2xl border border-gray-200 p-6">
+            <!-- Production Plans Tab -->
+            <div id="content-plans" class="tab-content active">
+                <div class="space-y-6">
+                    {% for plan in production_plans %}
+                    <div class="plan-card rounded-2xl p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">{{ plan.name }}</h3>
+                                <p class="text-gray-600 mb-2">{{ plan.description }}</p>
+                                <div class="flex items-center space-x-4">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                        {% if plan.status == 'active' %}bg-green-100 text-green-800
+                                        {% elif plan.status == 'draft' %}bg-yellow-100 text-yellow-800
+                                        {% elif plan.status == 'completed' %}bg-blue-100 text-blue-800
+                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ plan.get_status_display }}
+                                    </span>
+                                    <span class="text-sm text-gray-500">
+                                        {{ plan.start_date|date:"M d" }} - {{ plan.end_date|date:"M d, Y" }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="viewPlan({{ plan.id }})" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg transition-colors">
+                                    <i class="fas fa-eye mr-2"></i>View
+                                </button>
+                                {% if plan.status == 'draft' %}
+                                <button onclick="activatePlan({{ plan.id }})" class="bg-green-100 hover:bg-green-200 text-green-700 px-4 py-2 rounded-lg transition-colors">
+                                    <i class="fas fa-play mr-2"></i>Activate
+                                </button>
+                                {% endif %}
+                                <div class="relative">
+                                    <button onclick="togglePlanMenu({{ plan.id }})" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg transition-colors">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <div id="plan-menu-{{ plan.id }}" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border hidden z-10">
+                                        <a href="#" onclick="editPlan({{ plan.id }})" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                            <i class="fas fa-edit mr-2"></i>Edit
+                                        </a>
+                                        <a href="#" onclick="duplicatePlan({{ plan.id }})" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                            <i class="fas fa-copy mr-2"></i>Duplicate
+                                        </a>
+                                        <a href="#" onclick="exportPlan({{ plan.id }})" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                            <i class="fas fa-download mr-2"></i>Export
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Plan Metrics -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <p class="text-sm text-blue-600 mb-1">Total Work Orders</p>
+                                <p class="font-bold text-lg text-blue-900">{{ plan.work_orders_count|default:0 }}</p>
+                            </div>
+                            <div class="bg-green-50 p-4 rounded-lg">
+                                <p class="text-sm text-green-600 mb-1">Completed</p>
+                                <p class="font-bold text-lg text-green-900">{{ plan.completed_wo_count|default:0 }}</p>
+                            </div>
+                            <div class="bg-orange-50 p-4 rounded-lg">
+                                <p class="text-sm text-orange-600 mb-1">In Progress</p>
+                                <p class="font-bold text-lg text-orange-900">{{ plan.in_progress_wo_count|default:0 }}</p>
+                            </div>
+                            <div class="bg-purple-50 p-4 rounded-lg">
+                                <p class="text-sm text-purple-600 mb-1">Progress</p>
+                                <div class="flex items-center">
+                                    <div class="w-full bg-gray-200 rounded-full h-2 mr-3">
+                                        <div class="gantt-bar h-2 rounded-full" style="width: {{ plan.get_progress_percentage }}%"></div>
+                                    </div>
+                                    <span class="font-bold text-sm text-purple-900">{{ plan.get_progress_percentage }}%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Timeline Overview -->
+                        {% if plan.work_orders.all %}
+                        <div class="mt-4">
+                            <h4 class="font-medium text-gray-900 mb-3">Work Orders Timeline</h4>
+                            <div class="space-y-2">
+                                {% for wo in plan.work_orders.all|slice:":5" %}
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div class="flex items-center space-x-3">
+                                        <span class="w-3 h-3 rounded-full 
+                                            {% if wo.status == 'completed' %}bg-green-500
+                                            {% elif wo.status == 'in_progress' %}bg-blue-500
+                                            {% elif wo.status == 'planned' %}bg-yellow-500
+                                            {% else %}bg-gray-500{% endif %}"></span>
+                                        <span class="font-medium text-gray-900">{{ wo.wo_number }}</span>
+                                        <span class="text-gray-600">{{ wo.product.name }}</span>
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        {% if wo.scheduled_start %}
+                                            {{ wo.scheduled_start|date:"M d" }}
+                                        {% else %}
+                                            Not scheduled
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                {% if plan.work_orders.count > 5 %}
+                                <div class="text-center">
+                                    <button onclick="viewPlan({{ plan.id }})" class="text-blue-600 hover:text-blue-800 text-sm">
+                                        View all {{ plan.work_orders.count }} work orders
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-12">
+                        <div class="mb-4">
+                            <i class="fas fa-calendar-alt text-gray-400 text-6xl"></i>
+                        </div>
+                        <h3 class="text-xl font-medium text-gray-900 mb-2">No production plans found</h3>
+                        <p class="text-gray-600 mb-6">Create your first production plan to get started</p>
+                        <button onclick="createNewPlan()" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all">
+                            <i class="fas fa-plus mr-2"></i>Create First Plan
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Schedule View Tab -->
+            <div id="content-schedule" class="tab-content">
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-900">Production Schedule</h3>
+                        <div class="flex space-x-2">
+                            <button onclick="changeView('week')" class="view-btn px-4 py-2 bg-blue-100 text-blue-700 rounded-lg">Week</button>
+                            <button onclick="changeView('month')" class="view-btn px-4 py-2 bg-gray-100 text-gray-700 rounded-lg">Month</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Schedule Grid -->
+                    <div class="bg-gray-50 p-6 rounded-xl">
+                        <div class="grid grid-cols-8 gap-4 mb-4">
+                            <div class="font-medium text-gray-700">Work Center</div>
+                            {% for day in week_days %}
+                            <div class="font-medium text-gray-700 text-center">{{ day|date:"M d" }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        {% for work_center in work_centers %}
+                        <div class="grid grid-cols-8 gap-4 mb-3 items-center">
+                            <div class="font-medium text-gray-900">{{ work_center.name }}</div>
+                            {% for day in week_days %}
+                            <div class="bg-white p-2 rounded border min-h-[60px]">
+                                <!-- Scheduled work orders for this day and work center -->
+                                {% for wo in work_center.scheduled_work_orders %}
+                                {% if wo.scheduled_start|date:"Y-m-d" == day|date:"Y-m-d" %}
+                                <div class="bg-blue-100 text-blue-800 text-xs p-1 rounded mb-1">
+                                    {{ wo.wo_number }}
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resource Planning Tab -->
+            <div id="content-resources" class="tab-content">
+                <div class="space-y-6">
+                    {% for work_center in work_centers %}
+                    <div class="bg-white border border-gray-200 rounded-xl p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">{{ work_center.name }}</h3>
+                                <p class="text-gray-600">{{ work_center.description }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm text-gray-600 mb-1">Capacity</p>
+                                <p class="font-bold text-lg text-gray-900">{{ work_center.capacity_hours }} hrs/day</p>
+                            </div>
+                        </div>
+
+                        <!-- Capacity Utilization -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                            <div class="text-center">
+                                <div class="relative w-24 h-24 mx-auto mb-2">
+                                    <svg class="w-24 h-24 capacity-gauge" viewBox="0 0 120 120">
+                                        <circle cx="60" cy="60" r="54" stroke="#e5e7eb" stroke-width="8" fill="none"></circle>
+                                        <circle cx="60" cy="60" r="54" stroke="#3b82f6" stroke-width="8" fill="none" 
+                                                stroke-dasharray="339.29" 
+                                                stroke-dashoffset="{{ work_center.get_utilization_offset }}"></circle>
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <span class="text-lg font-bold text-gray-900">{{ work_center.get_utilization_percentage }}%</span>
+                                    </div>
+                                </div>
+                                <p class="text-sm text-gray-600">Current Utilization</p>
+                            </div>
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <p class="text-sm text-blue-600 mb-1">Scheduled Hours</p>
+                                <p class="font-bold text-xl text-blue-900">{{ work_center.get_scheduled_hours|default:0 }}</p>
+                            </div>
+                            <div class="bg-green-50 p-4 rounded-lg">
+                                <p class="text-sm text-green-600 mb-1">Available Hours</p>
+                                <p class="font-bold text-xl text-green-900">{{ work_center.get_available_hours|default:0 }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Weekly Utilization Chart -->
+                        <div class="mb-4">
+                            <h4 class="font-medium text-gray-900 mb-3">Weekly Utilization</h4>
+                            <div class="grid grid-cols-7 gap-2">
+                                {% for day in week_days %}
+                                <div class="text-center">
+                                    <div class="text-xs text-gray-600 mb-1">{{ day|date:"D" }}</div>
+                                    <div class="bg-gray-200 rounded h-20 flex items-end">
+                                        <div class="resource-utilization w-full rounded" 
+                                             style="height: {{ work_center.get_daily_utilization|default:0 }}%"></div>
+                                    </div>
+                                    <div class="text-xs text-gray-600 mt-1">{{ work_center.get_daily_utilization|default:0 }}%</div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Assigned Work Orders -->
+                        {% if work_center.current_work_orders.all %}
+                        <div>
+                            <h4 class="font-medium text-gray-900 mb-3">Current Work Orders</h4>
+                            <div class="space-y-2">
+                                {% for wo in work_center.current_work_orders.all|slice:":3" %}
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div class="flex items-center space-x-3">
+                                        <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                                        <span class="font-medium text-gray-900">{{ wo.wo_number }}</span>
+                                        <span class="text-gray-600">{{ wo.product.name }}</span>
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        {{ wo.scheduled_start|date:"M d H:i" }}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8">
+                        <i class="fas fa-industry text-gray-400 text-4xl mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No Work Centers Found</h3>
+                        <p class="text-gray-600">Set up work centers to manage resource planning</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- MRP Analysis Tab -->
+            <div id="content-mrp" class="tab-content">
+                <div class="space-y-6">
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">MRP Analysis</h3>
+                                <p class="text-gray-600">Material Requirements Planning overview</p>
+                            </div>
+                            <button onclick="runMRP()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-calculator mr-2"></i>Run MRP
+                            </button>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-white p-4 rounded-lg">
+                                <p class="text-sm text-gray-600 mb-1">Total Requirements</p>
+                                <p class="font-bold text-xl text-gray-900">{{ mrp_total_requirements|default:0 }}</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg">
+                                <p class="text-sm text-gray-600 mb-1">Shortage Items</p>
+                                <p class="font-bold text-xl text-red-600">{{ mrp_shortage_items|default:0 }}</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg">
+                                <p class="text-sm text-gray-600 mb-1">Purchase Orders Needed</p>
+                                <p class="font-bold text-xl text-blue-600">{{ mrp_po_needed|default:0 }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MRP Requirements -->
+                    {% if mrp_requirements %}
+                    <div class="bg-white border border-gray-200 rounded-xl p-6">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">Material Requirements</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-gray-200">
+                                        <th class="text-left py-3 px-4">Product</th>
+                                        <th class="text-left py-3 px-4">Required Qty</th>
+                                        <th class="text-left py-3 px-4">Available Qty</th>
+                                        <th class="text-left py-3 px-4">Shortage</th>
+                                        <th class="text-left py-3 px-4">Required Date</th>
+                                        <th class="text-left py-3 px-4">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for req in mrp_requirements %}
+                                    <tr class="border-b border-gray-100">
+                                        <td class="py-3 px-4">
+                                            <div>
+                                                <p class="font-medium text-gray-900">{{ req.product.name }}</p>
+                                                <p class="text-sm text-gray-500">{{ req.product.internal_reference }}</p>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-4">{{ req.quantity_required }}</td>
+                                        <td class="py-3 px-4">{{ req.quantity_available }}</td>
+                                        <td class="py-3 px-4">
+                                            {% if req.quantity_shortage > 0 %}
+                                            <span class="text-red-600 font-medium">{{ req.quantity_shortage }}</span>
+                                            {% else %}
+                                            <span class="text-green-600">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="py-3 px-4">{{ req.required_date|date:"M d, Y" }}</td>
+                                        <td class="py-3 px-4">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                                {% if req.status == 'available' %}bg-green-100 text-green-800
+                                                {% elif req.status == 'shortage' %}bg-red-100 text-red-800
+                                                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                                {{ req.get_status_display }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-12">
+                        <i class="fas fa-calculator text-gray-400 text-6xl mb-4"></i>
+                        <h3 class="text-xl font-medium text-gray-900 mb-2">No MRP Data Available</h3>
+                        <p class="text-gray-600 mb-6">Run MRP analysis to see material requirements</p>
+                        <button onclick="runMRP()" class="bg-blue-600 text-white px-6 py-3 rounded-2xl hover:bg-blue-700 transition-all">
+                            <i class="fas fa-calculator mr-2"></i>Run MRP Analysis
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Plan Creation Modal -->
+<div id="planModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Create Production Plan</h2>
+                <button onclick="closePlanModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="planForm" onsubmit="submitPlan(event)">
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Plan Name *</label>
+                        <input type="text" name="name" required 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <textarea name="description" rows="3" 
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Start Date *</label>
+                            <input type="date" name="start_date" required 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">End Date *</label>
+                            <input type="date" name="end_date" required 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-4 mt-8">
+                    <button type="button" onclick="closePlanModal()" 
+                            class="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                        Create Plan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active', 'bg-blue-100', 'text-blue-700');
+        btn.classList.add('text-gray-600', 'hover:text-gray-900');
+    });
+    
+    // Show selected tab content
+    document.getElementById(`content-${tabName}`).classList.add('active');
+    
+    // Add active class to selected tab button
+    const activeBtn = document.getElementById(`tab-${tabName}`);
+    activeBtn.classList.add('active', 'bg-blue-100', 'text-blue-700');
+    activeBtn.classList.remove('text-gray-600', 'hover:text-gray-900');
+}
+
+function createNewPlan() {
+    document.getElementById('planModal').classList.remove('hidden');
+}
+
+function closePlanModal() {
+    document.getElementById('planModal').classList.add('hidden');
+    document.getElementById('planForm').reset();
+}
+
+function submitPlan(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    
+    fetch('/manufacturing/api/production-plans/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error creating plan: ' + data.error);
+        }
+    });
+}
+
+function viewPlan(planId) {
+    window.location.href = `/manufacturing/production-plans/${planId}/`;
+}
+
+function activatePlan(planId) {
+    if (confirm('Are you sure you want to activate this plan?')) {
+        fetch(`/manufacturing/api/production-plans/${planId}/activate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error activating plan: ' + data.error);
+            }
+        });
+    }
+}
+
+function runMRP() {
+    if (confirm('This will analyze material requirements for all active plans. Continue?')) {
+        fetch('/manufacturing/api/mrp/run/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('MRP analysis completed successfully');
+                showTab('mrp');
+                location.reload();
+            } else {
+                alert('Error running MRP: ' + data.error);
+            }
+        });
+    }
+}
+
+function viewCapacityPlanning() {
+    showTab('resources');
+}
+
+function togglePlanMenu(planId) {
+    const menu = document.getElementById(`plan-menu-${planId}`);
+    // Close all other menus
+    document.querySelectorAll('[id^="plan-menu-"]').forEach(m => {
+        if (m !== menu) m.classList.add('hidden');
+    });
+    menu.classList.toggle('hidden');
+}
+
+function editPlan(planId) {
+    window.location.href = `/manufacturing/production-plans/${planId}/edit/`;
+}
+
+function duplicatePlan(planId) {
+    if (confirm('Are you sure you want to duplicate this plan?')) {
+        fetch(`/manufacturing/api/production-plans/${planId}/duplicate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error duplicating plan: ' + data.error);
+            }
+        });
+    }
+}
+
+function exportPlan(planId) {
+    window.open(`/manufacturing/production-plans/${planId}/export/`, '_blank');
+}
+
+function changeView(viewType) {
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-100', 'text-blue-700');
+        btn.classList.add('bg-gray-100', 'text-gray-700');
+    });
+    event.target.classList.add('bg-blue-100', 'text-blue-700');
+    event.target.classList.remove('bg-gray-100', 'text-gray-700');
+}
+
+// Close menus when clicking outside
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('[id^="plan-menu-"]') && !event.target.closest('button[onclick*="togglePlanMenu"]')) {
+        document.querySelectorAll('[id^="plan-menu-"]').forEach(menu => {
+            menu.classList.add('hidden');
+        });
+    }
+});
+</script>
+
+<style>
+.tab-btn.active {
+    background-color: #dbeafe !important;
+    color: #1d4ed8 !important;
+}
+.tab-btn {
+    color: #6b7280;
+}
+.tab-btn:hover {
+    color: #111827;
+}
+.tab-content {
+    display: none;
+}
+.tab-content.active {
+    display: block;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,325 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sales Order {{ sales_order.order_number }} - ERP System{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    <!-- Header -->
+    <div class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 mb-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <a href="{% url 'sales:sales_orders' %}" class="mr-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors duration-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Sales Order {{ sales_order.order_number }}</h1>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Order Date: {{ sales_order.order_date|date:"M d, Y" }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <!-- Status Badge -->
+                    <span class="px-3 py-1 rounded-full text-sm font-medium
+                        {% if sales_order.status == 'confirmed' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                        {% elif sales_order.status == 'draft' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                        {% elif sales_order.status == 'cancelled' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                        {% else %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200{% endif %}">
+                        {{ sales_order.get_status_display|title }}
+                    </span>
+                    
+                    <!-- Action Buttons -->
+                    <a href="{% url 'sales:salesorder_edit_form' pk=sales_order.pk %}" 
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                        Edit
+                    </a>
+                    
+                    {% if sales_order.status == 'draft' %}
+                    <button onclick="confirmOrder({{ sales_order.pk }})" 
+                            class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors duration-200">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Confirm Order
+                    </button>
+                    {% endif %}
+                    
+                    <button onclick="deleteOrder({{ sales_order.pk }})" 
+                            class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors duration-200">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Order Information -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <!-- Customer Information -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Customer Information</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Customer</label>
+                        <p class="text-gray-900 dark:text-white">{{ sales_order.customer.name }}</p>
+                    </div>
+                    {% if sales_order.customer.email %}
+                    <div>
+                        <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Email</label>
+                        <p class="text-gray-900 dark:text-white">{{ sales_order.customer.email }}</p>
+                    </div>
+                    {% endif %}
+                    {% if sales_order.customer.phone %}
+                    <div>
+                        <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Phone</label>
+                        <p class="text-gray-900 dark:text-white">{{ sales_order.customer.phone }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Order Details -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Order Details</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Order Date</label>
+                        <p class="text-gray-900 dark:text-white">{{ sales_order.order_date|date:"M d, Y" }}</p>
+                    </div>
+                    {% if sales_order.delivery_date %}
+                    <div>
+                        <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Delivery Date</label>
+                        <p class="text-gray-900 dark:text-white">{{ sales_order.delivery_date|date:"M d, Y" }}</p>
+                    </div>
+                    {% endif %}
+                    {% if sales_order.quotation %}
+                    <div>
+                        <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Quotation</label>
+                        <p class="text-gray-900 dark:text-white">{{ sales_order.quotation.quotation_number }}</p>
+                    </div>
+                    {% endif %}
+                    {% if sales_order.currency %}
+                    <div>
+                        <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Currency</label>
+                        <p class="text-gray-900 dark:text-white">{{ sales_order.currency.code }} - {{ sales_order.currency.name }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Addresses -->
+        {% if sales_order.billing_address or sales_order.shipping_address %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {% if sales_order.billing_address %}
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Billing Address</h3>
+                <p class="text-gray-900 dark:text-white whitespace-pre-line">{{ sales_order.billing_address }}</p>
+            </div>
+            {% endif %}
+            
+            {% if sales_order.shipping_address %}
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Shipping Address</h3>
+                <p class="text-gray-900 dark:text-white whitespace-pre-line">{{ sales_order.shipping_address }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Order Items -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Order Items</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-6 py-3">Product</th>
+                            <th class="px-6 py-3">Description</th>
+                            <th class="px-6 py-3">Qty</th>
+                            <th class="px-6 py-3">UOM</th>
+                            <th class="px-6 py-3">Unit Price</th>
+                            <th class="px-6 py-3">Discount</th>
+                            <th class="px-6 py-3">Tax</th>
+                            <th class="px-6 py-3 text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for item in items %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                                {{ item.product.name }}
+                                {% if item.tracking_data %}
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    {% if item.tracking_data.serial_number %}S/N: {{ item.tracking_data.serial_number }}<br>{% endif %}
+                                    {% if item.tracking_data.batch_number %}Batch: {{ item.tracking_data.batch_number }}<br>{% endif %}
+                                    {% if item.tracking_data.lot_number %}Lot: {{ item.tracking_data.lot_number }}<br>{% endif %}
+                                    {% if item.tracking_data.expiry_date %}Exp: {{ item.tracking_data.expiry_date }}{% endif %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">{{ item.description }}</td>
+                            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">{{ item.quantity }}</td>
+                            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">{{ item.uom }}</td>
+                            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">${{ item.unit_price|floatformat:2 }}</td>
+                            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">
+                                {% if item.discount_value and item.discount_value > 0 %}
+                                    {% if item.discount_type == 'percentage' %}{{ item.discount_value }}%{% else %}-${{ item.discount_value|floatformat:2 }}{% endif %}
+                                {% else %}-{% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">
+                                {% if item.tax %}{{ item.tax.name }} ({{ item.tax.percentage }}%){% else %}-{% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">${{ item.total|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                                No items in this sales order.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Order Totals -->
+        <div class="flex justify-end mb-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 w-full max-w-md">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Order Summary</h3>
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Subtotal:</span>
+                        <span class="text-gray-900 dark:text-white">${{ sales_order.subtotal|floatformat:2 }}</span>
+                    </div>
+                    {% if sales_order.discount_amount and sales_order.discount_amount > 0 %}
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Discount:</span>
+                        <span class="text-red-600 dark:text-red-400">-${{ sales_order.discount_amount|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    {% if sales_order.tax_amount and sales_order.tax_amount > 0 %}
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Tax:</span>
+                        <span class="text-gray-900 dark:text-white">${{ sales_order.tax_amount|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-2">
+                        <div class="flex justify-between">
+                            <span class="text-lg font-semibold text-gray-900 dark:text-white">Total:</span>
+                            <span class="text-lg font-semibold text-gray-900 dark:text-white">${{ sales_order.total|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        {% if sales_order.notes %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Notes</h3>
+            <p class="text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ sales_order.notes }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Delivery Notes -->
+        {% if delivery_notes %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Related Delivery Notes</h3>
+            <div class="space-y-3">
+                {% for delivery_note in delivery_notes %}
+                <div class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ delivery_note.delivery_number }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ delivery_note.delivery_date|date:"M d, Y" }}</p>
+                    </div>
+                    <span class="px-2 py-1 rounded text-xs font-medium
+                        {% if delivery_note.status == 'delivered' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                        {% else %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200{% endif %}">
+                        {{ delivery_note.get_status_display|title }}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function confirmOrder(pk) {
+    if (confirm('Are you sure you want to confirm this sales order?')) {
+        fetch(`/sales/sales-orders/${pk}/confirm/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while confirming the order.');
+        });
+    }
+}
+
+function deleteOrder(pk) {
+    if (confirm('Are you sure you want to delete this sales order? This action cannot be undone.')) {
+        fetch(`/sales/sales-orders/${pk}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '/sales/sales-orders/';
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the order.');
+        });
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

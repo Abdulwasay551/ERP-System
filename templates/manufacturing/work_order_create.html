@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Work Order - Manufacturing{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .form-textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        padding: 0.75rem 1.5rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-block;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <!-- Header -->
+    <div class="container mx-auto px-6 mb-8">
+        <nav class="text-sm text-gray-600 mb-4">
+            <a href="{% url 'manufacturing:work_orders_ui' %}" class="hover:text-blue-600">Work Orders</a>
+            <span class="mx-2">/</span>
+            <span class="text-gray-900">Create</span>
+        </nav>
+        <h1 class="text-3xl font-bold text-gray-900">
+            <i class="fas fa-plus text-blue-600 mr-3"></i>
+            Create Work Order
+        </h1>
+        <p class="text-gray-600 mt-2">Create a new production work order</p>
+    </div>
+
+    <div class="container mx-auto px-6">
+        <div class="max-w-2xl mx-auto">
+            <div class="form-card">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Basic Information -->
+                        <div class="md:col-span-2">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                                Basic Information
+                            </h3>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="product" class="form-label">
+                                Product <span class="text-red-500">*</span>
+                            </label>
+                            <select id="product" name="product" class="form-input" required>
+                                <option value="">Select Product</option>
+                                {% for product in products %}
+                                <option value="{{ product.id }}">{{ product.name }} ({{ product.product_code }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="quantity" class="form-label">
+                                Quantity <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" id="quantity" name="quantity" 
+                                   min="1" step="1" class="form-input" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="priority" class="form-label">
+                                Priority
+                            </label>
+                            <select id="priority" name="priority" class="form-input">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Scheduling -->
+                        <div class="md:col-span-2">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                                Scheduling
+                            </h3>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="planned_start" class="form-label">
+                                Planned Start Date
+                            </label>
+                            <input type="datetime-local" id="planned_start" name="planned_start" 
+                                   class="form-input">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="planned_end" class="form-label">
+                                Planned End Date
+                            </label>
+                            <input type="datetime-local" id="planned_end" name="planned_end" 
+                                   class="form-input">
+                        </div>
+                        
+                        <div class="form-group md:col-span-2">
+                            <label for="description" class="form-label">
+                                Description
+                            </label>
+                            <textarea id="description" name="description" 
+                                      class="form-input form-textarea" 
+                                      placeholder="Enter work order description or special instructions"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-gray-200">
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save mr-2"></i>
+                            Create Work Order
+                        </button>
+                        <a href="{% url 'manufacturing:work_orders_ui' %}" class="btn-secondary text-center">
+                            <i class="fas fa-times mr-2"></i>
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-calculate planned end date based on start date
+    const startInput = document.getElementById('planned_start');
+    const endInput = document.getElementById('planned_end');
+    
+    startInput.addEventListener('change', function() {
+        if (this.value && !endInput.value) {
+            const startDate = new Date(this.value);
+            const endDate = new Date(startDate);
+            endDate.setDate(endDate.getDate() + 1); // Add 1 day by default
+            
+            const isoString = endDate.toISOString().slice(0, 16);
+            endInput.value = isoString;
+        }
+    });
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const product = document.getElementById('product').value;
+        const quantity = document.getElementById('quantity').value;
+        
+        if (!product) {
+            e.preventDefault();
+            alert('Please select a product');
+            return;
+        }
+        
+        if (!quantity || quantity <= 0) {
+            e.preventDefault();
+            alert('Please enter a valid quantity');
+            return;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,347 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Quotation {{ quotation.quotation_number }} | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-section {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e5e7eb;
+    }
+    .status-badge {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .status-draft { background-color: #f3f4f6; color: #6b7280; }
+    .status-sent { background-color: #dbeafe; color: #1d4ed8; }
+    .status-accepted { background-color: #d1fae5; color: #059669; }
+    .status-lost { background-color: #fee2e2; color: #dc2626; }
+    .status-expired { background-color: #fef3c7; color: #d97706; }
+    .action-btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+    }
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+    .btn-secondary:hover {
+        background: #e5e7eb;
+    }
+    .btn-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+    }
+    .btn-success:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    .item-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 16px;
+    }
+    .item-table th,
+    .item-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    .item-table th {
+        background-color: #f9fafb;
+        font-weight: 600;
+        color: #374151;
+        font-size: 14px;
+    }
+    .totals-section {
+        background: #f9fafb;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8 max-w-7xl">
+        <!-- Header -->
+        <div class="flex justify-between items-start mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">
+                    Quotation {{ quotation.quotation_number }}
+                </h1>
+                <div class="flex items-center gap-4">
+                    <span class="status-badge status-{{ quotation.status }}">
+                        {{ quotation.get_status_display }}
+                    </span>
+                    <span class="text-gray-600">Created on {{ quotation.date|date:"M d, Y" }}</span>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <a href="{% url 'sales:quotations' %}" class="action-btn btn-secondary">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to List
+                </a>
+                <a href="{% url 'sales:quotations_edit' quotation.pk %}" class="action-btn btn-primary">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    Edit
+                </a>
+                {% if quotation.status == 'draft' or quotation.status == 'sent' %}
+                <button onclick="convertToSalesOrder()" class="action-btn btn-success">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Convert to Sales Order
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Content -->
+            <div class="lg:col-span-2">
+                <!-- Customer Information -->
+                <div class="detail-section">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-6">Customer Information</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="font-medium text-gray-900 mb-2">{{ quotation.customer.name }}</h3>
+                            <div class="text-gray-600 space-y-1">
+                                {% if quotation.customer.email %}
+                                <p><span class="font-medium">Email:</span> {{ quotation.customer.email }}</p>
+                                {% endif %}
+                                {% if quotation.customer.phone %}
+                                <p><span class="font-medium">Phone:</span> {{ quotation.customer.phone }}</p>
+                                {% endif %}
+                                {% if quotation.customer.address %}
+                                <p><span class="font-medium">Address:</span> {{ quotation.customer.address }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-900 mb-2">Quotation Details</h4>
+                            <div class="text-gray-600 space-y-1">
+                                <p><span class="font-medium">Date:</span> {{ quotation.date|date:"M d, Y" }}</p>
+                                {% if quotation.valid_until %}
+                                <p><span class="font-medium">Valid Until:</span> {{ quotation.valid_until|date:"M d, Y" }}</p>
+                                {% endif %}
+                                {% if quotation.currency %}
+                                <p><span class="font-medium">Currency:</span> {{ quotation.currency.code }}</p>
+                                {% endif %}
+                                {% if quotation.created_by %}
+                                <p><span class="font-medium">Created By:</span> {{ quotation.created_by.first_name }} {{ quotation.created_by.last_name }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Line Items -->
+                <div class="detail-section">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-6">Line Items</h2>
+                    <div class="overflow-x-auto">
+                        <table class="item-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th class="text-right">Quantity</th>
+                                    <th class="text-right">Unit Price</th>
+                                    <th class="text-right">Tax</th>
+                                    <th class="text-right">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                <tr>
+                                    <td>
+                                        <div class="font-medium text-gray-900">{{ item.product.name }}</div>
+                                        {% if item.product.description %}
+                                        <div class="text-sm text-gray-500">{{ item.product.description|truncatechars:60 }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-right">{{ item.quantity|floatformat:2 }}</td>
+                                    <td class="text-right">${{ item.price|floatformat:2 }}</td>
+                                    <td class="text-right">
+                                        {% if item.tax %}
+                                        {{ item.tax.name }} ({{ item.tax.rate }}%)
+                                        {% else %}
+                                        No Tax
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-right font-medium">${{ item.total|floatformat:2 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-8 text-gray-500">
+                                        No items added to this quotation yet.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Totals -->
+                    {% if items %}
+                    <div class="totals-section">
+                        <div class="flex justify-end">
+                            <div class="w-64">
+                                <div class="flex justify-between mb-2">
+                                    <span>Subtotal:</span>
+                                    <span>${{ quotation.subtotal|floatformat:2|default:"0.00" }}</span>
+                                </div>
+                                <div class="flex justify-between mb-2">
+                                    <span>Tax:</span>
+                                    <span>${{ quotation.tax_amount|floatformat:2|default:"0.00" }}</span>
+                                </div>
+                                {% if quotation.discount_amount %}
+                                <div class="flex justify-between mb-2">
+                                    <span>Discount:</span>
+                                    <span>-${{ quotation.discount_amount|floatformat:2 }}</span>
+                                </div>
+                                {% endif %}
+                                {% if quotation.shipping_amount %}
+                                <div class="flex justify-between mb-2">
+                                    <span>Shipping:</span>
+                                    <span>${{ quotation.shipping_amount|floatformat:2 }}</span>
+                                </div>
+                                {% endif %}
+                                <div class="flex justify-between font-semibold text-lg border-t pt-2">
+                                    <span>Total:</span>
+                                    <span>${{ quotation.total|floatformat:2 }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Additional Information -->
+                {% if quotation.terms_and_conditions or quotation.notes %}
+                <div class="detail-section">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-6">Additional Information</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {% if quotation.terms_and_conditions %}
+                        <div>
+                            <h4 class="font-medium text-gray-900 mb-2">Terms and Conditions</h4>
+                            <p class="text-gray-600 whitespace-pre-wrap">{{ quotation.terms_and_conditions }}</p>
+                        </div>
+                        {% endif %}
+                        {% if quotation.notes %}
+                        <div>
+                            <h4 class="font-medium text-gray-900 mb-2">Notes</h4>
+                            <p class="text-gray-600 whitespace-pre-wrap">{{ quotation.notes }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="lg:col-span-1">
+                <!-- Quick Actions -->
+                <div class="detail-section">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <button onclick="printQuotation()" class="w-full action-btn btn-secondary">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                            </svg>
+                            Print Quotation
+                        </button>
+                        <button onclick="emailQuotation()" class="w-full action-btn btn-secondary">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                            Email to Customer
+                        </button>
+                        <button onclick="duplicateQuotation()" class="w-full action-btn btn-secondary">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                            Duplicate
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Timeline / Activity -->
+                <div class="detail-section">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Activity Timeline</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-3">
+                            <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-900">Quotation Created</p>
+                                <p class="text-xs text-gray-500">{{ quotation.created_at|date:"M d, Y g:i A" }}</p>
+                            </div>
+                        </div>
+                        {% if quotation.updated_at != quotation.created_at %}
+                        <div class="flex items-start gap-3">
+                            <div class="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-900">Last Updated</p>
+                                <p class="text-xs text-gray-500">{{ quotation.updated_at|date:"M d, Y g:i A" }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function convertToSalesOrder() {
+    if (confirm('Convert this quotation to a sales order?')) {
+        // TODO: Implement conversion to sales order
+        alert('Feature coming soon!');
+    }
+}
+
+function printQuotation() {
+    window.print();
+}
+
+function emailQuotation() {
+    alert('Email feature coming soon!');
+}
+
+function duplicateQuotation() {
+    if (confirm('Create a duplicate of this quotation?')) {
+        // TODO: Implement duplication
+        alert('Feature coming soon!');
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,347 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit {{ work_center.name }} - Work Center{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .form-textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        padding: 0.75rem 1.5rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-block;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <!-- Header -->
+    <div class="container mx-auto px-6 mb-8">
+        <nav class="text-sm text-gray-600 mb-4">
+            <a href="{% url 'manufacturing:work_centers_ui' %}" class="hover:text-blue-600">Work Centers</a>
+            <span class="mx-2">/</span>
+            <a href="{% url 'manufacturing:work_center_detail' work_center.pk %}" class="hover:text-blue-600">{{ work_center.name }}</a>
+            <span class="mx-2">/</span>
+            <span class="text-gray-900">Edit</span>
+        </nav>
+        <h1 class="text-3xl font-bold text-gray-900">
+            <i class="fas fa-edit text-blue-600 mr-3"></i>
+            Edit Work Center
+        </h1>
+        <p class="text-gray-600 mt-2">Update work center configuration and settings</p>
+    </div>
+
+    <div class="container mx-auto px-6">
+        <div class="max-w-2xl mx-auto">
+            <div class="form-card">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Basic Information -->
+                        <div class="md:col-span-2">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                                Basic Information
+                            </h3>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="name" class="form-label">
+                                Work Center Name <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" id="name" name="name" value="{{ work_center.name }}" 
+                                   class="form-input" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="code" class="form-label">
+                                Code
+                            </label>
+                            <input type="text" id="code" name="code" value="{{ work_center.code }}" 
+                                   class="form-input" readonly 
+                                   title="Work center code cannot be changed">
+                        </div>
+                        
+                        <div class="form-group md:col-span-2">
+                            <label for="description" class="form-label">
+                                Description
+                            </label>
+                            <textarea id="description" name="description" 
+                                      class="form-input form-textarea" 
+                                      placeholder="Describe the work center purpose and capabilities">{{ work_center.description }}</textarea>
+                        </div>
+                        
+                        <!-- Capacity Configuration -->
+                        <div class="md:col-span-2">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                                Capacity Configuration
+                            </h3>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="capacity_per_hour" class="form-label">
+                                Capacity per Hour <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" id="capacity_per_hour" name="capacity_per_hour" 
+                                   value="{{ work_center.capacity_per_hour }}" 
+                                   step="0.01" min="0" class="form-input" required>
+                            <p class="text-sm text-gray-500 mt-1">Number of units that can be processed per hour</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="operating_hours_per_day" class="form-label">
+                                Operating Hours per Day <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" id="operating_hours_per_day" name="operating_hours_per_day" 
+                                   value="{{ work_center.operating_hours_per_day }}" 
+                                   step="0.5" min="0" max="24" class="form-input" required>
+                            <p class="text-sm text-gray-500 mt-1">Daily operating hours</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="operating_days_per_week" class="form-label">
+                                Operating Days per Week
+                            </label>
+                            <input type="number" id="operating_days_per_week" name="operating_days_per_week" 
+                                   value="{{ work_center.operating_days_per_week }}" 
+                                   min="1" max="7" class="form-input">
+                            <p class="text-sm text-gray-500 mt-1">Number of operating days per week</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="cost_per_hour" class="form-label">
+                                Cost per Hour ($)
+                            </label>
+                            <input type="number" id="cost_per_hour" name="cost_per_hour" 
+                                   value="{{ work_center.cost_per_hour }}" 
+                                   step="0.01" min="0" class="form-input">
+                            <p class="text-sm text-gray-500 mt-1">Hourly operating cost</p>
+                        </div>
+                        
+                        <!-- Time Configuration -->
+                        <div class="md:col-span-2">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                                Time Configuration
+                            </h3>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="setup_time_minutes" class="form-label">
+                                Setup Time (minutes)
+                            </label>
+                            <input type="number" id="setup_time_minutes" name="setup_time_minutes" 
+                                   value="{{ work_center.setup_time_minutes }}" 
+                                   min="0" class="form-input">
+                            <p class="text-sm text-gray-500 mt-1">Time required to set up the work center</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="cleanup_time_minutes" class="form-label">
+                                Cleanup Time (minutes)
+                            </label>
+                            <input type="number" id="cleanup_time_minutes" name="cleanup_time_minutes" 
+                                   value="{{ work_center.cleanup_time_minutes }}" 
+                                   min="0" class="form-input">
+                            <p class="text-sm text-gray-500 mt-1">Time required to clean up after operations</p>
+                        </div>
+                        
+                        <!-- Resource Requirements -->
+                        <div class="md:col-span-2">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                                Resource Requirements
+                            </h3>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="max_operators" class="form-label">
+                                Maximum Operators
+                            </label>
+                            <input type="number" id="max_operators" name="max_operators" 
+                                   value="{{ work_center.max_operators }}" 
+                                   min="1" class="form-input">
+                            <p class="text-sm text-gray-500 mt-1">Maximum number of operators that can work simultaneously</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Options</label>
+                            <div class="space-y-3">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="requires_operator" value="1" 
+                                           {% if work_center.requires_operator %}checked{% endif %}
+                                           class="rounded border-gray-300 text-blue-600 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                    <span class="ml-2 text-sm text-gray-700">Requires Operator</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="requires_quality_check" value="1" 
+                                           {% if work_center.requires_quality_check %}checked{% endif %}
+                                           class="rounded border-gray-300 text-blue-600 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                    <span class="ml-2 text-sm text-gray-700">Requires Quality Check</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="is_active" value="1" 
+                                           {% if work_center.is_active %}checked{% endif %}
+                                           class="rounded border-gray-300 text-blue-600 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                    <span class="ml-2 text-sm text-gray-700">Active</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-gray-200">
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save mr-2"></i>
+                            Save Changes
+                        </button>
+                        <a href="{% url 'manufacturing:work_center_detail' work_center.pk %}" class="btn-secondary text-center">
+                            <i class="fas fa-times mr-2"></i>
+                            Cancel
+                        </a>
+                        <div class="flex-1"></div>
+                        <button type="button" onclick="deleteWorkCenter()" class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors">
+                            <i class="fas fa-trash mr-2"></i>
+                            Delete
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Delete Work Center</h3>
+            <p class="text-sm text-gray-500 mb-4">
+                Are you sure you want to delete "{{ work_center.name }}"? This action cannot be undone.
+            </p>
+            <div class="flex justify-center space-x-3">
+                <button onclick="closeDeleteModal()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400">
+                    Cancel
+                </button>
+                <button onclick="confirmDelete()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteWorkCenter() {
+    document.getElementById('deleteModal').classList.remove('hidden');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+}
+
+function confirmDelete() {
+    // TODO: Implement delete functionality
+    alert('Delete functionality would be implemented here');
+    closeDeleteModal();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const name = document.getElementById('name').value.trim();
+        const capacity = document.getElementById('capacity_per_hour').value;
+        const hours = document.getElementById('operating_hours_per_day').value;
+        
+        if (!name) {
+            e.preventDefault();
+            alert('Please enter a work center name');
+            return;
+        }
+        
+        if (!capacity || capacity <= 0) {
+            e.preventDefault();
+            alert('Please enter a valid capacity per hour');
+            return;
+        }
+        
+        if (!hours || hours <= 0 || hours > 24) {
+            e.preventDefault();
+            alert('Please enter valid operating hours (1-24)');
+            return;
+        }
+    });
+});
+</script>
+{% endblock %}

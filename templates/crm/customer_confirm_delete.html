@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Customer | FutureERP{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">Delete Customer</h1>
+                <p class="text-gray-600">Confirm customer deletion</p>
+            </div>
+        </div>
+
+        <!-- Confirmation Form -->
+        <div class="bg-white rounded-2xl shadow-lg p-8 max-w-2xl mx-auto">
+            <div class="text-center mb-8">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Are you sure?</h3>
+                <p class="text-gray-600">This action cannot be undone. This will permanently delete the customer:</p>
+                <p class="text-lg font-semibold text-red-600 mt-2">{{ object.name }}</p>
+            </div>
+
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Customer Details -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="font-semibold text-gray-900 mb-2">Customer Information</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-600">Name:</span>
+                            <span class="font-medium">{{ object.name }}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Email:</span>
+                            <span class="font-medium">{{ object.email|default:"Not provided" }}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Phone:</span>
+                            <span class="font-medium">{{ object.phone|default:"Not provided" }}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Created:</span>
+                            <span class="font-medium">{{ object.created_at|date:"M d, Y" }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Warning -->
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex">
+                        <i class="fas fa-exclamation-triangle text-red-400 mr-3 mt-1"></i>
+                        <div>
+                            <h4 class="text-red-800 font-semibold">Warning</h4>
+                            <p class="text-red-700 text-sm mt-1">
+                                Deleting this customer will also remove all associated:
+                            </p>
+                            <ul class="text-red-700 text-sm mt-2 list-disc list-inside">
+                                <li>Order history</li>
+                                <li>Communication logs</li>
+                                <li>Payment records</li>
+                                <li>Related opportunities</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-4">
+                    <a href="{% url 'crm:customer_list' %}" 
+                       class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                        Yes, Delete Customer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,452 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ production_plan.name }} - Production Plan Details{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .status-draft { background: #f3f4f6; color: #374151; }
+    .status-approved { background: #dcfce7; color: #16a34a; }
+    .status-in_progress { background: #fef3c7; color: #d97706; }
+    .status-completed { background: #dbeafe; color: #1e40af; }
+    .status-cancelled { background: #fee2e2; color: #dc2626; }
+    
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        text-align: center;
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .metric-label {
+        font-size: 0.875rem;
+        opacity: 0.9;
+    }
+    
+    .progress-bar {
+        background: #e5e7eb;
+        border-radius: 9999px;
+        height: 0.5rem;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #10b981, #059669);
+        transition: width 0.5s ease;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-block;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        text-decoration: none;
+        color: white;
+    }
+    
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        padding: 0.75rem 1.5rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-block;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        text-decoration: none;
+    }
+    
+    .table-container {
+        overflow-x: auto;
+        border-radius: 0.5rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .data-table th {
+        background: #f9fafb;
+        padding: 0.75rem;
+        text-align: left;
+        font-weight: 600;
+        color: #374151;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .data-table td {
+        padding: 0.75rem;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .data-table tr:hover {
+        background: #f9fafb;
+    }
+    
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .badge-low { background: #f3f4f6; color: #374151; }
+    .badge-normal { background: #dbeafe; color: #1e40af; }
+    .badge-high { background: #fef3c7; color: #d97706; }
+    .badge-urgent { background: #fee2e2; color: #dc2626; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <!-- Header -->
+    <div class="container mx-auto px-6 mb-8">
+        <nav class="text-sm text-gray-600 mb-4">
+            <a href="{% url 'manufacturing:production_plans_ui' %}" class="hover:text-blue-600">Production Plans</a>
+            <span class="mx-2">/</span>
+            <span class="text-gray-900">{{ production_plan.name }}</span>
+        </nav>
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">
+                    <i class="fas fa-calendar-alt text-blue-600 mr-3"></i>
+                    {{ production_plan.name }}
+                </h1>
+                <p class="text-gray-600 mt-2">
+                    {{ production_plan.start_date|date:"M d, Y" }} - {{ production_plan.end_date|date:"M d, Y" }}
+                </p>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="status-badge status-{{ production_plan.status }}">
+                    <i class="fas fa-circle mr-2 text-xs"></i>
+                    {{ production_plan.get_status_display }}
+                </div>
+                <a href="{% url 'manufacturing:production_plan_edit' production_plan.id %}" class="btn-primary">
+                    <i class="fas fa-edit mr-2"></i>
+                    Edit Plan
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6">
+        <!-- Summary Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="metric-card">
+                <div class="metric-value">{{ total_items }}</div>
+                <div class="metric-label">Total Items</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">{{ total_planned_quantity|floatformat:0 }}</div>
+                <div class="metric-label">Planned Quantity</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">{{ total_produced_quantity|floatformat:0 }}</div>
+                <div class="metric-label">Produced Quantity</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">{{ completion_percentage|floatformat:1 }}%</div>
+                <div class="metric-label">Completion</div>
+            </div>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="detail-card">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Overall Progress</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ completion_percentage }}%"></div>
+            </div>
+            <div class="flex justify-between text-sm text-gray-600 mt-2">
+                <span>{{ total_produced_quantity|floatformat:0 }} produced</span>
+                <span>{{ total_planned_quantity|floatformat:0 }} planned</span>
+            </div>
+        </div>
+
+        <!-- Plan Details -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Basic Information -->
+            <div class="detail-card">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Plan Information</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Plan Type:</span>
+                        <span class="font-medium">{{ production_plan.get_plan_type_display }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Status:</span>
+                        <span class="status-badge status-{{ production_plan.status }}">
+                            {{ production_plan.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Duration:</span>
+                        <span class="font-medium">
+                            {% with days=production_plan.end_date|timeuntil:production_plan.start_date %}
+                                {{ days }}
+                            {% endwith %}
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Created By:</span>
+                        <span class="font-medium">
+                            {{ production_plan.created_by.get_full_name|default:production_plan.created_by.username }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Created Date:</span>
+                        <span class="font-medium">{{ production_plan.created_at|date:"M d, Y" }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Planning Options -->
+            <div class="detail-card">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Planning Configuration</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-600">Consider Capacity:</span>
+                        <span class="flex items-center">
+                            {% if production_plan.consider_capacity %}
+                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                <span class="text-green-600 font-medium">Enabled</span>
+                            {% else %}
+                                <i class="fas fa-times-circle text-red-500 mr-2"></i>
+                                <span class="text-red-600 font-medium">Disabled</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-600">Consider Lead Times:</span>
+                        <span class="flex items-center">
+                            {% if production_plan.consider_lead_times %}
+                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                <span class="text-green-600 font-medium">Enabled</span>
+                            {% else %}
+                                <i class="fas fa-times-circle text-red-500 mr-2"></i>
+                                <span class="text-red-600 font-medium">Disabled</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-600">Auto-create Work Orders:</span>
+                        <span class="flex items-center">
+                            {% if production_plan.auto_create_work_orders %}
+                                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                <span class="text-green-600 font-medium">Enabled</span>
+                            {% else %}
+                                <i class="fas fa-times-circle text-red-500 mr-2"></i>
+                                <span class="text-red-600 font-medium">Disabled</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        {% if production_plan.notes %}
+        <div class="detail-card mb-8">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Notes</h3>
+            <p class="text-gray-700">{{ production_plan.notes|linebreaks }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Production Plan Items -->
+        <div class="detail-card">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">Production Items</h3>
+                <button class="btn-primary" onclick="addPlanItem()">
+                    <i class="fas fa-plus mr-2"></i>
+                    Add Item
+                </button>
+            </div>
+            
+            {% if plan_items %}
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Planned Qty</th>
+                            <th>Produced Qty</th>
+                            <th>Remaining</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Priority</th>
+                            <th>Progress</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in plan_items %}
+                        <tr>
+                            <td>
+                                <div class="font-medium">{{ item.product.name }}</div>
+                                <div class="text-sm text-gray-500">{{ item.product.product_code }}</div>
+                            </td>
+                            <td class="font-medium">{{ item.planned_quantity|floatformat:0 }}</td>
+                            <td>{{ item.produced_quantity|floatformat:0 }}</td>
+                            <td>{{ item.remaining_quantity|floatformat:0 }}</td>
+                            <td>{{ item.planned_start_date|date:"M d, Y" }}</td>
+                            <td>{{ item.planned_end_date|date:"M d, Y" }}</td>
+                            <td>
+                                <span class="badge badge-{{ item.priority }}">
+                                    {{ item.get_priority_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% with progress=item.produced_quantity|div:item.planned_quantity|mul:100 %}
+                                <div class="w-16">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: {{ progress }}%"></div>
+                                    </div>
+                                </div>
+                                {% endwith %}
+                            </td>
+                            <td>
+                                <div class="flex gap-2">
+                                    <button class="text-blue-600 hover:text-blue-800" 
+                                            onclick="editPlanItem({{ item.id }})" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="text-red-600 hover:text-red-800" 
+                                            onclick="deletePlanItem({{ item.id }})" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-12">
+                <i class="fas fa-clipboard-list text-gray-400 text-6xl mb-4"></i>
+                <h4 class="text-lg font-medium text-gray-900 mb-2">No Items Added</h4>
+                <p class="text-gray-600 mb-6">Start by adding products to this production plan</p>
+                <button class="btn-primary" onclick="addPlanItem()">
+                    <i class="fas fa-plus mr-2"></i>
+                    Add First Item
+                </button>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="flex gap-4 mt-8">
+            <a href="{% url 'manufacturing:production_plans_ui' %}" class="btn-secondary">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Back to Plans
+            </a>
+            
+            {% if production_plan.status == 'draft' %}
+            <button class="btn-primary" onclick="approvePlan()">
+                <i class="fas fa-check mr-2"></i>
+                Approve Plan
+            </button>
+            {% endif %}
+            
+            {% if production_plan.status == 'approved' and production_plan.auto_create_work_orders %}
+            <button class="btn-primary" onclick="generateWorkOrders()">
+                <i class="fas fa-cogs mr-2"></i>
+                Generate Work Orders
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function addPlanItem() {
+    // This would open a modal or redirect to add item page
+    alert('Add Plan Item functionality would be implemented here');
+}
+
+function editPlanItem(itemId) {
+    // This would open a modal or redirect to edit item page
+    alert('Edit Plan Item functionality would be implemented here for item ID: ' + itemId);
+}
+
+function deletePlanItem(itemId) {
+    if (confirm('Are you sure you want to delete this plan item?')) {
+        // AJAX call to delete item
+        alert('Delete Plan Item functionality would be implemented here for item ID: ' + itemId);
+    }
+}
+
+function approvePlan() {
+    if (confirm('Are you sure you want to approve this production plan? This action may automatically create work orders.')) {
+        // AJAX call to approve plan
+        window.location.href = '{% url "manufacturing:production_plan_edit" production_plan.id %}';
+    }
+}
+
+function generateWorkOrders() {
+    if (confirm('This will generate work orders for all items in this production plan. Continue?')) {
+        // AJAX call to generate work orders
+        alert('Generate Work Orders functionality would be implemented here');
+    }
+}
+
+// Custom filter for division in template (since Django doesn't have built-in div filter)
+document.addEventListener('DOMContentLoaded', function() {
+    // Calculate progress percentages for items
+    const progressBars = document.querySelectorAll('.progress-fill');
+    progressBars.forEach(bar => {
+        const width = bar.style.width;
+        if (width && parseFloat(width) > 100) {
+            bar.style.width = '100%';
+        }
+    });
+});
+</script>
+{% endblock %}

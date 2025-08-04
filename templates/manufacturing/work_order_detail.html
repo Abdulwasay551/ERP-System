@@ -1,0 +1,696 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Work Order {{ work_order.wo_number }} | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tab-content {
+        display: none;
+    }
+    .tab-content.active {
+        display: block;
+    }
+    .timeline-item {
+        position: relative;
+        padding-left: 30px;
+        margin-bottom: 20px;
+    }
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 10px;
+        top: 5px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #10b981;
+    }
+    .timeline-item::after {
+        content: '';
+        position: absolute;
+        left: 14px;
+        top: 15px;
+        width: 2px;
+        height: calc(100% + 5px);
+        background: #e5e7eb;
+    }
+    .timeline-item:last-child::after {
+        display: none;
+    }
+    .operation-card {
+        background: white;
+        border: 1px solid rgba(229, 231, 235, 1);
+        transition: all 0.3s ease;
+    }
+    .operation-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .progress-ring {
+        transform: rotate(-90deg);
+    }
+    .progress-ring-circle {
+        transition: stroke-dashoffset 0.35s;
+        transform-origin: 50% 50%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-start mb-8">
+            <div>
+                <div class="flex items-center space-x-4 mb-2">
+                    <h1 class="text-4xl font-bold text-gray-900">{{ work_order.wo_number }}</h1>
+                    <span class="inline-flex items-center px-4 py-2 rounded-full text-lg font-medium
+                        {% if work_order.status == 'completed' %}bg-green-100 text-green-800
+                        {% elif work_order.status == 'in_progress' %}bg-blue-100 text-blue-800
+                        {% elif work_order.status == 'planned' %}bg-yellow-100 text-yellow-800
+                        {% elif work_order.status == 'cancelled' %}bg-red-100 text-red-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ work_order.get_status_display }}
+                    </span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                        {% if work_order.priority == 'urgent' %}bg-red-100 text-red-800
+                        {% elif work_order.priority == 'high' %}bg-orange-100 text-orange-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ work_order.get_priority_display }}
+                    </span>
+                </div>
+                <p class="text-xl text-gray-600 mb-2">{{ work_order.product.name }}</p>
+                <p class="text-gray-500">BOM: {{ work_order.bom.name }} v{{ work_order.bom.version }}</p>
+                {% if work_order.sales_order %}
+                <p class="text-blue-600">Sales Order: {{ work_order.sales_order.order_number }}</p>
+                {% endif %}
+            </div>
+            <div class="flex space-x-4">
+                <a href="{% url 'manufacturing:work_orders_list' %}" 
+                   class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-2xl transition-all flex items-center">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to List
+                </a>
+                {% if work_order.status == 'planned' %}
+                <button onclick="startWorkOrder()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-2xl transition-all">
+                    <i class="fas fa-play mr-2"></i>Start Production
+                </button>
+                {% elif work_order.status == 'in_progress' %}
+                <button onclick="completeWorkOrder()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl transition-all">
+                    <i class="fas fa-check mr-2"></i>Mark Complete
+                </button>
+                {% endif %}
+                <div class="relative">
+                    <button onclick="toggleActionsMenu()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-3 rounded-2xl transition-all">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <div id="actionsMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border hidden z-10">
+                        <a href="#" onclick="editWorkOrder()" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                            <i class="fas fa-edit mr-2"></i>Edit
+                        </a>
+                        <a href="#" onclick="duplicateWorkOrder()" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                            <i class="fas fa-copy mr-2"></i>Duplicate
+                        </a>
+                        <a href="#" onclick="printWorkOrder()" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                            <i class="fas fa-print mr-2"></i>Print
+                        </a>
+                        {% if work_order.status not in 'completed,cancelled' %}
+                        <a href="#" onclick="cancelWorkOrder()" class="block px-4 py-2 text-red-700 hover:bg-red-50">
+                            <i class="fas fa-times mr-2"></i>Cancel
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Overview -->
+        <div class="bg-white rounded-2xl p-6 border border-gray-200 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div class="relative w-24 h-24 mx-auto mb-4">
+                        <svg class="w-24 h-24 progress-ring" viewBox="0 0 120 120">
+                            <circle cx="60" cy="60" r="54" stroke="#e5e7eb" stroke-width="12" fill="none"></circle>
+                            <circle cx="60" cy="60" r="54" stroke="#10b981" stroke-width="12" fill="none" 
+                                    class="progress-ring-circle" 
+                                    stroke-dasharray="339.29" 
+                                    stroke-dashoffset="{{ work_order.get_progress_offset }}"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-xl font-bold text-gray-900">{{ work_order.get_progress_percentage }}%</span>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-600">Overall Progress</p>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <p class="text-sm text-blue-600 mb-1">Planned Quantity</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ work_order.quantity_planned }}</p>
+                    <p class="text-xs text-gray-500">{{ work_order.product.unit_of_measure }}</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <p class="text-sm text-green-600 mb-1">Produced</p>
+                    <p class="text-2xl font-bold text-green-600">{{ work_order.quantity_produced }}</p>
+                    <p class="text-xs text-gray-500">{{ work_order.product.unit_of_measure }}</p>
+                </div>
+                <div class="bg-orange-50 p-4 rounded-lg">
+                    <p class="text-sm text-orange-600 mb-1">Remaining</p>
+                    <p class="text-2xl font-bold text-orange-600">{{ work_order.quantity_remaining }}</p>
+                    <p class="text-xs text-gray-500">{{ work_order.product.unit_of_measure }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="bg-white rounded-t-2xl border border-gray-200 border-b-0">
+            <div class="flex space-x-1 p-1">
+                <button onclick="showTab('overview')" id="tab-overview" 
+                        class="tab-btn flex-1 py-3 px-4 text-center font-medium rounded-lg transition-all active">
+                    <i class="fas fa-info-circle mr-2"></i>Overview
+                </button>
+                <button onclick="showTab('operations')" id="tab-operations" 
+                        class="tab-btn flex-1 py-3 px-4 text-center font-medium rounded-lg transition-all">
+                    <i class="fas fa-cogs mr-2"></i>Operations
+                </button>
+                <button onclick="showTab('materials')" id="tab-materials" 
+                        class="tab-btn flex-1 py-3 px-4 text-center font-medium rounded-lg transition-all">
+                    <i class="fas fa-boxes mr-2"></i>Materials
+                </button>
+                <button onclick="showTab('quality')" id="tab-quality" 
+                        class="tab-btn flex-1 py-3 px-4 text-center font-medium rounded-lg transition-all">
+                    <i class="fas fa-clipboard-check mr-2"></i>Quality
+                </button>
+                <button onclick="showTab('timeline')" id="tab-timeline" 
+                        class="tab-btn flex-1 py-3 px-4 text-center font-medium rounded-lg transition-all">
+                    <i class="fas fa-history mr-2"></i>Timeline
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab Contents -->
+        <div class="bg-white rounded-b-2xl border border-gray-200 p-6">
+            <!-- Overview Tab -->
+            <div id="content-overview" class="tab-content active">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Work Order Details -->
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">Work Order Details</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Work Order Number:</span>
+                                <span class="font-medium">{{ work_order.wo_number }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Product:</span>
+                                <span class="font-medium">{{ work_order.product.name }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">BOM:</span>
+                                <span class="font-medium">{{ work_order.bom.name }} v{{ work_order.bom.version }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Status:</span>
+                                <span class="font-medium">{{ work_order.get_status_display }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Priority:</span>
+                                <span class="font-medium">{{ work_order.get_priority_display }}</span>
+                            </div>
+                            {% if work_order.assigned_to %}
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Assigned To:</span>
+                                <span class="font-medium">{{ work_order.assigned_to.get_full_name }}</span>
+                            </div>
+                            {% endif %}
+                            {% if work_order.customer_reference %}
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Customer Reference:</span>
+                                <span class="font-medium">{{ work_order.customer_reference }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Schedule Information -->
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">Schedule</h3>
+                        <div class="space-y-4">
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <p class="text-sm text-blue-600 mb-1">Scheduled Start</p>
+                                <p class="font-medium">
+                                    {% if work_order.scheduled_start %}
+                                        {{ work_order.scheduled_start|date:"M d, Y H:i" }}
+                                    {% else %}
+                                        Not scheduled
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="bg-green-50 p-4 rounded-lg">
+                                <p class="text-sm text-green-600 mb-1">Scheduled End</p>
+                                <p class="font-medium">
+                                    {% if work_order.scheduled_end %}
+                                        {{ work_order.scheduled_end|date:"M d, Y H:i" }}
+                                    {% else %}
+                                        Not scheduled
+                                    {% endif %}
+                                </p>
+                            </div>
+                            {% if work_order.actual_start %}
+                            <div class="bg-purple-50 p-4 rounded-lg">
+                                <p class="text-sm text-purple-600 mb-1">Actual Start</p>
+                                <p class="font-medium">{{ work_order.actual_start|date:"M d, Y H:i" }}</p>
+                            </div>
+                            {% endif %}
+                            {% if work_order.actual_end %}
+                            <div class="bg-indigo-50 p-4 rounded-lg">
+                                <p class="text-sm text-indigo-600 mb-1">Actual End</p>
+                                <p class="font-medium">{{ work_order.actual_end|date:"M d, Y H:i" }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if work_order.notes %}
+                <div class="mt-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">Notes</h3>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-gray-700">{{ work_order.notes }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Operations Tab -->
+            <div id="content-operations" class="tab-content">
+                <div class="space-y-6">
+                    {% for job_card in work_order.job_cards.all %}
+                    <div class="operation-card rounded-xl p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="text-lg font-bold text-gray-900">{{ job_card.operation.name }}</h4>
+                                <p class="text-gray-600">Work Center: {{ job_card.operation.work_center.name }}</p>
+                                <p class="text-sm text-gray-500">Sequence: {{ job_card.operation.sequence }}</p>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                    {% if job_card.status == 'completed' %}bg-green-100 text-green-800
+                                    {% elif job_card.status == 'in_progress' %}bg-blue-100 text-blue-800
+                                    {% elif job_card.status == 'planned' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ job_card.get_status_display }}
+                                </span>
+                                {% if job_card.status == 'planned' %}
+                                <button onclick="startOperation({{ job_card.id }})" class="bg-green-100 hover:bg-green-200 text-green-700 px-3 py-1 rounded-lg text-sm">
+                                    Start
+                                </button>
+                                {% elif job_card.status == 'in_progress' %}
+                                <button onclick="completeOperation({{ job_card.id }})" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-lg text-sm">
+                                    Complete
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <p class="text-xs text-gray-600 mb-1">Planned Hours</p>
+                                <p class="font-bold text-gray-900">{{ job_card.operation.time_cycle|default:0 }}</p>
+                            </div>
+                            <div class="bg-blue-50 p-3 rounded-lg">
+                                <p class="text-xs text-blue-600 mb-1">Actual Hours</p>
+                                <p class="font-bold text-blue-900">{{ job_card.get_actual_hours|default:0 }}</p>
+                            </div>
+                            <div class="bg-green-50 p-3 rounded-lg">
+                                <p class="text-xs text-green-600 mb-1">Progress</p>
+                                <p class="font-bold text-green-900">{{ job_card.get_progress_percentage }}%</p>
+                            </div>
+                            <div class="bg-orange-50 p-3 rounded-lg">
+                                <p class="text-xs text-orange-600 mb-1">Cost</p>
+                                <p class="font-bold text-orange-900">${{ job_card.get_total_cost|default:0 }}</p>
+                            </div>
+                        </div>
+
+                        {% if job_card.start_time %}
+                        <div class="flex justify-between text-sm text-gray-600">
+                            <span>Started: {{ job_card.start_time|date:"M d, Y H:i" }}</span>
+                            {% if job_card.end_time %}
+                            <span>Completed: {{ job_card.end_time|date:"M d, Y H:i" }}</span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8">
+                        <i class="fas fa-cogs text-gray-400 text-4xl mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No Operations Found</h3>
+                        <p class="text-gray-600">Operations will be created based on the BOM routing</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Materials Tab -->
+            <div id="content-materials" class="tab-content">
+                <div class="space-y-6">
+                    {% for consumption in work_order.material_consumptions.all %}
+                    <div class="bg-white border border-gray-200 rounded-xl p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="text-lg font-bold text-gray-900">{{ consumption.product.name }}</h4>
+                                <p class="text-gray-600">{{ consumption.product.internal_reference }}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                    {% if consumption.status == 'consumed' %}bg-green-100 text-green-800
+                                    {% elif consumption.status == 'reserved' %}bg-blue-100 text-blue-800
+                                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    {{ consumption.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <p class="text-sm text-blue-600 mb-1">Required</p>
+                                <p class="font-bold text-blue-900">{{ consumption.quantity_required }} {{ consumption.product.unit_of_measure }}</p>
+                            </div>
+                            <div class="bg-green-50 p-4 rounded-lg">
+                                <p class="text-sm text-green-600 mb-1">Reserved</p>
+                                <p class="font-bold text-green-900">{{ consumption.quantity_reserved }} {{ consumption.product.unit_of_measure }}</p>
+                            </div>
+                            <div class="bg-orange-50 p-4 rounded-lg">
+                                <p class="text-sm text-orange-600 mb-1">Consumed</p>
+                                <p class="font-bold text-orange-900">{{ consumption.quantity_consumed }} {{ consumption.product.unit_of_measure }}</p>
+                            </div>
+                            <div class="bg-purple-50 p-4 rounded-lg">
+                                <p class="text-sm text-purple-600 mb-1">Cost</p>
+                                <p class="font-bold text-purple-900">${{ consumption.get_total_cost|default:0 }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8">
+                        <i class="fas fa-boxes text-gray-400 text-4xl mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No Materials Found</h3>
+                        <p class="text-gray-600">Material consumption will be tracked during production</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Quality Tab -->
+            <div id="content-quality" class="tab-content">
+                <div class="space-y-6">
+                    {% for quality_check in work_order.quality_checks.all %}
+                    <div class="bg-white border border-gray-200 rounded-xl p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="text-lg font-bold text-gray-900">{{ quality_check.check_type }}</h4>
+                                <p class="text-gray-600">{{ quality_check.description }}</p>
+                            </div>
+                            <div>
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                    {% if quality_check.status == 'passed' %}bg-green-100 text-green-800
+                                    {% elif quality_check.status == 'failed' %}bg-red-100 text-red-800
+                                    {% elif quality_check.status == 'in_progress' %}bg-blue-100 text-blue-800
+                                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    {{ quality_check.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <p class="text-sm text-gray-600 mb-1">Inspector</p>
+                                <p class="font-medium text-gray-900">
+                                    {% if quality_check.inspector %}
+                                        {{ quality_check.inspector.get_full_name }}
+                                    {% else %}
+                                        Not assigned
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <p class="text-sm text-gray-600 mb-1">Inspection Date</p>
+                                <p class="font-medium text-gray-900">
+                                    {% if quality_check.inspection_date %}
+                                        {{ quality_check.inspection_date|date:"M d, Y H:i" }}
+                                    {% else %}
+                                        Not inspected
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <p class="text-sm text-gray-600 mb-1">Quantity Inspected</p>
+                                <p class="font-medium text-gray-900">{{ quality_check.quantity_inspected|default:0 }}</p>
+                            </div>
+                        </div>
+
+                        {% if quality_check.notes %}
+                        <div class="bg-yellow-50 p-4 rounded-lg">
+                            <p class="text-sm text-yellow-800 font-medium mb-1">Notes:</p>
+                            <p class="text-yellow-700">{{ quality_check.notes }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8">
+                        <i class="fas fa-clipboard-check text-gray-400 text-4xl mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No Quality Checks</h3>
+                        <p class="text-gray-600">Quality checks will be added as needed</p>
+                        <button onclick="addQualityCheck()" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                            Add Quality Check
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Timeline Tab -->
+            <div id="content-timeline" class="tab-content">
+                <div class="space-y-6">
+                    <div class="timeline-item">
+                        <h4 class="font-bold text-gray-900">Work Order Created</h4>
+                        <p class="text-gray-600">{{ work_order.created_at|date:"M d, Y H:i" }}</p>
+                        <p class="text-sm text-gray-500">by {{ work_order.created_by.get_full_name|default:"System" }}</p>
+                    </div>
+                    
+                    {% if work_order.actual_start %}
+                    <div class="timeline-item">
+                        <h4 class="font-bold text-gray-900">Production Started</h4>
+                        <p class="text-gray-600">{{ work_order.actual_start|date:"M d, Y H:i" }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% for job_card in work_order.job_cards.all %}
+                    {% if job_card.start_time %}
+                    <div class="timeline-item">
+                        <h4 class="font-bold text-gray-900">{{ job_card.operation.name }} Started</h4>
+                        <p class="text-gray-600">{{ job_card.start_time|date:"M d, Y H:i" }}</p>
+                    </div>
+                    {% endif %}
+                    {% if job_card.end_time %}
+                    <div class="timeline-item">
+                        <h4 class="font-bold text-gray-900">{{ job_card.operation.name }} Completed</h4>
+                        <p class="text-gray-600">{{ job_card.end_time|date:"M d, Y H:i" }}</p>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if work_order.actual_end %}
+                    <div class="timeline-item">
+                        <h4 class="font-bold text-gray-900">Production Completed</h4>
+                        <p class="text-gray-600">{{ work_order.actual_end|date:"M d, Y H:i" }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active', 'bg-blue-100', 'text-blue-700');
+        btn.classList.add('text-gray-600', 'hover:text-gray-900');
+    });
+    
+    // Show selected tab content
+    document.getElementById(`content-${tabName}`).classList.add('active');
+    
+    // Add active class to selected tab button
+    const activeBtn = document.getElementById(`tab-${tabName}`);
+    activeBtn.classList.add('active', 'bg-blue-100', 'text-blue-700');
+    activeBtn.classList.remove('text-gray-600', 'hover:text-gray-900');
+}
+
+function toggleActionsMenu() {
+    document.getElementById('actionsMenu').classList.toggle('hidden');
+}
+
+function startWorkOrder() {
+    if (confirm('Are you sure you want to start this work order?')) {
+        fetch(`/manufacturing/api/work-orders/{{ work_order.id }}/start/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error starting work order: ' + data.error);
+            }
+        });
+    }
+}
+
+function completeWorkOrder() {
+    if (confirm('Are you sure you want to complete this work order?')) {
+        fetch(`/manufacturing/api/work-orders/{{ work_order.id }}/complete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error completing work order: ' + data.error);
+            }
+        });
+    }
+}
+
+function startOperation(jobCardId) {
+    if (confirm('Are you sure you want to start this operation?')) {
+        fetch(`/manufacturing/api/job-cards/${jobCardId}/start/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error starting operation: ' + data.error);
+            }
+        });
+    }
+}
+
+function completeOperation(jobCardId) {
+    if (confirm('Are you sure you want to complete this operation?')) {
+        fetch(`/manufacturing/api/job-cards/${jobCardId}/complete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error completing operation: ' + data.error);
+            }
+        });
+    }
+}
+
+function editWorkOrder() {
+    window.location.href = `/manufacturing/work-orders/{{ work_order.id }}/edit/`;
+}
+
+function duplicateWorkOrder() {
+    if (confirm('Are you sure you want to duplicate this work order?')) {
+        fetch(`/manufacturing/api/work-orders/{{ work_order.id }}/duplicate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = `/manufacturing/work-orders/${data.work_order_id}/`;
+            } else {
+                alert('Error duplicating work order: ' + data.error);
+            }
+        });
+    }
+}
+
+function cancelWorkOrder() {
+    if (confirm('Are you sure you want to cancel this work order?')) {
+        fetch(`/manufacturing/api/work-orders/{{ work_order.id }}/cancel/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error cancelling work order: ' + data.error);
+            }
+        });
+    }
+}
+
+function printWorkOrder() {
+    window.open(`/manufacturing/work-orders/{{ work_order.id }}/print/`, '_blank');
+}
+
+function addQualityCheck() {
+    // Implement quality check modal
+    alert('Quality check modal to be implemented');
+}
+
+// Close menus when clicking outside
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('#actionsMenu') && !event.target.closest('button[onclick="toggleActionsMenu()"]')) {
+        document.getElementById('actionsMenu').classList.add('hidden');
+    }
+});
+
+// Set up progress ring animation
+document.addEventListener('DOMContentLoaded', function() {
+    const progressRing = document.querySelector('.progress-ring-circle');
+    if (progressRing) {
+        const radius = 54;
+        const circumference = radius * 2 * Math.PI;
+        const progress = {{ work_order.get_progress_percentage }};
+        const offset = circumference - (progress / 100) * circumference;
+        progressRing.style.strokeDashoffset = offset;
+    }
+});
+</script>
+
+<style>
+.tab-btn.active {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+}
+.tab-btn {
+    color: #6b7280;
+}
+.tab-btn:hover {
+    color: #111827;
+}
+</style>
+{% endblock %}

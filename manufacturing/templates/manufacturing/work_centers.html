@@ -1,0 +1,559 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Work Centers | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .workCenter-card {
+        background: white;
+        border: 1px solid rgba(229, 231, 235, 1);
+        transition: all 0.3s ease;
+    }
+    .workCenter-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        border-color: rgba(16, 185, 129, 0.3);
+    }
+    .utilization-gauge {
+        transform: rotate(-90deg);
+    }
+    .capacity-bar {
+        background: linear-gradient(90deg, #10b981, #059669);
+    }
+    .maintenance-indicator {
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">Work Centers</h1>
+                <p class="text-gray-600">Manage your production work centers and monitor performance</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="createWorkCenter()" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-plus mr-2"></i>
+                    New Work Center
+                </button>
+                <button onclick="scheduleView()" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-calendar-alt mr-2"></i>
+                    Schedule View
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Total Work Centers</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ work_centers.count }}</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-industry text-blue-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Active Centers</p>
+                        <p class="text-2xl font-bold text-green-600">{{ active_centers_count|default:0 }}</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg">
+                        <i class="fas fa-play text-green-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Avg Utilization</p>
+                        <p class="text-2xl font-bold text-purple-600">{{ avg_utilization|default:0 }}%</p>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-lg">
+                        <i class="fas fa-chart-pie text-purple-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Maintenance Due</p>
+                        <p class="text-2xl font-bold text-orange-600">{{ maintenance_due_count|default:0 }}</p>
+                    </div>
+                    <div class="bg-orange-100 p-3 rounded-lg">
+                        <i class="fas fa-wrench text-orange-600"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-2xl p-6 border border-gray-200 mb-8">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" name="search" value="{{ search }}" placeholder="Search work centers..." 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <option value="">All Status</option>
+                        <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="maintenance" {% if status == 'maintenance' %}selected{% endif %}>Maintenance</option>
+                        <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                    <select name="work_center_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <option value="">All Types</option>
+                        <option value="machine" {% if work_center_type == 'machine' %}selected{% endif %}>Machine</option>
+                        <option value="manual" {% if work_center_type == 'manual' %}selected{% endif %}>Manual</option>
+                        <option value="assembly" {% if work_center_type == 'assembly' %}selected{% endif %}>Assembly</option>
+                        <option value="quality" {% if work_center_type == 'quality' %}selected{% endif %}>Quality</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-search mr-2"></i>Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Work Centers Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {% for wc in work_centers %}
+            <div class="workCenter-card rounded-2xl p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <div class="flex items-center space-x-3 mb-2">
+                            <h3 class="text-xl font-bold text-gray-900">{{ wc.name }}</h3>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                {% if wc.is_active %}bg-green-100 text-green-800
+                                {% elif wc.is_maintenance %}bg-orange-100 text-orange-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {% if wc.is_active %}Active
+                                {% elif wc.is_maintenance %}Maintenance
+                                {% else %}Inactive{% endif %}
+                            </span>
+                            {% if wc.is_maintenance %}
+                            <span class="maintenance-indicator">
+                                <i class="fas fa-exclamation-triangle text-orange-500"></i>
+                            </span>
+                            {% endif %}
+                        </div>
+                        <p class="text-gray-600 mb-2">{{ wc.description }}</p>
+                        <div class="flex items-center space-x-4 text-sm text-gray-500">
+                            <span><i class="fas fa-map-marker-alt mr-1"></i>{{ wc.location|default:"Not specified" }}</span>
+                            <span><i class="fas fa-tag mr-1"></i>{{ wc.get_work_center_type_display|default:"General" }}</span>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="viewWorkCenter({{ wc.id }})" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-eye mr-2"></i>View
+                        </button>
+                        <div class="relative">
+                            <button onclick="toggleWCMenu({{ wc.id }})" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg transition-colors">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <div id="wc-menu-{{ wc.id }}" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border hidden z-10">
+                                <a href="#" onclick="editWorkCenter({{ wc.id }})" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                    <i class="fas fa-edit mr-2"></i>Edit
+                                </a>
+                                <a href="#" onclick="viewSchedule({{ wc.id }})" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                    <i class="fas fa-calendar mr-2"></i>Schedule
+                                </a>
+                                {% if wc.is_active %}
+                                <a href="#" onclick="setMaintenance({{ wc.id }})" class="block px-4 py-2 text-orange-700 hover:bg-orange-50">
+                                    <i class="fas fa-wrench mr-2"></i>Maintenance
+                                </a>
+                                {% elif wc.is_maintenance %}
+                                <a href="#" onclick="endMaintenance({{ wc.id }})" class="block px-4 py-2 text-green-700 hover:bg-green-50">
+                                    <i class="fas fa-check mr-2"></i>End Maintenance
+                                </a>
+                                {% endif %}
+                                <a href="#" onclick="duplicateWorkCenter({{ wc.id }})" class="block px-4 py-2 text-gray-700 hover:bg-gray-50">
+                                    <i class="fas fa-copy mr-2"></i>Duplicate
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Capacity & Utilization -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <!-- Utilization Gauge -->
+                    <div class="text-center">
+                        <div class="relative w-24 h-24 mx-auto mb-3">
+                            <svg class="w-24 h-24 utilization-gauge" viewBox="0 0 120 120">
+                                <circle cx="60" cy="60" r="54" stroke="#e5e7eb" stroke-width="8" fill="none"></circle>
+                                <circle cx="60" cy="60" r="54" stroke="#10b981" stroke-width="8" fill="none" 
+                                        stroke-dasharray="339.29" 
+                                        stroke-dashoffset="{{ wc.get_utilization_offset|default:0 }}"></circle>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="text-lg font-bold text-gray-900">{{ wc.get_utilization_percentage|default:0 }}%</span>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-600">Current Utilization</p>
+                    </div>
+
+                    <!-- Capacity Info -->
+                    <div class="space-y-3">
+                        <div class="bg-blue-50 p-3 rounded-lg">
+                            <p class="text-xs text-blue-600 mb-1">Daily Capacity</p>
+                            <p class="font-bold text-blue-900">{{ wc.capacity_hours|default:8 }} hours</p>
+                        </div>
+                        <div class="bg-green-50 p-3 rounded-lg">
+                            <p class="text-xs text-green-600 mb-1">Efficiency</p>
+                            <p class="font-bold text-green-900">{{ wc.efficiency_percentage|default:100 }}%</p>
+                        </div>
+                        <div class="bg-orange-50 p-3 rounded-lg">
+                            <p class="text-xs text-orange-600 mb-1">Cost/Hour</p>
+                            <p class="font-bold text-orange-900">${{ wc.cost_per_hour|default:0 }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Operations -->
+                {% if wc.current_operations.all %}
+                <div class="mb-4">
+                    <h4 class="font-medium text-gray-900 mb-3">Current Operations</h4>
+                    <div class="space-y-2">
+                        {% for op in wc.current_operations.all|slice:":3" %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ op.operation.name }}</p>
+                                    <p class="text-sm text-gray-600">{{ op.work_order.wo_number }}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-medium text-gray-900">{{ op.get_progress_percentage }}%</p>
+                                <p class="text-xs text-gray-500">
+                                    {% if op.estimated_end %}
+                                        ETA: {{ op.estimated_end|date:"H:i" }}
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if wc.current_operations.count > 3 %}
+                        <div class="text-center">
+                            <button onclick="viewWorkCenter({{ wc.id }})" class="text-blue-600 hover:text-blue-800 text-sm">
+                                View all {{ wc.current_operations.count }} operations
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="mb-4 text-center py-4">
+                    <i class="fas fa-clock text-gray-400 text-2xl mb-2"></i>
+                    <p class="text-gray-600">No current operations</p>
+                </div>
+                {% endif %}
+
+                <!-- Weekly Schedule Preview -->
+                <div>
+                    <h4 class="font-medium text-gray-900 mb-3">This Week's Schedule</h4>
+                    <div class="grid grid-cols-7 gap-1">
+                        {% for day in week_days %}
+                        <div class="text-center">
+                            <div class="text-xs text-gray-600 mb-1">{{ day|date:"D" }}</div>
+                            <div class="bg-gray-200 rounded h-16 flex flex-col justify-end">
+                                {% with wc.get_daily_utilization as utilization %}
+                                <div class="capacity-bar w-full rounded" 
+                                     style="height: {{ utilization|default:0 }}%"></div>
+                                {% endwith %}
+                            </div>
+                            <div class="text-xs text-gray-600 mt-1">{{ wc.get_daily_utilization|default:0 }}%</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Bottom Info -->
+                <div class="flex justify-between items-center text-sm text-gray-600 pt-4 mt-4 border-t border-gray-200">
+                    <span>
+                        {% if wc.responsible_person %}
+                            Managed by {{ wc.responsible_person.get_full_name }}
+                        {% else %}
+                            No manager assigned
+                        {% endif %}
+                    </span>
+                    <span>Created {{ wc.created_at|date:"M d, Y" }}</span>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-2 text-center py-12">
+                <div class="mb-4">
+                    <i class="fas fa-industry text-gray-400 text-6xl"></i>
+                </div>
+                <h3 class="text-xl font-medium text-gray-900 mb-2">No work centers found</h3>
+                <p class="text-gray-600 mb-6">Set up your first work center to start managing production</p>
+                <button onclick="createWorkCenter()" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all">
+                    <i class="fas fa-plus mr-2"></i>Create First Work Center
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if work_centers.has_other_pages %}
+        <div class="flex justify-center mt-8">
+            <nav class="flex items-center space-x-2">
+                {% if work_centers.has_previous %}
+                <a href="?page={{ work_centers.previous_page_number }}" 
+                   class="px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                {% endif %}
+                
+                {% for num in work_centers.paginator.page_range %}
+                {% if work_centers.number == num %}
+                <span class="px-3 py-2 bg-green-600 text-white rounded-lg">{{ num }}</span>
+                {% elif num > work_centers.number|add:'-3' and num < work_centers.number|add:'3' %}
+                <a href="?page={{ num }}" class="px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">{{ num }}</a>
+                {% endif %}
+                {% endfor %}
+                
+                {% if work_centers.has_next %}
+                <a href="?page={{ work_centers.next_page_number }}" 
+                   class="px-3 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Work Center Creation Modal -->
+<div id="workCenterModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Create Work Center</h2>
+                <button onclick="closeWorkCenterModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="workCenterForm" onsubmit="submitWorkCenter(event)">
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                        <input type="text" name="name" required 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <textarea name="description" rows="3" 
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                            <select name="work_center_type" 
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                <option value="machine">Machine</option>
+                                <option value="manual">Manual</option>
+                                <option value="assembly">Assembly</option>
+                                <option value="quality">Quality</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                            <input type="text" name="location" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Capacity (Hours/Day) *</label>
+                            <input type="number" name="capacity_hours" required min="1" max="24" step="0.5" value="8"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Cost per Hour</label>
+                            <input type="number" name="cost_per_hour" min="0" step="0.01" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Efficiency (%)</label>
+                            <input type="number" name="efficiency_percentage" min="1" max="200" value="100"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Responsible Person</label>
+                            <select name="responsible_person" 
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                <option value="">Select Person</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.get_full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-4 mt-8">
+                    <button type="button" onclick="closeWorkCenterModal()" 
+                            class="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                        Create Work Center
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function createWorkCenter() {
+    document.getElementById('workCenterModal').classList.remove('hidden');
+}
+
+function closeWorkCenterModal() {
+    document.getElementById('workCenterModal').classList.add('hidden');
+    document.getElementById('workCenterForm').reset();
+}
+
+function submitWorkCenter(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    
+    fetch('/manufacturing/api/work-centers/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error creating work center: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while creating the work center');
+    });
+}
+
+function viewWorkCenter(wcId) {
+    window.location.href = `/manufacturing/work-centers/${wcId}/`;
+}
+
+function editWorkCenter(wcId) {
+    window.location.href = `/manufacturing/work-centers/${wcId}/edit/`;
+}
+
+function viewSchedule(wcId) {
+    window.location.href = `/manufacturing/work-centers/${wcId}/schedule/`;
+}
+
+function setMaintenance(wcId) {
+    if (confirm('Are you sure you want to set this work center to maintenance mode?')) {
+        fetch(`/manufacturing/api/work-centers/${wcId}/maintenance/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error setting maintenance mode: ' + data.error);
+            }
+        });
+    }
+}
+
+function endMaintenance(wcId) {
+    if (confirm('Are you sure you want to end maintenance mode for this work center?')) {
+        fetch(`/manufacturing/api/work-centers/${wcId}/end-maintenance/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error ending maintenance mode: ' + data.error);
+            }
+        });
+    }
+}
+
+function duplicateWorkCenter(wcId) {
+    if (confirm('Are you sure you want to duplicate this work center?')) {
+        fetch(`/manufacturing/api/work-centers/${wcId}/duplicate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error duplicating work center: ' + data.error);
+            }
+        });
+    }
+}
+
+function scheduleView() {
+    window.location.href = '/manufacturing/schedule/';
+}
+
+function toggleWCMenu(wcId) {
+    const menu = document.getElementById(`wc-menu-${wcId}`);
+    // Close all other menus
+    document.querySelectorAll('[id^="wc-menu-"]').forEach(m => {
+        if (m !== menu) m.classList.add('hidden');
+    });
+    menu.classList.toggle('hidden');
+}
+
+// Close menus when clicking outside
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('[id^="wc-menu-"]') && !event.target.closest('button[onclick*="toggleWCMenu"]')) {
+        document.querySelectorAll('[id^="wc-menu-"]').forEach(menu => {
+            menu.classList.add('hidden');
+        });
+    }
+});
+</script>
+{% endblock %}

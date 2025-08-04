@@ -16,6 +16,25 @@
         background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
         border: 1px solid rgba(16, 185, 129, 0.2);
     }
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-weight: 500;
+    }
+    .recent-item {
+        border-left: 4px solid #3b82f6;
+        padding-left: 1rem;
+        margin-bottom: 1rem;
+        background: #f8fafc;
+        padding: 1rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    .recent-item:hover {
+        background: #e2e8f0;
+        transform: translateX(5px);
+    }
 </style>
 {% endblock %}
 
@@ -29,45 +48,32 @@
                 <p class="text-gray-600">Overview of sales operations and key metrics</p>
             </div>
             <div class="flex gap-4">
-                <a href="{% url 'sales_quotations_add' %}" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
+                <a href="{% url 'sales:quotations_add' %}" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
                     New Quotation
                 </a>
-                <a href="{% url 'sales_products_ui' %}" class="action-btn bg-gradient-to-r from-purple-500 to-pink-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                <a href="{% url 'sales:sales_orders_add' %}" class="action-btn bg-gradient-to-r from-green-500 to-blue-600 text-white px-6 py-3 rounded-2xl hover-lift">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 3H3m4 10v7a1 1 0 001 1h8a1 1 0 001-1v-7m-9 0V9a1 1 0 011-1h6a1 1 0 011 1v4"></path>
                     </svg>
-                    Manage Products
+                    New Sales Order
                 </a>
             </div>
         </div>
 
-        <!-- Key Metrics -->
+        <!-- Enhanced Key Metrics -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div class="metric-card rounded-2xl p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-600">Total Products</p>
-                        <p class="text-3xl font-bold text-blue-600">{{ total_products }}</p>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ total_quotations }}</h3>
+                        <p class="text-gray-600">Total Quotations</p>
+                        <p class="text-sm text-blue-600">{{ pending_quotations }} pending</p>
                     </div>
-                    <div class="p-3 bg-blue-100 rounded-full">
+                    <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                         <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <div class="metric-card rounded-2xl p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">Total Quotations</p>
-                        <p class="text-3xl font-bold text-green-600">{{ total_quotations }}</p>
-                    </div>
-                    <div class="p-3 bg-green-100 rounded-full">
-                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>
                     </div>
@@ -77,12 +83,13 @@
             <div class="metric-card rounded-2xl p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-600">Sales Orders</p>
-                        <p class="text-3xl font-bold text-purple-600">{{ total_sales_orders }}</p>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ total_sales_orders }}</h3>
+                        <p class="text-gray-600">Sales Orders</p>
+                        <p class="text-sm text-green-600">{{ pending_orders }} pending</p>
                     </div>
-                    <div class="p-3 bg-purple-100 rounded-full">
-                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                    <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 3H3m4 10v7a1 1 0 001 1h8a1 1 0 001-1v-7m-9 0V9a1 1 0 011-1h6a1 1 0 011 1v4"></path>
                         </svg>
                     </div>
                 </div>
@@ -91,33 +98,99 @@
             <div class="metric-card rounded-2xl p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-600">Monthly Sales</p>
-                        <p class="text-3xl font-bold text-orange-600">₨{{ monthly_sales|floatformat:0 }}</p>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ total_invoices }}</h3>
+                        <p class="text-gray-600">Invoices</p>
+                        <p class="text-sm text-orange-600">{{ overdue_invoices }} overdue</p>
                     </div>
-                    <div class="p-3 bg-orange-100 rounded-full">
+                    <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
                         <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ total_delivery_notes }}</h3>
+                        <p class="text-gray-600">Deliveries</p>
+                        <p class="text-sm text-purple-600">This month</p>
+                    </div>
+                    <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
                         </svg>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Recent Activities -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Financial Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="activity-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">${{ monthly_sales|floatformat:2 }}</h3>
+                        <p class="text-gray-600">Monthly Sales</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="activity-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">${{ monthly_revenue|floatformat:2 }}</h3>
+                        <p class="text-gray-600">Monthly Revenue</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="activity-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">${{ outstanding_invoices|floatformat:2 }}</h3>
+                        <p class="text-gray-600">Outstanding Amount</p>
+                    </div>
+                    <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activities Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <!-- Recent Quotations -->
             <div class="activity-card rounded-2xl p-6">
-                <h3 class="text-xl font-bold text-gray-800 mb-4">Recent Quotations</h3>
-                <div class="space-y-3">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">Recent Quotations</h3>
+                    <a href="{% url 'sales:quotations' %}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">View All →</a>
+                </div>
+                <div class="space-y-4">
                     {% for quotation in recent_quotations %}
-                    <div class="flex items-center justify-between p-3 bg-white rounded-lg border">
-                        <div>
-                            <p class="font-medium text-gray-800">{{ quotation.quotation_number }}</p>
-                            <p class="text-sm text-gray-600">{{ quotation.customer.name }}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="font-medium text-green-600">₨{{ quotation.total_amount|floatformat:0 }}</p>
-                            <p class="text-xs text-gray-500">{{ quotation.created_at|date:"M d, Y" }}</p>
+                    <div class="recent-item">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-gray-900">{{ quotation.quotation_number }}</h4>
+                                <p class="text-gray-600 text-sm">{{ quotation.customer.name }}</p>
+                                <p class="text-gray-500 text-xs">{{ quotation.date }} • ${{ quotation.total|floatformat:2 }}</p>
+                            </div>
+                            <span class="status-badge bg-blue-100 text-blue-800">
+                                {{ quotation.get_status_display }}
+                            </span>
                         </div>
                     </div>
                     {% empty %}
@@ -128,22 +201,118 @@
 
             <!-- Recent Sales Orders -->
             <div class="activity-card rounded-2xl p-6">
-                <h3 class="text-xl font-bold text-gray-800 mb-4">Recent Sales Orders</h3>
-                <div class="space-y-3">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">Recent Sales Orders</h3>
+                    <a href="{% url 'sales:sales_orders' %}" class="text-green-600 hover:text-green-800 text-sm font-medium">View All →</a>
+                </div>
+                <div class="space-y-4">
                     {% for order in recent_orders %}
-                    <div class="flex items-center justify-between p-3 bg-white rounded-lg border">
-                        <div>
-                            <p class="font-medium text-gray-800">{{ order.order_number }}</p>
-                            <p class="text-sm text-gray-600">{{ order.customer.name }}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="font-medium text-purple-600">₨{{ order.total_amount|floatformat:0 }}</p>
-                            <p class="text-xs text-gray-500">{{ order.created_at|date:"M d, Y" }}</p>
+                    <div class="recent-item">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-gray-900">{{ order.order_number }}</h4>
+                                <p class="text-gray-600 text-sm">{{ order.customer.name }}</p>
+                                <p class="text-gray-500 text-xs">{{ order.order_date }} • ${{ order.total|floatformat:2 }}</p>
+                            </div>
+                            <span class="status-badge bg-green-100 text-green-800">
+                                {{ order.get_status_display }}
+                            </span>
                         </div>
                     </div>
                     {% empty %}
                     <p class="text-gray-500 text-center py-4">No recent sales orders</p>
                     {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Top Customers -->
+            <div class="activity-card rounded-2xl p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">Top Customers</h3>
+                    <a href="{% url 'crm:customer_list' %}" class="text-purple-600 hover:text-purple-800 text-sm font-medium">View All →</a>
+                </div>
+                <div class="space-y-4">
+                    {% for customer in top_customers %}
+                    <div class="flex justify-between items-center p-3 bg-white rounded-lg">
+                        <div>
+                            <h4 class="font-semibold text-gray-900">{{ customer.name }}</h4>
+                            <p class="text-gray-600 text-sm">{{ customer.email }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-gray-900">${{ customer.total_sales|floatformat:2 }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-gray-500 text-center py-4">No customer sales data</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Recent Invoices -->
+            <div class="activity-card rounded-2xl p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">Recent Invoices</h3>
+                    <a href="{% url 'sales:invoices' %}" class="text-orange-600 hover:text-orange-800 text-sm font-medium">View All →</a>
+                </div>
+                <div class="space-y-4">
+                    {% for invoice in recent_invoices %}
+                    <div class="recent-item">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-gray-900">{{ invoice.invoice_number }}</h4>
+                                <p class="text-gray-600 text-sm">{{ invoice.customer.name }}</p>
+                                <p class="text-gray-500 text-xs">Due: {{ invoice.due_date }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold text-gray-900">${{ invoice.total|floatformat:2 }}</p>
+                                <span class="status-badge bg-orange-100 text-orange-800">
+                                    {{ invoice.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-gray-500 text-center py-4">No recent invoices</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="mt-8">
+            <div class="activity-card rounded-2xl p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Quick Actions</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <a href="{% url 'sales:quotations_add' %}" class="flex flex-col items-center p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
+                        <svg class="w-8 h-8 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span class="text-sm font-medium text-gray-900">New Quotation</span>
+                    </a>
+
+                    <a href="{% url 'sales:sales_orders_add' %}" class="flex flex-col items-center p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors">
+                        <svg class="w-8 h-8 text-green-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 3H3m4 10v7a1 1 0 001 1h8a1 1 0 001-1v-7m-9 0V9a1 1 0 011-1h6a1 1 0 011 1v4"></path>
+                        </svg>
+                        <span class="text-sm font-medium text-gray-900">New Sales Order</span>
+                    </a>
+
+                    <a href="{% url 'sales:invoices_add' %}" class="flex flex-col items-center p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors">
+                        <svg class="w-8 h-8 text-orange-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span class="text-sm font-medium text-gray-900">New Invoice</span>
+                    </a>
+
+                    <a href="{% url 'sales:delivery_notes_add' %}" class="flex flex-col items-center p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">
+                        <svg class="w-8 h-8 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                        </svg>
+                        <span class="text-sm font-medium text-gray-900">New Delivery</span>
+                    </a>
                 </div>
             </div>
         </div>

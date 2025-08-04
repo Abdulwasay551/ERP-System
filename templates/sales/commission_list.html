@@ -1,0 +1,451 @@
+{% extends 'base.html' %}
+
+{% block title %}Sales Commission Management{% endblock %}
+
+{% block content %}
+<div class="p-6 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Sales Commission Management</h1>
+        <p class="text-gray-600">Track and manage sales representative commissions</p>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+            <div class="flex items-center">
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-600">Total Commissions</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_commissions|floatformat:0 }}</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-percentage text-blue-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+            <div class="flex items-center">
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-600">Total Amount</p>
+                    <p class="text-2xl font-bold text-gray-900">${{ total_commission_amount|floatformat:2 }}</p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-dollar-sign text-green-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
+            <div class="flex items-center">
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-600">Pending</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ pending_commissions|floatformat:0 }}</p>
+                </div>
+                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+            <div class="flex items-center">
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-600">This Month</p>
+                    <p class="text-2xl font-bold text-gray-900">${{ this_month_amount|floatformat:2 }}</p>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-calendar-alt text-purple-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Action Bar -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div class="flex flex-col sm:flex-row gap-4">
+                <div class="relative">
+                    <input type="text" id="searchInput" placeholder="Search commissions..." 
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                </div>
+                <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="paid">Paid</option>
+                </select>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="openCommissionModal()" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-200 flex items-center">
+                    <i class="fas fa-plus mr-2"></i>New Commission
+                </button>
+                <button onclick="exportCommissions()" 
+                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition duration-200 flex items-center">
+                    <i class="fas fa-download mr-2"></i>Export
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Commission Table -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200" id="commissionsTable">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sales Rep</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rate</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for commission in commissions %}
+                    <tr class="hover:bg-gray-50 transition-colors duration-200">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user text-blue-600"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ commission.sales_person.get_full_name|default:commission.sales_person.email }}
+                                    </div>
+                                    <div class="text-sm text-gray-500">{{ commission.sales_person.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ commission.invoice.invoice_number }}</div>
+                            <div class="text-sm text-gray-500">${{ commission.invoice.total|floatformat:2 }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-sm font-medium text-gray-900">{{ commission.commission_rate }}%</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-lg font-bold text-green-600">${{ commission.commission_amount|floatformat:2 }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if commission.is_paid %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i>Paid
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-clock mr-1"></i>Pending
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ commission.created_at|date:"M d, Y" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex items-center space-x-2">
+                                <button onclick="viewCommission({{ commission.id }})" 
+                                        class="text-blue-600 hover:text-blue-900 transition duration-200">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="editCommission({{ commission.id }})" 
+                                        class="text-green-600 hover:text-green-900 transition duration-200">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                {% if commission.is_paid == False %}
+                                <button onclick="markPaid({{ commission.id }})" 
+                                        class="text-purple-600 hover:text-purple-900 transition duration-200" 
+                                        title="Mark as Paid">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </button>
+                                {% endif %}
+                                <button onclick="deleteCommission({{ commission.id }})" 
+                                        class="text-red-600 hover:text-red-900 transition duration-200">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center">
+                            <div class="text-gray-500">
+                                <i class="fas fa-percentage text-4xl mb-4"></i>
+                                <p class="text-lg">No commissions found</p>
+                                <button onclick="openCommissionModal()" 
+                                        class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-200">
+                                    Create First Commission
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Commission Modal -->
+<div id="commissionModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+            <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+        </div>
+        
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form id="commissionForm">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="modalTitle">
+                                Add New Commission
+                            </h3>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Sales Representative</label>
+                                    <select name="sales_person_id" required 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="">Select Sales Rep</option>
+                                        {% for rep in sales_reps %}
+                                        <option value="{{ rep.id }}">{{ rep.get_full_name|default:rep.email }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Invoice</label>
+                                    <select name="invoice_id" required 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="">Select Invoice</option>
+                                        <!-- Will be populated via AJAX -->
+                                    </select>
+                                </div>
+                                
+                                <div class="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Commission Rate (%)</label>
+                                        <input type="number" name="commission_rate" step="0.01" required 
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Calculation Base</label>
+                                        <input type="number" name="calculation_base" step="0.01" required 
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Commission Amount</label>
+                                        <input type="number" name="commission_amount" step="0.01" required 
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                                    <select name="is_paid" 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="">Pending</option>
+                                        <option value="on">Paid</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                                    <textarea name="notes" rows="3" 
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="submit" 
+                            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Save Commission
+                    </button>
+                    <button type="button" onclick="closeCommissionModal()" 
+                            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentCommissionId = null;
+
+// Search and filter functionality
+document.getElementById('searchInput').addEventListener('keyup', filterTable);
+document.getElementById('statusFilter').addEventListener('change', filterTable);
+
+function filterTable() {
+    const searchValue = document.getElementById('searchInput').value.toLowerCase();
+    const statusValue = document.getElementById('statusFilter').value.toLowerCase();
+    const table = document.getElementById('commissionsTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        if (row.cells.length === 1) continue; // Skip empty state row
+        
+        const salesRep = row.cells[0].textContent.toLowerCase();
+        const orderNumber = row.cells[1].textContent.toLowerCase();
+        const status = row.cells[4].textContent.toLowerCase();
+        
+        const matchesSearch = salesRep.includes(searchValue) || orderNumber.includes(searchValue);
+        const matchesStatus = statusValue === '' || status.includes(statusValue);
+        
+        row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+    }
+}
+
+function openCommissionModal() {
+    document.getElementById('modalTitle').textContent = 'Add New Commission';
+    document.getElementById('commissionForm').reset();
+    currentCommissionId = null;
+    document.getElementById('commissionModal').classList.remove('hidden');
+    loadInvoices();
+}
+
+function closeCommissionModal() {
+    document.getElementById('commissionModal').classList.add('hidden');
+    currentCommissionId = null;
+}
+
+function loadInvoices() {
+    // Load invoices dynamically
+    fetch('/sales/api/invoices/')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.querySelector('select[name="invoice_id"]');
+            select.innerHTML = '<option value="">Select Invoice</option>';
+            data.invoices.forEach(invoice => {
+                select.innerHTML += `<option value="${invoice.id}">${invoice.invoice_number} - $${invoice.total}</option>`;
+            });
+        })
+        .catch(error => console.error('Error loading invoices:', error));
+}
+
+// Form submission
+document.getElementById('commissionForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const url = currentCommissionId ? 
+        `/sales/commissions/${currentCommissionId}/update/` : 
+        '/sales/commissions/create/';
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+});
+
+function viewCommission(id) {
+    fetch(`/sales/commissions/${id}/detail/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const commission = data.commission;
+                alert(`Commission Details:\n\nSales Rep: ${commission.sales_person_name}\nInvoice: ${commission.invoice_number}\nRate: ${commission.commission_rate}%\nBase: $${commission.calculation_base}\nAmount: $${commission.commission_amount}\nPaid: ${commission.is_paid ? 'Yes' : 'No'}\nNotes: ${commission.notes}`);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+function editCommission(id) {
+    fetch(`/sales/commissions/${id}/detail/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const commission = data.commission;
+                document.getElementById('modalTitle').textContent = 'Edit Commission';
+                document.querySelector('select[name="sales_person_id"]').value = commission.sales_person_id;
+                document.querySelector('select[name="invoice_id"]').value = commission.invoice_id;
+                document.querySelector('input[name="commission_rate"]').value = commission.commission_rate;
+                document.querySelector('input[name="calculation_base"]').value = commission.calculation_base;
+                document.querySelector('input[name="commission_amount"]').value = commission.commission_amount;
+                document.querySelector('select[name="is_paid"]').value = commission.is_paid ? 'on' : '';
+                document.querySelector('textarea[name="notes"]').value = commission.notes;
+                
+                currentCommissionId = id;
+                document.getElementById('commissionModal').classList.remove('hidden');
+                loadInvoices();
+            }
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+function markPaid(id) {
+    if (confirm('Mark this commission as paid?')) {
+        fetch(`/sales/commissions/${id}/mark-paid/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+}
+
+function deleteCommission(id) {
+    if (confirm('Are you sure you want to delete this commission?')) {
+        fetch(`/sales/commissions/${id}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+}
+
+function exportCommissions() {
+    window.open('/sales/commissions/export/', '_blank');
+}
+
+// Close modal when clicking outside
+document.getElementById('commissionModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeCommissionModal();
+    }
+});
+</script>
+{% endblock %}

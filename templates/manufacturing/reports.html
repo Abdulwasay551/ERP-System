@@ -1,0 +1,380 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manufacturing Reports{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+        cursor: pointer;
+    }
+    
+    .report-card:hover {
+        border-color: #10b981;
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .chart-container {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .filter-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+    }
+
+    .report-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 20px;
+        font-size: 24px;
+        color: white;
+    }
+
+    .icon-production { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .icon-efficiency { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .icon-quality { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .icon-inventory { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+    .icon-cost { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+    .icon-schedule { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div class="mb-6 lg:mb-0">
+                    <h1 class="text-4xl font-bold text-gray-900 mb-2">
+                        <i class="fas fa-chart-bar text-green-600 mr-3"></i>
+                        Manufacturing Reports
+                    </h1>
+                    <p class="text-gray-600">Analytics and insights for manufacturing operations</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Custom Report
+                    </button>
+                    <button class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-download mr-2"></i>Export All
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Date Filter -->
+        <div class="filter-card">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Report Period</label>
+                    <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month" selected>This Month</option>
+                        <option value="quarter">This Quarter</option>
+                        <option value="year">This Year</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+                    <input type="date" value="2025-01-01" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">To Date</label>
+                    <input type="date" value="2025-01-31" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                </div>
+                <div class="flex items-end">
+                    <button class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-search mr-2"></i>Update Reports
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="metric-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm opacity-80 mb-1">Total Work Orders</p>
+                        <p class="text-3xl font-bold">{{ total_work_orders|default:0 }}</p>
+                        <p class="text-sm opacity-80">All time</p>
+                    </div>
+                    <i class="fas fa-cogs text-3xl opacity-80"></i>
+                </div>
+            </div>
+
+            <div class="metric-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm opacity-80 mb-1">Active Orders</p>
+                        <p class="text-3xl font-bold">{{ active_work_orders|default:0 }}</p>
+                        <p class="text-sm opacity-80">In progress</p>
+                    </div>
+                    <i class="fas fa-tachometer-alt text-3xl opacity-80"></i>
+                </div>
+            </div>
+
+            <div class="metric-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm opacity-80 mb-1">Completion Rate</p>
+                        <p class="text-3xl font-bold">{{ completion_rate|default:0 }}%</p>
+                        <p class="text-sm opacity-80">Overall performance</p>
+                    </div>
+                    <i class="fas fa-award text-3xl opacity-80"></i>
+                </div>
+            </div>
+
+            <div class="metric-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm opacity-80 mb-1">Completed Orders</p>
+                        <p class="text-3xl font-bold">{{ completed_work_orders|default:0 }}</p>
+                        <p class="text-sm opacity-80">All time</p>
+                    </div>
+                    <i class="fas fa-check-circle text-3xl opacity-80"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Production Trend Chart -->
+            <div class="chart-container">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Production Trend</h3>
+                <div style="height: 300px; background: #f9fafb; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <div class="text-center">
+                        <i class="fas fa-chart-line text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-600">Production trend chart would be displayed here</p>
+                        <p class="text-sm text-gray-500">Daily production output over time</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Efficiency Chart -->
+            <div class="chart-container">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Equipment Efficiency</h3>
+                <div style="height: 300px; background: #f9fafb; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <div class="text-center">
+                        <i class="fas fa-chart-pie text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-600">Equipment efficiency chart would be displayed here</p>
+                        <p class="text-sm text-gray-500">OEE breakdown by work center</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Available Reports -->
+        <div class="chart-container">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6">Available Reports</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Production Reports -->
+                <div class="report-card" onclick="generateReport('production')">
+                    <div class="flex items-center">
+                        <div class="report-icon icon-production">
+                            <i class="fas fa-industry"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-900">Production Summary</h4>
+                            <p class="text-gray-600 text-sm">Daily, weekly, monthly production outputs</p>
+                            <p class="text-blue-600 text-sm mt-1">Click to generate</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Efficiency Reports -->
+                <div class="report-card" onclick="generateReport('efficiency')">
+                    <div class="flex items-center">
+                        <div class="report-icon icon-efficiency">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-900">Efficiency Analysis</h4>
+                            <p class="text-gray-600 text-sm">OEE, downtime, and performance metrics</p>
+                            <p class="text-blue-600 text-sm mt-1">Click to generate</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quality Reports -->
+                <div class="report-card" onclick="generateReport('quality')">
+                    <div class="flex items-center">
+                        <div class="report-icon icon-quality">
+                            <i class="fas fa-award"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-900">Quality Control</h4>
+                            <p class="text-gray-600 text-sm">Quality checks, defect rates, improvements</p>
+                            <p class="text-blue-600 text-sm mt-1">Click to generate</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inventory Reports -->
+                <div class="report-card" onclick="generateReport('inventory')">
+                    <div class="flex items-center">
+                        <div class="report-icon icon-inventory">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-900">Material Usage</h4>
+                            <p class="text-gray-600 text-sm">Raw material consumption and waste analysis</p>
+                            <p class="text-blue-600 text-sm mt-1">Click to generate</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cost Reports -->
+                <div class="report-card" onclick="generateReport('cost')">
+                    <div class="flex items-center">
+                        <div class="report-icon icon-cost">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-900">Cost Analysis</h4>
+                            <p class="text-gray-600 text-sm">Production costs, labor costs, overheads</p>
+                            <p class="text-blue-600 text-sm mt-1">Click to generate</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Schedule Reports -->
+                <div class="report-card" onclick="generateReport('schedule')">
+                    <div class="flex items-center">
+                        <div class="report-icon icon-schedule">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-900">Schedule Performance</h4>
+                            <p class="text-gray-600 text-sm">On-time delivery, schedule adherence</p>
+                            <p class="text-blue-600 text-sm mt-1">Click to generate</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Reports -->
+        <div class="chart-container">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">Recent Reports</h3>
+                <button class="text-blue-600 hover:text-blue-800">View All</button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-blue-100 rounded-lg mr-3">
+                            <i class="fas fa-file-pdf text-blue-600"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-900">Monthly Production Report - January 2025</h4>
+                            <p class="text-sm text-gray-600">Generated on Jan 15, 2025 • 245 KB</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-download mr-1"></i>Download
+                        </button>
+                        <button class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                            <i class="fas fa-eye mr-1"></i>View
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-green-100 rounded-lg mr-3">
+                            <i class="fas fa-file-excel text-green-600"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-900">Quality Control Summary - Week 2</h4>
+                            <p class="text-sm text-gray-600">Generated on Jan 12, 2025 • 189 KB</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-download mr-1"></i>Download
+                        </button>
+                        <button class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                            <i class="fas fa-eye mr-1"></i>View
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-purple-100 rounded-lg mr-3">
+                            <i class="fas fa-file-alt text-purple-600"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-900">Equipment Efficiency Analysis</h4>
+                            <p class="text-sm text-gray-600">Generated on Jan 10, 2025 • 312 KB</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-download mr-1"></i>Download
+                        </button>
+                        <button class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                            <i class="fas fa-eye mr-1"></i>View
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function generateReport(type) {
+    console.log('Generating report:', type);
+    // Add report generation logic here
+    alert('Generating ' + type + ' report...');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Manufacturing Reports UI loaded');
+    
+    // Add chart initialization here
+    // Example: Chart.js or other charting library
+});
+</script>
+{% endblock %}

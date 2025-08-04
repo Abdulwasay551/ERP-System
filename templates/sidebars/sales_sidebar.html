@@ -14,51 +14,87 @@
     <!-- Navigation Items -->
     <nav class="sidebar-nav flex-1 py-4 space-y-2">
         <!-- Dashboard -->
-        <a href="/sales/dashboard-ui/" class="sidebar-item">
+        <a href="{% url 'sales:dashboard' %}" class="sidebar-item">
             <i class="fas fa-tachometer-alt sidebar-icon"></i>
             <span class="sidebar-text">Dashboard</span>
         </a>
 
         <!-- Products -->
-        <a href="/sales/products-ui/" class="sidebar-item">
+        <a href="{% url 'sales:sales_products' %}" class="sidebar-item">
             <i class="fas fa-box sidebar-icon"></i>
             <span class="sidebar-text">Products</span>
         </a>
 
         <!-- Quotations -->
-        <a href="/sales/quotations-ui/" class="sidebar-item">
+        <a href="{% url 'sales:quotations' %}" class="sidebar-item">
             <i class="fas fa-file-invoice-dollar sidebar-icon"></i>
             <span class="sidebar-text">Quotations</span>
         </a>
 
         <!-- Sales Orders -->
-        <a href="/sales/salesorders-ui/" class="sidebar-item">
+        <a href="{% url 'sales:sales_orders' %}" class="sidebar-item">
             <i class="fas fa-shopping-bag sidebar-icon"></i>
             <span class="sidebar-text">Sales Orders</span>
         </a>
 
         <!-- Invoices -->
-        <a href="/sales/invoices-ui/" class="sidebar-item">
+        <a href="{% url 'sales:invoices' %}" class="sidebar-item">
             <i class="fas fa-file-invoice sidebar-icon"></i>
-            <span class="sidebar-text">Sales Invoices</span>
+            <span class="sidebar-text">Invoices</span>
+        </a>
+
+        <!-- Delivery Notes -->
+        <a href="{% url 'sales:delivery_notes' %}" class="sidebar-item">
+            <i class="fas fa-truck sidebar-icon"></i>
+            <span class="sidebar-text">Delivery Notes</span>
+        </a>
+
+        <!-- Payments -->
+        <a href="{% url 'sales:payments' %}" class="sidebar-item">
+            <i class="fas fa-credit-card sidebar-icon"></i>
+            <span class="sidebar-text">Payments</span>
         </a>
 
         <!-- Customers -->
-        <a href="/crm/customers-ui/" class="sidebar-item">
+        <a href="{% url 'crm:customer_list' %}" class="sidebar-item">
             <i class="fas fa-user-friends sidebar-icon"></i>
             <span class="sidebar-text">Customers</span>
         </a>
 
+        <!-- Currencies -->
+        <a href="{% url 'sales:currencies' %}" class="sidebar-item">
+            <i class="fas fa-dollar-sign sidebar-icon"></i>
+            <span class="sidebar-text">Currencies</span>
+        </a>
+
+        <!-- Price Lists -->
+        <a href="{% url 'sales:price_lists' %}" class="sidebar-item">
+            <i class="fas fa-tags sidebar-icon"></i>
+            <span class="sidebar-text">Price Lists</span>
+        </a>
+
         <!-- Taxes -->
-        <a href="/sales/taxes-ui/" class="sidebar-item">
+        <a href="{% url 'sales:taxes' %}" class="sidebar-item">
             <i class="fas fa-percent sidebar-icon"></i>
             <span class="sidebar-text">Taxes</span>
         </a>
 
         <!-- Reports -->
-        <a href="/analytics/sales-reports-ui/" class="sidebar-item">
+        <a href="{% url 'sales:sales_reports' %}" class="sidebar-item">
             <i class="fas fa-chart-line sidebar-icon"></i>
             <span class="sidebar-text">Sales Reports</span>
+        </a>
+
+        <!-- Sales Commission -->
+        <a href="{% url 'sales:commissions' %}" class="sidebar-item">
+            <i class="fas fa-handshake sidebar-icon"></i>
+            <span class="sidebar-text">Commissions</span>
+        </a>
+
+        <!-- Credit Notes -->
+        <a href="{% url 'sales:credit_notes' %}" class="sidebar-item">
+            <i class="fas fa-file-alt sidebar-icon"></i>
+            <span class="sidebar-text">Credit Notes</span>
         </a>
     </nav>
 </div>

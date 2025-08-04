@@ -1,0 +1,1356 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Sales Orders | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-draft { background-color: #f3f4f6; color: #6b7280; }
+    .status-pending { background-color: #fef3c7; color: #d97706; }
+    .status-confirmed { background-color: #dbeafe; color: #1d4ed8; }
+    .status-in_production { background-color: #f3e8ff; color: #7c3aed; }
+    .status-ready_to_deliver { background-color: #ecfdf5; color: #16a34a; }
+    .status-delivered { background-color: #d1fae5; color: #059669; }
+    .status-cancelled { background-color: #fee2e2; color: #dc2626; }
+    .table-row {
+        transition: all 0.2s ease;
+    }
+    .table-row:hover {
+        background-color: #f8fafc;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .metric-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        transition: all 0.3s ease;
+    }
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header Section -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Sales Orders</h1>
+                <p class="text-gray-600">Track and manage customer orders</p>
+            </div>
+            <a href="{% url 'sales:salesorder_create' %}" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
+                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                New Sales Order
+            </a>
+        </div>
+
+        <!-- Enhanced Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ total_orders }}</h3>
+                        <p class="text-gray-600">Total Orders</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 3H3m4 10v7a1 1 0 001 1h8a1 1 0 001-1v-7m-9 0V9a1 1 0 011-1h6a1 1 0 011 1v4"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ status_counts.pending|default:0 }}</h3>
+                        <p class="text-gray-600">Pending</p>
+                    </div>
+                    <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ status_counts.delivered|default:0 }}</h3>
+                        <p class="text-gray-600">Delivered</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">${{ total_value|floatformat:2 }}</h3>
+                        <p class="text-gray-600">Total Value</p>
+                    </div>
+                    <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Filters -->
+        <div class="bg-white rounded-2xl p-6 mb-8 shadow-sm border">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" name="search" value="{{ current_search }}" 
+                           placeholder="Search orders..." 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Status</option>
+                        <option value="draft" {% if current_status == 'draft' %}selected{% endif %}>Draft</option>
+                        <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="confirmed" {% if current_status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                        <option value="in_production" {% if current_status == 'in_production' %}selected{% endif %}>In Production</option>
+                        <option value="ready_to_deliver" {% if current_status == 'ready_to_deliver' %}selected{% endif %}>Ready to Deliver</option>
+                        <option value="delivered" {% if current_status == 'delivered' %}selected{% endif %}>Delivered</option>
+                        <option value="cancelled" {% if current_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Customer</label>
+                    <select name="customer" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Customers</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}" {% if current_customer == customer.id|stringformat:"s" %}selected{% endif %}>{{ customer.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Date From</label>
+                    <input type="date" name="date_from" value="{{ current_date_from }}" 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        Search
+                    </button>
+                </div>
+            </form>
+        </div>
+        <!-- Sales Orders Table -->
+        <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Delivery Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for order in sales_orders_page %}
+                        <tr class="table-row">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">SO-{{ order.id|stringformat:"04d" }}</div>
+                                        <div class="text-sm text-gray-500">{{ order.created_at|date:"M d, Y" }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ order.customer.name }}</div>
+                                <div class="text-sm text-gray-500">{{ order.customer.email|default:"—" }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ order.order_date|date:"M d, Y" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ order.delivery_date|date:"M d, Y"|default:"—" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                ${{ order.total|floatformat:2 }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full status-{{ order.status }}">
+                                    {{ order.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button onclick="viewSalesOrder({{ order.id }})" 
+                                            class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" title="View">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                    </button>
+                                    <button onclick="editSalesOrder({{ order.id }})" 
+                                            class="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50" title="Edit">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                    </button>
+                                    {% if order.status == 'pending' or order.status == 'draft' %}
+                                    <button onclick="confirmSalesOrder({{ order.id }})" 
+                                            class="text-orange-600 hover:text-orange-900 p-1 rounded hover:bg-orange-50" title="Confirm">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </button>
+                                    {% endif %}
+                                    <button onclick="deleteSalesOrder({{ order.id }})" 
+                                            class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Delete">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center">
+                                    <svg class="w-12 h-12 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <p class="text-lg font-medium text-gray-500">No sales orders found</p>
+                                    <p class="text-sm text-gray-400">Create your first sales order to get started</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if sales_orders_page.has_other_pages %}
+        <div class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-6 rounded-b-2xl">
+            <div class="flex flex-1 justify-between sm:hidden">
+                {% if sales_orders_page.has_previous %}
+                    <a href="?page={{ sales_orders_page.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.customer %}&customer={{ request.GET.customer }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}" class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Previous</a>
+                {% endif %}
+                {% if sales_orders_page.has_next %}
+                    <a href="?page={{ sales_orders_page.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.customer %}&customer={{ request.GET.customer }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}" class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Next</a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Showing <span class="font-medium">{{ sales_orders_page.start_index }}</span> to <span class="font-medium">{{ sales_orders_page.end_index }}</span> of <span class="font-medium">{{ sales_orders_page.paginator.count }}</span> results
+                    </p>
+                </div>
+                <div>
+                    <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                        {% if sales_orders_page.has_previous %}
+                            <a href="?page={{ sales_orders_page.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.customer %}&customer={{ request.GET.customer }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">Previous</a>
+                        {% endif %}
+                        
+                        {% for num in sales_orders_page.paginator.page_range %}
+                            {% if sales_orders_page.number == num %}
+                                <span class="relative z-10 inline-flex items-center bg-blue-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">{{ num }}</span>
+                            {% elif num > sales_orders_page.number|add:'-3' and num < sales_orders_page.number|add:'3' %}
+                                <a href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.customer %}&customer={{ request.GET.customer }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">{{ num }}</a>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if sales_orders_page.has_next %}
+                            <a href="?page={{ sales_orders_page.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.customer %}&customer={{ request.GET.customer }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">Next</a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Enhanced Sales Order Modal -->
+<div id="salesOrderModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-4xl relative transform transition-all max-h-[90vh] overflow-y-auto">
+        <button id="closeSalesOrderModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+        
+        <h3 id="salesOrderModalTitle" class="text-2xl font-bold text-gray-900 mb-6">
+            <svg class="w-8 h-8 inline mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>Create Sales Order
+        </h3>
+        
+        <form id="salesOrderForm" class="space-y-6">
+            {% csrf_token %}
+            <input type="hidden" id="salesOrderId" name="id">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="salesorder_customer" class="block text-sm font-medium text-gray-700 mb-2">
+                        Customer <span class="text-red-500">*</span>
+                    </label>
+                    <select id="salesorder_customer" name="customer_id" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Select Customer</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}">{{ customer.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="salesorder_quotation" class="block text-sm font-medium text-gray-700 mb-2">
+                        From Quotation (Optional)
+                    </label>
+                    <select id="salesorder_quotation" name="quotation_id"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Select Quotation</option>
+                        {% for quotation in quotations %}
+                        <option value="{{ quotation.id }}">QUO-{{ quotation.id|stringformat:"04d" }} - {{ quotation.customer.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="salesorder_order_date" class="block text-sm font-medium text-gray-700 mb-2">
+                        Order Date <span class="text-red-500">*</span>
+                    </label>
+                    <input type="date" id="salesorder_order_date" name="order_date" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div>
+                    <label for="salesorder_delivery_date" class="block text-sm font-medium text-gray-700 mb-2">Expected Delivery Date</label>
+                    <input type="date" id="salesorder_delivery_date" name="delivery_date"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div>
+                    <label for="salesorder_status" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select id="salesorder_status" name="status"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="draft">Draft</option>
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="in_production">In Production</option>
+                        <option value="ready_to_deliver">Ready to Deliver</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="salesorder_currency" class="block text-sm font-medium text-gray-700 mb-2">
+                        Currency <span class="text-red-500">*</span>
+                    </label>
+                    <select id="salesorder_currency" name="currency_id" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            onchange="updateCurrencySymbol()">
+                        <option value="">Select Currency</option>
+                        {% for currency in currencies %}
+                        <option value="{{ currency.id }}" 
+                                data-symbol="{{ currency.symbol }}"
+                                data-rate="{{ currency.exchange_rate }}"
+                                {% if currency.is_base_currency %}selected{% endif %}>
+                            {{ currency.code }} - {{ currency.name }} ({{ currency.symbol }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="salesorder_billing_address" class="block text-sm font-medium text-gray-700 mb-2">Billing Address</label>
+                    <textarea id="salesorder_billing_address" name="billing_address" rows="3"
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                </div>
+                
+                <div>
+                    <label for="salesorder_shipping_address" class="block text-sm font-medium text-gray-700 mb-2">Shipping Address</label>
+                    <textarea id="salesorder_shipping_address" name="shipping_address" rows="3"
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                </div>
+            </div>
+            
+            <div>
+                <label for="salesorder_notes" class="block text-sm font-medium text-gray-700 mb-2">Order Notes</label>
+                <textarea id="salesorder_notes" name="notes" rows="3"
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+            </div>
+            
+            <div class="border-t border-gray-200 pt-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-lg font-semibold text-gray-900">Order Items</h4>
+                    <button type="button" id="addOrderItemBtn" class="px-4 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors">
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>Add Item
+                    </button>
+                </div>
+                <div id="salesOrderItems">
+                    <!-- Items will be added dynamically -->
+                </div>
+            </div>
+            
+            <div class="flex justify-between items-center pt-6 border-t border-gray-200">
+                <div class="text-xl font-bold text-gray-900">
+                    Total: $<span id="salesOrderTotal">0.00</span>
+                </div>
+                <div class="flex space-x-4">
+                    <button type="button" id="cancelSalesOrderBtn" 
+                            class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                        </svg>Save Order
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Enhanced Sales Order Management
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('salesOrderModal');
+    const addBtn = document.getElementById('addSalesOrderBtn');
+    const closeModalBtn = document.getElementById('closeSalesOrderModalBtn');
+    const cancelBtn = document.getElementById('cancelSalesOrderBtn');
+    const form = document.getElementById('salesOrderForm');
+    const modalTitle = document.getElementById('salesOrderModalTitle');
+    const salesOrderIdInput = document.getElementById('salesOrderId');
+    const addOrderItemBtn = document.getElementById('addOrderItemBtn');
+    const salesOrderItems = document.getElementById('salesOrderItems');
+    const salesOrderTotal = document.getElementById('salesOrderTotal');
+    const quotationSelect = document.getElementById('salesorder_quotation');
+    
+    let itemCounter = 0;
+
+    // Set default date to today
+    document.getElementById('salesorder_order_date').value = new Date().toISOString().split('T')[0];
+
+    // Modal functions
+    function showModal(edit = false, data = {}) {
+        modal.classList.remove('hidden');
+        modalTitle.innerHTML = edit ? 
+            '<svg class="w-8 h-8 inline mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>Edit Sales Order' : 
+            '<svg class="w-8 h-8 inline mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>Create Sales Order';
+        form.reset();
+        
+        // Reset items
+        salesOrderItems.innerHTML = '';
+        itemCounter = 0;
+        
+        if (edit && data) {
+            salesOrderIdInput.value = data.id || '';
+            document.getElementById('salesorder_customer').value = data.customer_id || '';
+            document.getElementById('salesorder_quotation').value = data.quotation_id || '';
+            document.getElementById('salesorder_order_date').value = data.order_date || '';
+            document.getElementById('salesorder_delivery_date').value = data.delivery_date || '';
+            document.getElementById('salesorder_status').value = data.status || 'pending';
+            document.getElementById('salesorder_currency').value = data.currency_id || '';
+            document.getElementById('salesorder_billing_address').value = data.billing_address || '';
+            document.getElementById('salesorder_shipping_address').value = data.shipping_address || '';
+            document.getElementById('salesorder_notes').value = data.notes || '';
+            
+            // Load existing items if available
+            if (data.items && data.items.length > 0) {
+                data.items.forEach(item => {
+                    addOrderItem(item);
+                });
+            } else {
+                addOrderItem(); // Add empty item
+            }
+        } else {
+            // Set default date for new order
+            document.getElementById('salesorder_order_date').value = new Date().toISOString().split('T')[0];
+            addOrderItem(); // Add first item
+        }
+    }
+
+    function hideModal() {
+        modal.classList.add('hidden');
+    }
+
+    // Quotation selection handler
+    quotationSelect.addEventListener('change', function() {
+        const quotationId = this.value;
+        if (quotationId) {
+            // Fetch quotation details and populate form
+            fetch(`/sales/quotations/${quotationId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.quotation) {
+                        const quotation = data.quotation;
+                        document.getElementById('salesorder_customer').value = quotation.customer_id;
+                        document.getElementById('salesorder_billing_address').value = quotation.billing_address || '';
+                        document.getElementById('salesorder_shipping_address').value = quotation.shipping_address || '';
+                        document.getElementById('salesorder_notes').value = quotation.notes || '';
+                        
+                        // Clear and add quotation items
+                        salesOrderItems.innerHTML = '';
+                        itemCounter = 0;
+                        if (quotation.items && quotation.items.length > 0) {
+                            quotation.items.forEach(item => {
+                                addOrderItem({
+                                    product_id: item.product_id,
+                                    quantity: item.quantity,
+                                    unit_price: item.unit_price
+                                });
+                            });
+                        } else {
+                            addOrderItem();
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading quotation:', error);
+                });
+        }
+    });
+
+    function addOrderItem(itemData = {}) {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'border border-gray-300 rounded-lg p-4 mb-4 bg-white shadow-sm';
+        itemDiv.setAttribute('data-item-index', itemCounter);
+        
+        const currencySymbol = getCurrentCurrencySymbol();
+        
+        itemDiv.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+                <!-- Product Selection -->
+                <div class="md:col-span-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Product <span class="text-red-500">*</span>
+                    </label>
+                    <select name="items[${itemCounter}][product_id]" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 item-product" 
+                            required onchange="updateProductInfo(${itemCounter})">
+                        <option value="">Select Product</option>
+                        {% for product in products %}
+                        <option value="{{ product.id }}" 
+                                data-price="{{ product.selling_price|default:'0' }}"
+                                data-cost="{{ product.cost_price|default:'0' }}"
+                                data-uom="{{ product.unit_of_measure }}"
+                                data-stockable="{{ product.is_stockable|yesno:'true,false' }}"
+                                data-saleable="{{ product.is_saleable|yesno:'true,false' }}"
+                                data-tracking="{{ product.tracking_method }}"
+                                data-requires-individual="{{ product.requires_individual_tracking|yesno:'true,false' }}"
+                                data-requires-expiry="{{ product.requires_expiry_tracking|yesno:'true,false' }}"
+                                data-requires-batch="{{ product.requires_batch_tracking|yesno:'true,false' }}"
+                                data-shelf-life="{{ product.shelf_life_days|default:'0' }}"
+                                {% if not product.is_saleable or not product.is_active %}disabled{% endif %}>
+                            {{ product.sku }} - {{ product.name }}
+                            {% if not product.is_saleable %} (Not Saleable){% endif %}
+                            {% if not product.is_active %} (Inactive){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="product-info mt-1 text-xs text-gray-500"></div>
+                </div>
+                
+                <!-- UOM -->
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">UOM</label>
+                    <input type="text" name="items[${itemCounter}][uom]" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 item-uom" 
+                           readonly>
+                </div>
+                
+                <!-- Quantity -->
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Quantity <span class="text-red-500">*</span>
+                    </label>
+                    <input type="number" name="items[${itemCounter}][quantity]" 
+                           min="0.01" step="0.01" value="${itemData.quantity || 1}" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 item-quantity" 
+                           required onchange="calculateItemTotal(${itemCounter}); updateTrackingItems(${itemCounter})">
+                </div>
+                
+                <!-- Unit Price -->
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Unit Price <span class="text-red-500">*</span>
+                    </label>
+                    <input type="number" name="items[${itemCounter}][unit_price]" 
+                           step="0.01" value="${itemData.unit_price || ''}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 item-price" 
+                           required onchange="calculateItemTotal(${itemCounter})">
+                </div>
+                
+                <!-- Discount -->
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Disc %</label>
+                    <input type="number" name="items[${itemCounter}][discount_percent]" 
+                           min="0" max="100" step="0.01" value="${itemData.discount_percent || 0}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 item-discount" 
+                           onchange="calculateItemTotal(${itemCounter})">
+                </div>
+                
+                <!-- Tax -->
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tax</label>
+                    <select name="items[${itemCounter}][tax_id]" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 item-tax"
+                            onchange="calculateItemTotal(${itemCounter})">
+                        <option value="">No Tax</option>
+                        {% for tax in taxes %}
+                        <option value="{{ tax.id }}" data-rate="{{ tax.rate }}">{{ tax.name }} ({{ tax.rate }}%)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Line Total -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Line Total</label>
+                    <div class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-right font-medium item-total">
+                        ${currencySymbol}0.00
+                    </div>
+                </div>
+                
+                <!-- Delivery Date -->
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Delivery</label>
+                    <input type="date" name="items[${itemCounter}][delivery_date]" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <!-- Actions -->
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">&nbsp;</label>
+                    <div class="flex items-center space-x-1">
+                        <button type="button" 
+                                class="tracking-toggle-btn p-2 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded transition-colors"
+                                title="Toggle Product Tracking" 
+                                onclick="toggleItemTracking(${itemCounter})"
+                                style="display: none;">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </button>
+                        <button type="button" 
+                                class="remove-item-btn p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                                onclick="removeOrderItem(${itemCounter})">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Product Description -->
+            <div class="mt-3">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+                <textarea name="items[${itemCounter}][description]" rows="2"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 item-description"
+                          placeholder="Override product description if needed">${itemData.description || ''}</textarea>
+            </div>
+            
+            <!-- Product Tracking Section -->
+            <div class="tracking-section mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg hidden">
+                <div class="flex items-center justify-between mb-3">
+                    <h5 class="text-sm font-medium text-yellow-800">Product Tracking Information</h5>
+                    <button type="button" onclick="addTrackingItem(${itemCounter})" 
+                            class="px-3 py-1 text-xs bg-yellow-600 text-white rounded hover:bg-yellow-700">
+                        Add Tracking
+                    </button>
+                </div>
+                <div class="tracking-hint text-xs text-yellow-700 mb-3"></div>
+                <div class="tracking-items-container" id="tracking-items-${itemCounter}">
+                    <!-- Tracking items will be added here -->
+                </div>
+            </div>
+            
+            <!-- Item Notes -->
+            <div class="mt-3">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <textarea name="items[${itemCounter}][notes]" rows="2"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Special instructions for this item">${itemData.notes || ''}</textarea>
+            </div>
+        `;
+        
+        salesOrderItems.appendChild(itemDiv);
+        
+        // Set selected values if provided
+        if (itemData.product_id) {
+            const productSelect = itemDiv.querySelector('.item-product');
+            productSelect.value = itemData.product_id;
+            updateProductInfo(itemCounter);
+        }
+        
+        if (itemData.tax_id) {
+            itemDiv.querySelector('.item-tax').value = itemData.tax_id;
+        }
+        
+        // Calculate initial total
+        calculateItemTotal(itemCounter);
+        
+        itemCounter++;
+    }
+                priceInput.value = selectedOption.dataset.price;
+                calculateItemTotal();
+            }
+        });
+        
+        quantityInput.addEventListener('input', calculateItemTotal);
+        priceInput.addEventListener('input', calculateItemTotal);
+        removeBtn.addEventListener('click', function() {
+            if (salesOrderItems.children.length > 1) {
+                itemDiv.remove();
+                calculateOrderTotal();
+            } else {
+                showNotification('At least one item is required', 'error');
+            }
+        });
+        
+        function calculateItemTotal() {
+            const quantity = parseFloat(quantityInput.value) || 0;
+            const price = parseFloat(priceInput.value) || 0;
+            const total = quantity * price;
+            totalInput.value = total.toFixed(2);
+            calculateOrderTotal();
+        }
+        
+        // Initial calculation
+        calculateItemTotal();
+        
+        itemCounter++;
+    }
+
+    function calculateOrderTotal() {
+        let total = 0;
+        document.querySelectorAll('.item-total').forEach(input => {
+            total += parseFloat(input.value) || 0;
+        });
+        salesOrderTotal.textContent = total.toFixed(2);
+    }
+
+    function showNotification(message, type = 'success') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+
+    // Event listeners
+    addBtn.addEventListener('click', () => showModal(false));
+    closeModalBtn.addEventListener('click', hideModal);
+    cancelBtn.addEventListener('click', hideModal);
+    addOrderItemBtn.addEventListener('click', () => addOrderItem());
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) hideModal();
+    });
+
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Validate that at least one item exists
+        if (salesOrderItems.children.length === 0) {
+            showNotification('At least one item is required', 'error');
+            return;
+        }
+        
+        const formData = new FormData(form);
+        
+        // Add total to form data
+        formData.append('total', salesOrderTotal.textContent);
+        
+        const isEdit = salesOrderIdInput.value !== '';
+        const url = isEdit ? `/sales/sales-orders/${salesOrderIdInput.value}/edit/` : '/sales/sales-orders/add/';
+        
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                hideModal();
+                showNotification(isEdit ? 'Sales order updated successfully!' : 'Sales order created successfully!');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showNotification('Error: ' + (data.error || 'Failed to save sales order'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('An error occurred while saving the sales order', 'error');
+        });
+    });
+});
+
+// Global functions
+window.viewSalesOrder = function(orderId) {
+    window.open(`/sales/sales-orders/${orderId}/`, '_blank');
+};
+
+window.editSalesOrder = function(orderId) {
+    fetch(`/sales/sales-orders/${orderId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const modal = document.getElementById('salesOrderModal');
+                const showModal = modal.querySelector('#salesOrderModalTitle').closest('.bg-white').showModal || function() {
+                    modal.classList.remove('hidden');
+                };
+                // Show modal with data - you may need to implement this based on your data structure
+                showNotification('Loading sales order...', 'success');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to load sales order data', 'error');
+        });
+};
+
+window.confirmSalesOrder = function(orderId) {
+    if (!confirm('Are you sure you want to confirm this sales order?')) {
+        return;
+    }
+    
+    fetch(`/sales/sales-orders/${orderId}/confirm/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Sales order confirmed successfully!');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification('Error: ' + (data.error || 'Failed to confirm sales order'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('An error occurred while confirming the sales order', 'error');
+    });
+};
+
+window.deleteSalesOrder = function(orderId) {
+    if (!confirm('Are you sure you want to delete this sales order? This action cannot be undone.')) {
+        return;
+    }
+    
+    fetch(`/sales/sales-orders/${orderId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Sales order deleted successfully!');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification('Error: ' + (data.error || 'Failed to delete sales order'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('An error occurred while deleting the sales order', 'error');
+    });
+};
+
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// Enhanced Product and Tracking Functions
+function getCurrentCurrencySymbol() {
+    const currencySelect = document.getElementById('salesorder_currency');
+    const selectedOption = currencySelect.options[currencySelect.selectedIndex];
+    return selectedOption ? selectedOption.dataset.symbol || '$' : '$';
+}
+
+function updateCurrencySymbol() {
+    const symbol = getCurrentCurrencySymbol();
+    // Update all price displays
+    document.querySelectorAll('.item-total').forEach(element => {
+        const value = element.textContent.replace(/[^0-9.-]/g, '');
+        element.textContent = `${symbol}${parseFloat(value || 0).toFixed(2)}`;
+    });
+    updateOrderTotals();
+}
+
+function updateProductInfo(itemIndex) {
+    const productSelect = document.querySelector(`[data-item-index="${itemIndex}"] .item-product`);
+    const selectedOption = productSelect.options[productSelect.selectedIndex];
+    
+    if (!selectedOption.value) return;
+    
+    const itemDiv = productSelect.closest('[data-item-index]');
+    const priceInput = itemDiv.querySelector('.item-price');
+    const uomInput = itemDiv.querySelector('.item-uom');
+    const trackingSection = itemDiv.querySelector('.tracking-section');
+    const trackingToggle = itemDiv.querySelector('.tracking-toggle-btn');
+    const productInfoDiv = itemDiv.querySelector('.product-info');
+    
+    // Update price and UOM
+    priceInput.value = selectedOption.dataset.price || 0;
+    uomInput.value = selectedOption.dataset.uom || 'piece';
+    
+    // Update product info display
+    const stockable = selectedOption.dataset.stockable === 'true';
+    const saleable = selectedOption.dataset.saleable === 'true';
+    const trackingMethod = selectedOption.dataset.tracking || 'none';
+    
+    let infoText = `${selectedOption.dataset.uom || 'piece'}`;
+    if (!saleable) infoText += ' | ⚠️ Not Saleable';
+    if (!stockable) infoText += ' | 📦 Non-Stockable';
+    if (trackingMethod !== 'none') infoText += ` | 📋 ${trackingMethod.toUpperCase()} Tracking`;
+    
+    productInfoDiv.textContent = infoText;
+    productInfoDiv.className = `product-info mt-1 text-xs ${saleable ? 'text-gray-500' : 'text-red-500'}`;
+    
+    // Show/hide tracking button and section
+    if (trackingMethod !== 'none') {
+        trackingToggle.style.display = 'block';
+        setupProductTracking(itemIndex, selectedOption.dataset);
+    } else {
+        trackingToggle.style.display = 'none';
+        trackingSection.classList.add('hidden');
+    }
+    
+    calculateItemTotal(itemIndex);
+}
+
+function setupProductTracking(itemIndex, productData) {
+    const itemDiv = document.querySelector(`[data-item-index="${itemIndex}"]`);
+    const trackingSection = itemDiv.querySelector('.tracking-section');
+    const trackingHint = itemDiv.querySelector('.tracking-hint');
+    
+    const trackingMethod = productData.tracking;
+    const requiresIndividual = productData.requiresIndividual === 'true';
+    const requiresExpiry = productData.requiresExpiry === 'true';
+    const requiresBatch = productData.requiresBatch === 'true';
+    const shelfLife = parseInt(productData.shelfLife) || 0;
+    
+    // Update hint text
+    let hintText = getTrackingHintText(trackingMethod, requiresIndividual, requiresExpiry, requiresBatch, shelfLife);
+    trackingHint.textContent = hintText;
+    
+    // Auto-show tracking if required
+    if (requiresIndividual || requiresExpiry || requiresBatch) {
+        trackingSection.classList.remove('hidden');
+    }
+}
+
+function getTrackingHintText(trackingMethod, requiresIndividual, requiresExpiry, requiresBatch, shelfLife) {
+    let hints = [];
+    
+    switch (trackingMethod) {
+        case 'serial':
+            hints.push('Serial number tracking required');
+            break;
+        case 'imei':
+            hints.push('IMEI number tracking required');
+            break;
+        case 'barcode':
+            hints.push('Barcode tracking required');
+            break;
+        case 'batch':
+            hints.push('Batch/lot tracking required');
+            break;
+        case 'expiry':
+            hints.push('Expiry date tracking required');
+            break;
+    }
+    
+    if (requiresIndividual) hints.push('Individual unit tracking');
+    if (requiresExpiry && shelfLife > 0) hints.push(`Shelf life: ${shelfLife} days`);
+    
+    return hints.join(' | ');
+}
+
+function toggleItemTracking(itemIndex) {
+    const itemDiv = document.querySelector(`[data-item-index="${itemIndex}"]`);
+    const trackingSection = itemDiv.querySelector('.tracking-section');
+    const toggleBtn = itemDiv.querySelector('.tracking-toggle-btn');
+    
+    if (trackingSection.classList.contains('hidden')) {
+        trackingSection.classList.remove('hidden');
+        toggleBtn.classList.add('bg-purple-100');
+    } else {
+        trackingSection.classList.add('hidden');
+        toggleBtn.classList.remove('bg-purple-100');
+    }
+}
+
+function addTrackingItem(itemIndex) {
+    const container = document.getElementById(`tracking-items-${itemIndex}`);
+    const productSelect = document.querySelector(`[data-item-index="${itemIndex}"] .item-product`);
+    const selectedOption = productSelect.options[productSelect.selectedIndex];
+    
+    if (!selectedOption.value) return;
+    
+    const trackingMethod = selectedOption.dataset.tracking;
+    const trackingItemIndex = container.children.length;
+    
+    const trackingDiv = document.createElement('div');
+    trackingDiv.className = 'tracking-item bg-white border border-yellow-300 rounded p-3 mb-2';
+    trackingDiv.innerHTML = getTrackingItemHTML(itemIndex, trackingItemIndex, trackingMethod);
+    
+    container.appendChild(trackingDiv);
+}
+
+function getTrackingItemHTML(itemIndex, trackingIndex, trackingMethod) {
+    let trackingFields = '';
+    
+    switch (trackingMethod) {
+        case 'serial':
+            trackingFields = `
+                <input type="text" name="items[${itemIndex}][tracking][${trackingIndex}][serial_number]" 
+                       placeholder="Serial Number" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500">
+            `;
+            break;
+        case 'imei':
+            trackingFields = `
+                <input type="text" name="items[${itemIndex}][tracking][${trackingIndex}][imei_number]" 
+                       placeholder="IMEI Number" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500">
+            `;
+            break;
+        case 'barcode':
+            trackingFields = `
+                <input type="text" name="items[${itemIndex}][tracking][${trackingIndex}][barcode]" 
+                       placeholder="Barcode" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500">
+            `;
+            break;
+        case 'batch':
+            trackingFields = `
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" name="items[${itemIndex}][tracking][${trackingIndex}][batch_number]" 
+                           placeholder="Batch Number" 
+                           class="px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500">
+                    <input type="number" name="items[${itemIndex}][tracking][${trackingIndex}][quantity]" 
+                           placeholder="Quantity" min="1" step="0.01"
+                           class="px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            `;
+            break;
+        case 'expiry':
+            trackingFields = `
+                <div class="grid grid-cols-3 gap-2">
+                    <input type="text" name="items[${itemIndex}][tracking][${trackingIndex}][batch_number]" 
+                           placeholder="Batch Number" 
+                           class="px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500">
+                    <input type="date" name="items[${itemIndex}][tracking][${trackingIndex}][expiry_date]" 
+                           placeholder="Expiry Date"
+                           class="px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500">
+                    <input type="number" name="items[${itemIndex}][tracking][${trackingIndex}][quantity]" 
+                           placeholder="Quantity" min="1" step="0.01"
+                           class="px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            `;
+            break;
+    }
+    
+    return `
+        <div class="flex items-center space-x-2">
+            <div class="flex-1">
+                ${trackingFields}
+            </div>
+            <button type="button" onclick="this.parentElement.parentElement.remove()" 
+                    class="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+    `;
+}
+
+function updateTrackingItems(itemIndex) {
+    const productSelect = document.querySelector(`[data-item-index="${itemIndex}"] .item-product`);
+    const quantityInput = document.querySelector(`[data-item-index="${itemIndex}"] .item-quantity`);
+    const selectedOption = productSelect.options[productSelect.selectedIndex];
+    
+    if (!selectedOption.value) return;
+    
+    const trackingMethod = selectedOption.dataset.tracking;
+    const requiresIndividual = selectedOption.dataset.requiresIndividual === 'true';
+    const quantity = parseInt(quantityInput.value) || 0;
+    
+    if (trackingMethod !== 'none' && requiresIndividual && ['serial', 'imei', 'barcode'].includes(trackingMethod)) {
+        const container = document.getElementById(`tracking-items-${itemIndex}`);
+        const currentItems = container.children.length;
+        
+        // Add or remove tracking items based on quantity
+        if (quantity > currentItems) {
+            for (let i = currentItems; i < quantity; i++) {
+                addTrackingItem(itemIndex);
+            }
+        } else if (quantity < currentItems) {
+            for (let i = currentItems - 1; i >= quantity; i--) {
+                container.children[i].remove();
+            }
+        }
+    }
+}
+
+function removeOrderItem(itemIndex) {
+    const itemDiv = document.querySelector(`[data-item-index="${itemIndex}"]`);
+    if (itemDiv && salesOrderItems.children.length > 1) {
+        itemDiv.remove();
+        calculateOrderTotals();
+    } else {
+        showNotification('At least one item is required', 'error');
+    }
+}
+
+function calculateItemTotal(itemIndex) {
+    const itemDiv = document.querySelector(`[data-item-index="${itemIndex}"]`);
+    if (!itemDiv) return;
+    
+    const quantityInput = itemDiv.querySelector('.item-quantity');
+    const priceInput = itemDiv.querySelector('.item-price');
+    const discountInput = itemDiv.querySelector('.item-discount');
+    const taxSelect = itemDiv.querySelector('.item-tax');
+    const totalDiv = itemDiv.querySelector('.item-total');
+    
+    const quantity = parseFloat(quantityInput.value) || 0;
+    const unitPrice = parseFloat(priceInput.value) || 0;
+    const discountPercent = parseFloat(discountInput.value) || 0;
+    
+    let subtotal = quantity * unitPrice;
+    let discountAmount = subtotal * (discountPercent / 100);
+    let afterDiscount = subtotal - discountAmount;
+    
+    let taxAmount = 0;
+    if (taxSelect.value) {
+        const selectedTax = taxSelect.options[taxSelect.selectedIndex];
+        const taxRate = parseFloat(selectedTax.dataset.rate) || 0;
+        taxAmount = afterDiscount * (taxRate / 100);
+    }
+    
+    const total = afterDiscount + taxAmount;
+    const currencySymbol = getCurrentCurrencySymbol();
+    totalDiv.textContent = `${currencySymbol}${total.toFixed(2)}`;
+    
+    calculateOrderTotals();
+}
+
+function calculateOrderTotals() {
+    let subtotal = 0;
+    let totalTax = 0;
+    let totalDiscount = 0;
+    
+    document.querySelectorAll('[data-item-index]').forEach(itemDiv => {
+        const quantityInput = itemDiv.querySelector('.item-quantity');
+        const priceInput = itemDiv.querySelector('.item-price');
+        const discountInput = itemDiv.querySelector('.item-discount');
+        const taxSelect = itemDiv.querySelector('.item-tax');
+        
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const unitPrice = parseFloat(priceInput.value) || 0;
+        const discountPercent = parseFloat(discountInput.value) || 0;
+        
+        const itemSubtotal = quantity * unitPrice;
+        const itemDiscount = itemSubtotal * (discountPercent / 100);
+        const afterDiscount = itemSubtotal - itemDiscount;
+        
+        subtotal += itemSubtotal;
+        totalDiscount += itemDiscount;
+        
+        if (taxSelect.value) {
+            const selectedTax = taxSelect.options[taxSelect.selectedIndex];
+            const taxRate = parseFloat(selectedTax.dataset.rate) || 0;
+            totalTax += afterDiscount * (taxRate / 100);
+        }
+    });
+    
+    // Apply order-level discount
+    const discountType = document.getElementById('salesorder_discount_type').value;
+    const discountPercentage = parseFloat(document.getElementById('salesorder_discount_percentage').value) || 0;
+    const discountAmount = parseFloat(document.getElementById('salesorder_discount_amount').value) || 0;
+    const shippingAmount = parseFloat(document.getElementById('salesorder_shipping_amount').value) || 0;
+    
+    let orderDiscount = 0;
+    if (discountType === 'percentage') {
+        orderDiscount = (subtotal - totalDiscount) * (discountPercentage / 100);
+    } else if (discountType === 'fixed_amount') {
+        orderDiscount = discountAmount;
+    }
+    
+    const finalTotal = subtotal - totalDiscount - orderDiscount + totalTax + shippingAmount;
+    const currencySymbol = getCurrentCurrencySymbol();
+    
+    // Update display
+    document.getElementById('order_subtotal').textContent = `${currencySymbol}${subtotal.toFixed(2)}`;
+    document.getElementById('order_discount').textContent = `-${currencySymbol}${(totalDiscount + orderDiscount).toFixed(2)}`;
+    document.getElementById('order_tax').textContent = `${currencySymbol}${totalTax.toFixed(2)}`;
+    document.getElementById('order_shipping').textContent = `${currencySymbol}${shippingAmount.toFixed(2)}`;
+    document.getElementById('order_total').textContent = `${currencySymbol}${finalTotal.toFixed(2)}`;
+}
+
+function toggleDiscountFields() {
+    const discountType = document.getElementById('salesorder_discount_type').value;
+    const percentageField = document.getElementById('discount_percentage_field');
+    const amountField = document.getElementById('discount_amount_field');
+    
+    percentageField.classList.add('hidden');
+    amountField.classList.add('hidden');
+    
+    if (discountType === 'percentage') {
+        percentageField.classList.remove('hidden');
+    } else if (discountType === 'fixed_amount') {
+        amountField.classList.remove('hidden');
+    }
+    
+    calculateOrderTotals();
+}
+
+// Customer change handler to populate addresses
+document.getElementById('salesorder_customer').addEventListener('change', function() {
+    const customerId = this.value;
+    if (customerId) {
+        // You can fetch customer details and populate addresses here
+        // fetch(`/api/customers/${customerId}/`)
+        //     .then(response => response.json())
+        //     .then(data => {
+        //         document.getElementById('salesorder_billing_address').value = data.billing_address || '';
+        //         document.getElementById('salesorder_shipping_address').value = data.shipping_address || '';
+        //     });
+    }
+// Initialize event listeners when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Currency change listener
+    document.getElementById('salesorder_currency').addEventListener('change', updateCurrencySymbol);
+    
+    // Discount type change listener
+    document.getElementById('salesorder_discount_type').addEventListener('change', toggleDiscountFields);
+    
+    // Order-level discount and shipping listeners
+    document.getElementById('salesorder_discount_percentage').addEventListener('input', calculateOrderTotals);
+    document.getElementById('salesorder_discount_amount').addEventListener('input', calculateOrderTotals);
+    document.getElementById('salesorder_shipping_amount').addEventListener('input', calculateOrderTotals);
+    
+    // Initialize first item if empty
+    if (salesOrderItems.children.length === 0) {
+        addOrderItem();
+    }
+    
+    // Set default currency symbol
+    updateCurrencySymbol();
+});
+
+// Enhanced form submission with tracking validation
+function submitSalesOrder() {
+    const form = document.getElementById('salesOrderForm');
+    const formData = new FormData(form);
+    
+    // Validate tracking items
+    let trackingValid = true;
+    document.querySelectorAll('[data-item-index]').forEach(itemDiv => {
+        const productSelect = itemDiv.querySelector('.item-product');
+        const selectedOption = productSelect.options[productSelect.selectedIndex];
+        
+        if (selectedOption.value) {
+            const trackingMethod = selectedOption.dataset.tracking;
+            const requiresIndividual = selectedOption.dataset.requiresIndividual === 'true';
+            const quantity = parseFloat(itemDiv.querySelector('.item-quantity').value) || 0;
+            const trackingItems = itemDiv.querySelectorAll('.tracking-item').length;
+            
+            if (trackingMethod !== 'none' && requiresIndividual && quantity > trackingItems) {
+                showNotification(`Product requires ${trackingMethod} tracking for each unit`, 'error');
+                trackingValid = false;
+            }
+        }
+    });
+    
+    if (!trackingValid) return;
+    
+    // Add CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    formData.append('csrfmiddlewaretoken', csrfToken);
+    
+    fetch('{% url "sales:sales_orders_add" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Sales Order created successfully!');
+            closeSalesOrderModal();
+            loadSalesOrders();
+        } else {
+            showNotification(data.error || 'Error creating sales order', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error creating sales order', 'error');
+    });
+}
+
+});
+</script>
+{% endblock %} 

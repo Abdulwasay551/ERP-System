@@ -1,665 +1,689 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quality Control - Manufacturing{% endblock %}
 
 {% block extra_css %}
-<script>
-    tailwind.config = {
-        theme: {
-            extend: {
-                colors: {
-                    primary: '#10B981',
-                    secondary: '#059669',
-                    accent: '#065F46'
-                }
-            }
+<style>
+    .gradient-bg {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .card-shadow {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    
+    .hover-lift:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        transition: all 0.3s ease;
+    }
+    
+    .quality-metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        color: white;
+    }
+    
+    .status-badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .status-pending { background-color: #fef3c7; color: #92400e; }
+    .status-in-progress { background-color: #dbeafe; color: #1e40af; }
+    .status-passed { background-color: #d1fae5; color: #065f46; }
+    .status-failed { background-color: #fee2e2; color: #991b1b; }
+    .status-rework { background-color: #fef2f2; color: #b91c1c; }
+    
+    .inspection-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+    }
+    
+    .inspection-card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .quality-chart {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .progress-ring {
+        transform: rotate(-90deg);
+    }
+    
+    .progress-circle {
+        fill: none;
+        stroke-width: 8;
+        stroke-linecap: round;
+        stroke: #e5e7eb;
+    }
+    
+    .progress-circle-fill {
+        fill: none;
+        stroke-width: 8;
+        stroke-linecap: round;
+        stroke: #10b981;
+        stroke-dasharray: 283;
+        stroke-dashoffset: 283;
+        animation: progress 2s ease-in-out forwards;
+    }
+    
+    @keyframes progress {
+        to {
+            stroke-dashoffset: var(--progress);
         }
     }
-</script>
+    
+    .modal-overlay {
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+    }
+    
+    .defect-indicator {
+        width: 1rem;
+        height: 1rem;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 0.5rem;
+    }
+    
+    .defect-critical { background-color: #ef4444; }
+    .defect-major { background-color: #f59e0b; }
+    .defect-minor { background-color: #84cc16; }
+    
+    .timeline-item {
+        position: relative;
+        padding-left: 2rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 0.375rem;
+        top: 0.5rem;
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 50%;
+        background-color: #3b82f6;
+        border: 2px solid white;
+        box-shadow: 0 0 0 3px #dbeafe;
+    }
+    
+    .timeline-line {
+        position: absolute;
+        left: 0.75rem;
+        top: 1.5rem;
+        bottom: -1.5rem;
+        width: 2px;
+        background-color: #e5e7eb;
+    }
+    
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-        <!-- Header -->
-        <header class="bg-white shadow-sm border-b border-gray-200">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center py-4">
-                    <div class="flex items-center">
-                        <h1 class="text-2xl font-bold text-gray-900">Quality Control</h1>
-                        <span class="ml-2 px-2 py-1 bg-primary text-white text-xs rounded-full">Manufacturing Module</span>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary transition-colors">
-                            <i class="fas fa-plus mr-2"></i>New Inspection
-                        </button>
-                        <button class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-                            <i class="fas fa-download mr-2"></i>Quality Report
-                        </button>
-                    </div>
+<div class="min-h-screen bg-gray-50">
+    <!-- Header Section -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div class="mb-6 lg:mb-0">
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                        <i class="fas fa-clipboard-check text-green-600 mr-3"></i>
+                        Quality Control
+                    </h1>
+                    <p class="text-gray-600">Monitor and ensure product quality standards</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button id="newInspectionBtn" class="btn-primary">
+                        <i class="fas fa-plus mr-2"></i>New Inspection
+                    </button>
+                    <button class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-chart-line mr-2"></i>Quality Report
+                    </button>
                 </div>
             </div>
-        </header>
+        </div>
+    </div>
 
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <!-- Quality Metrics Dashboard -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-green-100 rounded-lg">
-                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-2xl font-bold text-gray-900">98.5%</p>
-                            <p class="text-sm text-gray-600">First Pass Yield</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-red-100 rounded-lg">
-                            <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-2xl font-bold text-gray-900">1.2%</p>
-                            <p class="text-sm text-gray-600">Defect Rate</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-blue-100 rounded-lg">
-                            <i class="fas fa-clipboard-check text-blue-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-2xl font-bold text-gray-900">147</p>
-                            <p class="text-sm text-gray-600">Inspections Today</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-yellow-100 rounded-lg">
-                            <i class="fas fa-tools text-yellow-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-2xl font-bold text-gray-900">5</p>
-                            <p class="text-sm text-gray-600">Pending Corrective Actions</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tab Navigation -->
-            <div class="bg-white rounded-lg shadow mb-6">
-                <div class="border-b border-gray-200">
-                    <nav class="-mb-px flex space-x-8 px-6">
-                        <button class="tab-button py-4 px-1 border-b-2 border-primary font-medium text-sm text-primary" data-tab="inspections">
-                            Active Inspections
-                        </button>
-                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="defects">
-                            Defect Tracking
-                        </button>
-                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="standards">
-                            Quality Standards
-                        </button>
-                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="analytics">
-                            Quality Analytics
-                        </button>
-                    </nav>
-                </div>
-
-                <!-- Active Inspections Tab -->
-                <div id="inspections-tab" class="tab-content p-6">
-                    <div class="mb-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-semibold text-gray-900">Quality Inspections</h3>
-                            <div class="flex space-x-2">
-                                <input type="text" placeholder="Search inspections..." class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                                <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                                    <option>All Status</option>
-                                    <option>Pending</option>
-                                    <option>In Progress</option>
-                                    <option>Completed</option>
-                                    <option>Failed</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inspection ID</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product/Batch</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inspector</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">QC-2024-001</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Widget Pro Max - Batch #156</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Final Inspection</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">John Smith</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">High</span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">In Progress</span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <button class="text-blue-600 hover:text-blue-900 mr-2">View</button>
-                                            <button class="text-green-600 hover:text-green-900 mr-2">Complete</button>
-                                            <button class="text-red-600 hover:text-red-900">Fail</button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">QC-2024-002</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Standard Widget - Batch #287</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">In-Process Inspection</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Sarah Johnson</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Medium</span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Pending</span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <button class="text-blue-600 hover:text-blue-900 mr-2">View</button>
-                                            <button class="text-green-600 hover:text-green-900 mr-2">Start</button>
-                                            <button class="text-gray-600 hover:text-gray-900">Reschedule</button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">QC-2024-003</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Mini Widget - Batch #342</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Incoming Inspection</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Mike Wilson</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Low</span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Passed</span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <button class="text-blue-600 hover:text-blue-900 mr-2">View Report</button>
-                                            <button class="text-green-600 hover:text-green-900">Certificate</button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Defect Tracking Tab -->
-                <div id="defects-tab" class="tab-content p-6 hidden">
-                    <div class="mb-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-semibold text-gray-900">Defect Tracking & Analysis</h3>
-                            <div class="flex space-x-2">
-                                <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                                    <option>All Severity</option>
-                                    <option>Critical</option>
-                                    <option>Major</option>
-                                    <option>Minor</option>
-                                </select>
-                                <button class="bg-primary text-white px-4 py-2 rounded-lg text-sm hover:bg-secondary">
-                                    <i class="fas fa-plus mr-2"></i>Log Defect
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Defect Summary Cards -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                                <div class="flex items-center">
-                                    <i class="fas fa-times-circle text-red-600 text-2xl mr-3"></i>
-                                    <div>
-                                        <p class="text-2xl font-bold text-red-900">3</p>
-                                        <p class="text-sm text-red-700">Critical Defects</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                <div class="flex items-center">
-                                    <i class="fas fa-exclamation-triangle text-yellow-600 text-2xl mr-3"></i>
-                                    <div>
-                                        <p class="text-2xl font-bold text-yellow-900">12</p>
-                                        <p class="text-sm text-yellow-700">Major Defects</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <div class="flex items-center">
-                                    <i class="fas fa-info-circle text-blue-600 text-2xl mr-3"></i>
-                                    <div>
-                                        <p class="text-2xl font-bold text-blue-900">28</p>
-                                        <p class="text-sm text-blue-700">Minor Defects</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Defect ID</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product/Batch</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Defect Type</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Severity</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Root Cause</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">DEF-2024-001</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Widget Pro Max - Batch #156</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Dimensional Variance</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Critical</span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Machine Calibration</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Under Investigation</span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <button class="text-blue-600 hover:text-blue-900 mr-2">Details</button>
-                                            <button class="text-green-600 hover:text-green-900">Corrective Action</button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">DEF-2024-002</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Standard Widget - Batch #287</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Surface Finish</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Major</span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Tool Wear</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Resolved</span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <button class="text-blue-600 hover:text-blue-900 mr-2">Details</button>
-                                            <button class="text-gray-600 hover:text-gray-900">View Resolution</button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quality Standards Tab -->
-                <div id="standards-tab" class="tab-content p-6 hidden">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Quality Standards List -->
-                        <div class="bg-white border rounded-lg p-6">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-lg font-semibold text-gray-900">Active Quality Standards</h3>
-                                <button class="bg-primary text-white px-3 py-2 rounded-lg text-sm hover:bg-secondary">
-                                    <i class="fas fa-plus mr-1"></i>Add Standard
-                                </button>
-                            </div>
-                            <div class="space-y-4">
-                                <div class="border border-gray-200 rounded-lg p-4">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <h4 class="font-medium text-gray-900">ISO 9001:2015</h4>
-                                            <p class="text-sm text-gray-600">Quality Management Systems</p>
-                                            <p class="text-xs text-gray-500 mt-1">Applies to: All Products</p>
-                                        </div>
-                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
-                                    </div>
-                                    <div class="mt-3 flex space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-900 text-sm">View Details</button>
-                                        <button class="text-gray-600 hover:text-gray-900 text-sm">Edit</button>
-                                    </div>
-                                </div>
-
-                                <div class="border border-gray-200 rounded-lg p-4">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <h4 class="font-medium text-gray-900">Internal QC-001</h4>
-                                            <p class="text-sm text-gray-600">Dimensional Tolerance Standard</p>
-                                            <p class="text-xs text-gray-500 mt-1">Applies to: Widget Pro Max</p>
-                                        </div>
-                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
-                                    </div>
-                                    <div class="mt-3 flex space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-900 text-sm">View Details</button>
-                                        <button class="text-gray-600 hover:text-gray-900 text-sm">Edit</button>
-                                    </div>
-                                </div>
-
-                                <div class="border border-gray-200 rounded-lg p-4">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <h4 class="font-medium text-gray-900">Customer Spec CS-456</h4>
-                                            <p class="text-sm text-gray-600">Customer-Specific Requirements</p>
-                                            <p class="text-xs text-gray-500 mt-1">Applies to: Custom Orders</p>
-                                        </div>
-                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Under Review</span>
-                                    </div>
-                                    <div class="mt-3 flex space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-900 text-sm">View Details</button>
-                                        <button class="text-gray-600 hover:text-gray-900 text-sm">Edit</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Inspection Checklists -->
-                        <div class="bg-white border rounded-lg p-6">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-lg font-semibold text-gray-900">Inspection Checklists</h3>
-                                <button class="bg-primary text-white px-3 py-2 rounded-lg text-sm hover:bg-secondary">
-                                    <i class="fas fa-plus mr-1"></i>New Checklist
-                                </button>
-                            </div>
-                            <div class="space-y-3">
-                                <div class="flex justify-between items-center p-3 border border-gray-200 rounded-lg">
-                                    <div>
-                                        <h4 class="font-medium text-gray-900">Incoming Material Inspection</h4>
-                                        <p class="text-sm text-gray-600">15 check points</p>
-                                    </div>
-                                    <div class="flex space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-900 text-sm">Edit</button>
-                                        <button class="text-green-600 hover:text-green-900 text-sm">Use</button>
-                                    </div>
-                                </div>
-
-                                <div class="flex justify-between items-center p-3 border border-gray-200 rounded-lg">
-                                    <div>
-                                        <h4 class="font-medium text-gray-900">In-Process Quality Check</h4>
-                                        <p class="text-sm text-gray-600">22 check points</p>
-                                    </div>
-                                    <div class="flex space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-900 text-sm">Edit</button>
-                                        <button class="text-green-600 hover:text-green-900 text-sm">Use</button>
-                                    </div>
-                                </div>
-
-                                <div class="flex justify-between items-center p-3 border border-gray-200 rounded-lg">
-                                    <div>
-                                        <h4 class="font-medium text-gray-900">Final Product Inspection</h4>
-                                        <p class="text-sm text-gray-600">30 check points</p>
-                                    </div>
-                                    <div class="flex space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-900 text-sm">Edit</button>
-                                        <button class="text-green-600 hover:text-green-900 text-sm">Use</button>
-                                    </div>
-                                </div>
-
-                                <div class="flex justify-between items-center p-3 border border-gray-200 rounded-lg">
-                                    <div>
-                                        <h4 class="font-medium text-gray-900">Packaging Quality Check</h4>
-                                        <p class="text-sm text-gray-600">8 check points</p>
-                                    </div>
-                                    <div class="flex space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-900 text-sm">Edit</button>
-                                        <button class="text-green-600 hover:text-green-900 text-sm">Use</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Corrective Actions -->
-                        <div class="bg-white border rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Pending Corrective Actions</h3>
-                            <div class="space-y-3">
-                                <div class="p-3 border-l-4 border-red-500 bg-red-50">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <h4 class="font-medium text-red-900">Machine Calibration Required</h4>
-                                            <p class="text-sm text-red-700">CNC Machine Line A showing dimensional variance</p>
-                                            <p class="text-xs text-red-600 mt-1">Due: 2024-01-18</p>
-                                        </div>
-                                        <button class="text-red-600 hover:text-red-900 text-sm">View</button>
-                                    </div>
-                                </div>
-
-                                <div class="p-3 border-l-4 border-yellow-500 bg-yellow-50">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <h4 class="font-medium text-yellow-900">Tool Replacement</h4>
-                                            <p class="text-sm text-yellow-700">Cutting tools showing excessive wear</p>
-                                            <p class="text-xs text-yellow-600 mt-1">Due: 2024-01-20</p>
-                                        </div>
-                                        <button class="text-yellow-600 hover:text-yellow-900 text-sm">View</button>
-                                    </div>
-                                </div>
-
-                                <div class="p-3 border-l-4 border-blue-500 bg-blue-50">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <h4 class="font-medium text-blue-900">Training Update</h4>
-                                            <p class="text-sm text-blue-700">Quality inspection procedures update</p>
-                                            <p class="text-xs text-blue-600 mt-1">Due: 2024-01-25</p>
-                                        </div>
-                                        <button class="text-blue-600 hover:text-blue-900 text-sm">View</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Quality Certificates -->
-                        <div class="bg-white border rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Quality Certificates</h3>
-                            <div class="space-y-3">
-                                <div class="flex justify-between items-center">
-                                    <div>
-                                        <h4 class="font-medium text-gray-900">ISO 9001:2015</h4>
-                                        <p class="text-sm text-gray-600">Expires: Dec 2024</p>
-                                    </div>
-                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Valid</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <div>
-                                        <h4 class="font-medium text-gray-900">AS9100D</h4>
-                                        <p class="text-sm text-gray-600">Expires: Mar 2025</p>
-                                    </div>
-                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Valid</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <div>
-                                        <h4 class="font-medium text-gray-900">IATF 16949</h4>
-                                        <p class="text-sm text-gray-600">Expires: Aug 2024</p>
-                                    </div>
-                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Renewal Due</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Analytics Tab -->
-                <div id="analytics-tab" class="tab-content p-6 hidden">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Quality Trend Chart -->
-                        <div class="bg-white border rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Quality Trends (Last 30 Days)</h3>
-                            <div class="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-                                <div class="text-center">
-                                    <i class="fas fa-chart-area text-gray-400 text-4xl mb-2"></i>
-                                    <p class="text-gray-500">Chart placeholder - Quality metrics trend</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Defect Categories -->
-                        <div class="bg-white border rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Defect Categories</h3>
-                            <div class="space-y-4">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-600">Dimensional</span>
-                                    <div class="flex items-center">
-                                        <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
-                                            <div class="bg-red-600 h-2 rounded-full" style="width: 45%"></div>
-                                        </div>
-                                        <span class="text-sm font-medium">18</span>
-                                    </div>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-600">Surface Finish</span>
-                                    <div class="flex items-center">
-                                        <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
-                                            <div class="bg-yellow-600 h-2 rounded-full" style="width: 30%"></div>
-                                        </div>
-                                        <span class="text-sm font-medium">12</span>
-                                    </div>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-600">Material</span>
-                                    <div class="flex items-center">
-                                        <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
-                                            <div class="bg-blue-600 h-2 rounded-full" style="width: 20%"></div>
-                                        </div>
-                                        <span class="text-sm font-medium">8</span>
-                                    </div>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-600">Assembly</span>
-                                    <div class="flex items-center">
-                                        <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
-                                            <div class="bg-green-600 h-2 rounded-full" style="width: 15%"></div>
-                                        </div>
-                                        <span class="text-sm font-medium">6</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Performance Metrics -->
-                        <div class="bg-white border rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Performance Metrics</h3>
-                            <div class="space-y-4">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-600">First Pass Yield</span>
-                                    <div class="flex items-center">
-                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
-                                            <div class="bg-green-600 h-2 rounded-full" style="width: 98.5%"></div>
-                                        </div>
-                                        <span class="text-sm font-medium text-green-600">98.5%</span>
-                                    </div>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-600">Customer Satisfaction</span>
-                                    <div class="flex items-center">
-                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
-                                            <div class="bg-blue-600 h-2 rounded-full" style="width: 96%"></div>
-                                        </div>
-                                        <span class="text-sm font-medium text-blue-600">96.0%</span>
-                                    </div>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-600">On-Time Delivery</span>
-                                    <div class="flex items-center">
-                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
-                                            <div class="bg-primary h-2 rounded-full" style="width: 94%"></div>
-                                        </div>
-                                        <span class="text-sm font-medium text-primary">94.0%</span>
-                                    </div>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-600">Cost of Quality</span>
-                                    <div class="flex items-center">
-                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
-                                            <div class="bg-yellow-600 h-2 rounded-full" style="width: 25%"></div>
-                                        </div>
-                                        <span class="text-sm font-medium text-yellow-600">2.5%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Top Issues -->
-                        <div class="bg-white border rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Quality Issues</h3>
-                            <div class="space-y-3">
-                                <div class="flex justify-between items-center p-3 bg-red-50 rounded-lg">
-                                    <div>
-                                        <h4 class="font-medium text-red-900">Dimension Out of Tolerance</h4>
-                                        <p class="text-sm text-red-700">18 occurrences this month</p>
-                                    </div>
-                                    <span class="text-red-600 font-medium">High</span>
-                                </div>
-                                <div class="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-                                    <div>
-                                        <h4 class="font-medium text-yellow-900">Surface Scratches</h4>
-                                        <p class="text-sm text-yellow-700">12 occurrences this month</p>
-                                    </div>
-                                    <span class="text-yellow-600 font-medium">Medium</span>
-                                </div>
-                                <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                                    <div>
-                                        <h4 class="font-medium text-blue-900">Package Damage</h4>
-                                        <p class="text-sm text-blue-700">8 occurrences this month</p>
-                                    </div>
-                                    <span class="text-blue-600 font-medium">Low</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quality Integration Notice -->
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
-                <div class="flex items-start">
-                    <i class="fas fa-info-circle text-blue-600 text-lg mr-3 mt-1"></i>
+    <div class="container mx-auto px-6 py-8">
+        <!-- Quality Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="quality-metric-card animate-fade-in">
+                <div class="flex items-center justify-between">
                     <div>
-                        <h4 class="text-blue-900 font-medium mb-2">Quality Control Integration</h4>
-                        <p class="text-blue-800 text-sm">
-                            Quality Control system integrates with Production, Inventory, and Customer Management modules. 
-                            Quality data automatically flows to production planning, inventory status updates, and customer notifications to ensure comprehensive quality management.
+                        <p class="text-blue-100 text-sm font-medium">Pass Rate</p>
+                        <p class="text-3xl font-bold text-white">{{ pass_rate|default:94.5 }}%</p>
+                        <p class="text-blue-200 text-sm">+2.1% this month</p>
+                    </div>
+                    <div class="text-blue-200">
+                        <i class="fas fa-check-circle text-3xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl card-shadow hover-lift animate-fade-in">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Active Inspections</p>
+                        <p class="text-3xl font-bold text-blue-600">{{ active_inspections|default:12 }}</p>
+                        <p class="text-sm text-blue-600 flex items-center mt-1">
+                            <i class="fas fa-search mr-1"></i>In progress
                         </p>
+                    </div>
+                    <div class="p-3 bg-blue-100 rounded-full">
+                        <i class="fas fa-clipboard-list text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl card-shadow hover-lift animate-fade-in">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Defects Found</p>
+                        <p class="text-3xl font-bold text-orange-600">{{ defects_found|default:8 }}</p>
+                        <p class="text-sm text-orange-600 flex items-center mt-1">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>This week
+                        </p>
+                    </div>
+                    <div class="p-3 bg-orange-100 rounded-full">
+                        <i class="fas fa-bug text-orange-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl card-shadow hover-lift animate-fade-in">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 mb-1">Avg. Inspection Time</p>
+                        <p class="text-3xl font-bold text-green-600">{{ avg_inspection_time|default:24 }}m</p>
+                        <p class="text-sm text-green-600 flex items-center mt-1">
+                            <i class="fas fa-clock mr-1"></i>-3m improvement
+                        </p>
+                    </div>
+                    <div class="p-3 bg-green-100 rounded-full">
+                        <i class="fas fa-stopwatch text-green-600 text-xl"></i>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Quality Inspections Table -->
+        <div class="bg-white rounded-xl card-shadow mb-8">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4 lg:mb-0">
+                        <i class="fas fa-list-check text-green-600 mr-2"></i>
+                        Quality Inspections
+                    </h2>
+                    <div class="flex flex-wrap gap-4">
+                        <div class="relative">
+                            <input type="text" placeholder="Search inspections..." 
+                                   class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent w-64">
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                        <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            <option>All Status</option>
+                            <option>Pending</option>
+                            <option>In Progress</option>
+                            <option>Passed</option>
+                            <option>Failed</option>
+                            <option>Rework</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Inspection Details
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Product/Batch
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Inspector
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Results
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Date
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for inspection in quality_checks %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ inspection.inspection_number }}
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        {{ inspection.inspection_type }}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ inspection.work_order.product.name }}</div>
+                                <div class="text-sm text-gray-500">Batch: {{ inspection.work_order.work_order_number }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ inspection.inspector.get_full_name }}</div>
+                                <div class="text-sm text-gray-500">{{ inspection.inspector.profile.department|default:"QC Team" }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="status-badge status-{{ inspection.status|lower }}">
+                                    {{ inspection.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if inspection.passed %}
+                                <div class="flex items-center text-green-600">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    <span class="text-sm">Passed</span>
+                                </div>
+                                {% elif inspection.status == 'FAILED' %}
+                                <div class="flex items-center text-red-600">
+                                    <i class="fas fa-times-circle mr-1"></i>
+                                    <span class="text-sm">{{ inspection.defects_found }} defects</span>
+                                </div>
+                                {% else %}
+                                <span class="text-sm text-gray-500">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ inspection.inspection_date|date:"M d, Y H:i" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex items-center space-x-2">
+                                    <button class="text-blue-600 hover:text-blue-900 p-1 rounded" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    {% if inspection.status == 'PENDING' or inspection.status == 'IN_PROGRESS' %}
+                                    <button class="text-green-600 hover:text-green-900 p-1 rounded" title="Complete">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    {% endif %}
+                                    <button class="text-purple-600 hover:text-purple-900 p-1 rounded" title="Report">
+                                        <i class="fas fa-file-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center">
+                                <div class="text-gray-500">
+                                    <i class="fas fa-clipboard-check text-4xl mb-4"></i>
+                                    <p class="text-lg font-medium">No quality inspections found</p>
+                                    <p class="text-sm">Start your first quality inspection</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Quality Analytics & Recent Activities -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Quality Trends Chart -->
+            <div class="quality-chart">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">
+                    <i class="fas fa-chart-line text-green-600 mr-2"></i>
+                    Quality Trends
+                </h3>
+                <div class="flex items-center justify-center">
+                    <div class="relative">
+                        <svg class="progress-ring" width="120" height="120">
+                            <circle class="progress-circle" cx="60" cy="60" r="45"></circle>
+                            <circle class="progress-circle-fill" cx="60" cy="60" r="45" 
+                                    style="--progress: {{ quality_stats.pass_rate_percentage|default:0 }};"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-gray-900">{{ quality_stats.pass_rate_percentage|default:0 }}%</div>
+                                <div class="text-sm text-gray-500">Pass Rate</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Critical Defects</span>
+                        <span class="text-sm font-medium text-red-600">{{ quality_stats.critical_defect_rate|default:0 }}%</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Major Defects</span>
+                        <span class="text-sm font-medium text-orange-600">{{ quality_stats.major_defect_rate|default:0 }}%</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Minor Defects</span>
+                        <span class="text-sm font-medium text-yellow-600">{{ quality_stats.minor_defect_rate|default:0 }}%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">
+                    <i class="fas fa-clock text-blue-600 mr-2"></i>
+                    Recent Quality Activities
+                </h3>
+                <div class="space-y-4">
+                    {% for quality_check in recent_quality_checks %}
+                    <div class="timeline-item">
+                        {% if not forloop.last %}<div class="timeline-line"></div>{% endif %}
+                        <div class="bg-{% if quality_check.status == 'passed' %}green{% elif quality_check.status == 'failed' %}red{% elif quality_check.status == 'pending' %}yellow{% else %}blue{% endif %}-50 p-4 rounded-lg">
+                            <div class="font-medium text-{% if quality_check.status == 'passed' %}green{% elif quality_check.status == 'failed' %}red{% elif quality_check.status == 'pending' %}yellow{% else %}blue{% endif %}-900">
+                                {% if quality_check.status == 'passed' %}
+                                    Inspection Completed
+                                {% elif quality_check.status == 'failed' %}
+                                    Quality Issue Detected
+                                {% elif quality_check.status == 'pending' %}
+                                    Inspection Pending
+                                {% else %}
+                                    Inspection {{ quality_check.get_status_display }}
+                                {% endif %}
+                            </div>
+                            <div class="text-sm text-{% if quality_check.status == 'passed' %}green{% elif quality_check.status == 'failed' %}red{% elif quality_check.status == 'pending' %}yellow{% else %}blue{% endif %}-700">
+                                {% if quality_check.work_order %}
+                                    {{ quality_check.work_order.product.name|default:"Unknown Product" }} - {{ quality_check.inspection_type|default:"General Inspection" }}
+                                {% else %}
+                                    {{ quality_check.inspection_type|default:"Quality Check" }}
+                                {% endif %}
+                            </div>
+                            <div class="text-xs text-{% if quality_check.status == 'passed' %}green{% elif quality_check.status == 'failed' %}red{% elif quality_check.status == 'pending' %}yellow{% else %}blue{% endif %}-600 mt-1">
+                                {{ quality_check.created_at|timesince }} ago
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-clipboard-check text-4xl mb-4"></i>
+                        <p>No recent quality activities</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Defect Analysis -->
+        <div class="bg-white rounded-xl card-shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6">
+                <i class="fas fa-bug text-orange-600 mr-2"></i>
+                Defect Analysis
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="inspection-card">
+                    <div class="flex items-center mb-4">
+                        <span class="defect-indicator defect-critical"></span>
+                        <h4 class="font-medium text-gray-900">Critical Defects</h4>
+                    </div>
+                    <p class="text-2xl font-bold text-red-600">3</p>
+                    <p class="text-sm text-gray-500">Require immediate attention</p>
+                    <div class="mt-3">
+                        <div class="text-xs text-gray-600">Most common: Structural failure</div>
+                    </div>
+                </div>
+
+                <div class="inspection-card">
+                    <div class="flex items-center mb-4">
+                        <span class="defect-indicator defect-major"></span>
+                        <h4 class="font-medium text-gray-900">Major Defects</h4>
+                    </div>
+                    <p class="text-2xl font-bold text-orange-600">12</p>
+                    <p class="text-sm text-gray-500">Impact functionality</p>
+                    <div class="mt-3">
+                        <div class="text-xs text-gray-600">Most common: Tolerance issues</div>
+                    </div>
+                </div>
+
+                <div class="inspection-card">
+                    <div class="flex items-center mb-4">
+                        <span class="defect-indicator defect-minor"></span>
+                        <h4 class="font-medium text-gray-900">Minor Defects</h4>
+                    </div>
+                    <p class="text-2xl font-bold text-yellow-600">28</p>
+                    <p class="text-sm text-gray-500">Cosmetic issues</p>
+                    <div class="mt-3">
+                        <div class="text-xs text-gray-600">Most common: Surface finish</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Inspection Modal -->
+<div id="inspectionModal" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-4xl m-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-900">
+                <i class="fas fa-plus-circle text-green-600 mr-2"></i>
+                Create Quality Inspection
+            </h2>
+            <button id="closeInspectionModal" class="text-gray-400 hover:text-gray-600 text-2xl">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form id="inspectionForm" method="post" action="{% url 'manufacturing:quality_check_create' %}" class="space-y-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-clipboard-list mr-1"></i>Work Order *
+                    </label>
+                    <select name="work_order" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        <option value="">Select Work Order</option>
+                        {% for work_order in work_orders %}
+                        <option value="{{ work_order.id }}">{{ work_order.work_order_number }} - {{ work_order.product.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-list mr-1"></i>Inspection Type *
+                    </label>
+                    <select name="inspection_type" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        <option value="">Select Type</option>
+                        <option value="INCOMING">Incoming Inspection</option>
+                        <option value="IN_PROCESS">In-Process Inspection</option>
+                        <option value="FINAL">Final Inspection</option>
+                        <option value="RANDOM">Random Sampling</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-user mr-1"></i>Inspector *
+                    </label>
+                    <select name="inspector" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        <option value="">Select Inspector</option>
+                        {% for inspector in inspectors %}
+                        <option value="{{ inspector.id }}">{{ inspector.get_full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-sort-numeric-up mr-1"></i>Sample Size
+                    </label>
+                    <input type="number" name="sample_size" min="1"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-check-square mr-1"></i>Inspection Criteria
+                </label>
+                <textarea name="inspection_criteria" rows="3"
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          placeholder="Define the quality standards and criteria for this inspection..."></textarea>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-sticky-note mr-1"></i>Notes
+                </label>
+                <textarea name="notes" rows="2"
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          placeholder="Additional notes or special instructions..."></textarea>
+            </div>
+
+            <div class="flex gap-4 pt-6 border-t">
+                <button type="submit" class="flex-1 btn-primary">
+                    <i class="fas fa-save mr-2"></i>Create Inspection
+                </button>
+                <button type="button" id="cancelInspectionBtn" 
+                        class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-times mr-2"></i>Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
-    <script>
-        // Tab functionality
-        function initTabs() {
-            const tabButtons = document.querySelectorAll('.tab-button');
-            const tabContents = document.querySelectorAll('.tab-content');
-
-            tabButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const tabName = button.getAttribute('data-tab');
-                    
-                    // Remove active classes
-                    tabButtons.forEach(btn => {
-                        btn.classList.remove('border-primary', 'text-primary');
-                        btn.classList.add('border-transparent', 'text-gray-500');
-                    });
-                    
-                    tabContents.forEach(content => {
-                        content.classList.add('hidden');
-                    });
-                    
-                    // Add active classes
-                    button.classList.remove('border-transparent', 'text-gray-500');
-                    button.classList.add('border-primary', 'text-primary');
-                    
-                    // Show selected tab content
-                    document.getElementById(tabName + '-tab').classList.remove('hidden');
-                });
-            });
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Modal functionality
+    const modal = document.getElementById('inspectionModal');
+    const openBtn = document.getElementById('newInspectionBtn');
+    const closeBtn = document.getElementById('closeInspectionModal');
+    const cancelBtn = document.getElementById('cancelInspectionBtn');
+    
+    // Open modal
+    openBtn.addEventListener('click', function() {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    });
+    
+    // Close modal
+    function closeModal() {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+    
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeModal();
         }
-
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            initTabs();
+    });
+    
+    // Progress ring animation
+    const progressRing = document.querySelector('.progress-circle-fill');
+    if (progressRing) {
+        // Animate the progress ring
+        setTimeout(() => {
+            progressRing.style.strokeDashoffset = '28.3';
+        }, 500);
+    }
+    
+    // Real-time search functionality
+    const searchInput = document.querySelector('input[placeholder="Search inspections..."]');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                // Implement search functionality here
+                console.log('Searching for:', this.value);
+            }, 300);
         });
-    </script>
+    }
+    
+    // Auto-populate sample size based on work order
+    const workOrderSelect = document.querySelector('select[name="work_order"]');
+    const sampleSizeInput = document.querySelector('input[name="sample_size"]');
+    
+    if (workOrderSelect && sampleSizeInput) {
+        workOrderSelect.addEventListener('change', function() {
+            if (this.value && !sampleSizeInput.value) {
+                // Set default sample size based on inspection type
+                sampleSizeInput.value = '10';
+            }
+        });
+    }
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + N for new inspection
+        if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+            e.preventDefault();
+            openBtn.click();
+        }
+        
+        // Escape to close modal
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+});
+</script>
 {% endblock %}

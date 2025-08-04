@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if object %}Edit Opportunity{% else %}Add Opportunity{% endif %} | FutureERP{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">
+                    {% if object %}Edit Opportunity{% else %}Add New Opportunity{% endif %}
+                </h1>
+                <p class="text-gray-600">Manage opportunity details and progress tracking</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'crm:opportunity_list' %}" class="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Back to Opportunities
+                </a>
+            </div>
+        </div>
+
+        <!-- Opportunity Form -->
+        <div class="bg-white rounded-2xl shadow-lg p-8">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Opportunity Name *</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Customer *</label>
+                        {{ form.customer }}
+                        {% if form.customer.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.customer.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Estimated Value *</label>
+                        {{ form.estimated_value }}
+                        {% if form.estimated_value.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.estimated_value.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Stage</label>
+                        {{ form.stage }}
+                        {% if form.stage.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.stage.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Probability (%)</label>
+                        {{ form.probability }}
+                        {% if form.probability.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.probability.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Expected Close Date</label>
+                        {{ form.expected_close_date }}
+                        {% if form.expected_close_date.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.expected_close_date.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Assigned To</label>
+                        {{ form.assigned_to }}
+                        {% if form.assigned_to.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.assigned_to.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                        {{ form.priority }}
+                        {% if form.priority.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.priority.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Lead Source</label>
+                        {{ form.lead }}
+                        {% if form.lead.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.lead.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Account</label>
+                        {{ form.account }}
+                        {% if form.account.errors %}
+                        <div class="text-red-600 text-sm mt-1">{{ form.account.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                    <div class="text-red-600 text-sm mt-1">{{ form.description.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Next Steps</label>
+                    {{ form.next_steps }}
+                    {% if form.next_steps.errors %}
+                    <div class="text-red-600 text-sm mt-1">{{ form.next_steps.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                    {{ form.notes }}
+                    {% if form.notes.errors %}
+                    <div class="text-red-600 text-sm mt-1">{{ form.notes.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                    <a href="{% url 'crm:opportunity_list' %}" 
+                       class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                        <i class="fas fa-save mr-2"></i>Save Opportunity
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Form styling */
+.form-input, .form-select, .form-textarea {
+    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500;
+}
+</style>
+{% endblock %}

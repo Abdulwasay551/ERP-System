@@ -7,6 +7,7 @@ urlpatterns = [
     path('api/dashboard/', views.analytics_dashboard, name='analytics_dashboard'),
     path('dashboard/', views.dashboard_ui, name='dashboard_ui'),
     path('sales-reports/', views.sales_reports_ui, name='sales_reports_ui'),
+    path('sales-reports/', views.sales_reports_ui, name='sales_reports'),  # Added for sidebar consistency
     path('financial-reports/', views.financial_reports_ui, name='financial_reports_ui'),
     path('inventory-reports/', views.inventory_reports_ui, name='inventory_reports_ui'),
     
