@@ -1,0 +1,901 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Supplier Lead Times - Manufacturing{% endblock %}
+
+{% block extra_css %}
+<style>
+    .leadtime-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .leadtime-card:hover {
+        border-color: #10b981;
+        box-shadow: 0 20px 40px rgba(16, 185, 129, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .performance-indicator {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .performance-excellent {
+        background: #dcfce7;
+        color: #166534;
+    }
+    
+    .performance-good {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+    
+    .performance-average {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    .performance-poor {
+        background: #fecaca;
+        color: #991b1b;
+    }
+    
+    .trend-indicator {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .trend-improving {
+        background: #dcfce7;
+        color: #166534;
+    }
+    
+    .trend-stable {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+    
+    .trend-declining {
+        background: #fecaca;
+        color: #991b1b;
+    }
+    
+    .stats-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        border: 1px solid #e5e7eb;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        border-color: #10b981;
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: none;
+        font-size: 0.875rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+    
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+    
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        color: #111827;
+    }
+    
+    .filter-controls {
+        background: #f8fafc;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        align-items: end;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .form-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-input {
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+    
+    .leadtime-table {
+        background: white;
+        border-radius: 1rem;
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .leadtime-table table {
+        width: 100%;
+    }
+    
+    .leadtime-table th {
+        background: #f8fafc;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: #374151;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .leadtime-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #f3f4f6;
+        vertical-align: middle;
+    }
+    
+    .leadtime-table tr:hover {
+        background: #f9fafb;
+    }
+    
+    .chart-container {
+        height: 300px;
+        background: #f8fafc;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .supplier-rating {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .star {
+        color: #fbbf24;
+        font-size: 0.875rem;
+    }
+    
+    .star.empty {
+        color: #d1d5db;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">
+                        <i class="fas fa-truck text-green-600 mr-3"></i>
+                        Supplier Lead Times
+                    </h1>
+                    <p class="text-gray-600 mt-2">Monitor and manage supplier delivery performance</p>
+                </div>
+                <div class="flex gap-3">
+                    <a href="{% url 'manufacturing:mrp_ui' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to MRP
+                    </a>
+                    <button onclick="updateLeadTimes()" class="btn btn-primary">
+                        <i class="fas fa-sync-alt"></i>
+                        Update Lead Times
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Statistics Overview -->
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-value text-green-600">{{ total_suppliers|default:28 }}</div>
+                <div class="stat-label">Active Suppliers</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-blue-600">12.5</div>
+                <div class="stat-label">Avg Lead Time (Days)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-purple-600">89%</div>
+                <div class="stat-label">On-Time Delivery</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-orange-600">3</div>
+                <div class="stat-label">Critical Delays</div>
+            </div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="filter-controls">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Filter Suppliers</h3>
+            <div class="filter-grid">
+                <div class="form-group">
+                    <label class="form-label">Supplier</label>
+                    <select class="form-input" id="supplierFilter">
+                        <option value="">All Suppliers</option>
+                        <option value="supplier1">ABC Manufacturing</option>
+                        <option value="supplier2">Steel Works Inc</option>
+                        <option value="supplier3">Component Solutions</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Performance Level</label>
+                    <select class="form-input" id="performanceFilter">
+                        <option value="">All Levels</option>
+                        <option value="excellent">Excellent</option>
+                        <option value="good">Good</option>
+                        <option value="average">Average</option>
+                        <option value="poor">Poor</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Product Category</label>
+                    <select class="form-input" id="categoryFilter">
+                        <option value="">All Categories</option>
+                        <option value="raw_materials">Raw Materials</option>
+                        <option value="components">Components</option>
+                        <option value="packaging">Packaging</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button onclick="applyFilters()" class="btn btn-primary">
+                        <i class="fas fa-filter"></i>
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lead Time Analysis Chart -->
+        <div class="leadtime-card">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-chart-line text-green-600 mr-2"></i>
+                Lead Time Trends
+            </h3>
+            <div class="chart-container">
+                <canvas id="leadTimeChart" width="800" height="300"></canvas>
+            </div>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div>
+                    <div class="text-xl font-bold text-green-600">-8%</div>
+                    <div class="text-sm text-gray-600">Lead Time Improvement</div>
+                </div>
+                <div>
+                    <div class="text-xl font-bold text-blue-600">94%</div>
+                    <div class="text-sm text-gray-600">Forecast Accuracy</div>
+                </div>
+                <div>
+                    <div class="text-xl font-bold text-purple-600">2.1</div>
+                    <div class="text-sm text-gray-600">Reliability Score</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supplier Lead Time Table -->
+        <div class="leadtime-table">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-table text-green-600 mr-2"></i>
+                        Supplier Performance Details
+                    </h3>
+                    <div class="flex gap-2">
+                        <button onclick="exportLeadTimes()" class="btn btn-secondary">
+                            <i class="fas fa-download"></i>
+                            Export
+                        </button>
+                        <button onclick="refreshData()" class="btn btn-secondary">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Supplier</th>
+                        <th>Product</th>
+                        <th>Standard Lead Time</th>
+                        <th>Actual Lead Time</th>
+                        <th>Performance</th>
+                        <th>Trend</th>
+                        <th>Rating</th>
+                        <th>Last Updated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="leadTimeTableBody">
+                    <!-- Sample data - replace with actual Django template data -->
+                    <tr>
+                        <td>
+                            <div class="font-medium text-gray-900">ABC Manufacturing</div>
+                            <div class="text-xs text-gray-500">Contact: John Doe</div>
+                        </td>
+                        <td>
+                            <div class="font-medium text-gray-900">Steel Plate 5mm</div>
+                            <div class="text-xs text-gray-500">SKU: STL-PLT-5MM</div>
+                        </td>
+                        <td class="text-gray-900 font-medium">14 days</td>
+                        <td class="text-blue-600 font-medium">12 days</td>
+                        <td>
+                            <span class="performance-indicator performance-excellent">
+                                Excellent
+                            </span>
+                        </td>
+                        <td>
+                            <div class="trend-indicator trend-improving">
+                                <i class="fas fa-arrow-up"></i>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="supplier-rating">
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <span class="ml-1 text-sm text-gray-600">5.0</span>
+                            </div>
+                        </td>
+                        <td class="text-gray-600">2 hours ago</td>
+                        <td>
+                            <div class="flex space-x-1">
+                                <button onclick="viewSupplierDetails('abc-mfg')" class="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">
+                                    View
+                                </button>
+                                <button onclick="editLeadTime('abc-mfg')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                    Edit
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="font-medium text-gray-900">Steel Works Inc</div>
+                            <div class="text-xs text-gray-500">Contact: Jane Smith</div>
+                        </td>
+                        <td>
+                            <div class="font-medium text-gray-900">Aluminum Rod 10mm</div>
+                            <div class="text-xs text-gray-500">SKU: ALU-ROD-10MM</div>
+                        </td>
+                        <td class="text-gray-900 font-medium">10 days</td>
+                        <td class="text-red-600 font-medium">15 days</td>
+                        <td>
+                            <span class="performance-indicator performance-poor">
+                                Poor
+                            </span>
+                        </td>
+                        <td>
+                            <div class="trend-indicator trend-declining">
+                                <i class="fas fa-arrow-down"></i>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="supplier-rating">
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star empty"></i>
+                                <i class="fas fa-star star empty"></i>
+                                <i class="fas fa-star star empty"></i>
+                                <span class="ml-1 text-sm text-gray-600">2.5</span>
+                            </div>
+                        </td>
+                        <td class="text-gray-600">1 day ago</td>
+                        <td>
+                            <div class="flex space-x-1">
+                                <button onclick="viewSupplierDetails('steel-works')" class="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">
+                                    View
+                                </button>
+                                <button onclick="editLeadTime('steel-works')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                    Edit
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="font-medium text-gray-900">Component Solutions</div>
+                            <div class="text-xs text-gray-500">Contact: Mike Johnson</div>
+                        </td>
+                        <td>
+                            <div class="font-medium text-gray-900">Copper Wire 2.5mm</div>
+                            <div class="text-xs text-gray-500">SKU: COP-WIR-2.5MM</div>
+                        </td>
+                        <td class="text-gray-900 font-medium">7 days</td>
+                        <td class="text-green-600 font-medium">7 days</td>
+                        <td>
+                            <span class="performance-indicator performance-good">
+                                Good
+                            </span>
+                        </td>
+                        <td>
+                            <div class="trend-indicator trend-stable">
+                                <i class="fas fa-minus"></i>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="supplier-rating">
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star empty"></i>
+                                <span class="ml-1 text-sm text-gray-600">4.2</span>
+                            </div>
+                        </td>
+                        <td class="text-gray-600">5 hours ago</td>
+                        <td>
+                            <div class="flex space-x-1">
+                                <button onclick="viewSupplierDetails('component-sol')" class="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">
+                                    View
+                                </button>
+                                <button onclick="editLeadTime('component-sol')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                    Edit
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% for leadtime in supplier_leadtimes %}
+                    <tr>
+                        <td>
+                            <div class="font-medium text-gray-900">{{ leadtime.supplier.name }}</div>
+                            <div class="text-xs text-gray-500">{{ leadtime.supplier.contact_person|default:"No contact" }}</div>
+                        </td>
+                        <td>
+                            <div class="font-medium text-gray-900">{{ leadtime.product.name }}</div>
+                            <div class="text-xs text-gray-500">{{ leadtime.product.sku }}</div>
+                        </td>
+                        <td class="text-gray-900 font-medium">{{ leadtime.standard_lead_time }} days</td>
+                        <td class="{% if leadtime.actual_lead_time > leadtime.standard_lead_time %}text-red-600{% elif leadtime.actual_lead_time < leadtime.standard_lead_time %}text-green-600{% else %}text-blue-600{% endif %} font-medium">
+                            {{ leadtime.actual_lead_time|default:"N/A" }} days
+                        </td>
+                        <td>
+                            <span class="performance-indicator performance-{{ leadtime.performance_level|default:'average' }}">
+                                {{ leadtime.get_performance_level_display|default:"Average" }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="trend-indicator trend-{{ leadtime.trend|default:'stable' }}">
+                                {% if leadtime.trend == 'improving' %}
+                                <i class="fas fa-arrow-up"></i>
+                                {% elif leadtime.trend == 'declining' %}
+                                <i class="fas fa-arrow-down"></i>
+                                {% else %}
+                                <i class="fas fa-minus"></i>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="supplier-rating">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= leadtime.supplier.rating|default:3 %}
+                                        <i class="fas fa-star star"></i>
+                                    {% else %}
+                                        <i class="fas fa-star star empty"></i>
+                                    {% endif %}
+                                {% endfor %}
+                                <span class="ml-1 text-sm text-gray-600">{{ leadtime.supplier.rating|default:3.0 }}</span>
+                            </div>
+                        </td>
+                        <td class="text-gray-600">{{ leadtime.updated_at|timesince }} ago</td>
+                        <td>
+                            <div class="flex space-x-1">
+                                <button onclick="viewSupplierDetails('{{ leadtime.id }}')" class="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">
+                                    View
+                                </button>
+                                <button onclick="editLeadTime('{{ leadtime.id }}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                    Edit
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-8 text-gray-500">
+                            <i class="fas fa-truck text-4xl mb-4 text-green-500"></i>
+                            <p>No supplier lead times configured</p>
+                            <button onclick="addLeadTime()" class="mt-2 btn btn-primary">
+                                Add Lead Time
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initializeLeadTimeChart();
+});
+
+function initializeLeadTimeChart() {
+    const ctx = document.getElementById('leadTimeChart')?.getContext('2d');
+    if (!ctx) return;
+    
+    const data = {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+        datasets: [{
+            label: 'Average Lead Time',
+            data: [15, 14, 13, 12, 11, 12, 13, 12],
+            borderColor: 'rgb(16, 185, 129)',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            tension: 0.4,
+            fill: true
+        }, {
+            label: 'Target Lead Time',
+            data: [12, 12, 12, 12, 12, 12, 12, 12],
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.1,
+            fill: false,
+            borderDash: [5, 5]
+        }]
+    };
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                title: {
+                    display: true,
+                    text: 'Lead Time Performance Trends'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Days'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Month'
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateLeadTimes() {
+    if (confirm('Update lead times from recent delivery data? This may take a few minutes.')) {
+        showNotification('Updating lead times...', 'info');
+        
+        fetch('/manufacturing/api/update-lead-times/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(`Lead times updated successfully! ${data.updated_count} records updated.`, 'success');
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                showNotification('Failed to update lead times: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to update lead times', 'error');
+        });
+    }
+}
+
+function applyFilters() {
+    const supplier = document.getElementById('supplierFilter').value;
+    const performance = document.getElementById('performanceFilter').value;
+    const category = document.getElementById('categoryFilter').value;
+    
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (supplier) params.append('supplier', supplier);
+    if (performance) params.append('performance', performance);
+    if (category) params.append('category', category);
+    
+    // Reload page with filters
+    window.location.href = '?' + params.toString();
+}
+
+function viewSupplierDetails(leadTimeId) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-screen overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold">Supplier Performance Details</h3>
+                <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-semibold mb-3">Delivery Statistics</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span>On-time Deliveries:</span><span class="text-green-600 font-medium">89%</span></div>
+                        <div class="flex justify-between"><span>Average Delay:</span><span class="text-orange-600 font-medium">2.3 days</span></div>
+                        <div class="flex justify-between"><span>Total Orders:</span><span>156</span></div>
+                        <div class="flex justify-between"><span>Last 30 Days:</span><span>23 orders</span></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-3">Lead Time Analysis</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span>Best Lead Time:</span><span class="text-green-600 font-medium">8 days</span></div>
+                        <div class="flex justify-between"><span>Worst Lead Time:</span><span class="text-red-600 font-medium">18 days</span></div>
+                        <div class="flex justify-between"><span>Standard Deviation:</span><span>3.2 days</span></div>
+                        <div class="flex justify-between"><span>Reliability Score:</span><span class="text-blue-600 font-medium">4.2/5</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <h4 class="font-semibold mb-3">Historical Performance</h4>
+                <div class="h-64 bg-gray-100 rounded border flex items-center justify-center">
+                    <span class="text-gray-500">Historical performance chart would load here</span>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="this.closest('.fixed').remove()" class="btn btn-secondary">
+                    Close
+                </button>
+                <button onclick="contactSupplier('${leadTimeId}'); this.closest('.fixed').remove();" class="btn btn-primary">
+                    Contact Supplier
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function editLeadTime(leadTimeId) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold mb-4">Edit Lead Time</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Standard Lead Time (Days)</label>
+                    <input type="number" class="form-input w-full" placeholder="14" min="1" max="365" id="standardLeadTime">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Minimum Lead Time (Days)</label>
+                    <input type="number" class="form-input w-full" placeholder="7" min="1" max="365" id="minLeadTime">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Maximum Lead Time (Days)</label>
+                    <input type="number" class="form-input w-full" placeholder="21" min="1" max="365" id="maxLeadTime">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Safety Buffer (Days)</label>
+                    <input type="number" class="form-input w-full" placeholder="2" min="0" max="30" id="safetyBuffer">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <textarea class="form-input w-full" rows="3" placeholder="Additional notes about lead time..." id="leadTimeNotes"></textarea>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="this.closest('.fixed').remove()" class="btn btn-secondary">
+                    Cancel
+                </button>
+                <button onclick="saveLeadTime('${leadTimeId}'); this.closest('.fixed').remove();" class="btn btn-primary">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function saveLeadTime(leadTimeId) {
+    const standardLeadTime = document.getElementById('standardLeadTime').value;
+    const minLeadTime = document.getElementById('minLeadTime').value;
+    const maxLeadTime = document.getElementById('maxLeadTime').value;
+    const safetyBuffer = document.getElementById('safetyBuffer').value;
+    const notes = document.getElementById('leadTimeNotes').value;
+    
+    if (!standardLeadTime) {
+        showNotification('Please provide standard lead time', 'warning');
+        return;
+    }
+    
+    fetch(`/manufacturing/api/update-lead-time/${leadTimeId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            standard_lead_time: standardLeadTime,
+            min_lead_time: minLeadTime,
+            max_lead_time: maxLeadTime,
+            safety_buffer: safetyBuffer,
+            notes: notes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Lead time updated successfully!', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showNotification('Failed to update lead time: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Failed to update lead time', 'error');
+    });
+}
+
+function addLeadTime() {
+    window.location.href = '/manufacturing/supplier-lead-times/add/';
+}
+
+function exportLeadTimes() {
+    window.open('/manufacturing/api/export-lead-times/', '_blank');
+    showNotification('Export started', 'info');
+}
+
+function refreshData() {
+    showNotification('Refreshing data...', 'info');
+    window.location.reload();
+}
+
+function contactSupplier(leadTimeId) {
+    showNotification('Opening supplier contact form...', 'info');
+    // Implement supplier contact functionality
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'error' ? 'bg-red-500 text-white' :
+        type === 'warning' ? 'bg-yellow-500 text-white' :
+        'bg-blue-500 text-white'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${
+                type === 'success' ? 'fa-check-circle' :
+                type === 'error' ? 'fa-exclamation-triangle' :
+                type === 'warning' ? 'fa-exclamation-triangle' :
+                'fa-info-circle'
+            } mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+</script>
+
+<!-- Add CSRF token -->
+{% csrf_token %}
+{% endblock %}

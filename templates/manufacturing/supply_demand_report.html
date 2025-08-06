@@ -1,0 +1,485 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Supply & Demand Report - Manufacturing{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+    }
+    
+    .report-card:hover {
+        border-color: #10b981;
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .status-ok { color: #059669; background-color: #d1fae5; }
+    .status-reorder-required { color: #dc2626; background-color: #fee2e2; }
+    .status-below-safety-stock { color: #d97706; background-color: #fef3c7; }
+    .status-shortage-expected { color: #dc2626; background-color: #fecaca; }
+    .status-overstock { color: #7c3aed; background-color: #f3e8ff; }
+    
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .chart-container {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 1.5rem;
+    }
+    
+    .trend-up { color: #059669; }
+    .trend-down { color: #dc2626; }
+    .trend-stable { color: #6b7280; }
+    
+    .filter-section {
+        background: #f9fafb;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .summary-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        border: 1px solid #e5e7eb;
+        text-align: center;
+    }
+    
+    .table-container {
+        background: white;
+        border-radius: 0.75rem;
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .table-responsive {
+        overflow-x: auto;
+    }
+    
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background-color: #f3f4f6;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div class="mb-6 lg:mb-0">
+                    <h1 class="text-4xl font-bold text-gray-900 mb-2">
+                        <i class="fas fa-chart-bar text-green-600 mr-3"></i>
+                        Supply & Demand Analysis
+                    </h1>
+                    <p class="text-gray-600">Comprehensive inventory analysis and demand forecasting</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button onclick="refreshReport()" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-sync-alt mr-2"></i>Refresh
+                    </button>
+                    <button onclick="exportReport()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-download mr-2"></i>Export
+                    </button>
+                    <a href="{% url 'manufacturing:mrp_ui' %}" class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to MRP
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Filters -->
+        <div class="filter-section">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                    <input type="date" name="start_date" value="{{ start_date|date:'Y-m-d' }}" 
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-green-500 focus:border-green-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                    <input type="date" name="end_date" value="{{ end_date|date:'Y-m-d' }}" 
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-green-500 focus:border-green-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Search Products</label>
+                    <input type="text" name="search" value="{{ search }}" placeholder="Product name..." 
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-green-500 focus:border-green-500">
+                </div>
+                <div>
+                    <button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-filter mr-2"></i>Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="text-3xl font-bold text-green-600 mb-2">{{ status_summary.OK|default:0 }}</div>
+                <div class="text-sm text-gray-600">Products OK</div>
+            </div>
+            <div class="summary-card">
+                <div class="text-3xl font-bold text-red-600 mb-2">{{ status_summary.Reorder Required|default:0 }}</div>
+                <div class="text-sm text-gray-600">Reorder Required</div>
+            </div>
+            <div class="summary-card">
+                <div class="text-3xl font-bold text-yellow-600 mb-2">{{ status_summary.Below Safety Stock|default:0 }}</div>
+                <div class="text-sm text-gray-600">Below Safety Stock</div>
+            </div>
+            <div class="summary-card">
+                <div class="text-3xl font-bold text-purple-600 mb-2">{{ status_summary.Shortage Expected|default:0 }}</div>
+                <div class="text-sm text-gray-600">Shortage Expected</div>
+            </div>
+            <div class="summary-card">
+                <div class="text-3xl font-bold text-blue-600 mb-2">{{ status_summary.Overstock|default:0 }}</div>
+                <div class="text-sm text-gray-600">Overstock</div>
+            </div>
+            <div class="summary-card">
+                <div class="text-3xl font-bold text-gray-900 mb-2">{{ report_data|length }}</div>
+                <div class="text-sm text-gray-600">Total Products</div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Status Distribution Chart -->
+            <div class="chart-container">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Status Distribution</h3>
+                <canvas id="statusChart" width="400" height="300"></canvas>
+            </div>
+
+            <!-- Top Critical Items -->
+            <div class="chart-container">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Critical Items (Top 10)</h3>
+                <div class="space-y-3 max-h-80 overflow-y-auto">
+                    {% for item in report_data %}
+                        {% if item.status == "Reorder Required" or item.status == "Below Safety Stock" or item.status == "Shortage Expected" %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div class="flex-1">
+                                <div class="font-medium text-gray-900">{{ item.product.name }}</div>
+                                <div class="text-sm text-gray-600">Current: {{ item.current_stock|floatformat:0 }} | Required: {{ item.total_demand|floatformat:0 }}</div>
+                            </div>
+                            <span class="status-badge status-{{ item.status|lower|replace:" ","-" }}">
+                                {{ item.status }}
+                            </span>
+                        </div>
+                        {% endif %}
+                    {% empty %}
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-check-circle text-4xl mb-4"></i>
+                        <p>No critical items found</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Report Table -->
+        <div class="table-container">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Detailed Supply & Demand Report</h3>
+                <p class="text-gray-600 text-sm mt-1">Analysis period: {{ start_date|date:"M d, Y" }} to {{ end_date|date:"M d, Y" }}</p>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left font-medium text-gray-900">Product</th>
+                            <th class="px-6 py-4 text-left font-medium text-gray-900">Current Stock</th>
+                            <th class="px-6 py-4 text-left font-medium text-gray-900">Safety Stock</th>
+                            <th class="px-6 py-4 text-left font-medium text-gray-900">Total Demand</th>
+                            <th class="px-6 py-4 text-left font-medium text-gray-900">Total Supply</th>
+                            <th class="px-6 py-4 text-left font-medium text-gray-900">Net Requirement</th>
+                            <th class="px-6 py-4 text-left font-medium text-gray-900">Days of Stock</th>
+                            <th class="px-6 py-4 text-left font-medium text-gray-900">Status</th>
+                            <th class="px-6 py-4 text-left font-medium text-gray-900">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for item in report_data %}
+                        <tr class="hover:bg-gray-50" data-product-id="{{ item.product.id }}">
+                            <td class="px-6 py-4">
+                                <div class="font-medium text-gray-900">{{ item.product.name }}</div>
+                                <div class="text-xs text-gray-500">{{ item.product.code|default:"No code" }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="font-medium">{{ item.current_stock|floatformat:0 }}</div>
+                                <div class="w-20 progress-bar mt-1">
+                                    <div class="progress-fill {% if item.current_stock < item.safety_stock %}bg-red-500{% elif item.current_stock < item.reorder_point %}bg-yellow-500{% else %}bg-green-500{% endif %}" 
+                                         style="width: {% if item.reorder_point > 0 %}{{ item.current_stock|div:item.reorder_point|mul:100|floatformat:0 }}%{% else %}100%{% endif %}"></div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-gray-900">{{ item.safety_stock|floatformat:0 }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-gray-900">{{ item.total_demand|floatformat:0 }}</div>
+                                {% if item.total_demand > 0 %}
+                                <div class="text-xs text-blue-600">
+                                    <i class="fas fa-arrow-up"></i>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-gray-900">{{ item.total_supply|floatformat:0 }}</div>
+                                {% if item.total_supply > 0 %}
+                                <div class="text-xs text-green-600">
+                                    <i class="fas fa-arrow-down"></i>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="{% if item.net_requirement > 0 %}text-red-600 font-medium{% else %}text-gray-900{% endif %}">
+                                    {{ item.net_requirement|floatformat:0 }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-gray-900">
+                                    {% if item.days_of_stock == "inf" %}
+                                        ∞
+                                    {% else %}
+                                        {{ item.days_of_stock|floatformat:0 }} days
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="status-badge status-{{ item.status|lower|replace:" ","-" }}">
+                                    {{ item.status }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex space-x-2">
+                                    {% if item.status == "Reorder Required" or item.status == "Below Safety Stock" %}
+                                    <button onclick="createReorderPO({{ item.product.id }})" 
+                                            class="text-blue-600 hover:text-blue-800 text-xs">
+                                        Create PO
+                                    </button>
+                                    {% endif %}
+                                    <button onclick="viewProductDetails({{ item.product.id }})" 
+                                            class="text-gray-600 hover:text-gray-800 text-xs">
+                                        Details
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                                <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                    <i class="fas fa-chart-bar text-gray-400 text-2xl"></i>
+                                </div>
+                                <h3 class="text-lg font-medium text-gray-900 mb-2">No Data Available</h3>
+                                <p class="text-gray-600">No products found for the selected criteria</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Export Options -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button onclick="exportToExcel()" class="bg-green-600 text-white p-4 rounded-lg hover:bg-green-700 transition-colors">
+                <i class="fas fa-file-excel text-2xl mb-2"></i>
+                <div class="font-medium">Export to Excel</div>
+                <div class="text-sm opacity-90">Download detailed report</div>
+            </button>
+            <button onclick="exportToPdf()" class="bg-red-600 text-white p-4 rounded-lg hover:bg-red-700 transition-colors">
+                <i class="fas fa-file-pdf text-2xl mb-2"></i>
+                <div class="font-medium">Export to PDF</div>
+                <div class="text-sm opacity-90">Print-friendly format</div>
+            </button>
+            <button onclick="scheduleReport()" class="bg-blue-600 text-white p-4 rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-clock text-2xl mb-2"></i>
+                <div class="font-medium">Schedule Report</div>
+                <div class="text-sm opacity-90">Automated delivery</div>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Supply & Demand Report loaded');
+    
+    // Initialize status distribution chart
+    initializeStatusChart();
+    
+    // Auto-refresh every 10 minutes
+    setInterval(refreshReport, 600000);
+});
+
+function initializeStatusChart() {
+    const ctx = document.getElementById('statusChart')?.getContext('2d');
+    if (!ctx) return;
+    
+    const statusData = {
+        'OK': {{ status_summary.OK|default:0 }},
+        'Reorder Required': {{ status_summary.Reorder Required|default:0 }},
+        'Below Safety Stock': {{ status_summary.Below Safety Stock|default:0 }},
+        'Shortage Expected': {{ status_summary.Shortage Expected|default:0 }},
+        'Overstock': {{ status_summary.Overstock|default:0 }}
+    };
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(statusData),
+            datasets: [{
+                data: Object.values(statusData),
+                backgroundColor: [
+                    '#10b981', // OK - green
+                    '#dc2626', // Reorder Required - red
+                    '#f59e0b', // Below Safety Stock - yellow
+                    '#7c3aed', // Shortage Expected - purple
+                    '#3b82f6'  // Overstock - blue
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                }
+            }
+        }
+    });
+}
+
+function refreshReport() {
+    window.location.reload();
+}
+
+function exportReport() {
+    exportToExcel();
+}
+
+function exportToExcel() {
+    const params = new URLSearchParams(window.location.search);
+    window.open(`/manufacturing/api/export-supply-demand-excel/?${params.toString()}`, '_blank');
+    showNotification('Excel export started', 'info');
+}
+
+function exportToPdf() {
+    const params = new URLSearchParams(window.location.search);
+    window.open(`/manufacturing/api/export-supply-demand-pdf/?${params.toString()}`, '_blank');
+    showNotification('PDF export started', 'info');
+}
+
+function scheduleReport() {
+    showNotification('Report scheduling feature coming soon!', 'info');
+}
+
+function createReorderPO(productId) {
+    if (confirm('Create a purchase order for this product?')) {
+        fetch(`/manufacturing/api/create-reorder-po/${productId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Purchase order created successfully!', 'success');
+                // Update the row to reflect the new status
+                setTimeout(() => refreshReport(), 2000);
+            } else {
+                showNotification('Failed to create purchase order: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error creating PO:', error);
+            showNotification('Failed to create purchase order', 'error');
+        });
+    }
+}
+
+function viewProductDetails(productId) {
+    window.open(`/products/${productId}/`, '_blank');
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'error' ? 'bg-red-500 text-white' :
+        'bg-blue-500 text-white'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${
+                type === 'success' ? 'fa-check-circle' :
+                type === 'error' ? 'fa-exclamation-triangle' :
+                'fa-info-circle'
+            } mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+</script>
+
+<!-- Add CSRF token if not already present -->
+{% csrf_token %}
+{% endblock %}

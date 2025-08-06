@@ -1,0 +1,873 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Trial Balance - Accounting{% endblock %}
+
+{% block extra_css %}
+<style>
+    .trial-balance-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .balance-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .balance-table th {
+        background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+        color: white;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 2px solid #4b5563;
+    }
+    
+    .balance-table th:last-child,
+    .balance-table td:last-child {
+        text-align: right;
+    }
+    
+    .balance-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f3f4f6;
+        transition: background-color 0.2s ease;
+    }
+    
+    .balance-table tbody tr:hover {
+        background: #f8fafc;
+    }
+    
+    .balance-table tbody tr:nth-child(even) {
+        background: #fafbfc;
+    }
+    
+    .balance-table tbody tr:nth-child(even):hover {
+        background: #f1f5f9;
+    }
+    
+    .account-code {
+        font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+        font-weight: 600;
+        color: #1f2937;
+    }
+    
+    .account-name {
+        color: #374151;
+        font-weight: 500;
+    }
+    
+    .balance-amount {
+        font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+        font-weight: 600;
+    }
+    
+    .debit-amount {
+        color: #059669;
+    }
+    
+    .credit-amount {
+        color: #dc2626;
+    }
+    
+    .zero-amount {
+        color: #6b7280;
+    }
+    
+    .total-row {
+        background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        font-weight: 700;
+        border-top: 2px solid #d1d5db;
+    }
+    
+    .total-row td {
+        border-bottom: none;
+        padding: 1rem;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        border: 1px solid #e5e7eb;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .stat-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .date-filter {
+        background: #f8fafc;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        align-items: end;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .form-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-input {
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: none;
+        font-size: 0.875rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+    
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+    
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        color: #111827;
+    }
+    
+    .account-type-filter {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .type-toggle {
+        padding: 0.5rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        background: white;
+        cursor: pointer;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+    
+    .type-toggle.active {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+    
+    .balance-summary {
+        background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+        color: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 2rem;
+    }
+    
+    .summary-item {
+        text-align: center;
+    }
+    
+    .summary-label {
+        font-size: 0.875rem;
+        opacity: 0.8;
+        margin-bottom: 0.5rem;
+    }
+    
+    .summary-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    }
+    
+    @media (max-width: 768px) {
+        .balance-table {
+            font-size: 0.875rem;
+        }
+        
+        .balance-table th,
+        .balance-table td {
+            padding: 0.5rem;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .filter-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">
+                        <i class="fas fa-balance-scale text-blue-600 mr-3"></i>
+                        Trial Balance
+                    </h1>
+                    <p class="text-gray-600 mt-2">Summary of all account balances for verification</p>
+                </div>
+                <div class="flex gap-3">
+                    <a href="{% url 'accounting:dashboard' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to Accounting
+                    </a>
+                    <button onclick="exportTrialBalance()" class="btn btn-secondary">
+                        <i class="fas fa-download"></i>
+                        Export PDF
+                    </button>
+                    <button onclick="printTrialBalance()" class="btn btn-secondary">
+                        <i class="fas fa-print"></i>
+                        Print
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Date Filter -->
+        <div class="date-filter">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Filter by Date Range</h3>
+            <div class="filter-grid">
+                <div class="form-group">
+                    <label class="form-label">From Date</label>
+                    <input type="date" class="form-input" id="fromDate" value="{{ from_date|default:'2024-01-01' }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">To Date</label>
+                    <input type="date" class="form-input" id="toDate" value="{{ to_date|default:'2024-12-31' }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Account Type</label>
+                    <select class="form-input" id="accountTypeFilter">
+                        <option value="">All Types</option>
+                        <option value="asset">Assets</option>
+                        <option value="liability">Liabilities</option>
+                        <option value="equity">Equity</option>
+                        <option value="income">Income</option>
+                        <option value="expense">Expenses</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button onclick="updateTrialBalance()" class="btn btn-primary">
+                        <i class="fas fa-sync-alt"></i>
+                        Update Report
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Balance Summary -->
+        <div class="balance-summary">
+            <h3 class="text-xl font-semibold mb-4 text-center">
+                <i class="fas fa-calculator mr-2"></i>
+                Trial Balance Summary
+            </h3>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-label">Total Debits</div>
+                    <div class="summary-value text-green-300" id="totalDebits">€{{ total_debits|default:"156,475.00" }}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Total Credits</div>
+                    <div class="summary-value text-red-300" id="totalCredits">€{{ total_credits|default:"156,475.00" }}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Difference</div>
+                    <div class="summary-value {% if difference == 0 %}text-green-300{% else %}text-yellow-300{% endif %}" id="balanceDifference">
+                        €{{ difference|default:"0.00" }}
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Status</div>
+                    <div class="summary-value {% if difference == 0 %}text-green-300{% else %}text-yellow-300{% endif %}" id="balanceStatus">
+                        {% if difference == 0 %}BALANCED{% else %}OUT OF BALANCE{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Overview -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon text-green-500">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-value text-green-600">{{ asset_accounts_count|default:42 }}</div>
+                <div class="stat-label">Asset Accounts</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon text-red-500">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                </div>
+                <div class="stat-value text-red-600">{{ liability_accounts_count|default:18 }}</div>
+                <div class="stat-label">Liability Accounts</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon text-blue-500">
+                    <i class="fas fa-piggy-bank"></i>
+                </div>
+                <div class="stat-value text-blue-600">{{ equity_accounts_count|default:8 }}</div>
+                <div class="stat-label">Equity Accounts</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon text-yellow-500">
+                    <i class="fas fa-coins"></i>
+                </div>
+                <div class="stat-value text-yellow-600">{{ income_accounts_count|default:12 }}</div>
+                <div class="stat-label">Income Accounts</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon text-purple-500">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="stat-value text-purple-600">{{ expense_accounts_count|default:28 }}</div>
+                <div class="stat-label">Expense Accounts</div>
+            </div>
+        </div>
+
+        <!-- Trial Balance Table -->
+        <div class="trial-balance-card">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-semibold text-gray-900">
+                    <i class="fas fa-table text-blue-600 mr-2"></i>
+                    Trial Balance as of {{ to_date|default:"December 31, 2024" }}
+                </h3>
+                <div class="account-type-filter">
+                    <button class="type-toggle active" onclick="filterAccountType('all')" data-type="all">All</button>
+                    <button class="type-toggle" onclick="filterAccountType('asset')" data-type="asset">Assets</button>
+                    <button class="type-toggle" onclick="filterAccountType('liability')" data-type="liability">Liabilities</button>
+                    <button class="type-toggle" onclick="filterAccountType('equity')" data-type="equity">Equity</button>
+                    <button class="type-toggle" onclick="filterAccountType('income')" data-type="income">Income</button>
+                    <button class="type-toggle" onclick="filterAccountType('expense')" data-type="expense">Expenses</button>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="balance-table" id="trialBalanceTable">
+                    <thead>
+                        <tr>
+                            <th>Account Code</th>
+                            <th>Account Name</th>
+                            <th>Account Type</th>
+                            <th>Debit Balance</th>
+                            <th>Credit Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trialBalanceBody">
+                        <!-- Sample Trial Balance Data -->
+                        
+                        <!-- ASSETS -->
+                        <tr data-type="asset">
+                            <td class="account-code">1.1.1.1</td>
+                            <td class="account-name">Petty Cash</td>
+                            <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Asset</span></td>
+                            <td class="balance-amount debit-amount">€2,500.00</td>
+                            <td class="balance-amount zero-amount">-</td>
+                        </tr>
+                        
+                        <tr data-type="asset">
+                            <td class="account-code">1.1.2.1</td>
+                            <td class="account-name">Bank - HBL</td>
+                            <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Asset</span></td>
+                            <td class="balance-amount debit-amount">€45,700.00</td>
+                            <td class="balance-amount zero-amount">-</td>
+                        </tr>
+                        
+                        <tr data-type="asset">
+                            <td class="account-code">1.1.3.1</td>
+                            <td class="account-name">Customers - Local</td>
+                            <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Asset</span></td>
+                            <td class="balance-amount debit-amount">€28,500.00</td>
+                            <td class="balance-amount zero-amount">-</td>
+                        </tr>
+                        
+                        <tr data-type="asset">
+                            <td class="account-code">1.1.4.1</td>
+                            <td class="account-name">Raw Material Inventory</td>
+                            <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Asset</span></td>
+                            <td class="balance-amount debit-amount">€21,500.00</td>
+                            <td class="balance-amount zero-amount">-</td>
+                        </tr>
+                        
+                        <tr data-type="asset">
+                            <td class="account-code">1.2.1.1</td>
+                            <td class="account-name">Land</td>
+                            <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Asset</span></td>
+                            <td class="balance-amount debit-amount">€50,000.00</td>
+                            <td class="balance-amount zero-amount">-</td>
+                        </tr>
+                        
+                        <tr data-type="asset">
+                            <td class="account-code">1.2.2.1</td>
+                            <td class="account-name">Equipment</td>
+                            <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Asset</span></td>
+                            <td class="balance-amount debit-amount">€8,275.00</td>
+                            <td class="balance-amount zero-amount">-</td>
+                        </tr>
+                        
+                        <!-- LIABILITIES -->
+                        <tr data-type="liability">
+                            <td class="account-code">2.1.1.1</td>
+                            <td class="account-name">Vendors - Local</td>
+                            <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Liability</span></td>
+                            <td class="balance-amount zero-amount">-</td>
+                            <td class="balance-amount credit-amount">€34,800.00</td>
+                        </tr>
+                        
+                        <tr data-type="liability">
+                            <td class="account-code">2.1.2.1</td>
+                            <td class="account-name">Salaries Payable</td>
+                            <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Liability</span></td>
+                            <td class="balance-amount zero-amount">-</td>
+                            <td class="balance-amount credit-amount">€15,400.00</td>
+                        </tr>
+                        
+                        <tr data-type="liability">
+                            <td class="account-code">2.1.3.1</td>
+                            <td class="account-name">Sales Tax Payable</td>
+                            <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Liability</span></td>
+                            <td class="balance-amount zero-amount">-</td>
+                            <td class="balance-amount credit-amount">€3,275.00</td>
+                        </tr>
+                        
+                        <!-- EQUITY -->
+                        <tr data-type="equity">
+                            <td class="account-code">3.1.1.1</td>
+                            <td class="account-name">Share Capital</td>
+                            <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Equity</span></td>
+                            <td class="balance-amount zero-amount">-</td>
+                            <td class="balance-amount credit-amount">€50,000.00</td>
+                        </tr>
+                        
+                        <tr data-type="equity">
+                            <td class="account-code">3.2.1.1</td>
+                            <td class="account-name">Retained Earnings</td>
+                            <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Equity</span></td>
+                            <td class="balance-amount zero-amount">-</td>
+                            <td class="balance-amount credit-amount">€12,500.00</td>
+                        </tr>
+                        
+                        <!-- INCOME -->
+                        <tr data-type="income">
+                            <td class="account-code">4.1.1.1</td>
+                            <td class="account-name">Product Sales - Local</td>
+                            <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Income</span></td>
+                            <td class="balance-amount zero-amount">-</td>
+                            <td class="balance-amount credit-amount">€35,500.00</td>
+                        </tr>
+                        
+                        <tr data-type="income">
+                            <td class="account-code">4.1.3.1</td>
+                            <td class="account-name">Service Revenue</td>
+                            <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Income</span></td>
+                            <td class="balance-amount zero-amount">-</td>
+                            <td class="balance-amount credit-amount">€5,000.00</td>
+                        </tr>
+                        
+                        <!-- EXPENSES -->
+                        <tr data-type="expense">
+                            <td class="account-code">6.1.1.1</td>
+                            <td class="account-name">Employee Salaries</td>
+                            <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">Expense</span></td>
+                            <td class="balance-amount debit-amount">€0.00</td>
+                            <td class="balance-amount zero-amount">-</td>
+                        </tr>
+                        
+                        {% for account in trial_balance_data %}
+                        <tr data-type="{{ account.type }}">
+                            <td class="account-code">{{ account.code }}</td>
+                            <td class="account-name">{{ account.name }}</td>
+                            <td>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                    {% if account.type == 'asset' %}bg-green-100 text-green-800
+                                    {% elif account.type == 'liability' %}bg-red-100 text-red-800
+                                    {% elif account.type == 'equity' %}bg-blue-100 text-blue-800
+                                    {% elif account.type == 'income' %}bg-yellow-100 text-yellow-800
+                                    {% elif account.type == 'expense' %}bg-purple-100 text-purple-800
+                                    {% endif %}">
+                                    {{ account.type|title }}
+                                </span>
+                            </td>
+                            <td class="balance-amount {% if account.debit_balance > 0 %}debit-amount{% else %}zero-amount{% endif %}">
+                                {% if account.debit_balance > 0 %}€{{ account.debit_balance }}{% else %}-{% endif %}
+                            </td>
+                            <td class="balance-amount {% if account.credit_balance > 0 %}credit-amount{% else %}zero-amount{% endif %}">
+                                {% if account.credit_balance > 0 %}€{{ account.credit_balance }}{% else %}-{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <td colspan="3"><strong>TOTAL</strong></td>
+                            <td class="balance-amount"><strong id="totalDebitAmount">€156,475.00</strong></td>
+                            <td class="balance-amount"><strong id="totalCreditAmount">€156,475.00</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateTrialBalance() {
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+    const accountType = document.getElementById('accountTypeFilter').value;
+    
+    showNotification('Updating trial balance...', 'info');
+    
+    const params = new URLSearchParams({
+        from_date: fromDate,
+        to_date: toDate,
+        account_type: accountType
+    });
+    
+    fetch(`/accounting/api/trial-balance/?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateTrialBalanceTable(data.trial_balance);
+                updateSummaryValues(data.summary);
+                showNotification('Trial balance updated successfully!', 'success');
+            } else {
+                showNotification('Failed to update trial balance: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to update trial balance', 'error');
+        });
+}
+
+function updateTrialBalanceTable(trialBalanceData) {
+    const tbody = document.getElementById('trialBalanceBody');
+    tbody.innerHTML = '';
+    
+    let totalDebits = 0;
+    let totalCredits = 0;
+    
+    trialBalanceData.forEach(account => {
+        const row = document.createElement('tr');
+        row.setAttribute('data-type', account.type);
+        
+        const typeColor = getTypeColor(account.type);
+        
+        row.innerHTML = `
+            <td class="account-code">${account.code}</td>
+            <td class="account-name">${account.name}</td>
+            <td>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${typeColor}">
+                    ${account.type.charAt(0).toUpperCase() + account.type.slice(1)}
+                </span>
+            </td>
+            <td class="balance-amount ${account.debit_balance > 0 ? 'debit-amount' : 'zero-amount'}">
+                ${account.debit_balance > 0 ? '€' + account.debit_balance.toLocaleString('en-US', {minimumFractionDigits: 2}) : '-'}
+            </td>
+            <td class="balance-amount ${account.credit_balance > 0 ? 'credit-amount' : 'zero-amount'}">
+                ${account.credit_balance > 0 ? '€' + account.credit_balance.toLocaleString('en-US', {minimumFractionDigits: 2}) : '-'}
+            </td>
+        `;
+        
+        tbody.appendChild(row);
+        
+        totalDebits += account.debit_balance;
+        totalCredits += account.credit_balance;
+    });
+    
+    // Update totals
+    document.getElementById('totalDebitAmount').textContent = '€' + totalDebits.toLocaleString('en-US', {minimumFractionDigits: 2});
+    document.getElementById('totalCreditAmount').textContent = '€' + totalCredits.toLocaleString('en-US', {minimumFractionDigits: 2});
+}
+
+function updateSummaryValues(summary) {
+    document.getElementById('totalDebits').textContent = '€' + summary.total_debits.toLocaleString('en-US', {minimumFractionDigits: 2});
+    document.getElementById('totalCredits').textContent = '€' + summary.total_credits.toLocaleString('en-US', {minimumFractionDigits: 2});
+    
+    const difference = summary.total_debits - summary.total_credits;
+    document.getElementById('balanceDifference').textContent = '€' + Math.abs(difference).toLocaleString('en-US', {minimumFractionDigits: 2});
+    
+    const statusElement = document.getElementById('balanceStatus');
+    if (difference === 0) {
+        statusElement.textContent = 'BALANCED';
+        statusElement.className = 'summary-value text-green-300';
+    } else {
+        statusElement.textContent = 'OUT OF BALANCE';
+        statusElement.className = 'summary-value text-yellow-300';
+    }
+}
+
+function getTypeColor(type) {
+    const colors = {
+        'asset': 'bg-green-100 text-green-800',
+        'liability': 'bg-red-100 text-red-800',
+        'equity': 'bg-blue-100 text-blue-800',
+        'income': 'bg-yellow-100 text-yellow-800',
+        'expense': 'bg-purple-100 text-purple-800'
+    };
+    return colors[type] || 'bg-gray-100 text-gray-800';
+}
+
+function filterAccountType(type) {
+    const rows = document.querySelectorAll('#trialBalanceBody tr');
+    const toggles = document.querySelectorAll('.type-toggle');
+    
+    // Update active toggle
+    toggles.forEach(toggle => {
+        toggle.classList.remove('active');
+        if (toggle.getAttribute('data-type') === type) {
+            toggle.classList.add('active');
+        }
+    });
+    
+    // Filter rows
+    rows.forEach(row => {
+        if (type === 'all' || row.getAttribute('data-type') === type) {
+            row.style.display = 'table-row';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Recalculate visible totals
+    recalculateVisibleTotals(type);
+}
+
+function recalculateVisibleTotals(filterType) {
+    const rows = document.querySelectorAll('#trialBalanceBody tr');
+    let visibleDebits = 0;
+    let visibleCredits = 0;
+    
+    rows.forEach(row => {
+        if (row.style.display !== 'none') {
+            const debitCell = row.cells[3];
+            const creditCell = row.cells[4];
+            
+            const debitText = debitCell.textContent.replace(/[€,-]/g, '');
+            const creditText = creditCell.textContent.replace(/[€,-]/g, '');
+            
+            if (debitText && debitText !== '-') {
+                visibleDebits += parseFloat(debitText);
+            }
+            if (creditText && creditText !== '-') {
+                visibleCredits += parseFloat(creditText);
+            }
+        }
+    });
+    
+    document.getElementById('totalDebitAmount').innerHTML = '<strong>€' + visibleDebits.toLocaleString('en-US', {minimumFractionDigits: 2}) + '</strong>';
+    document.getElementById('totalCreditAmount').innerHTML = '<strong>€' + visibleCredits.toLocaleString('en-US', {minimumFractionDigits: 2}) + '</strong>';
+}
+
+function exportTrialBalance() {
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+    const accountType = document.getElementById('accountTypeFilter').value;
+    
+    const params = new URLSearchParams({
+        from_date: fromDate,
+        to_date: toDate,
+        account_type: accountType,
+        format: 'pdf'
+    });
+    
+    window.open(`/accounting/api/trial-balance/export/?${params}`, '_blank');
+    showNotification('Trial balance export started', 'info');
+}
+
+function printTrialBalance() {
+    window.print();
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'error' ? 'bg-red-500 text-white' :
+        type === 'warning' ? 'bg-yellow-500 text-white' :
+        'bg-blue-500 text-white'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${
+                type === 'success' ? 'fa-check-circle' :
+                type === 'error' ? 'fa-exclamation-triangle' :
+                type === 'warning' ? 'fa-exclamation-triangle' :
+                'fa-info-circle'
+            } mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+// Initialize with current date
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    const firstDayOfYear = new Date(today.getFullYear(), 0, 1);
+    
+    if (!document.getElementById('fromDate').value) {
+        document.getElementById('fromDate').value = firstDayOfYear.toISOString().split('T')[0];
+    }
+    if (!document.getElementById('toDate').value) {
+        document.getElementById('toDate').value = today.toISOString().split('T')[0];
+    }
+});
+
+// Print styles
+window.addEventListener('beforeprint', function() {
+    document.body.classList.add('printing');
+});
+
+window.addEventListener('afterprint', function() {
+    document.body.classList.remove('printing');
+});
+</script>
+
+<style>
+@media print {
+    body {
+        background: white !important;
+    }
+    
+    .btn, .date-filter, .stats-grid {
+        display: none !important;
+    }
+    
+    .balance-summary {
+        background: white !important;
+        color: black !important;
+        border: 1px solid #000 !important;
+    }
+    
+    .trial-balance-card {
+        box-shadow: none !important;
+        border: none !important;
+    }
+    
+    .balance-table th {
+        background: #f3f4f6 !important;
+        color: black !important;
+        -webkit-print-color-adjust: exact;
+    }
+    
+    .balance-table tbody tr:nth-child(even) {
+        background: #f9fafb !important;
+        -webkit-print-color-adjust: exact;
+    }
+    
+    .total-row {
+        background: #e5e7eb !important;
+        -webkit-print-color-adjust: exact;
+    }
+}
+</style>
+
+<!-- Add CSRF token -->
+{% csrf_token %}
+{% endblock %}

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Add Employee | FutureERP{% endblock %}
+{% block title %}{% if employee %}Edit Employee{% else %}Add Employee{% endif %} | FutureERP{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -34,6 +34,14 @@
         margin-bottom: 0.5rem;
         display: block;
     }
+    .section-header {
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
 </style>
 {% endblock %}
 
@@ -43,60 +51,254 @@
         <!-- Header -->
         <div class="flex justify-between items-center mb-8">
             <div>
-                <h1 class="text-4xl font-bold accounting-highlight mb-2">Add Employee</h1>
-                <p class="text-gray-600">Add a new employee to your team</p>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">
+                    {% if employee %}Edit Employee{% else %}Add Employee{% endif %}
+                </h1>
+                <p class="text-gray-600">
+                    {% if employee %}Update employee information{% else %}Add a new employee to your team{% endif %}
+                </p>
             </div>
             <div class="flex gap-4">
-                <a href="{% url 'hr:hr_employees_ui' %}" class="action-btn bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                <a href="{% url 'hr:employees_ui' %}" class="action-btn bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover-lift">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
                     Back to Employees
                 </a>
+                {% if employee %}
+                <a href="{% url 'hr:employee_detail' employee.id %}" class="action-btn bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                    View Details
+                </a>
+                {% endif %}
             </div>
         </div>
 
         <!-- Form -->
         <div class="form-card rounded-2xl p-8">
-            <form method="post" id="employeeForm">
+            <form method="post" id="employeeForm" enctype="multipart/form-data">
                 {% csrf_token %}
                 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Basic Information -->
+                <div class="section-header">Basic Information</div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                     <div>
                         <label for="first_name" class="field-label">First Name *</label>
                         <input type="text" name="first_name" id="first_name" 
-                               class="form-input" placeholder="Enter first name" required>
+                               class="form-input" placeholder="Enter first name" 
+                               value="{% if employee %}{{ employee.first_name }}{% endif %}" required>
                     </div>
 
                     <div>
                         <label for="last_name" class="field-label">Last Name *</label>
                         <input type="text" name="last_name" id="last_name" 
-                               class="form-input" placeholder="Enter last name" required>
+                               class="form-input" placeholder="Enter last name" 
+                               value="{% if employee %}{{ employee.last_name }}{% endif %}" required>
                     </div>
 
                     <div>
                         <label for="email" class="field-label">Email *</label>
                         <input type="email" name="email" id="email" 
-                               class="form-input" placeholder="Enter email address" required>
+                               class="form-input" placeholder="Enter email address" 
+                               value="{% if employee %}{{ employee.email }}{% endif %}" required>
                     </div>
 
                     <div>
+                        <label for="phone" class="field-label">Phone</label>
+                        <input type="text" name="phone" id="phone" 
+                               class="form-input" placeholder="Enter phone number"
+                               value="{% if employee %}{{ employee.phone }}{% endif %}">
+                    </div>
+
+                    <div class="lg:col-span-2">
+                        <label for="address" class="field-label">Address</label>
+                        <textarea name="address" id="address" rows="3" 
+                                  class="form-input" placeholder="Enter full address">{% if employee %}{{ employee.address }}{% endif %}</textarea>
+                    </div>
+                </div>
+
+                <!-- Employment Details -->
+                <div class="section-header">Employment Details</div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div>
                         <label for="department" class="field-label">Department</label>
-                        <input type="text" name="department" id="department" 
-                               class="form-input" placeholder="Enter department">
+                        <select name="department" id="department" class="form-input">
+                            <option value="">Select Department</option>
+                            {% for dept in departments %}
+                                <option value="{{ dept.id }}" 
+                                        {% if employee and employee.department_id == dept.id %}selected{% endif %}>
+                                    {{ dept.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="designation" class="field-label">Designation</label>
+                        <select name="designation" id="designation" class="form-input">
+                            <option value="">Select Designation</option>
+                            {% for desig in designations %}
+                                <option value="{{ desig.id }}" 
+                                        {% if employee and employee.designation_id == desig.id %}selected{% endif %}>
+                                    {{ desig.title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="reporting_manager" class="field-label">Reporting Manager</label>
+                        <select name="reporting_manager" id="reporting_manager" class="form-input">
+                            <option value="">Select Manager</option>
+                            {% for manager in managers %}
+                                <option value="{{ manager.id }}" 
+                                        {% if employee and employee.reporting_manager_id == manager.id %}selected{% endif %}>
+                                    {{ manager.first_name }} {{ manager.last_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="employment_type" class="field-label">Employment Type</label>
+                        <select name="employment_type" id="employment_type" class="form-input">
+                            {% for value, label in employment_types %}
+                                <option value="{{ value }}" 
+                                        {% if employee and employee.employment_type == value %}selected{% elif not employee and value == 'full_time' %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="date_joined" class="field-label">Date Joined</label>
+                        <input type="date" name="date_joined" id="date_joined" 
+                               class="form-input" 
+                               value="{% if employee and employee.date_joined %}{{ employee.date_joined|date:'Y-m-d' }}{% endif %}">
+                    </div>
+
+                    <div>
+                        <label for="current_salary" class="field-label">Current Salary</label>
+                        <input type="number" name="current_salary" id="current_salary" 
+                               class="form-input" placeholder="0.00" step="0.01"
+                               value="{% if employee %}{{ employee.current_salary }}{% endif %}">
+                    </div>
+
+                    <div>
+                        <label for="status" class="field-label">Status</label>
+                        <select name="status" id="status" class="form-input">
+                            {% for value, label in status_choices %}
+                                <option value="{{ value }}" 
+                                        {% if employee and employee.status == value %}selected{% elif not employee and value == 'active' %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Personal Details -->
+                <div class="section-header">Personal Details</div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label for="date_of_birth" class="field-label">Date of Birth</label>
+                        <input type="date" name="date_of_birth" id="date_of_birth" 
+                               class="form-input" 
+                               value="{% if employee and employee.date_of_birth %}{{ employee.date_of_birth|date:'Y-m-d' }}{% endif %}">
+                    </div>
+
+                    <div>
+                        <label for="national_id" class="field-label">National ID</label>
+                        <input type="text" name="national_id" id="national_id" 
+                               class="form-input" placeholder="Enter national ID"
+                               value="{% if employee %}{{ employee.national_id }}{% endif %}">
+                    </div>
+
+                    <div>
+                        <label for="passport_number" class="field-label">Passport Number</label>
+                        <input type="text" name="passport_number" id="passport_number" 
+                               class="form-input" placeholder="Enter passport number"
+                               value="{% if employee %}{{ employee.passport_number }}{% endif %}">
+                    </div>
+
+                    <div>
+                        <label for="emergency_contact" class="field-label">Emergency Contact</label>
+                        <input type="text" name="emergency_contact" id="emergency_contact" 
+                               class="form-input" placeholder="Emergency contact name"
+                               value="{% if employee %}{{ employee.emergency_contact }}{% endif %}">
+                    </div>
+
+                    <div>
+                        <label for="emergency_phone" class="field-label">Emergency Phone</label>
+                        <input type="text" name="emergency_phone" id="emergency_phone" 
+                               class="form-input" placeholder="Emergency contact phone"
+                               value="{% if employee %}{{ employee.emergency_phone }}{% endif %}">
+                    </div>
+                </div>
+
+                <!-- Bank Details -->
+                <div class="section-header">Bank Details</div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label for="bank_account" class="field-label">Bank Account Number</label>
+                        <input type="text" name="bank_account" id="bank_account" 
+                               class="form-input" placeholder="Enter bank account number"
+                               value="{% if employee %}{{ employee.bank_account }}{% endif %}">
+                    </div>
+
+                    <div>
+                        <label for="bank_name" class="field-label">Bank Name</label>
+                        <input type="text" name="bank_name" id="bank_name" 
+                               class="form-input" placeholder="Enter bank name"
+                               value="{% if employee %}{{ employee.bank_name }}{% endif %}">
+                    </div>
+                </div>
+
+                <!-- Documents -->
+                <div class="section-header">Documents</div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <div>
+                        <label for="profile_picture" class="field-label">Profile Picture</label>
+                        <input type="file" name="profile_picture" id="profile_picture" 
+                               class="form-input" accept="image/*">
+                        {% if employee and employee.profile_picture %}
+                            <p class="text-sm text-gray-600 mt-1">Current: {{ employee.profile_picture.name }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="cv_document" class="field-label">CV Document</label>
+                        <input type="file" name="cv_document" id="cv_document" 
+                               class="form-input" accept=".pdf,.doc,.docx">
+                        {% if employee and employee.cv_document %}
+                            <p class="text-sm text-gray-600 mt-1">Current: {{ employee.cv_document.name }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="contract_document" class="field-label">Contract Document</label>
+                        <input type="file" name="contract_document" id="contract_document" 
+                               class="form-input" accept=".pdf,.doc,.docx">
+                        {% if employee and employee.contract_document %}
+                            <p class="text-sm text-gray-600 mt-1">Current: {{ employee.contract_document.name }}</p>
+                        {% endif %}
                     </div>
                 </div>
 
                 <!-- Form Actions -->
                 <div class="flex justify-end gap-4 mt-8 pt-6 border-t-2 border-gray-200">
-                    <a href="{% url 'hr:hr_employees_ui' %}" class="px-8 py-3 bg-gray-200 text-gray-700 rounded-2xl hover:bg-gray-300 transition-all font-medium">
+                    <a href="{% url 'hr:employees_ui' %}" class="px-8 py-3 bg-gray-200 text-gray-700 rounded-2xl hover:bg-gray-300 transition-all font-medium">
                         Cancel
                     </a>
                     <button type="submit" class="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl hover:shadow-lg transition-all font-medium">
                         <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                         </svg>
-                        Add Employee
+                        {% if employee %}Update Employee{% else %}Add Employee{% endif %}
                     </button>
                 </div>
             </form>
@@ -120,14 +322,15 @@ document.getElementById('employeeForm').addEventListener('submit', function(e) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            window.location.href = '{% url "hr:hr_employees_ui" %}';
+            alert(data.message || 'Employee saved successfully!');
+            window.location.href = '{% url "hr:employees_ui" %}';
         } else {
             alert('Error: ' + data.error);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('An error occurred while adding the employee.');
+        alert('An error occurred while saving the employee.');
     });
 });
 </script>

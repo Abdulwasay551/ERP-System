@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if edit_mode %}Edit Task{% else %}Add Task{% endif %} | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+        border: 1px solid rgba(102, 126, 234, 0.1);
+    }
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e5e7eb;
+    }
+    .form-section h3 {
+        color: #374151;
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    .priority-selector {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-top: 0.5rem;
+    }
+    .priority-option {
+        padding: 0.75rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .priority-option.high {
+        border-color: #ef4444;
+        background: #fef2f2;
+        color: #dc2626;
+    }
+    .priority-option.medium {
+        border-color: #f59e0b;
+        background: #fffbeb;
+        color: #d97706;
+    }
+    .priority-option.low {
+        border-color: #10b981;
+        background: #f0fdf4;
+        color: #059669;
+    }
+    .priority-option.selected {
+        font-weight: 600;
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8 max-w-4xl">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center mb-4">
+                <a href="{% url 'project_mgmt:tasks_ui' %}" class="mr-4 p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">
+                        {% if edit_mode %}Edit Task{% else %}Add Task{% endif %}
+                    </h1>
+                    <p class="text-gray-600">
+                        {% if edit_mode %}Update task details{% else %}Create a new task for your project{% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="form-card p-8 rounded-2xl">
+            <form id="taskForm" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h3>Task Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="project_id" class="block text-sm font-medium text-gray-700 mb-2">Project *</label>
+                            <select name="project_id" id="project_id" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">Select Project</option>
+                                {% for project in projects %}
+                                    <option value="{{ project.id }}" {% if edit_mode and task.project.id == project.id %}selected{% endif %}>
+                                        {{ project.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Status *</label>
+                            <select name="status" id="status" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="pending" {% if edit_mode and task.status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="in_progress" {% if edit_mode and task.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                <option value="review" {% if edit_mode and task.status == 'review' %}selected{% endif %}>Under Review</option>
+                                <option value="completed" {% if edit_mode and task.status == 'completed' %}selected{% endif %}>Completed</option>
+                                <option value="on_hold" {% if edit_mode and task.status == 'on_hold' %}selected{% endif %}>On Hold</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Task Name *</label>
+                        <input type="text" name="name" id="name" required 
+                               value="{% if edit_mode %}{{ task.name }}{% endif %}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                               placeholder="Enter task name">
+                    </div>
+                    <div class="mt-6">
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <textarea name="description" id="description" rows="4" 
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                                  placeholder="Describe the task in detail">{% if edit_mode %}{{ task.description }}{% endif %}</textarea>
+                    </div>
+                </div>
+
+                <!-- Priority and Timeline -->
+                <div class="form-section">
+                    <h3>Priority & Timeline</h3>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Priority *</label>
+                        <input type="hidden" name="priority" id="priority" value="{% if edit_mode %}{{ task.priority|lower }}{% else %}medium{% endif %}">
+                        <div class="priority-selector">
+                            <div class="priority-option high {% if edit_mode and task.priority|lower == 'high' %}selected{% endif %}" data-priority="high">
+                                <div class="font-medium">High</div>
+                                <div class="text-sm">Urgent</div>
+                            </div>
+                            <div class="priority-option medium {% if not edit_mode or task.priority|lower == 'medium' %}selected{% endif %}" data-priority="medium">
+                                <div class="font-medium">Medium</div>
+                                <div class="text-sm">Normal</div>
+                            </div>
+                            <div class="priority-option low {% if edit_mode and task.priority|lower == 'low' %}selected{% endif %}" data-priority="low">
+                                <div class="font-medium">Low</div>
+                                <div class="text-sm">When possible</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="due_date" class="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+                            <input type="date" name="due_date" id="due_date" 
+                                   value="{% if edit_mode and task.due_date %}{{ task.due_date|date:'Y-m-d' }}{% endif %}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label for="estimated_hours" class="block text-sm font-medium text-gray-700 mb-2">Estimated Hours</label>
+                            <input type="number" name="estimated_hours" id="estimated_hours" step="0.5" min="0" 
+                                   value="{% if edit_mode %}{{ task.estimated_hours }}{% endif %}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                                   placeholder="0.0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assignment -->
+                <div class="form-section">
+                    <h3>Assignment</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="assigned_to" class="block text-sm font-medium text-gray-700 mb-2">Assigned To</label>
+                            <select name="assigned_to" id="assigned_to" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">Select Team Member (Optional)</option>
+                                {% for employee in employees %}
+                                    <option value="{{ employee.id }}" {% if edit_mode and task.assigned_to.id == employee.id %}selected{% endif %}>
+                                        {{ employee.first_name }} {{ employee.last_name }} - {{ employee.position|default:"Employee" }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="progress" class="block text-sm font-medium text-gray-700 mb-2">Progress (%)</label>
+                            <input type="range" name="progress" id="progress" min="0" max="100" 
+                                   value="{% if edit_mode %}{{ task.progress|default:0 }}{% else %}0{% endif %}"
+                                   class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <div class="flex justify-between text-sm text-gray-600 mt-2">
+                                <span>0%</span>
+                                <span id="progress-value" class="font-medium">
+                                    {% if edit_mode %}{{ task.progress|default:0 }}%{% else %}0%{% endif %}
+                                </span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                    <a href="{% url 'project_mgmt:tasks_ui' %}" class="px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all">
+                        {% if edit_mode %}Update Task{% else %}Create Task{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Priority selection
+document.querySelectorAll('.priority-option').forEach(option => {
+    option.addEventListener('click', function() {
+        // Remove selected class from all options
+        document.querySelectorAll('.priority-option').forEach(opt => opt.classList.remove('selected'));
+        
+        // Add selected class to clicked option
+        this.classList.add('selected');
+        
+        // Update hidden input
+        document.getElementById('priority').value = this.dataset.priority;
+    });
+});
+
+// Progress slider
+const progressSlider = document.getElementById('progress');
+const progressValue = document.getElementById('progress-value');
+
+progressSlider.addEventListener('input', function() {
+    progressValue.textContent = this.value + '%';
+    
+    // Auto-update status based on progress
+    const statusSelect = document.getElementById('status');
+    if (this.value == 0) {
+        statusSelect.value = 'pending';
+    } else if (this.value == 100) {
+        statusSelect.value = 'completed';
+    } else if (this.value > 0 && statusSelect.value === 'pending') {
+        statusSelect.value = 'in_progress';
+    }
+});
+
+// Auto-update progress when status changes
+document.getElementById('status').addEventListener('change', function() {
+    const progress = document.getElementById('progress');
+    if (this.value === 'completed' && progress.value != 100) {
+        progress.value = 100;
+        progressValue.textContent = '100%';
+    } else if (this.value === 'pending' && progress.value != 0) {
+        progress.value = 0;
+        progressValue.textContent = '0%';
+    }
+});
+
+// Form submission
+document.getElementById('taskForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const url = {% if edit_mode %}'{% url "project_mgmt:task_edit" task.id %}'{% else %}'{% url "project_mgmt:task_add" %}'{% endif %};
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = '{% url "project_mgmt:tasks_ui" %}';
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while saving the task.');
+    });
+});
+
+// Handle URL parameters
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const status = urlParams.get('status');
+    
+    if (status && !{% if edit_mode %}true{% else %}false{% endif %}) {
+        document.getElementById('status').value = status;
+    }
+});
+</script>
+{% endblock %}

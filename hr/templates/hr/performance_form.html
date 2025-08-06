@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Performance Form | FutureERP{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8 max-w-4xl">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">
+                    {% if appraisal %}Edit Performance Appraisal{% else %}New Performance Appraisal{% endif %}
+                </h1>
+                <p class="text-gray-600">Create or edit employee performance appraisal</p>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold mb-4">Basic Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Employee</label>
+                        <select name="employee_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <option value="">Select Employee</option>
+                            {% for employee in employees %}
+                            <option value="{{ employee.id }}" {% if appraisal.employee.id == employee.id %}selected{% endif %}>
+                                {{ employee.first_name }} {{ employee.last_name }} - {{ employee.employee_id }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Reviewer</label>
+                        <select name="reviewer_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <option value="">Select Reviewer</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}" {% if appraisal.reviewer.id == user.id %}selected{% endif %}>
+                                {{ user.first_name }} {{ user.last_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Period Start</label>
+                        <input type="date" name="period_start" value="{{ appraisal.period_start|date:'Y-m-d' }}" 
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Period End</label>
+                        <input type="date" name="period_end" value="{{ appraisal.period_end|date:'Y-m-d' }}" 
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Self Assessment -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold mb-4">Self Assessment</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Self Rating (1-5)</label>
+                        <select name="self_rating" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select Rating</option>
+                            {% for rating in rating_choices %}
+                            <option value="{{ rating.0 }}" {% if appraisal.self_rating == rating.0 %}selected{% endif %}>
+                                {{ rating.0 }} - {{ rating.1 }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Goals Achievement</label>
+                        <textarea name="self_goals_achievement" rows="3" 
+                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">{{ appraisal.self_goals_achievement }}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Strengths</label>
+                        <textarea name="self_strengths" rows="3" 
+                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">{{ appraisal.self_strengths }}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Areas for Improvement</label>
+                        <textarea name="self_areas_improvement" rows="3" 
+                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">{{ appraisal.self_areas_improvement }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manager Assessment -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold mb-4">Manager Assessment</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Manager Rating (1-5)</label>
+                        <select name="manager_rating" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select Rating</option>
+                            {% for rating in rating_choices %}
+                            <option value="{{ rating.0 }}" {% if appraisal.manager_rating == rating.0 %}selected{% endif %}>
+                                {{ rating.0 }} - {{ rating.1 }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Goals Achievement</label>
+                        <textarea name="manager_goals_achievement" rows="3" 
+                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">{{ appraisal.manager_goals_achievement }}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Strengths</label>
+                        <textarea name="manager_strengths" rows="3" 
+                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">{{ appraisal.manager_strengths }}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Areas for Improvement</label>
+                        <textarea name="manager_areas_improvement" rows="3" 
+                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">{{ appraisal.manager_areas_improvement }}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Manager Comments</label>
+                        <textarea name="manager_comments" rows="3" 
+                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">{{ appraisal.manager_comments }}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Training Recommendations</label>
+                        <textarea name="training_recommendations" rows="3" 
+                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">{{ appraisal.training_recommendations }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Final Assessment -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold mb-4">Final Assessment</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Final Rating (1-5)</label>
+                        <select name="final_rating" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select Rating</option>
+                            {% for rating in rating_choices %}
+                            <option value="{{ rating.0 }}" {% if appraisal.final_rating == rating.0 %}selected{% endif %}>
+                                {{ rating.0 }} - {{ rating.1 }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Increment Recommended (%)</label>
+                        <input type="number" name="increment_recommended" value="{{ appraisal.increment_recommended }}" step="0.01" 
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="promotion_recommended" {% if appraisal.promotion_recommended %}checked{% endif %} 
+                                   class="mr-2 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm font-medium text-gray-700">Promotion Recommended</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-end space-x-4">
+                <a href="{% url 'hr:performance_ui' %}" 
+                   class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    {% if appraisal %}Update Appraisal{% else %}Create Appraisal{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

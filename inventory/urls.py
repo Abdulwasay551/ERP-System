@@ -10,8 +10,12 @@ from .views import (
     adjustment_detail, adjustment_edit, category_create, category_update, category_delete, category_detail
 )
 
+app_name = 'inventory'
+
+
 urlpatterns = [
     # Dashboard
+    path('', inventory_dashboard, name='dashboard'),
     path('dashboard/', inventory_dashboard, name='inventory_dashboard'),
     path('dashboard-ui/', inventory_dashboard, name='inventory_dashboard_ui'),
     

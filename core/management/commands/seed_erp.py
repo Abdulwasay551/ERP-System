@@ -1,21 +1,19 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth.hashers import make_password
-from django.core.management.base import BaseCommand
-from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 from datetime import date, timedelta
 from decimal import Decimal
 import random
 
-# Import all models based on your schema
+# Import all models based on updated schema
 from user_auth.models import Company, User, Role, ActivityLog
 from crm.models import Customer, Partner
-from products.models import Product, ProductCategory, ProductVariant, Attribute, AttributeValue, ProductAttribute, ProductTracking
+from products.models import Product, ProductCategory, Attribute
 from inventory.models import (
     Warehouse, WarehouseZone, WarehouseBin, StockItem, StockMovement, 
     StockLot, StockReservation, StockAlert, InventoryLock, StockAdjustment, StockAdjustmentItem
 )
-from accounting.models import Account, AccountCategory, AccountGroup, JournalEntry, JournalItem
+from accounting.models import Account, AccountCategory, AccountGroup, Journal, JournalEntry, JournalItem, ModuleAccountMapping
 from purchase.models import (
     Supplier, UnitOfMeasure, PurchaseRequisition, PurchaseRequisitionItem,
     RequestForQuotation, RFQItem, SupplierQuotation, SupplierQuotationItem,
@@ -24,10 +22,10 @@ from purchase.models import (
     QualityInspection, QualityInspectionResult, PurchaseApproval, TaxChargesTemplate,
     GRNInventoryLock
 )
-from sales.models import Product as SalesProduct, SalesOrder, SalesOrderItem, Invoice, Payment, Quotation, QuotationItem, Tax
-from hr.models import Employee, Payroll, Leave, Attendance
-from manufacturing.models import BillOfMaterials, BillOfMaterialsItem, WorkOrder, Subcontractor, SubcontractWorkOrder
-from project_mgmt.models import Project, Task, TimeEntry, ProjectContractor, ProjectReport
+from sales.models import SalesOrder, SalesOrderItem, Invoice, Payment, Quotation, QuotationItem, Tax, Currency
+from hr.models import Employee, Department, Designation, SalaryStructure, Payroll, Leave, Attendance
+from manufacturing.models import BillOfMaterials, BillOfMaterialsItem, WorkOrder, WorkCenter, ProductionPlan, Subcontractor, SubcontractWorkOrder
+from project_mgmt.models import Project, Task, TimeEntry, ProjectContractor
 
 class Command(BaseCommand):
     help = 'Seed the ERP database with comprehensive demo data for all modules.'
@@ -198,106 +196,88 @@ class Command(BaseCommand):
         )
         
         # ===============================
-        # 2. CHART OF ACCOUNTS
+        # 2. CHART OF ACCOUNTS - Use init_coa command
         # ===============================
-        self.stdout.write('Creating chart of accounts...')
+        self.stdout.write('Initializing chart of accounts using init_coa command...')
         
-        # Account Categories
-        asset_cat, _ = AccountCategory.objects.get_or_create(
-            company=company1, code='1', name='Assets',
-            defaults={'description': 'Asset accounts', 'is_active': True}
+        # Call the init_coa command for each company
+        from django.core.management import call_command
+        
+        for company in [company1, company2]:
+            try:
+                call_command('init_coa', '--company-id', company.id)
+                self.stdout.write(f'  ✓ COA initialized for {company.name}')
+            except Exception as e:
+                self.stdout.write(f'  ✗ Error initializing COA for {company.name}: {e}')
+        
+        # Get key accounts for later use in seeding
+        try:
+            # Assets
+            cash_acc = Account.objects.get(company=company1, code='1101')
+            bank_acc = Account.objects.get(company=company1, code='1102')
+            ar_acc = Account.objects.get(company=company1, code='1103')
+            inventory_raw_acc = Account.objects.get(company=company1, code='1104')
+            inventory_finished_acc = Account.objects.get(company=company1, code='1105')
+            inventory_wip_acc = Account.objects.get(company=company1, code='1106')
+            
+            # Liabilities
+            ap_acc = Account.objects.get(company=company1, code='2101')
+            salary_payable_acc = Account.objects.get(company=company1, code='2104')
+            
+            # Revenue
+            sales_acc = Account.objects.get(company=company1, code='4101')
+            service_revenue_acc = Account.objects.get(company=company1, code='4102')
+            
+            # Expenses
+            cogs_acc = Account.objects.get(company=company1, code='5101')
+            salary_acc = Account.objects.get(company=company1, code='5201')
+            
+            self.stdout.write('  ✓ Key accounts retrieved for seeding')
+            
+        except Account.DoesNotExist as e:
+            self.stdout.write(f'  ✗ Error retrieving accounts: {e}')
+            # Create minimal accounts if init_coa failed
+            self.stdout.write('Creating minimal account structure...')
+            cash_acc, ar_acc, ap_acc, sales_acc, cogs_acc, salary_acc = self._create_minimal_accounts(company1)
+            inventory_raw_acc = inventory_finished_acc = inventory_wip_acc = cash_acc  # Fallback
+            bank_acc = cash_acc  # Fallback
+            salary_payable_acc = ap_acc  # Fallback
+            service_revenue_acc = sales_acc  # Fallback
+        
+        # ===============================
+        # 2a. JOURNALS
+        # ===============================
+        self.stdout.write('Creating default journals...')
+        
+        # Create default journals for different types of transactions
+        general_journal, _ = Journal.objects.get_or_create(
+            company=company1, name='General Journal',
+            defaults={'type': 'general', 'is_active': True}
         )
         
-        liability_cat, _ = AccountCategory.objects.get_or_create(
-            company=company1, code='2', name='Liabilities',
-            defaults={'description': 'Liability accounts', 'is_active': True}
+        sales_journal, _ = Journal.objects.get_or_create(
+            company=company1, name='Sales Journal',
+            defaults={'type': 'sales', 'is_active': True}
         )
         
-        equity_cat, _ = AccountCategory.objects.get_or_create(
-            company=company1, code='3', name='Equity',
-            defaults={'description': 'Equity accounts', 'is_active': True}
+        purchase_journal, _ = Journal.objects.get_or_create(
+            company=company1, name='Purchase Journal',
+            defaults={'type': 'purchase', 'is_active': True}
         )
         
-        income_cat, _ = AccountCategory.objects.get_or_create(
-            company=company1, code='4', name='Income',
-            defaults={'description': 'Income accounts', 'is_active': True}
+        bank_journal, _ = Journal.objects.get_or_create(
+            company=company1, name='Bank Journal',
+            defaults={'type': 'bank', 'is_active': True}
         )
         
-        expense_cat, _ = AccountCategory.objects.get_or_create(
-            company=company1, code='5', name='Expenses',
-            defaults={'description': 'Expense accounts', 'is_active': True}
+        cash_journal, _ = Journal.objects.get_or_create(
+            company=company1, name='Cash Journal',
+            defaults={'type': 'cash', 'is_active': True}
         )
         
-        # Account Groups
-        cash_group, _ = AccountGroup.objects.get_or_create(
-            company=company1, category=asset_cat, code='1.1', name='Cash & Bank',
-            defaults={'description': 'Cash and bank accounts', 'is_active': True}
-        )
-        
-        ar_group, _ = AccountGroup.objects.get_or_create(
-            company=company1, category=asset_cat, code='1.2', name='Accounts Receivable',
-            defaults={'description': 'Customer receivables', 'is_active': True}
-        )
-        
-        inventory_group, _ = AccountGroup.objects.get_or_create(
-            company=company1, category=asset_cat, code='1.3', name='Inventory',
-            defaults={'description': 'Inventory assets', 'is_active': True}
-        )
-        
-        ap_group, _ = AccountGroup.objects.get_or_create(
-            company=company1, category=liability_cat, code='2.1', name='Accounts Payable',
-            defaults={'description': 'Supplier payables', 'is_active': True}
-        )
-        
-        sales_group, _ = AccountGroup.objects.get_or_create(
-            company=company1, category=income_cat, code='4.1', name='Sales Revenue',
-            defaults={'description': 'Sales income', 'is_active': True}
-        )
-        
-        expense_group, _ = AccountGroup.objects.get_or_create(
-            company=company1, category=expense_cat, code='5.1', name='Operating Expenses',
-            defaults={'description': 'Operating expenses', 'is_active': True}
-        )
-        
-        # Individual Accounts
-        cash_acc, _ = Account.objects.get_or_create(
-            company=company1, group=cash_group, code='1.1.001', name='Cash in Hand',
-            defaults={'account_type': 'asset', 'is_group': False, 'is_active': True}
-        )
-        
-        bank_acc, _ = Account.objects.get_or_create(
-            company=company1, group=cash_group, code='1.1.002', name='Bank Account - Main',
-            defaults={'account_type': 'asset', 'is_group': False, 'is_active': True}
-        )
-        
-        ar_acc, _ = Account.objects.get_or_create(
-            company=company1, group=ar_group, code='1.2.001', name='Trade Receivables',
-            defaults={'account_type': 'asset', 'is_group': False, 'is_active': True}
-        )
-        
-        inventory_acc, _ = Account.objects.get_or_create(
-            company=company1, group=inventory_group, code='1.3.001', name='Finished Goods',
-            defaults={'account_type': 'asset', 'is_group': False, 'is_active': True}
-        )
-        
-        ap_acc, _ = Account.objects.get_or_create(
-            company=company1, group=ap_group, code='2.1.001', name='Trade Payables',
-            defaults={'account_type': 'liability', 'is_group': False, 'is_active': True}
-        )
-        
-        sales_acc, _ = Account.objects.get_or_create(
-            company=company1, group=sales_group, code='4.1.001', name='Product Sales',
-            defaults={'account_type': 'income', 'is_group': False, 'is_active': True}
-        )
-        
-        cogs_acc, _ = Account.objects.get_or_create(
-            company=company1, group=expense_group, code='5.1.001', name='Cost of Goods Sold',
-            defaults={'account_type': 'expense', 'is_group': False, 'is_active': True}
-        )
-        
-        salary_acc, _ = Account.objects.get_or_create(
-            company=company1, group=expense_group, code='5.1.002', name='Salaries & Wages',
-            defaults={'account_type': 'expense', 'is_group': False, 'is_active': True}
+        automatic_journal, _ = Journal.objects.get_or_create(
+            company=company1, name='Automatic Entries',
+            defaults={'type': 'general', 'is_active': True}
         )
         
         # ===============================
@@ -371,7 +351,7 @@ class Command(BaseCommand):
                 'description': 'High-performance business laptop with 16GB RAM',
                 'product_type': 'product',
                 'category': electronics_cat,
-                'unit_of_measure': 'pcs',
+                'unit_of_measure': 'piece',
                 'cost_price': Decimal('800.00'),
                 'selling_price': Decimal('1200.00'),
                 'weight': Decimal('2.5'),
@@ -379,12 +359,18 @@ class Command(BaseCommand):
                 'is_active': True,
                 'is_saleable': True,
                 'is_purchasable': True,
+                'is_manufacturable': False,
                 'is_stockable': True,
-                'minimum_stock': Decimal('5'),
-                'maximum_stock': Decimal('50'),
-                'reorder_level': Decimal('10'),
-                'created_by': admin_user,
-                'tracking_method': 'serial'
+                'valuation_method': 'weighted_avg',
+                'auto_reorder': True,
+                'lead_time_days': 7,
+                'safety_stock': Decimal('5.0'),
+                'requires_quality_inspection': True,
+                'quality_parameters': 'Hardware functionality test, Performance benchmark',
+                'tracking_method': 'serial',
+                'has_expiry': False,
+                'shelf_life_days': 0,
+                'created_by': admin_user
             }
         )
         
@@ -395,7 +381,7 @@ class Command(BaseCommand):
                 'description': 'Premium executive office desk with drawers',
                 'product_type': 'product',
                 'category': furniture_cat,
-                'unit_of_measure': 'pcs',
+                'unit_of_measure': 'piece',
                 'cost_price': Decimal('300.00'),
                 'selling_price': Decimal('450.00'),
                 'weight': Decimal('45.0'),
@@ -403,12 +389,17 @@ class Command(BaseCommand):
                 'is_active': True,
                 'is_saleable': True,
                 'is_purchasable': True,
+                'is_manufacturable': False,
                 'is_stockable': True,
-                'minimum_stock': Decimal('2'),
-                'maximum_stock': Decimal('20'),
-                'reorder_level': Decimal('5'),
-                'created_by': admin_user,
-                'tracking_method': 'none'
+                'valuation_method': 'fifo',
+                'auto_reorder': False,
+                'lead_time_days': 14,
+                'safety_stock': Decimal('2.0'),
+                'requires_quality_inspection': False,
+                'tracking_method': 'none',
+                'has_expiry': False,
+                'shelf_life_days': 0,
+                'created_by': admin_user
             }
         )
         
@@ -425,9 +416,17 @@ class Command(BaseCommand):
                 'is_active': True,
                 'is_saleable': True,
                 'is_purchasable': False,
+                'is_manufacturable': False,
                 'is_stockable': False,
-                'created_by': admin_user,
-                'tracking_method': 'none'
+                'valuation_method': 'standard',
+                'auto_reorder': False,
+                'lead_time_days': 0,
+                'safety_stock': Decimal('0.0'),
+                'requires_quality_inspection': False,
+                'tracking_method': 'none',
+                'has_expiry': False,
+                'shelf_life_days': 0,
+                'created_by': admin_user
             }
         )
         
@@ -497,7 +496,7 @@ class Command(BaseCommand):
                 'suitable_for_sale': True,
                 'suitable_for_manufacturing': False,
                 'is_active': True,
-                'account': inventory_acc
+                'account': inventory_finished_acc
             }
         )
         
@@ -522,7 +521,7 @@ class Command(BaseCommand):
                 'suitable_for_sale': True,
                 'suitable_for_manufacturing': False,
                 'is_active': True,
-                'account': inventory_acc
+                'account': inventory_finished_acc
             }
         )
         
@@ -532,20 +531,26 @@ class Command(BaseCommand):
             defaults={
                 'name': 'Electronic Components',
                 'description': 'Various electronic components for laptop assembly',
-                'product_type': 'product',
+                'product_type': 'raw_material',
                 'category': electronics_cat,
-                'unit_of_measure': 'pcs',
+                'unit_of_measure': 'piece',
                 'cost_price': Decimal('50.00'),
                 'selling_price': Decimal('0.00'),
                 'is_active': True,
                 'is_saleable': False,
                 'is_purchasable': True,
+                'is_manufacturable': False,
                 'is_stockable': True,
-                'minimum_stock': Decimal('100'),
-                'maximum_stock': Decimal('1000'),
-                'reorder_level': Decimal('200'),
-                'created_by': admin_user,
-                'tracking_method': 'batch'
+                'valuation_method': 'fifo',
+                'auto_reorder': True,
+                'lead_time_days': 10,
+                'safety_stock': Decimal('100.0'),
+                'requires_quality_inspection': True,
+                'quality_parameters': 'Visual inspection, Electrical test',
+                'tracking_method': 'batch',
+                'has_expiry': False,
+                'shelf_life_days': 0,
+                'created_by': admin_user
             }
         )
         
@@ -570,7 +575,7 @@ class Command(BaseCommand):
                 'suitable_for_sale': False,
                 'suitable_for_manufacturing': True,
                 'is_active': True,
-                'account': inventory_acc
+                'account': inventory_raw_acc
             }
         )
         
@@ -1114,6 +1119,29 @@ class Command(BaseCommand):
         # ===============================
         self.stdout.write('Creating sales data...')
         
+        # Currencies
+        usd_currency, _ = Currency.objects.get_or_create(
+            company=company1, code='USD',
+            defaults={
+                'name': 'US Dollar',
+                'symbol': '$',
+                'exchange_rate': Decimal('1.0000'),
+                'is_base_currency': True,
+                'is_active': True
+            }
+        )
+        
+        eur_currency, _ = Currency.objects.get_or_create(
+            company=company1, code='EUR',
+            defaults={
+                'name': 'Euro',
+                'symbol': '€',
+                'exchange_rate': Decimal('0.8500'),
+                'is_base_currency': False,
+                'is_active': True
+            }
+        )
+        
         # Sales Quotations
         sales_quotation1, _ = Quotation.objects.get_or_create(
             company=company1, customer=customer1,
@@ -1147,8 +1175,11 @@ class Command(BaseCommand):
             sales_order=sales_order1, product=laptop_product,
             defaults={
                 'quantity': Decimal('2'),
-                'price': Decimal('1200.00'),
-                'total': Decimal('2400.00')
+                'unit_price': Decimal('1200.00'),
+                'discount_type': 'percent',
+                'discount_value': Decimal('0.00'),
+                'discount_amount': Decimal('0.00'),
+                'line_total': Decimal('2400.00')
             }
         )
         
@@ -1156,8 +1187,11 @@ class Command(BaseCommand):
             sales_order=sales_order1, product=consultation_service,
             defaults={
                 'quantity': Decimal('3'),
-                'price': Decimal('100.00'),
-                'total': Decimal('300.00')
+                'unit_price': Decimal('100.00'),
+                'discount_type': 'percent',
+                'discount_value': Decimal('0.00'),
+                'discount_amount': Decimal('0.00'),
+                'line_total': Decimal('300.00')
             }
         )
         
@@ -1180,36 +1214,143 @@ class Command(BaseCommand):
         # ===============================
         self.stdout.write('Creating HR data...')
         
+        # Departments
+        it_dept, _ = Department.objects.get_or_create(
+            company=company1, name='Information Technology',
+            defaults={
+                'code': 'IT',
+                'description': 'Information Technology Department',
+                'budget': Decimal('500000.00'),
+                'is_active': True
+            }
+        )
+        
+        sales_dept, _ = Department.objects.get_or_create(
+            company=company1, name='Sales & Marketing',
+            defaults={
+                'code': 'SALES',
+                'description': 'Sales and Marketing Department',
+                'budget': Decimal('300000.00'),
+                'is_active': True
+            }
+        )
+        
+        hr_dept, _ = Department.objects.get_or_create(
+            company=company1, name='Human Resources',
+            defaults={
+                'code': 'HR',
+                'description': 'Human Resources Department',
+                'budget': Decimal('200000.00'),
+                'is_active': True
+            }
+        )
+        
+        finance_dept, _ = Department.objects.get_or_create(
+            company=company1, name='Finance',
+            defaults={
+                'code': 'FIN',
+                'description': 'Finance Department',
+                'budget': Decimal('400000.00'),
+                'is_active': True
+            }
+        )
+        
+        # Designations
+        senior_dev_designation, _ = Designation.objects.get_or_create(
+            company=company1, title='Senior Developer',
+            defaults={
+                'level': 'senior',
+                'salary_range_min': Decimal('70000.00'),
+                'salary_range_max': Decimal('90000.00'),
+                'description': 'Senior software developer position',
+                'responsibilities': 'Software development, code review, mentoring',
+                'requirements': 'Bachelor degree, 5+ years experience',
+                'is_active': True
+            }
+        )
+        
+        sales_rep_designation, _ = Designation.objects.get_or_create(
+            company=company1, title='Sales Representative',
+            defaults={
+                'level': 'mid',
+                'salary_range_min': Decimal('45000.00'),
+                'salary_range_max': Decimal('65000.00'),
+                'description': 'Sales representative position',
+                'responsibilities': 'Customer acquisition, relationship management',
+                'requirements': 'Bachelor degree, 2+ years sales experience',
+                'is_active': True
+            }
+        )
+        
+        # Salary Structures
+        senior_dev_salary, _ = SalaryStructure.objects.get_or_create(
+            company=company1, name='Senior Developer Salary',
+            designation=senior_dev_designation,
+            defaults={
+                'basic_salary': Decimal('60000.00'),
+                'house_allowance': Decimal('10000.00'),
+                'transport_allowance': Decimal('3000.00'),
+                'medical_allowance': Decimal('2000.00'),
+                'other_allowances': Decimal('0.00'),
+                'provident_fund_rate': Decimal('8.33'),
+                'tax_rate': Decimal('15.00'),
+                'other_deductions': Decimal('0.00'),
+                'is_active': True
+            }
+        )
+        
+        sales_rep_salary, _ = SalaryStructure.objects.get_or_create(
+            company=company1, name='Sales Rep Salary',
+            designation=sales_rep_designation,
+            defaults={
+                'basic_salary': Decimal('40000.00'),
+                'house_allowance': Decimal('8000.00'),
+                'transport_allowance': Decimal('4000.00'),
+                'medical_allowance': Decimal('3000.00'),
+                'other_allowances': Decimal('0.00'),
+                'provident_fund_rate': Decimal('8.33'),
+                'tax_rate': Decimal('10.00'),
+                'other_deductions': Decimal('0.00'),
+                'is_active': True
+            }
+        )
+        
         # Employees
         employee1, _ = Employee.objects.get_or_create(
             company=company1, employee_id='EMP-001',
             defaults={
+                'user': admin_user,
                 'first_name': 'Alice',
                 'last_name': 'Johnson',
                 'email': 'alice.johnson@techcorp.com',
                 'phone': '+1-555-1111',
-                'department': 'Information Technology',
-                'position': 'Senior Developer',
+                'department': it_dept,
+                'designation': senior_dev_designation,
+                'salary_structure': senior_dev_salary,
+                'employment_type': 'full_time',
                 'date_joined': date.today() - timedelta(days=365),
-                'salary': Decimal('75000.00'),
-                'is_active': True,
-                'user': admin_user
+                'current_salary': Decimal('75000.00'),
+                'status': 'active',
+                'is_active': True
             }
         )
         
         employee2, _ = Employee.objects.get_or_create(
             company=company1, employee_id='EMP-002',
             defaults={
+                'user': sales_user,
                 'first_name': 'Bob',
                 'last_name': 'Smith',
                 'email': 'bob.smith@techcorp.com',
                 'phone': '+1-555-2222',
-                'department': 'Sales & Marketing',
-                'position': 'Sales Representative',
+                'department': sales_dept,
+                'designation': sales_rep_designation,
+                'salary_structure': sales_rep_salary,
+                'employment_type': 'full_time',
                 'date_joined': date.today() - timedelta(days=200),
-                'salary': Decimal('55000.00'),
-                'is_active': True,
-                'user': sales_user
+                'current_salary': Decimal('55000.00'),
+                'status': 'active',
+                'is_active': True
             }
         )
         
@@ -1218,13 +1359,80 @@ class Command(BaseCommand):
         # ===============================
         self.stdout.write('Creating manufacturing data...')
         
+        # Work Centers
+        assembly_wc, _ = WorkCenter.objects.get_or_create(
+            company=company1, code='WC-ASSEMBLY',
+            defaults={
+                'name': 'Assembly Work Center',
+                'description': 'Main assembly line for electronic products',
+                'warehouse': main_warehouse,
+                'capacity_per_hour': Decimal('5.0'),
+                'cost_per_hour': Decimal('25.00'),
+                'setup_time_minutes': 30,
+                'cleanup_time_minutes': 15,
+                'operating_hours_per_day': Decimal('8.0'),
+                'operating_days_per_week': 5,
+                'requires_operator': True,
+                'max_operators': 3,
+                'requires_quality_check': True,
+                'is_active': True
+            }
+        )
+        
+        testing_wc, _ = WorkCenter.objects.get_or_create(
+            company=company1, code='WC-TESTING',
+            defaults={
+                'name': 'Quality Testing Center',
+                'description': 'Quality control and testing station',
+                'warehouse': main_warehouse,
+                'capacity_per_hour': Decimal('10.0'),
+                'cost_per_hour': Decimal('35.00'),
+                'setup_time_minutes': 15,
+                'cleanup_time_minutes': 10,
+                'operating_hours_per_day': Decimal('8.0'),
+                'operating_days_per_week': 5,
+                'requires_operator': True,
+                'max_operators': 2,
+                'requires_quality_check': False,
+                'is_active': True
+            }
+        )
+        
         # Bill of Materials
         laptop_bom, _ = BillOfMaterials.objects.get_or_create(
             company=company1, product=laptop_product,
             defaults={
                 'name': 'Laptop Assembly BOM',
                 'version': 'v1.0',
-                'created_by': production_user
+                'manufacturing_type': 'make_to_order',
+                'lot_size': Decimal('10.0'),
+                'lead_time_days': 5,
+                'scrap_percentage': Decimal('2.0'),
+                'material_cost': Decimal('600.00'),
+                'labor_cost': Decimal('150.00'),
+                'overhead_cost': Decimal('50.00'),
+                'total_cost': Decimal('800.00'),
+                'routing_required': True,
+                'quality_check_required': True,
+                'is_active': True,
+                'is_default': True,
+                'effective_from': date.today(),
+                'created_by': production_user,
+                'raw_material_account': inventory_raw_acc,
+                'wip_account': inventory_wip_acc,
+                'finished_goods_account': inventory_finished_acc
+            }
+        )
+        
+        # BOM Items
+        bom_item1, _ = BillOfMaterialsItem.objects.get_or_create(
+            bom=laptop_bom, component=raw_material_product,
+            defaults={
+                'quantity': Decimal('10.0'),
+                'unit_cost': Decimal('50.00'),
+                'waste_percentage': Decimal('5.0'),
+                'sequence': 1,
+                'notes': 'Electronic components for laptop assembly'
             }
         )
         
@@ -1232,14 +1440,27 @@ class Command(BaseCommand):
         work_order1, _ = WorkOrder.objects.get_or_create(
             company=company1, product=laptop_product,
             defaults={
+                'wo_number': 'WO-2024-001',
                 'bom': laptop_bom,
-                'quantity': Decimal('10'),
+                'quantity_planned': Decimal('10'),
+                'quantity_produced': Decimal('7'),
+                'quantity_rejected': Decimal('1'),
                 'status': 'in_progress',
-                'scheduled_start': date.today() - timedelta(days=5),
-                'scheduled_end': date.today() + timedelta(days=5),
-                'actual_start': date.today() - timedelta(days=5),
+                'priority': 'normal',
+                'scheduled_start': timezone.now() - timedelta(days=5),
+                'scheduled_end': timezone.now() + timedelta(days=5),
+                'actual_start': timezone.now() - timedelta(days=5),
+                'source_warehouse': raw_material_warehouse,
+                'destination_warehouse': main_warehouse,
                 'created_by': production_user,
-                'account': inventory_acc
+                'assigned_to': admin_user,
+                'sales_order': None,
+                'material_cost': Decimal('6000.00'),
+                'labor_cost': Decimal('1500.00'),
+                'overhead_cost': Decimal('500.00'),
+                'planned_cost': Decimal('8000.00'),
+                'actual_cost': Decimal('8000.00'),
+                'account': inventory_wip_acc
             }
         )
         
@@ -1371,4 +1592,82 @@ class Command(BaseCommand):
                 'Access the enhanced inventory dashboard at:\n'
                 'http://127.0.0.1:8000/inventory/dashboard/'
             )
-        ) 
+        )
+
+    def _create_minimal_accounts(self, company):
+        """Create minimal account structure as fallback"""
+        
+        # Create basic categories
+        asset_cat, _ = AccountCategory.objects.get_or_create(
+            company=company, code='1000', name='Assets',
+            defaults={'description': 'Asset accounts', 'is_active': True}
+        )
+        
+        liability_cat, _ = AccountCategory.objects.get_or_create(
+            company=company, code='2000', name='Liabilities',
+            defaults={'description': 'Liability accounts', 'is_active': True}
+        )
+        
+        income_cat, _ = AccountCategory.objects.get_or_create(
+            company=company, code='4000', name='Income',
+            defaults={'description': 'Income accounts', 'is_active': True}
+        )
+        
+        expense_cat, _ = AccountCategory.objects.get_or_create(
+            company=company, code='5000', name='Expenses',
+            defaults={'description': 'Expense accounts', 'is_active': True}
+        )
+        
+        # Create basic groups
+        cash_group, _ = AccountGroup.objects.get_or_create(
+            company=company, category=asset_cat, code='1100', name='Current Assets',
+            defaults={'description': 'Current asset accounts', 'is_active': True}
+        )
+        
+        ap_group, _ = AccountGroup.objects.get_or_create(
+            company=company, category=liability_cat, code='2100', name='Current Liabilities',
+            defaults={'description': 'Current liability accounts', 'is_active': True}
+        )
+        
+        sales_group, _ = AccountGroup.objects.get_or_create(
+            company=company, category=income_cat, code='4100', name='Operating Revenue',
+            defaults={'description': 'Operating revenue accounts', 'is_active': True}
+        )
+        
+        expense_group, _ = AccountGroup.objects.get_or_create(
+            company=company, category=expense_cat, code='5100', name='Cost of Goods Sold',
+            defaults={'description': 'COGS accounts', 'is_active': True}
+        )
+        
+        # Create minimal accounts
+        cash_acc, _ = Account.objects.get_or_create(
+            company=company, group=cash_group, code='1101', name='Cash',
+            defaults={'description': 'Cash account', 'is_active': True}
+        )
+        
+        ar_acc, _ = Account.objects.get_or_create(
+            company=company, group=cash_group, code='1103', name='Accounts Receivable',
+            defaults={'description': 'Accounts receivable', 'is_active': True}
+        )
+        
+        ap_acc, _ = Account.objects.get_or_create(
+            company=company, group=ap_group, code='2101', name='Accounts Payable',
+            defaults={'description': 'Accounts payable', 'is_active': True}
+        )
+        
+        sales_acc, _ = Account.objects.get_or_create(
+            company=company, group=sales_group, code='4101', name='Sales Revenue',
+            defaults={'description': 'Sales revenue', 'is_active': True}
+        )
+        
+        cogs_acc, _ = Account.objects.get_or_create(
+            company=company, group=expense_group, code='5101', name='Cost of Goods Sold',
+            defaults={'description': 'Cost of goods sold', 'is_active': True}
+        )
+        
+        salary_acc, _ = Account.objects.get_or_create(
+            company=company, group=expense_group, code='5201', name='Salaries & Wages',
+            defaults={'description': 'Salary expenses', 'is_active': True}
+        )
+        
+        return cash_acc, ar_acc, ap_acc, sales_acc, cogs_acc, salary_acc 

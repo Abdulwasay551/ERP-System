@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Performance Detail | FutureERP{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Performance Appraisal Detail</h1>
+                <p class="text-gray-600">Review and manage performance appraisal</p>
+            </div>
+            <div class="space-x-3">
+                <a href="{% url 'hr:performance_edit' appraisal.pk %}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-edit mr-2"></i>Edit
+                </a>
+                <form method="post" action="{% url 'hr:performance_delete' appraisal.pk %}" class="inline" onsubmit="return confirm('Are you sure you want to delete this appraisal?');">
+                    {% csrf_token %}
+                    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                        <i class="fas fa-trash mr-2"></i>Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Performance Details -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Appraisal Information</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Employee</label>
+                            <p class="text-gray-900">{{ appraisal.employee.first_name }} {{ appraisal.employee.last_name }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Appraisal Period</label>
+                            <p class="text-gray-900">{{ appraisal.period_start }} to {{ appraisal.period_end }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Reviewer</label>
+                            <p class="text-gray-900">{{ appraisal.reviewer.first_name }} {{ appraisal.reviewer.last_name }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Status</label>
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                {{ appraisal.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Ratings</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Self Rating</label>
+                            <p class="text-gray-900">{{ appraisal.self_rating|default:"Not provided" }}/5</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Manager Rating</label>
+                            <p class="text-gray-900">{{ appraisal.manager_rating|default:"Not provided" }}/5</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Final Rating</label>
+                            <p class="text-2xl font-bold text-green-600">{{ appraisal.final_rating|default:"Pending" }}/5</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Self Assessment -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <h3 class="text-lg font-semibold mb-4">Self Assessment</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-sm font-medium text-gray-500">Goals Achievement</label>
+                    <p class="text-gray-900 mt-1">{{ appraisal.self_goals_achievement|default:"Not provided" }}</p>
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-500">Strengths</label>
+                    <p class="text-gray-900 mt-1">{{ appraisal.self_strengths|default:"Not provided" }}</p>
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-500">Areas for Improvement</label>
+                    <p class="text-gray-900 mt-1">{{ appraisal.self_areas_improvement|default:"Not provided" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manager Assessment -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold mb-4">Manager Assessment</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-sm font-medium text-gray-500">Goals Achievement</label>
+                    <p class="text-gray-900 mt-1">{{ appraisal.manager_goals_achievement|default:"Not provided" }}</p>
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-500">Strengths</label>
+                    <p class="text-gray-900 mt-1">{{ appraisal.manager_strengths|default:"Not provided" }}</p>
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-500">Areas for Improvement</label>
+                    <p class="text-gray-900 mt-1">{{ appraisal.manager_areas_improvement|default:"Not provided" }}</p>
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-500">Manager Comments</label>
+                    <p class="text-gray-900 mt-1">{{ appraisal.manager_comments|default:"Not provided" }}</p>
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-500">Training Recommendations</label>
+                    <p class="text-gray-900 mt-1">{{ appraisal.training_recommendations|default:"Not provided" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}Training Detail | FutureERP{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Training Program Detail</h1>
+                <p class="text-gray-600">Review and manage training program</p>
+            </div>
+            <div class="space-x-3">
+                <a href="{% url 'hr:training_edit' training.pk %}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-edit mr-2"></i>Edit
+                </a>
+                <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-user-plus mr-2"></i>Enroll Employee
+                </button>
+                <form method="post" action="{% url 'hr:training_delete' training.pk %}" class="inline" onsubmit="return confirm('Are you sure you want to delete this training?');">
+                    {% csrf_token %}
+                    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                        <i class="fas fa-trash mr-2"></i>Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Training Details -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Training Information</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Title</label>
+                            <p class="text-gray-900">{{ training.title }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Instructor</label>
+                            <p class="text-gray-900">{{ training.instructor|default:"TBD" }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Duration</label>
+                            <p class="text-gray-900">{{ training.duration_hours }} hours</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Location</label>
+                            <p class="text-gray-900">{{ training.location|default:"TBD" }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Schedule & Enrollment</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Start Date</label>
+                            <p class="text-gray-900">{{ training.start_date }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">End Date</label>
+                            <p class="text-gray-900">{{ training.end_date }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Cost per Participant</label>
+                            <p class="text-gray-900">${{ training.cost_per_participant }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Max Participants</label>
+                            <p class="text-gray-900">{{ training.max_participants }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Current Enrollments</label>
+                            <p class="text-2xl font-bold text-blue-600">{{ training.enrollments.count }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Description -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <h3 class="text-lg font-semibold mb-4">Description</h3>
+            <p class="text-gray-900">{{ training.description }}</p>
+            
+            <div class="mt-4 flex items-center space-x-4">
+                {% if training.is_mandatory %}
+                <span class="px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">Mandatory</span>
+                {% endif %}
+                {% if training.certificate_issued %}
+                <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">Certificate Issued</span>
+                {% endif %}
+                {% if training.is_active %}
+                <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">Active</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Enrollments -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold">Enrolled Participants</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enrollment Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for enrollment in training.enrollments.all %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                        {{ enrollment.employee.first_name|first }}{{ enrollment.employee.last_name|first }}
+                                    </div>
+                                    <div class="ml-3">
+                                        <div class="text-sm font-medium text-gray-900">{{ enrollment.employee.first_name }} {{ enrollment.employee.last_name }}</div>
+                                        <div class="text-sm text-gray-500">{{ enrollment.employee.employee_id }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ enrollment.enrollment_date }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                    {% if enrollment.status == 'completed' %}bg-green-100 text-green-800
+                                    {% elif enrollment.status == 'enrolled' %}bg-blue-100 text-blue-800
+                                    {% elif enrollment.status == 'dropped' %}bg-red-100 text-red-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ enrollment.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {% if enrollment.score %}{{ enrollment.score }}%{% else %}-{% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ enrollment.completion_date|default:"-" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                                <button class="text-red-600 hover:text-red-900">Remove</button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                                No enrollments found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

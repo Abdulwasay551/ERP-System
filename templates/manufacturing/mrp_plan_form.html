@@ -1,0 +1,543 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}
+    {% if object %}Edit MRP Plan{% else %}Create MRP Plan{% endif %} - Manufacturing
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-section {
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+    
+    .form-textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+    
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .checkbox-group input[type="checkbox"] {
+        width: 1rem;
+        height: 1rem;
+        accent-color: #8b5cf6;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: none;
+        font-size: 0.875rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+    }
+    
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+    
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        color: #111827;
+    }
+    
+    .btn-danger {
+        background: #ef4444;
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        background: #dc2626;
+    }
+    
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .help-text {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+    }
+    
+    .required {
+        color: #ef4444;
+    }
+    
+    .form-error {
+        color: #ef4444;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+    }
+    
+    .form-success {
+        background: #d1fae5;
+        border: 1px solid #a7f3d0;
+        color: #065f46;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .preview-section {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .calculation-preview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .metric-box {
+        background: white;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid #e5e7eb;
+        text-align: center;
+    }
+    
+    .metric-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #8b5cf6;
+    }
+    
+    .metric-label {
+        font-size: 0.75rem;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">
+                        <i class="fas fa-chart-line text-purple-600 mr-3"></i>
+                        {% if object %}Edit MRP Plan{% else %}Create MRP Plan{% endif %}
+                    </h1>
+                    <p class="text-gray-600 mt-2">
+                        {% if object %}
+                            Update material requirements planning configuration
+                        {% else %}
+                            Configure new material requirements planning run
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="flex gap-3">
+                    <a href="{% url 'manufacturing:mrp_ui' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to MRP
+                    </a>
+                    {% if object %}
+                    <a href="{% url 'manufacturing:mrp_plan_delete' object.pk %}" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this MRP plan?')">
+                        <i class="fas fa-trash"></i>
+                        Delete
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="form-success">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post" class="max-w-4xl">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div class="form-card">
+                <div class="form-section">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                        Basic Information
+                    </h3>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">
+                                Plan Name <span class="required">*</span>
+                            </label>
+                            {{ form.name|add_class:"form-input" }}
+                            {% if form.name.errors %}
+                                <div class="form-error">{{ form.name.errors.0 }}</div>
+                            {% endif %}
+                            <div class="help-text">Descriptive name for this MRP plan</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.plan_date.id_for_label }}" class="form-label">
+                                Plan Date <span class="required">*</span>
+                            </label>
+                            {{ form.plan_date|add_class:"form-input" }}
+                            {% if form.plan_date.errors %}
+                                <div class="form-error">{{ form.plan_date.errors.0 }}</div>
+                            {% endif %}
+                            <div class="help-text">The date from which to start the planning</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.planning_horizon_days.id_for_label }}" class="form-label">
+                                Planning Horizon (Days) <span class="required">*</span>
+                            </label>
+                            {{ form.planning_horizon_days|add_class:"form-input" }}
+                            {% if form.planning_horizon_days.errors %}
+                                <div class="form-error">{{ form.planning_horizon_days.errors.0 }}</div>
+                            {% endif %}
+                            <div class="help-text">Number of days to plan ahead (typically 30-180 days)</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.status.id_for_label }}" class="form-label">
+                                Status <span class="required">*</span>
+                            </label>
+                            {{ form.status|add_class:"form-input" }}
+                            {% if form.status.errors %}
+                                <div class="form-error">{{ form.status.errors.0 }}</div>
+                            {% endif %}
+                            <div class="help-text">Current status of the MRP plan</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Planning Configuration -->
+                <div class="form-section">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-cogs text-green-600 mr-2"></i>
+                        Planning Configuration
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div class="checkbox-group">
+                            {{ form.include_safety_stock }}
+                            <label for="{{ form.include_safety_stock.id_for_label }}" class="form-label mb-0">
+                                Include Safety Stock in Calculations
+                            </label>
+                        </div>
+                        <div class="help-text">Consider safety stock levels when calculating requirements</div>
+                        
+                        <div class="checkbox-group">
+                            {{ form.include_reorder_points }}
+                            <label for="{{ form.include_reorder_points.id_for_label }}" class="form-label mb-0">
+                                Include Reorder Points
+                            </label>
+                        </div>
+                        <div class="help-text">Use reorder points to trigger new orders</div>
+                        
+                        <div class="checkbox-group">
+                            {{ form.consider_lead_times }}
+                            <label for="{{ form.consider_lead_times.id_for_label }}" class="form-label mb-0">
+                                Consider Lead Times
+                            </label>
+                        </div>
+                        <div class="help-text">Factor in supplier and manufacturing lead times</div>
+                        
+                        {% if form.auto_create_purchase_requests %}
+                        <div class="checkbox-group">
+                            {{ form.auto_create_purchase_requests }}
+                            <label for="{{ form.auto_create_purchase_requests.id_for_label }}" class="form-label mb-0">
+                                Auto-create Purchase Requests
+                            </label>
+                        </div>
+                        <div class="help-text">Automatically generate purchase requests for shortages</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Description and Notes -->
+                <div class="form-section">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-sticky-note text-yellow-600 mr-2"></i>
+                        Additional Information
+                    </h3>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">
+                            Description
+                        </label>
+                        {{ form.description|add_class:"form-input form-textarea" }}
+                        {% if form.description.errors %}
+                            <div class="form-error">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                        <div class="help-text">Detailed description of this MRP plan</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">
+                            Notes
+                        </label>
+                        {{ form.notes|add_class:"form-input form-textarea" }}
+                        {% if form.notes.errors %}
+                            <div class="form-error">{{ form.notes.errors.0 }}</div>
+                        {% endif %}
+                        <div class="help-text">Additional notes or special instructions</div>
+                    </div>
+                </div>
+
+                <!-- Preview Section -->
+                {% if object %}
+                <div class="preview-section">
+                    <h4 class="font-semibold text-gray-900 mb-3">Plan Summary</h4>
+                    <div class="calculation-preview">
+                        <div class="metric-box">
+                            <div class="metric-value">{{ object.requirements.count }}</div>
+                            <div class="metric-label">Requirements</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-value">{{ object.requirements.filter:status='pending'.count }}</div>
+                            <div class="metric-label">Pending</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-value">
+                                {% if object.calculation_start and object.calculation_end %}
+                                    {{ object.calculation_end|timeuntil:object.calculation_start }}
+                                {% else %}
+                                    --
+                                {% endif %}
+                            </div>
+                            <div class="metric-label">Calc Time</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-value">
+                                {% if object.calculation_start %}
+                                    {{ object.calculation_start|timesince }} ago
+                                {% else %}
+                                    Never
+                                {% endif %}
+                            </div>
+                            <div class="metric-label">Last Run</div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Form Actions -->
+                <div class="flex justify-end gap-3 mt-6">
+                    <a href="{% url 'manufacturing:mrp_ui' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i>
+                        Cancel
+                    </a>
+                    
+                    {% if object %}
+                    <button type="button" onclick="runMrpCalculation({{ object.pk }})" class="btn" style="background: #f59e0b; color: white;">
+                        <i class="fas fa-play"></i>
+                        Run Calculation
+                    </button>
+                    {% endif %}
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        {% if object %}Update Plan{% else %}Create Plan{% endif %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-generate plan name if creating new
+    {% if not object %}
+    const nameField = document.getElementById('{{ form.name.id_for_label }}');
+    const dateField = document.getElementById('{{ form.plan_date.id_for_label }}');
+    
+    function updatePlanName() {
+        if (dateField.value && !nameField.value) {
+            const date = new Date(dateField.value);
+            const formattedDate = date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+            nameField.value = `MRP Plan - ${formattedDate}`;
+        }
+    }
+    
+    dateField.addEventListener('change', updatePlanName);
+    {% endif %}
+    
+    // Set default date to today
+    const dateField = document.getElementById('{{ form.plan_date.id_for_label }}');
+    if (!dateField.value) {
+        dateField.value = new Date().toISOString().split('T')[0];
+        {% if not object %}
+        updatePlanName();
+        {% endif %}
+    }
+    
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const planningHorizon = document.getElementById('{{ form.planning_horizon_days.id_for_label }}').value;
+        
+        if (planningHorizon < 1 || planningHorizon > 365) {
+            e.preventDefault();
+            alert('Planning horizon must be between 1 and 365 days');
+            return false;
+        }
+        
+        // Show loading state
+        const submitBtn = document.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    });
+});
+
+{% if object %}
+function runMrpCalculation(planId) {
+    if (confirm('Run MRP calculation for this plan? This may take a few minutes.')) {
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
+        
+        fetch(`/manufacturing/api/mrp-plans/${planId}/calculate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('MRP calculation completed successfully!', 'success');
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                showNotification('MRP calculation failed: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to run MRP calculation', 'error');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-play"></i> Run Calculation';
+        });
+    }
+}
+{% endif %}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'error' ? 'bg-red-500 text-white' :
+        'bg-blue-500 text-white'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${
+                type === 'success' ? 'fa-check-circle' :
+                type === 'error' ? 'fa-exclamation-triangle' :
+                'fa-info-circle'
+            } mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

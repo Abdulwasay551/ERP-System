@@ -1,0 +1,471 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if edit_mode %}Edit Project{% else %}New Project{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .project-form-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+    }
+    .form-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 2.5rem;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        border: 1px solid rgba(102, 126, 234, 0.1);
+    }
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    .form-label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.75rem;
+        display: block;
+        font-size: 0.95rem;
+    }
+    .form-control {
+        border: 2px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 0.875rem 1rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: #f9fafb;
+    }
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        outline: none;
+        background: white;
+        transform: translateY(-1px);
+    }
+    .form-control:hover:not(:focus) {
+        border-color: #d1d5db;
+        background: white;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 0.75rem;
+        padding: 0.875rem 2rem;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+    }
+    .btn-secondary {
+        background: #6b7280;
+        border: none;
+        border-radius: 0.75rem;
+        padding: 0.875rem 2rem;
+        font-weight: 600;
+        color: white;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(107, 114, 128, 0.2);
+    }
+    .btn-secondary:hover {
+        background: #4b5563;
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(107, 114, 128, 0.3);
+    }
+    .status-select {
+        background-image: none;
+    }
+    .section-header {
+        color: #1f2937;
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 3px solid #e5e7eb;
+        position: relative;
+    }
+    .section-header::after {
+        content: '';
+        position: absolute;
+        bottom: -3px;
+        left: 0;
+        width: 60px;
+        height: 3px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 2px;
+    }
+    .section-header i {
+        margin-right: 0.5rem;
+        font-size: 1.1rem;
+    }
+    .form-actions {
+        background: #f8fafc;
+        margin: 2rem -2.5rem -2.5rem;
+        padding: 1.5rem 2.5rem;
+        border-radius: 0 0 1rem 1rem;
+        border-top: 1px solid #e5e7eb;
+    }
+    .alert-danger {
+        border-radius: 0.75rem;
+        border: 1px solid #fecaca;
+        background: #fef2f2;
+        color: #991b1b;
+        padding: 1rem 1.25rem;
+    }
+    textarea.form-control {
+        resize: vertical;
+        min-height: 120px;
+    }
+    select.form-control {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.75rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+        padding-right: 2.5rem;
+    }
+    input[type="date"].form-control {
+        position: relative;
+    }
+    .form-row {
+        display: flex;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .form-row .form-group {
+        margin-bottom: 0;
+        flex: 1;
+    }
+    @media (max-width: 768px) {
+        .form-row {
+            flex-direction: column;
+            gap: 0;
+        }
+        .form-row .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .project-form-container {
+            padding: 1.5rem;
+        }
+        .form-card {
+            padding: 1.5rem;
+        }
+        .form-actions {
+            margin: 1.5rem -1.5rem -1.5rem;
+            padding: 1.25rem 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid ">
+    <!-- Header -->
+    <div class="project-form-container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="mb-1">
+                    <i class="fas fa-{% if edit_mode %}edit{% else %}plus{% endif %}"></i>
+                    {% if edit_mode %}Edit Project{% else %}New Project{% endif %}
+                </h2>
+                <p class="mb-0">
+                    {% if edit_mode %}
+                        Update project details and configuration
+                    {% else %}
+                        Create a new project with timeline and budget tracking
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'project_mgmt:projects_ui' %}" class="btn btn-light">
+                    <i class="fas fa-arrow-left"></i> Back to Projects
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="row justify-content-center px-16">
+        <div class="col-lg-10">
+            <div class="form-card">
+                <form id="projectForm" method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Basic Information -->
+                    <div class="section-header">
+                        <i class="fas fa-info-circle"></i>Basic Information
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 2;">
+                            <label for="name" class="form-label">Project Name *</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="name" 
+                                   name="name" 
+                                   value="{% if project %}{{ project.name }}{% endif %}"
+                                   placeholder="Enter a descriptive project name"
+                                   required>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="project_code" class="form-label">Project Code</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="project_code" 
+                                   name="project_code" 
+                                   value="{% if project %}{{ project.project_code }}{% endif %}"
+                                   placeholder="AUTO">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description" class="form-label">Project Description</label>
+                        <textarea class="form-control" 
+                                  id="description" 
+                                  name="description" 
+                                  rows="4" 
+                                  placeholder="Provide a detailed description of the project scope, objectives, and deliverables...">{% if project %}{{ project.description }}{% endif %}</textarea>
+                    </div>
+
+                    <!-- Project Details -->
+                    <div class="section-header">
+                        <i class="fas fa-calendar-alt"></i>Timeline & Budget
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="start_date" class="form-label">Start Date</label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="start_date" 
+                                   name="start_date" 
+                                   value="{% if project.start_date %}{{ project.start_date|date:'Y-m-d' }}{% endif %}">
+                        </div>
+                        <div class="form-group">
+                            <label for="end_date" class="form-label">End Date</label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="end_date" 
+                                   name="end_date" 
+                                   value="{% if project.end_date %}{{ project.end_date|date:'Y-m-d' }}{% endif %}">
+                        </div>
+                        <div class="form-group">
+                            <label for="budget" class="form-label">Budget ($)</label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="budget" 
+                                   name="budget" 
+                                   step="0.01"
+                                   value="{% if project %}{{ project.budget }}{% endif %}"
+                                   placeholder="0.00">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="status" class="form-label">Project Status</label>
+                            <select class="form-control status-select" id="status" name="status">
+                                <option value="planned" {% if project.status == 'planned' %}selected{% endif %}>📋 Planned</option>
+                                <option value="in_progress" {% if project.status == 'in_progress' %}selected{% endif %}>🚀 In Progress</option>
+                                <option value="on_hold" {% if project.status == 'on_hold' %}selected{% endif %}>⏸️ On Hold</option>
+                                <option value="completed" {% if project.status == 'completed' %}selected{% endif %}>✅ Completed</option>
+                                <option value="cancelled" {% if project.status == 'cancelled' %}selected{% endif %}>❌ Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="priority" class="form-label">Priority Level</label>
+                            <select class="form-control" id="priority" name="priority">
+                                <option value="Low" {% if project.priority == 'Low' %}selected{% endif %}>🟢 Low</option>
+                                <option value="Medium" {% if project.priority == 'Medium' %}selected{% endif %}>🟡 Medium</option>
+                                <option value="High" {% if project.priority == 'High' %}selected{% endif %}>🟠 High</option>
+                                <option value="Critical" {% if project.priority == 'Critical' %}selected{% endif %}>🔴 Critical</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Error Display -->
+                    <div id="formError" class="alert alert-danger d-none"></div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="text-muted small">
+                                <i class="fas fa-info-circle"></i>
+                                All fields marked with * are required
+                            </div>
+                            <div class="d-flex gap-3">
+                                <a href="{% url 'project_mgmt:projects_ui' %}" class="mr-8 btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>
+                                    {% if edit_mode %}Update Project{% else %}Create Project{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('projectForm');
+    const formError = document.getElementById('formError');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+
+    // Form validation
+    function validateForm() {
+        const name = document.getElementById('name').value.trim();
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+        
+        if (!name) {
+            showError('Project name is required');
+            return false;
+        }
+        
+        if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+            showError('Start date cannot be after end date');
+            return false;
+        }
+        
+        return true;
+    }
+
+    function showError(message) {
+        formError.textContent = message;
+        formError.classList.remove('d-none');
+        formError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function hideError() {
+        formError.classList.add('d-none');
+    }
+
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        hideError();
+
+        if (!validateForm()) return;
+
+        const formData = new FormData(form);
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+
+        fetch(form.action || window.location.href, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success animation
+                submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Success!';
+                submitBtn.classList.remove('btn-primary');
+                submitBtn.classList.add('btn-success');
+                
+                setTimeout(() => {
+                    window.location.href = "{% url 'project_mgmt:projects_ui' %}";
+                }, 1000);
+            } else {
+                showError(data.error || 'An error occurred while saving the project');
+                restoreButton();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('An unexpected error occurred. Please try again.');
+            restoreButton();
+        });
+    });
+
+    function restoreButton() {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+        submitBtn.classList.remove('btn-success');
+        submitBtn.classList.add('btn-primary');
+    }
+
+    // Auto-calculate project duration and show preview
+    const startDate = document.getElementById('start_date');
+    const endDate = document.getElementById('end_date');
+    
+    function updateDurationDisplay() {
+        if (startDate.value && endDate.value) {
+            const start = new Date(startDate.value);
+            const end = new Date(endDate.value);
+            const diffTime = end - start;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays > 0) {
+                // Add duration info near the end date field
+                let durationInfo = document.getElementById('duration-info');
+                if (!durationInfo) {
+                    durationInfo = document.createElement('small');
+                    durationInfo.id = 'duration-info';
+                    durationInfo.className = 'text-muted mt-1 d-block';
+                    endDate.parentNode.appendChild(durationInfo);
+                }
+                durationInfo.innerHTML = `<i class="fas fa-calendar-check"></i> Duration: ${diffDays} days`;
+            }
+        }
+    }
+    
+    startDate.addEventListener('change', updateDurationDisplay);
+    endDate.addEventListener('change', updateDurationDisplay);
+
+    // Auto-generate project code if empty
+    const nameField = document.getElementById('name');
+    const codeField = document.getElementById('project_code');
+    
+    nameField.addEventListener('blur', function() {
+        if (!codeField.value && nameField.value) {
+            const code = nameField.value
+                .toUpperCase()
+                .replace(/[^A-Z0-9\s]/g, '')
+                .split(' ')
+                .map(word => word.substring(0, 3))
+                .join('')
+                .substring(0, 8);
+            
+            if (code) {
+                codeField.value = code + '-' + new Date().getFullYear();
+            }
+        }
+    });
+
+    // Enhanced form field animations
+    const formControls = document.querySelectorAll('.form-control');
+    formControls.forEach(control => {
+        control.addEventListener('focus', function() {
+            this.parentNode.classList.add('focused');
+        });
+        
+        control.addEventListener('blur', function() {
+            this.parentNode.classList.remove('focused');
+        });
+    });
+
+    // Initial duration calculation if values exist
+    updateDurationDisplay();
+});
+</script>
+{% endblock %}

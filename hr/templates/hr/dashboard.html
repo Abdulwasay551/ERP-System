@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block title %}HR Dashboard | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .quick-action-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        transition: all 0.3s ease;
+    }
+    .quick-action-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+    }
+    .recent-activity-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">HR Dashboard</h1>
+                <p class="text-gray-600">Welcome to your Human Resources management center</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'hr:employees_add' %}" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Add Employee
+                </a>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Employees</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ stats.total_employees }}</p>
+                        <p class="text-sm text-green-600">+{{ stats.new_employees_this_month }} from last month</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Present Today</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ stats.present_today }}</p>
+                        <p class="text-sm text-gray-500">{{ stats.attendance_rate|floatformat:1 }}% attendance</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-yellow-100 rounded-lg">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Pending Leaves</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ stats.pending_leaves }}</p>
+                        <p class="text-sm text-yellow-600">Require approval</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-purple-100 rounded-lg">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Monthly Payroll</p>
+                        <p class="text-2xl font-bold text-gray-900">${{ stats.monthly_payroll|floatformat:0 }}</p>
+                        <p class="text-sm text-purple-600">This month</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Quick Actions -->
+            <div class="lg:col-span-2">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <a href="{% url 'hr:employees_ui' %}" class="quick-action-card rounded-2xl p-6 block">
+                        <div class="flex items-center mb-4">
+                            <div class="p-2 bg-blue-100 rounded-lg">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="font-semibold text-gray-900">Employee Management</h3>
+                                <p class="text-sm text-gray-600">Manage employee records and profiles</p>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="{% url 'hr:attendance_ui' %}" class="quick-action-card rounded-2xl p-6 block">
+                        <div class="flex items-center mb-4">
+                            <div class="p-2 bg-green-100 rounded-lg">
+                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="font-semibold text-gray-900">Attendance Tracking</h3>
+                                <p class="text-sm text-gray-600">Monitor and manage attendance</p>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="{% url 'hr:leaves_ui' %}" class="quick-action-card rounded-2xl p-6 block">
+                        <div class="flex items-center mb-4">
+                            <div class="p-2 bg-yellow-100 rounded-lg">
+                                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a1 1 0 012-2h4a1 1 0 012 2v4m-6 0h6m-6 0V7a1 1 0 01-1-1H3a1 1 0 01-1-1V4a1 1 0 011-1h1m6 0V7a1 1 0 001 1h1a1 1 0 001-1V4a1 1 0 01-1-1h-1m-6 0V7"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="font-semibold text-gray-900">Leave Management</h3>
+                                <p class="text-sm text-gray-600">Handle leave requests and approvals</p>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="{% url 'hr:payroll_ui' %}" class="quick-action-card rounded-2xl p-6 block">
+                        <div class="flex items-center mb-4">
+                            <div class="p-2 bg-purple-100 rounded-lg">
+                                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="font-semibold text-gray-900">Payroll Processing</h3>
+                                <p class="text-sm text-gray-600">Manage salaries and payroll</p>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="{% url 'hr:departments_ui' %}" class="quick-action-card rounded-2xl p-6 block">
+                        <div class="flex items-center mb-4">
+                            <div class="p-2 bg-indigo-100 rounded-lg">
+                                <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="font-semibold text-gray-900">Department Management</h3>
+                                <p class="text-sm text-gray-600">Organize departments and structure</p>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="{% url 'hr:reports_ui' %}" class="quick-action-card rounded-2xl p-6 block">
+                        <div class="flex items-center mb-4">
+                            <div class="p-2 bg-pink-100 rounded-lg">
+                                <svg class="w-6 h-6 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="font-semibold text-gray-900">HR Reports</h3>
+                                <p class="text-sm text-gray-600">Generate HR analytics and reports</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Sidebar with Recent Activities -->
+            <div class="space-y-6">
+                <!-- Recent Activities -->
+                <div class="recent-activity-card rounded-2xl p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Activities</h3>
+                    <div class="space-y-4">
+                        {% for activity in recent_activities %}
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0">
+                                <div class="w-2 h-2 bg-emerald-400 rounded-full mt-2"></div>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm text-gray-900">{{ activity.description }}</p>
+                                <p class="text-sm text-gray-500">{{ activity.created_at|timesince }} ago</p>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-sm text-gray-500">No recent activities to display.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Upcoming Events -->
+                <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Upcoming Events</h3>
+                    <div class="space-y-3">
+                        {% for event in upcoming_events %}
+                        <div class="flex items-center space-x-3">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <span class="text-xs font-medium text-blue-600">{{ event.date|date:"d" }}</span>
+                                </div>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm font-medium text-gray-900">{{ event.title }}</p>
+                                <p class="text-sm text-gray-500">{{ event.date|date:"M d, Y" }}</p>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-sm text-gray-500">No upcoming events scheduled.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Department Overview</h3>
+                    <div class="space-y-3">
+                        {% for dept in department_overview %}
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">{{ dept.name }}</span>
+                            <span class="text-sm font-medium text-gray-900">{{ dept.employee_count }} employees</span>
+                        </div>
+                        {% empty %}
+                        <p class="text-sm text-gray-500">No departments configured.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

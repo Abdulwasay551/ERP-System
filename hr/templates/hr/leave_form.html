@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if leave %}Edit Leave{% else %}Apply for Leave{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    .form-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    .leave-balance-info {
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="form-container">
+        <div class="form-header">
+            <h3><i class="fas fa-calendar-times"></i> 
+                {% if leave %}Edit Leave Request{% else %}Apply for Leave{% endif %}
+            </h3>
+        </div>
+
+        <div class="form-card">
+            <form id="leaveForm" method="post">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="employee_id" class="form-label">Employee <span class="text-danger">*</span></label>
+                    <select class="form-select" id="employee_id" name="employee_id" required>
+                        <option value="">Select an employee...</option>
+                        {% for employee in employees %}
+                        <option value="{{ employee.id }}" 
+                                {% if leave and leave.employee.id == employee.id %}selected{% endif %}>
+                            {{ employee.full_name }} ({{ employee.employee_id }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="invalid-feedback"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="leave_type_id" class="form-label">Leave Type <span class="text-danger">*</span></label>
+                    <select class="form-select" id="leave_type_id" name="leave_type_id" required>
+                        <option value="">Select leave type...</option>
+                        {% for leave_type in leave_types %}
+                        <option value="{{ leave_type.id }}" 
+                                data-annual-entitlement="{{ leave_type.annual_entitlement }}"
+                                data-advance-notice="{{ leave_type.advance_notice_days }}"
+                                data-is-paid="{{ leave_type.is_paid|yesno:'true,false' }}"
+                                {% if leave and leave.leave_type.id == leave_type.id %}selected{% endif %}>
+                            {{ leave_type.name }} 
+                            {% if not leave_type.is_paid %}(Unpaid){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="invalid-feedback"></div>
+                    <div id="leave-type-info" class="leave-balance-info" style="display: none;">
+                        <small id="leave-type-details"></small>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="start_date" class="form-label">Start Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" 
+                                   value="{% if leave %}{{ leave.start_date|date:'Y-m-d' }}{% endif %}" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="end_date" class="form-label">End Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" 
+                                   value="{% if leave %}{{ leave.end_date|date:'Y-m-d' }}{% endif %}" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div id="days-info" class="leave-balance-info" style="display: none;">
+                        <strong>Days Requested: <span id="days-count">0</span></strong>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="reason" class="form-label">Reason for Leave <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="reason" name="reason" rows="4" required
+                              placeholder="Please provide a detailed reason for your leave request">{% if leave %}{{ leave.reason }}{% endif %}</textarea>
+                    <div class="invalid-feedback"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="emergency_contact" class="form-label">Emergency Contact</label>
+                    <input type="text" class="form-control" id="emergency_contact" name="emergency_contact" 
+                           value="{% if leave %}{{ leave.emergency_contact }}{% endif %}"
+                           placeholder="Contact person/number in case of emergency">
+                    <small class="form-text text-muted">Optional: Person to contact in case of emergency during leave</small>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'hr:leaves_ui' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> 
+                        {% if leave %}Update Leave Request{% else %}Submit Leave Request{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Calculate days between two dates
+function calculateDays() {
+    const startDate = document.getElementById('start_date').value;
+    const endDate = document.getElementById('end_date').value;
+    
+    if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        
+        document.getElementById('days-count').textContent = diffDays;
+        document.getElementById('days-info').style.display = 'block';
+        
+        return diffDays;
+    } else {
+        document.getElementById('days-info').style.display = 'none';
+        return 0;
+    }
+}
+
+// Show leave type information
+function showLeaveTypeInfo() {
+    const leaveTypeSelect = document.getElementById('leave_type_id');
+    const selectedOption = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
+    const infoDiv = document.getElementById('leave-type-info');
+    const detailsSpan = document.getElementById('leave-type-details');
+    
+    if (selectedOption.value) {
+        const annualEntitlement = selectedOption.getAttribute('data-annual-entitlement');
+        const advanceNotice = selectedOption.getAttribute('data-advance-notice');
+        const isPaid = selectedOption.getAttribute('data-is-paid') === 'true';
+        
+        let infoText = `Annual Entitlement: ${annualEntitlement} days. `;
+        if (advanceNotice > 0) {
+            infoText += `Advance notice required: ${advanceNotice} days. `;
+        }
+        infoText += isPaid ? 'This is paid leave.' : 'This is unpaid leave.';
+        
+        detailsSpan.textContent = infoText;
+        infoDiv.style.display = 'block';
+    } else {
+        infoDiv.style.display = 'none';
+    }
+}
+
+// Event listeners
+document.getElementById('start_date').addEventListener('change', calculateDays);
+document.getElementById('end_date').addEventListener('change', calculateDays);
+document.getElementById('leave_type_id').addEventListener('change', showLeaveTypeInfo);
+
+// Initialize calculations if editing
+if (document.getElementById('start_date').value && document.getElementById('end_date').value) {
+    calculateDays();
+}
+if (document.getElementById('leave_type_id').value) {
+    showLeaveTypeInfo();
+}
+
+// Validate end date is not before start date
+document.getElementById('end_date').addEventListener('change', function() {
+    const startDate = document.getElementById('start_date').value;
+    const endDate = this.value;
+    
+    if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+        this.setCustomValidity('End date cannot be before start date');
+        this.classList.add('is-invalid');
+        this.nextElementSibling.textContent = 'End date cannot be before start date';
+    } else {
+        this.setCustomValidity('');
+        this.classList.remove('is-invalid');
+    }
+});
+
+// Validate advance notice requirement
+document.getElementById('start_date').addEventListener('change', function() {
+    const leaveTypeSelect = document.getElementById('leave_type_id');
+    const selectedOption = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
+    
+    if (selectedOption.value) {
+        const advanceNotice = parseInt(selectedOption.getAttribute('data-advance-notice')) || 0;
+        const startDate = new Date(this.value);
+        const today = new Date();
+        const daysDiff = Math.ceil((startDate - today) / (1000 * 60 * 60 * 24));
+        
+        if (advanceNotice > 0 && daysDiff < advanceNotice) {
+            this.setCustomValidity(`This leave type requires ${advanceNotice} days advance notice`);
+            this.classList.add('is-invalid');
+            this.nextElementSibling.textContent = `This leave type requires ${advanceNotice} days advance notice`;
+        } else {
+            this.setCustomValidity('');
+            this.classList.remove('is-invalid');
+        }
+    }
+});
+
+// Form submission
+document.getElementById('leaveForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    // Show loading state
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    submitBtn.disabled = true;
+    
+    // Clear previous errors
+    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    
+    {% if leave %}
+    const url = '{% url "hr:leave_apply" %}?edit={{ leave.id }}';
+    {% else %}
+    const url = '{% url "hr:leave_apply" %}';
+    {% endif %}
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'Leave request {% if leave %}updated{% else %}submitted{% endif %} successfully',
+                timer: 1500,
+                showConfirmButton: false
+            }).then(() => {
+                window.location.href = '{% url "hr:leaves_ui" %}';
+            });
+        } else {
+            // Show error
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.error || 'An error occurred while processing the leave request'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An unexpected error occurred'
+        });
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+</script>
+{% endblock %}

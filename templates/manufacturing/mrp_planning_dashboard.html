@@ -1,0 +1,1068 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}MRP Planning Dashboard - Manufacturing{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .dashboard-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(90deg, #8b5cf6, #06b6d4);
+    }
+    
+    .dashboard-card:hover {
+        border-color: #8b5cf6;
+        box-shadow: 0 20px 40px rgba(139, 92, 246, 0.1);
+        transform: translateY(-4px);
+    }
+    
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        transform: scale(0);
+        transition: transform 0.6s ease;
+    }
+    
+    .metric-card:hover::before {
+        transform: scale(1);
+    }
+    
+    .planning-timeline {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        border: 1px solid #e5e7eb;
+        position: relative;
+    }
+    
+    .timeline-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-left: 3px solid #e5e7eb;
+        margin-left: 1rem;
+        position: relative;
+    }
+    
+    .timeline-item.critical {
+        border-left-color: #ef4444;
+        background: #fef2f2;
+    }
+    
+    .timeline-item.warning {
+        border-left-color: #f59e0b;
+        background: #fffbeb;
+    }
+    
+    .timeline-item.success {
+        border-left-color: #10b981;
+        background: #f0fdf4;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -8px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+    
+    .demand-chart {
+        height: 300px;
+        background: white;
+        border-radius: 1rem;
+        padding: 1rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .action-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 0.75rem;
+        padding: 1rem 2rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .action-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+    }
+    
+    .action-button:active {
+        transform: translateY(0);
+    }
+    
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 0.5rem;
+    }
+    
+    .status-green { background-color: #10b981; }
+    .status-yellow { background-color: #f59e0b; }
+    .status-red { background-color: #ef4444; }
+    .status-blue { background-color: #3b82f6; }
+    .status-purple { background-color: #8b5cf6; }
+    
+    .progress-ring {
+        width: 120px;
+        height: 120px;
+        transform: rotate(-90deg);
+    }
+    
+    .progress-ring-circle {
+        fill: transparent;
+        stroke: #e5e7eb;
+        stroke-width: 8;
+        stroke-dasharray: 251.2;
+        stroke-dashoffset: 251.2;
+        transition: stroke-dashoffset 0.5s ease-in-out;
+    }
+    
+    .progress-ring-circle.active {
+        stroke: #8b5cf6;
+    }
+    
+    .planning-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .interactive-table {
+        background: white;
+        border-radius: 1rem;
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .interactive-table table {
+        width: 100%;
+    }
+    
+    .interactive-table th {
+        background: #f8fafc;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: #374151;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .interactive-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #f3f4f6;
+        vertical-align: middle;
+    }
+    
+    .interactive-table tr:hover {
+        background: #f9fafb;
+    }
+    
+    .filter-tabs {
+        display: flex;
+        background: #f3f4f6;
+        border-radius: 0.75rem;
+        padding: 0.25rem;
+        margin-bottom: 1rem;
+    }
+    
+    .filter-tab {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        text-align: center;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+    
+    .filter-tab.active {
+        background: white;
+        color: #8b5cf6;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .planning-controls {
+        background: #f8fafc;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .floating-action {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        cursor: pointer;
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        transition: all 0.3s ease;
+        z-index: 1000;
+    }
+    
+    .floating-action:hover {
+        transform: scale(1.1);
+        box-shadow: 0 15px 35px rgba(102, 126, 234, 0.6);
+    }
+    
+    .real-time-indicator {
+        display: inline-flex;
+        align-items: center;
+        background: #dcfce7;
+        color: #166534;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .real-time-indicator::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        background: #16a34a;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <!-- Header Section -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div class="mb-6 lg:mb-0">
+                    <div class="flex items-center mb-4">
+                        <h1 class="text-4xl font-bold text-gray-900 mr-4">
+                            <i class="fas fa-cogs text-purple-600 mr-3"></i>
+                            MRP Planning Dashboard
+                        </h1>
+                        <span class="real-time-indicator">
+                            Live Data
+                        </span>
+                    </div>
+                    <p class="text-gray-600 text-lg">Advanced Material Requirements Planning & Control</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button id="runMrpBtn" class="action-button">
+                        <i class="fas fa-play mr-2"></i>Run MRP
+                    </button>
+                    <button onclick="showPlanningWizard()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-magic mr-2"></i>Planning Wizard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Key Metrics Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="metric-card">
+                <div class="relative z-10">
+                    <div class="text-3xl font-bold mb-2">{{ mrp_plans|length }}</div>
+                    <div class="text-sm opacity-90">Active MRP Plans</div>
+                    <div class="mt-3">
+                        <svg class="progress-ring mx-auto">
+                            <circle class="progress-ring-circle active" cx="60" cy="60" r="40" style="stroke-dashoffset: 125.6;"></circle>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="relative z-10">
+                    <div class="text-3xl font-bold mb-2">{{ pending_requirements|length }}</div>
+                    <div class="text-sm opacity-90">Pending Requirements</div>
+                    <div class="mt-2 text-xs">
+                        <i class="fas fa-trend-up mr-1"></i>+{{ shortage_alerts|length }} Critical
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="relative z-10">
+                    <div class="text-3xl font-bold mb-2">
+                        ${% for req in pending_requirements %}{{ req.shortage_quantity|default:0|floatformat:0 }}{% empty %}0{% endfor %}K
+                    </div>
+                    <div class="text-sm opacity-90">Total Value at Risk</div>
+                    <div class="mt-2 text-xs">
+                        <i class="fas fa-chart-line mr-1"></i>Planning Period: 90 days
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="relative z-10">
+                    <div class="text-3xl font-bold mb-2">
+                        {{ supply_demand_data|length }}
+                    </div>
+                    <div class="text-sm opacity-90">Products Analyzed</div>
+                    <div class="mt-2 text-xs">
+                        <i class="fas fa-sync-alt mr-1"></i>Updated: Just now
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Planning Controls -->
+        <div class="planning-controls">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Planning Controls</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Planning Horizon</label>
+                    <select id="planningHorizon" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-purple-500 focus:border-purple-500">
+                        <option value="30">30 Days</option>
+                        <option value="60">60 Days</option>
+                        <option value="90" selected>90 Days</option>
+                        <option value="120">120 Days</option>
+                        <option value="180">180 Days</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Update Frequency</label>
+                    <select id="updateFrequency" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-purple-500 focus:border-purple-500">
+                        <option value="manual">Manual</option>
+                        <option value="daily" selected>Daily</option>
+                        <option value="weekly">Weekly</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button onclick="applyPlanningSettings()" class="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">
+                        <i class="fas fa-save mr-2"></i>Apply Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Planning Grid -->
+        <div class="planning-grid">
+            <!-- Demand Analysis -->
+            <div class="dashboard-card">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-chart-area text-blue-600 mr-2"></i>
+                    Demand Analysis
+                </h3>
+                <div class="demand-chart">
+                    <canvas id="demandChart" width="400" height="250"></canvas>
+                </div>
+                <div class="mt-4 grid grid-cols-3 gap-4 text-center">
+                    <div>
+                        <div class="text-2xl font-bold text-blue-600">{{ pending_requirements|length }}</div>
+                        <div class="text-xs text-gray-600">Current Demand</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-green-600">85%</div>
+                        <div class="text-xs text-gray-600">Forecast Accuracy</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-purple-600">12</div>
+                        <div class="text-xs text-gray-600">Days Average Lead</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Supply Status -->
+            <div class="dashboard-card">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-truck text-green-600 mr-2"></i>
+                    Supply Status
+                </h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                        <div class="flex items-center">
+                            <span class="status-indicator status-green"></span>
+                            <span class="font-medium">On Time Delivery</span>
+                        </div>
+                        <span class="text-green-600 font-bold">92%</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                        <div class="flex items-center">
+                            <span class="status-indicator status-yellow"></span>
+                            <span class="font-medium">Pending Orders</span>
+                        </div>
+                        <span class="text-yellow-600 font-bold">{{ pending_requirements|length }}</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                        <div class="flex items-center">
+                            <span class="status-indicator status-red"></span>
+                            <span class="font-medium">Critical Shortages</span>
+                        </div>
+                        <span class="text-red-600 font-bold">{{ shortage_alerts|length }}</span>
+                    </div>
+                </div>
+                <button onclick="viewSupplyDetails()" class="w-full mt-4 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    View Supply Details
+                </button>
+            </div>
+
+            <!-- Planning Timeline -->
+            <div class="dashboard-card lg:col-span-2">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-timeline text-purple-600 mr-2"></i>
+                    Planning Timeline
+                </h3>
+                <div class="planning-timeline">
+                    {% for alert in shortage_alerts|slice:":5" %}
+                    <div class="timeline-item critical">
+                        <div class="flex-1">
+                            <h5 class="font-medium text-gray-900">{{ alert.product.name }}</h5>
+                            <p class="text-sm text-gray-600">Shortage: {{ alert.shortage_quantity|floatformat:0 }} units</p>
+                            <p class="text-xs text-red-600">Due: {{ alert.required_date|date:"M d, Y" }}</p>
+                        </div>
+                        <button onclick="createEmergencyPO({{ alert.id }})" class="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700">
+                            Emergency PO
+                        </button>
+                    </div>
+                    {% empty %}
+                    <div class="timeline-item success">
+                        <div class="flex-1">
+                            <h5 class="font-medium text-green-900">All Requirements Covered</h5>
+                            <p class="text-sm text-green-600">No critical shortages in the planning horizon</p>
+                        </div>
+                        <span class="text-green-600">
+                            <i class="fas fa-check-circle"></i>
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Requirements Table -->
+        <div class="dashboard-card">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-list text-blue-600 mr-2"></i>
+                    Material Requirements
+                </h3>
+                <div class="flex space-x-2">
+                    <button onclick="exportRequirements()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                        <i class="fas fa-download mr-1"></i>Export
+                    </button>
+                    <button onclick="bulkActions()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm">
+                        <i class="fas fa-cogs mr-1"></i>Bulk Actions
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="filter-tabs">
+                <div class="filter-tab active" onclick="filterRequirements('all')">All ({{ pending_requirements|length }})</div>
+                <div class="filter-tab" onclick="filterRequirements('critical')">Critical ({{ shortage_alerts|length }})</div>
+                <div class="filter-tab" onclick="filterRequirements('purchase')">Purchase</div>
+                <div class="filter-tab" onclick="filterRequirements('manufacture')">Manufacture</div>
+            </div>
+
+            <div class="interactive-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>
+                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                            </th>
+                            <th>Product</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Available</th>
+                            <th>Shortage</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="requirementsTableBody">
+                        {% for req in pending_requirements|slice:":10" %}
+                        <tr data-requirement-type="{{ req.source_type }}" data-requirement-id="{{ req.id }}">
+                            <td>
+                                <input type="checkbox" class="requirement-checkbox" value="{{ req.id }}">
+                            </td>
+                            <td>
+                                <div class="font-medium text-gray-900">{{ req.product.name }}</div>
+                                <div class="text-xs text-gray-500">{{ req.product.code|default:"No code" }}</div>
+                            </td>
+                            <td>
+                                <span class="px-2 py-1 text-xs rounded-full {% if req.source_type == 'manufacture' %}bg-blue-100 text-blue-800{% else %}bg-green-100 text-green-800{% endif %}">
+                                    {{ req.source_type|title }}
+                                </span>
+                            </td>
+                            <td class="text-gray-900 font-medium">{{ req.required_quantity|floatformat:0 }}</td>
+                            <td class="text-gray-600">{{ req.available_quantity|floatformat:0 }}</td>
+                            <td class="{% if req.shortage_quantity > 0 %}text-red-600 font-medium{% else %}text-gray-600{% endif %}">
+                                {{ req.shortage_quantity|floatformat:0 }}
+                            </td>
+                            <td>
+                                <div class="text-gray-900">{{ req.required_date|date:"M d" }}</div>
+                                <div class="text-xs {% if req.required_date <= '2025-08-11'|date %}text-red-600{% else %}text-gray-500{% endif %}">
+                                    {% if req.required_date <= '2025-08-11'|date %}
+                                        Overdue
+                                    {% else %}
+                                        {{ req.required_date|timeuntil }}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="status-badge status-{{ req.status|default:'pending' }}">
+                                    {{ req.status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="flex space-x-1">
+                                    {% if req.source_type == 'purchase' and req.status == 'pending' %}
+                                    <button onclick="quickCreatePO({{ req.id }})" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                        PO
+                                    </button>
+                                    {% elif req.source_type == 'manufacture' and req.status == 'pending' %}
+                                    <button onclick="quickCreateWO({{ req.id }})" class="bg-purple-600 text-white px-2 py-1 rounded text-xs hover:bg-purple-700">
+                                        WO
+                                    </button>
+                                    {% endif %}
+                                    <button onclick="viewRequirementDetails({{ req.id }})" class="bg-gray-500 text-white px-2 py-1 rounded text-xs hover:bg-gray-600">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-8 text-gray-500">
+                                <i class="fas fa-check-circle text-4xl mb-4 text-green-500"></i>
+                                <p>No pending requirements</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="floating-action" onclick="showQuickActions()">
+        <i class="fas fa-plus"></i>
+    </div>
+</div>
+
+<!-- Quick Actions Modal (will be created dynamically) -->
+<div id="quickActionsModal" style="display: none;"></div>
+
+<!-- Planning Wizard Modal (will be created dynamically) -->
+<div id="planningWizardModal" style="display: none;"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('MRP Planning Dashboard loaded');
+    
+    // Initialize charts
+    initializeDemandChart();
+    
+    // Initialize real-time updates
+    startRealTimeUpdates();
+    
+    // Run MRP button functionality
+    const runMrpBtn = document.getElementById('runMrpBtn');
+    if (runMrpBtn) {
+        runMrpBtn.addEventListener('click', runMrpCalculation);
+    }
+});
+
+function initializeDemandChart() {
+    const ctx = document.getElementById('demandChart')?.getContext('2d');
+    if (!ctx) return;
+    
+    // Sample data - replace with actual backend data
+    const data = {
+        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'],
+        datasets: [{
+            label: 'Demand Forecast',
+            data: [65, 85, 72, 94, 88, 76],
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.4,
+            fill: true
+        }, {
+            label: 'Supply Plan',
+            data: [70, 80, 75, 90, 85, 80],
+            borderColor: 'rgb(16, 185, 129)',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    };
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function runMrpCalculation() {
+    const btn = document.getElementById('runMrpBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Calculating...';
+    
+    fetch('{% url "manufacturing:run_mrp_calculation" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('MRP calculation completed successfully!', 'success');
+            setTimeout(() => window.location.reload(), 2000);
+        } else {
+            showNotification('MRP calculation failed: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Failed to run MRP calculation', 'error');
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-play mr-2"></i>Run MRP';
+    });
+}
+
+function filterRequirements(type) {
+    // Update active tab
+    document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Filter table rows
+    const rows = document.querySelectorAll('#requirementsTableBody tr');
+    rows.forEach(row => {
+        if (type === 'all') {
+            row.style.display = '';
+        } else if (type === 'critical') {
+            // Show only critical/overdue items
+            const dueDateCell = row.cells[6];
+            const isOverdue = dueDateCell?.querySelector('.text-red-600');
+            row.style.display = isOverdue ? '' : 'none';
+        } else {
+            // Filter by source type
+            const sourceType = row.dataset.requirementType;
+            row.style.display = sourceType === type ? '' : 'none';
+        }
+    });
+}
+
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.requirement-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+}
+
+function bulkActions() {
+    const selectedIds = Array.from(document.querySelectorAll('.requirement-checkbox:checked'))
+        .map(cb => cb.value);
+    
+    if (selectedIds.length === 0) {
+        showNotification('Please select at least one requirement', 'warning');
+        return;
+    }
+    
+    // Show bulk actions modal
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold mb-4">Bulk Actions</h3>
+            <p class="text-gray-600 mb-4">${selectedIds.length} requirements selected</p>
+            <div class="space-y-3">
+                <button onclick="bulkCreatePOs(${JSON.stringify(selectedIds)}); this.closest('.fixed').remove();" 
+                        class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+                    Create Purchase Orders
+                </button>
+                <button onclick="bulkUpdateStatus(${JSON.stringify(selectedIds)}, 'approved'); this.closest('.fixed').remove();" 
+                        class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">
+                    Mark as Approved
+                </button>
+                <button onclick="bulkExport(${JSON.stringify(selectedIds)}); this.closest('.fixed').remove();" 
+                        class="w-full bg-gray-600 text-white py-2 rounded hover:bg-gray-700">
+                    Export Selected
+                </button>
+            </div>
+            <button onclick="this.closest('.fixed').remove()" 
+                    class="w-full mt-4 border border-gray-300 py-2 rounded hover:bg-gray-50">
+                Cancel
+            </button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function quickCreatePO(requirementId) {
+    fetch(`/manufacturing/api/mrp-requirements/${requirementId}/create-po/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Purchase order created successfully!', 'success');
+            // Update the row status
+            updateRequirementRow(requirementId, 'ordered');
+        } else {
+            showNotification('Failed to create purchase order: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error creating PO:', error);
+        showNotification('Failed to create purchase order', 'error');
+    });
+}
+
+function quickCreateWO(requirementId) {
+    // Implement work order creation
+    showNotification('Work order creation coming soon!', 'info');
+}
+
+function updateRequirementRow(requirementId, newStatus) {
+    const row = document.querySelector(`tr[data-requirement-id="${requirementId}"]`);
+    if (row) {
+        const statusCell = row.querySelector('.status-badge');
+        if (statusCell) {
+            statusCell.className = `status-badge status-${newStatus}`;
+            statusCell.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+        }
+    }
+}
+
+function showPlanningWizard() {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-screen overflow-y-auto">
+            <h3 class="text-xl font-semibold mb-6">MRP Planning Wizard</h3>
+            
+            <div class="space-y-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Planning Scenario</label>
+                        <select class="w-full border border-gray-300 rounded px-3 py-2">
+                            <option value="standard">Standard Planning</option>
+                            <option value="rush">Rush Orders</option>
+                            <option value="seasonal">Seasonal Demand</option>
+                            <option value="custom">Custom Scenario</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Planning Horizon</label>
+                        <select class="w-full border border-gray-300 rounded px-3 py-2">
+                            <option value="30">30 Days</option>
+                            <option value="60">60 Days</option>
+                            <option value="90" selected>90 Days</option>
+                            <option value="120">120 Days</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Include in Planning</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" checked class="mr-2">
+                            <span class="text-sm">Safety Stock Requirements</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" checked class="mr-2">
+                            <span class="text-sm">Lead Time Considerations</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="mr-2">
+                            <span class="text-sm">Capacity Constraints</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="mr-2">
+                            <span class="text-sm">Auto-create Purchase Orders</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded p-4">
+                    <h4 class="font-medium text-blue-900 mb-2">Wizard Recommendations</h4>
+                    <ul class="text-sm text-blue-800 space-y-1">
+                        <li>• Consider increasing safety stock for critical items</li>
+                        <li>• Review supplier lead times for better accuracy</li>
+                        <li>• Enable automatic PO creation for routine items</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-8">
+                <button onclick="this.closest('.fixed').remove()" 
+                        class="px-6 py-2 border border-gray-300 rounded hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button onclick="runWizardMRP(); this.closest('.fixed').remove();" 
+                        class="px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
+                    Run Planning
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function showQuickActions() {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="runMrpCalculation(); this.closest('.fixed').remove();" 
+                        class="bg-purple-600 text-white p-4 rounded-lg hover:bg-purple-700 text-center">
+                    <i class="fas fa-play text-xl mb-2"></i>
+                    <div class="text-sm">Run MRP</div>
+                </button>
+                <button onclick="window.open('{% url 'manufacturing:supply_demand_report' %}', '_blank'); this.closest('.fixed').remove();" 
+                        class="bg-blue-600 text-white p-4 rounded-lg hover:bg-blue-700 text-center">
+                    <i class="fas fa-chart-bar text-xl mb-2"></i>
+                    <div class="text-sm">View Reports</div>
+                </button>
+                <button onclick="createBulkPOs(); this.closest('.fixed').remove();" 
+                        class="bg-green-600 text-white p-4 rounded-lg hover:bg-green-700 text-center">
+                    <i class="fas fa-shopping-cart text-xl mb-2"></i>
+                    <div class="text-sm">Bulk POs</div>
+                </button>
+                <button onclick="showPlanningWizard(); this.closest('.fixed').remove();" 
+                        class="bg-yellow-600 text-white p-4 rounded-lg hover:bg-yellow-700 text-center">
+                    <i class="fas fa-magic text-xl mb-2"></i>
+                    <div class="text-sm">Planning Wizard</div>
+                </button>
+            </div>
+            <button onclick="this.closest('.fixed').remove()" 
+                    class="w-full mt-4 border border-gray-300 py-2 rounded hover:bg-gray-50">
+                Close
+            </button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function startRealTimeUpdates() {
+    // Update every 2 minutes
+    setInterval(() => {
+        if (!document.hidden) {
+            updateRealTimeData();
+        }
+    }, 120000);
+}
+
+function updateRealTimeData() {
+    // Fetch latest data and update dashboard
+    fetch('/manufacturing/api/dashboard-data/')
+        .then(response => response.json())
+        .then(data => {
+            // Update metrics and charts with new data
+            console.log('Dashboard data updated', data);
+        })
+        .catch(error => console.error('Real-time update error:', error));
+}
+
+// Additional utility functions
+function createEmergencyPO(requirementId) {
+    if (confirm('Create an emergency purchase order for this critical shortage?')) {
+        quickCreatePO(requirementId);
+    }
+}
+
+function viewSupplyDetails() {
+    window.open('{% url "manufacturing:supply_demand_report" %}', '_blank');
+}
+
+function applyPlanningSettings() {
+    const horizon = document.getElementById('planningHorizon').value;
+    const frequency = document.getElementById('updateFrequency').value;
+    
+    showNotification(`Planning settings updated: ${horizon} days horizon, ${frequency} updates`, 'success');
+}
+
+function exportRequirements() {
+    window.open('/manufacturing/api/export-mrp-report/', '_blank');
+    showNotification('Export started', 'info');
+}
+
+function viewRequirementDetails(requirementId) {
+    // Use the existing function from main MRP template
+    showRequirementDetails(requirementId);
+}
+
+function runWizardMRP() {
+    showNotification('Running MRP with wizard settings...', 'info');
+    runMrpCalculation();
+}
+
+function bulkCreatePOs(selectedIds) {
+    fetch('/manufacturing/api/bulk-create-pos/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ requirement_ids: selectedIds })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`${data.pos_created} purchase orders created successfully!`, 'success');
+            setTimeout(() => window.location.reload(), 2000);
+        } else {
+            showNotification('Failed to create purchase orders: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error creating bulk POs:', error);
+        showNotification('Failed to create purchase orders', 'error');
+    });
+}
+
+function createBulkPOs() {
+    fetch('/manufacturing/api/bulk-create-pos/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`${data.pos_created} purchase orders created successfully!`, 'success');
+            setTimeout(() => window.location.reload(), 2000);
+        } else {
+            showNotification('Failed to create purchase orders: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error creating bulk POs:', error);
+        showNotification('Failed to create purchase orders', 'error');
+    });
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'error' ? 'bg-red-500 text-white' :
+        type === 'warning' ? 'bg-yellow-500 text-white' :
+        'bg-blue-500 text-white'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${
+                type === 'success' ? 'fa-check-circle' :
+                type === 'error' ? 'fa-exclamation-triangle' :
+                type === 'warning' ? 'fa-exclamation-triangle' :
+                'fa-info-circle'
+            } mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+</script>
+
+<!-- Add CSRF token -->
+{% csrf_token %}
+{% endblock %}

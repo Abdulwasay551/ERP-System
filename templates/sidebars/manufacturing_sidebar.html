@@ -1,4 +1,47 @@
 {% load static %}
+<style>
+    .sidebar-submenu {
+        transition: all 0.3s ease;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateX(-10px);
+    }
+    
+    .group:hover .sidebar-submenu {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(0);
+    }
+    
+    .sidebar.collapsed .sidebar-submenu {
+        left: 4rem !important;
+        top: 0;
+    }
+    
+    .sidebar.collapsed .group .sidebar-item .fa-chevron-down {
+        display: none;
+    }
+    
+    /* Mobile submenu */
+    @media (max-width: 768px) {
+        .sidebar-submenu {
+            position: relative;
+            left: 0 !important;
+            top: 0 !important;
+            margin-left: 0 !important;
+            width: 100% !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: none !important;
+            border-radius: 0.5rem !important;
+            margin-top: 0.5rem;
+        }
+        
+        .group:hover .sidebar-submenu {
+            display: block;
+        }
+    }
+</style>
+
 <!-- Manufacturing Module Sidebar -->
 <div class="sidebar-content">
     <!-- Logo/Back Section -->
@@ -50,10 +93,55 @@
         </a>
 
         <!-- Material Requirements Planning -->
-        <a href="{% url 'manufacturing:mrp_ui' %}" class="sidebar-item {% if 'mrp' in request.resolver_match.url_name %}active{% endif %}">
-            <i class="fas fa-chart-line sidebar-icon"></i>
-            <span class="sidebar-text">MRP</span>
-        </a>
+        <div class="group relative">
+            <a href="{% url 'manufacturing:mrp_ui' %}" class="sidebar-item {% if 'mrp' in request.resolver_match.url_name %}active{% endif %}">
+                <i class="fas fa-chart-line sidebar-icon"></i>
+                <span class="sidebar-text">MRP</span>
+                <i class="fas fa-chevron-down sidebar-text text-xs ml-auto transform transition-transform group-hover:rotate-180"></i>
+            </a>
+            
+            <!-- MRP Submenu -->
+            <div class="sidebar-submenu hidden group-hover:block absolute left-full top-0 ml-2 w-56 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 z-50 shadow-lg">
+                <div class="p-2 space-y-1">
+                    <a href="{% url 'manufacturing:mrp_ui' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
+                        <i class="fas fa-home mr-2 w-4 text-center"></i>
+                        MRP Dashboard
+                    </a>
+                    {% comment %} <a href="{% url 'manufacturing:mrp_plan_list' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
+                        <i class="fas fa-list-alt mr-2 w-4 text-center"></i>
+                        MRP Plans
+                    </a>
+                    <a href="{% url 'manufacturing:mrp_plan_create' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
+                        <i class="fas fa-plus mr-2 w-4 text-center"></i>
+                        Create Plan
+                    </a>
+                    <a href="{% url 'manufacturing:mrp_requirement_list' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
+                        <i class="fas fa-clipboard-check mr-2 w-4 text-center"></i>
+                        Requirements
+                    </a>
+                    <a href="{% url 'manufacturing:mrp_planning_dashboard' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
+                        <i class="fas fa-project-diagram mr-2 w-4 text-center"></i>
+                        Planning Dashboard
+                    </a>{% endcomment %}
+                    <a href="{% url 'manufacturing:supply_demand_report' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
+                        <i class="fas fa-chart-area mr-2 w-4 text-center"></i>
+                        Supply & Demand
+                    </a>
+                    {% comment %} <a href="{% url 'manufacturing:demand_forecast_list' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
+                        <i class="fas fa-chart-line mr-2 w-4 text-center"></i>
+                        Demand Forecasts
+                    </a> 
+                    <a href="{% url 'manufacturing:supplier_lead_time_list' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
+                        <i class="fas fa-truck mr-2 w-4 text-center"></i>
+                        Lead Times
+                    </a>
+                    <a href="{% url 'manufacturing:reorder_rules_list' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
+                        <i class="fas fa-bell mr-2 w-4 text-center"></i>
+                        Reorder Rules
+                    </a>{% endcomment %}
+                </div>
+            </div>
+        </div>
 
         <!-- Material Consumption -->
         <a href="{% url 'manufacturing:material_tracking_ui' %}" class="sidebar-item {% if 'material' in request.resolver_match.url_name %}active{% endif %}">

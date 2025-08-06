@@ -69,10 +69,16 @@
                     <p class="text-gray-600">Plan and manage material requirements for production</p>
                 </div>
                 <div class="flex flex-col sm:flex-row gap-4">
-                    <button class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors">
+                    <a href="{% url 'manufacturing:mrp_planning_dashboard' %}" class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors">
+                        <i class="fas fa-tachometer-alt mr-2"></i>Planning Dashboard
+                    </a>
+                    <button id="runMrpBtn" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
                         <i class="fas fa-plus mr-2"></i>Run MRP
                     </button>
-                    <button class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors">
+                    <a href="{% url 'manufacturing:supply_demand_report' %}" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-chart-line mr-2"></i>Supply & Demand
+                    </a>
+                    <button id="exportBtn" class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors">
                         <i class="fas fa-download mr-2"></i>Export
                     </button>
                 </div>
@@ -206,19 +212,45 @@
                 {% if pending_requirements %}
                     <div class="space-y-3 max-h-96 overflow-y-auto">
                         {% for requirement in pending_requirements %}
-                        <div class="requirement-card {% if requirement.required_date <= "2025-08-11"|date %}border-red-200{% endif %}">
+                        <div class="requirement-card {% if requirement.required_date <= "2025-08-11"|date %}border-red-200{% endif %}" data-requirement-id="{{ requirement.id }}">
                             <div class="flex items-start justify-between">
                                 <div class="flex-1">
-                                    <h5 class="font-medium text-gray-900 mb-1">
-                                        {{ requirement.product.name|default:"Product Name" }}
-                                    </h5>
-                                    <div class="grid grid-cols-2 gap-2 text-sm text-gray-600 mb-2">
-                                        <div>Qty: {{ requirement.quantity|default:0|floatformat:0 }}</div>
-                                        <div>Required: {{ requirement.required_date|date:"M d" }}</div>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h5 class="font-medium text-gray-900">
+                                            {{ requirement.product.name|default:"Product Name" }}
+                                        </h5>
+                                        <span class="text-xs text-gray-500">
+                                            ID: {{ requirement.product.code|default:requirement.product.id }}
+                                        </span>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-2 text-sm text-gray-600 mb-2">
+                                        <div>
+                                            <span class="font-medium">Req:</span> {{ requirement.required_quantity|default:0|floatformat:0 }}
+                                        </div>
+                                        <div>
+                                            <span class="font-medium">Available:</span> {{ requirement.available_quantity|default:0|floatformat:0 }}
+                                        </div>
+                                        <div>
+                                            <span class="font-medium">Shortage:</span> 
+                                            <span class="{% if requirement.shortage_quantity > 0 %}text-red-600 font-medium{% endif %}">
+                                                {{ requirement.shortage_quantity|default:0|floatformat:0 }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2 text-sm text-gray-600 mb-3">
+                                        <div>
+                                            <span class="font-medium">Required:</span> {{ requirement.required_date|date:"M d, Y" }}
+                                        </div>
+                                        <div>
+                                            <span class="font-medium">Order by:</span> {{ requirement.suggested_order_date|date:"M d, Y" }}
+                                        </div>
                                     </div>
                                     <div class="flex items-center space-x-3">
                                         <span class="status-badge status-{{ requirement.status|default:'pending' }}">
                                             {{ requirement.get_status_display|default:requirement.status|title }}
+                                        </span>
+                                        <span class="px-2 py-1 text-xs rounded-full {% if requirement.source_type == 'manufacture' %}bg-blue-100 text-blue-800{% else %}bg-green-100 text-green-800{% endif %}">
+                                            {{ requirement.source_type|default:"purchase"|title }}
                                         </span>
                                         {% if requirement.required_date <= "2025-08-11"|date %}
                                         <span class="text-xs text-red-600">
@@ -228,14 +260,25 @@
                                     </div>
                                 </div>
                                 <div class="flex flex-col gap-1 ml-4">
-                                    <button class="bg-blue-600 text-white px-2 py-1 text-xs rounded hover:bg-blue-700">
+                                    {% if requirement.source_type == 'purchase' and requirement.status == 'pending' %}
+                                    <button class="create-po-btn bg-blue-600 text-white px-2 py-1 text-xs rounded hover:bg-blue-700" data-requirement-id="{{ requirement.id }}">
                                         Create PO
                                     </button>
-                                    <button class="bg-gray-100 text-gray-700 px-2 py-1 text-xs rounded hover:bg-gray-200">
+                                    {% elif requirement.source_type == 'manufacture' and requirement.status == 'pending' %}
+                                    <button class="create-wo-btn bg-purple-600 text-white px-2 py-1 text-xs rounded hover:bg-purple-700" data-requirement-id="{{ requirement.id }}">
+                                        Create WO
+                                    </button>
+                                    {% endif %}
+                                    <button class="bg-gray-100 text-gray-700 px-2 py-1 text-xs rounded hover:bg-gray-200" onclick="showRequirementDetails({{ requirement.id }})">
                                         Details
                                     </button>
                                 </div>
                             </div>
+                            {% if requirement.notes %}
+                            <div class="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600">
+                                <i class="fas fa-sticky-note mr-1"></i>{{ requirement.notes }}
+                            </div>
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>
@@ -253,43 +296,157 @@
 
         <!-- MRP Actions -->
         <div class="chart-container mt-8">
-            <h3 class="text-lg font-semibold text-gray-900 mb-6">MRP Actions</h3>
+            <h3 class="text-lg font-semibold text-gray-900 mb-6">MRP Actions & Settings</h3>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="text-center p-6 border border-gray-200 rounded-lg hover:border-purple-300 transition-colors cursor-pointer">
-                    <div class="mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
-                        <i class="fas fa-play text-purple-600 text-2xl"></i>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Action Cards -->
+                <div class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="text-center p-6 border border-gray-200 rounded-lg hover:border-purple-300 transition-colors cursor-pointer" onclick="document.getElementById('runMrpBtn').click()">
+                            <div class="mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-play text-purple-600 text-2xl"></i>
+                            </div>
+                            <h4 class="font-medium text-gray-900 mb-2">Run MRP</h4>
+                            <p class="text-gray-600 text-sm mb-4">Generate new material requirements plan</p>
+                            <div class="text-xs text-gray-500">
+                                Last run: {{ recent_runs.0.run_timestamp|date:"M d, H:i"|default:"Never" }}
+                            </div>
+                        </div>
+
+                        <div class="text-center p-6 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors cursor-pointer" onclick="createBulkPurchaseOrders()">
+                            <div class="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-shopping-cart text-blue-600 text-2xl"></i>
+                            </div>
+                            <h4 class="font-medium text-gray-900 mb-2">Create Purchase Orders</h4>
+                            <p class="text-gray-600 text-sm mb-4">Generate POs from requirements</p>
+                            <div class="text-xs text-gray-500">
+                                {{ pending_requirements|length }} pending requirements
+                            </div>
+                        </div>
+
+                        <div class="text-center p-6 border border-gray-200 rounded-lg hover:border-green-300 transition-colors cursor-pointer" onclick="window.open('{% url 'manufacturing:supply_demand_report' %}', '_blank')">
+                            <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-chart-bar text-green-600 text-2xl"></i>
+                            </div>
+                            <h4 class="font-medium text-gray-900 mb-2">Supply & Demand Report</h4>
+                            <p class="text-gray-600 text-sm mb-4">Analyze inventory levels and trends</p>
+                            <div class="text-xs text-gray-500">
+                                {{ supply_demand_data|length }} products analyzed
+                            </div>
+                        </div>
+
+                        <div class="text-center p-6 border border-gray-200 rounded-lg hover:border-yellow-300 transition-colors cursor-pointer" onclick="showMrpSettings()">
+                            <div class="mx-auto w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-cog text-yellow-600 text-2xl"></i>
+                            </div>
+                            <h4 class="font-medium text-gray-900 mb-2">MRP Settings</h4>
+                            <p class="text-gray-600 text-sm mb-4">Configure MRP parameters</p>
+                            <div class="text-xs text-gray-500">
+                                Planning horizon: 90 days
+                            </div>
+                        </div>
                     </div>
-                    <h4 class="font-medium text-gray-900 mb-2">Run MRP</h4>
-                    <p class="text-gray-600 text-sm mb-4">Generate new material requirements plan</p>
-                    <button class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
-                        Start MRP Run
-                    </button>
                 </div>
 
-                <div class="text-center p-6 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors cursor-pointer">
-                    <div class="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                        <i class="fas fa-shopping-cart text-blue-600 text-2xl"></i>
+                <!-- Quick Stats & Forecasting -->
+                <div class="space-y-6">
+                    <!-- MRP Performance Chart -->
+                    <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <h4 class="font-medium text-gray-900 mb-4">MRP Run History</h4>
+                        <canvas id="mrpHistoryChart" width="400" height="200"></canvas>
                     </div>
-                    <h4 class="font-medium text-gray-900 mb-2">Create Purchase Orders</h4>
-                    <p class="text-gray-600 text-sm mb-4">Generate POs from requirements</p>
-                    <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                        Create POs
-                    </button>
-                </div>
 
-                <div class="text-center p-6 border border-gray-200 rounded-lg hover:border-green-300 transition-colors cursor-pointer">
-                    <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                        <i class="fas fa-chart-bar text-green-600 text-2xl"></i>
+                    <!-- Critical Items Alert -->
+                    {% if shortage_alerts %}
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+                            <h4 class="font-medium text-red-900">Critical Shortages</h4>
+                        </div>
+                        <div class="space-y-2 max-h-32 overflow-y-auto">
+                            {% for alert in shortage_alerts|slice:":5" %}
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-red-900">{{ alert.product.name }}</span>
+                                <span class="text-red-600 font-medium">{{ alert.shortage_quantity|floatformat:0 }} short</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if shortage_alerts|length > 5 %}
+                        <div class="mt-2 text-xs text-red-600">
+                            +{{ shortage_alerts|length|add:"-5" }} more critical items
+                        </div>
+                        {% endif %}
                     </div>
-                    <h4 class="font-medium text-gray-900 mb-2">View Reports</h4>
-                    <p class="text-gray-600 text-sm mb-4">Analyze MRP performance and trends</p>
-                    <button class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                        View Reports
-                    </button>
+                    {% endif %}
+
+                    <!-- Quick Actions -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="font-medium text-gray-900 mb-3">Quick Actions</h4>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button class="bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-50" onclick="exportMrpReport()">
+                                <i class="fas fa-file-excel mr-1"></i>Export Excel
+                            </button>
+                            <button class="bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-50" onclick="scheduleMrpRun()">
+                                <i class="fas fa-clock mr-1"></i>Schedule Run
+                            </button>
+                            <button class="bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-50" onclick="viewMrpHistory()">
+                                <i class="fas fa-history mr-1"></i>View History
+                            </button>
+                            <button class="bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-50" onclick="showHelp()">
+                                <i class="fas fa-question-circle mr-1"></i>Help
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- Recent Runs Table -->
+        {% if recent_runs %}
+        <div class="chart-container mt-8">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6">Recent MRP Runs</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium text-gray-900">Run Date</th>
+                            <th class="px-4 py-3 text-left font-medium text-gray-900">Duration</th>
+                            <th class="px-4 py-3 text-left font-medium text-gray-900">Products Processed</th>
+                            <th class="px-4 py-3 text-left font-medium text-gray-900">Requirements Generated</th>
+                            <th class="px-4 py-3 text-left font-medium text-gray-900">Status</th>
+                            <th class="px-4 py-3 text-left font-medium text-gray-900">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for run in recent_runs %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3">{{ run.run_timestamp|date:"M d, Y H:i" }}</td>
+                            <td class="px-4 py-3">
+                                {% if run.execution_time %}
+                                    {{ run.execution_time|floatformat:1 }}s
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3">{{ run.products_processed|default:"-" }}</td>
+                            <td class="px-4 py-3">{{ run.requirements_generated|default:"-" }}</td>
+                            <td class="px-4 py-3">
+                                <span class="status-badge {% if run.status == 'completed' %}status-approved{% elif run.status == 'failed' %}status-pending{% else %}status-ordered{% endif %}">
+                                    {{ run.status|title }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <button class="text-blue-600 hover:text-blue-800 text-xs" onclick="viewRunDetails({{ run.id }})">
+                                    View Details
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
@@ -299,11 +456,445 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('MRP UI loaded');
     
+    // Run MRP button functionality
+    const runMrpBtn = document.getElementById('runMrpBtn');
+    if (runMrpBtn) {
+        runMrpBtn.addEventListener('click', function() {
+            runMrpBtn.disabled = true;
+            runMrpBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Running MRP...';
+            
+            fetch('{% url "manufacturing:run_mrp_calculation" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('MRP calculation completed successfully!', 'success');
+                    // Refresh the page to show updated data
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    showNotification('MRP calculation failed: ' + (data.error || 'Unknown error'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Failed to run MRP calculation', 'error');
+            })
+            .finally(() => {
+                runMrpBtn.disabled = false;
+                runMrpBtn.innerHTML = '<i class="fas fa-plus mr-2"></i>Run MRP';
+            });
+        });
+    }
+    
+    // Export functionality
+    const exportBtn = document.getElementById('exportBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function() {
+            exportMrpData();
+        });
+    }
+    
+    // Utility function to show notifications
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+            type === 'success' ? 'bg-green-500 text-white' :
+            type === 'error' ? 'bg-red-500 text-white' :
+            'bg-blue-500 text-white'
+        }`;
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas ${
+                    type === 'success' ? 'fa-check-circle' :
+                    type === 'error' ? 'fa-exclamation-triangle' :
+                    'fa-info-circle'
+                } mr-2"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+    
+    // Export MRP data
+    function exportMrpData() {
+        const exportData = {
+            plans: {{ mrp_plans|length }},
+            pending_requirements: {{ pending_requirements|length }},
+            shortage_alerts: {{ shortage_alerts|length }},
+            timestamp: new Date().toISOString()
+        };
+        
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `mrp_data_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+        
+        showNotification('MRP data exported successfully!', 'success');
+    }
+    
     // Auto-refresh pending requirements every 5 minutes
     setInterval(function() {
         console.log('Refreshing MRP data...');
-        // Add AJAX call to refresh data
-    }, 300000);
+        // Only refresh if page is visible
+        if (!document.hidden) {
+            fetch(window.location.href)
+                .then(response => response.text())
+                .then(html => {
+                    // Update specific sections without full page reload
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // Update summary cards
+                    const summaryCards = document.querySelectorAll('.grid.grid-cols-1.md\\:grid-cols-4 .bg-white');
+                    const newSummaryCards = doc.querySelectorAll('.grid.grid-cols-1.md\\:grid-cols-4 .bg-white');
+                    
+                    summaryCards.forEach((card, index) => {
+                        if (newSummaryCards[index]) {
+                            card.innerHTML = newSummaryCards[index].innerHTML;
+                        }
+                    });
+                })
+                .catch(error => console.error('Auto-refresh error:', error));
+        }
+    }, 300000); // 5 minutes
+    
+    // Real-time status updates for requirements
+    function updateRequirementStatus(requirementId, newStatus) {
+        fetch(`/manufacturing/api/mrp-requirements/${requirementId}/status/`, {
+            method: 'PATCH',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: newStatus })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Requirement status updated', 'success');
+                // Update the UI element
+                const statusBadge = document.querySelector(`[data-requirement-id="${requirementId}"] .status-badge`);
+                if (statusBadge) {
+                    statusBadge.className = `status-badge status-${newStatus}`;
+                    statusBadge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error updating status:', error);
+            showNotification('Failed to update status', 'error');
+        });
+    }
+    
+    // Add event listeners for requirement actions
+    document.querySelectorAll('.create-po-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const requirementId = this.dataset.requirementId;
+            createPurchaseOrder(requirementId);
+        });
+    });
+    
+    // Create purchase order from requirement
+    function createPurchaseOrder(requirementId) {
+        fetch(`/manufacturing/api/mrp-requirements/${requirementId}/create-po/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Purchase order created successfully!', 'success');
+                updateRequirementStatus(requirementId, 'ordered');
+            } else {
+                showNotification('Failed to create purchase order: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error creating PO:', error);
+            showNotification('Failed to create purchase order', 'error');
+        });
+    }
+    
+    // Initialize MRP History Chart
+    const mrpHistoryChart = initializeMrpHistoryChart();
 });
+
+// Additional utility functions
+function createBulkPurchaseOrders() {
+    if (confirm('Create purchase orders for all pending purchase requirements?')) {
+        fetch('/manufacturing/api/bulk-create-pos/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(`${data.pos_created} purchase orders created successfully!`, 'success');
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                showNotification('Failed to create purchase orders: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error creating bulk POs:', error);
+            showNotification('Failed to create purchase orders', 'error');
+        });
+    }
+}
+
+function showMrpSettings() {
+    // Create modal for MRP settings
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">MRP Settings</h3>
+                <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Planning Horizon (days)</label>
+                    <input type="number" value="90" class="w-full border border-gray-300 rounded px-3 py-2" id="planningHorizon">
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" checked class="mr-2" id="includeSafetyStock">
+                    <label class="text-sm text-gray-700">Include Safety Stock</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" checked class="mr-2" id="considerLeadTimes">
+                    <label class="text-sm text-gray-700">Consider Lead Times</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" class="mr-2" id="autoCreatePOs">
+                    <label class="text-sm text-gray-700">Auto-create Purchase Orders</label>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
+                <button onclick="saveMrpSettings()" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">Save Settings</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function saveMrpSettings() {
+    const settings = {
+        planning_horizon_days: document.getElementById('planningHorizon').value,
+        include_safety_stock: document.getElementById('includeSafetyStock').checked,
+        consider_lead_times: document.getElementById('considerLeadTimes').checked,
+        auto_create_purchase_requests: document.getElementById('autoCreatePOs').checked
+    };
+    
+    fetch('/manufacturing/api/mrp-settings/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('MRP settings saved successfully!', 'success');
+            document.querySelector('.fixed').remove();
+        } else {
+            showNotification('Failed to save settings: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving settings:', error);
+        showNotification('Failed to save settings', 'error');
+    });
+}
+
+function showRequirementDetails(requirementId) {
+    fetch(`/manufacturing/api/mrp-requirements/${requirementId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showRequirementModal(data.requirement);
+            } else {
+                showNotification('Failed to load requirement details', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading requirement details:', error);
+            showNotification('Failed to load requirement details', 'error');
+        });
+}
+
+function showRequirementModal(requirement) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-screen overflow-y-auto">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Requirement Details</h3>
+                <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Product</label>
+                    <p class="text-sm text-gray-900">${requirement.product_name}</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Product Code</label>
+                    <p class="text-sm text-gray-900">${requirement.product_code || 'N/A'}</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Required Quantity</label>
+                    <p class="text-sm text-gray-900">${requirement.required_quantity}</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Available Quantity</label>
+                    <p class="text-sm text-gray-900">${requirement.available_quantity}</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Shortage Quantity</label>
+                    <p class="text-sm text-gray-900 ${requirement.shortage_quantity > 0 ? 'text-red-600 font-medium' : ''}">${requirement.shortage_quantity}</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Source Type</label>
+                    <p class="text-sm text-gray-900">${requirement.source_type}</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Required Date</label>
+                    <p class="text-sm text-gray-900">${requirement.required_date}</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Suggested Order Date</label>
+                    <p class="text-sm text-gray-900">${requirement.suggested_order_date}</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Status</label>
+                    <span class="status-badge status-${requirement.status}">${requirement.status}</span>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">MRP Plan</label>
+                    <p class="text-sm text-gray-900">${requirement.mrp_plan_name}</p>
+                </div>
+                ${requirement.notes ? `
+                <div class="col-span-2">
+                    <label class="block text-sm font-medium text-gray-700">Notes</label>
+                    <p class="text-sm text-gray-900">${requirement.notes}</p>
+                </div>
+                ` : ''}
+            </div>
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50">Close</button>
+                ${requirement.status === 'pending' && requirement.source_type === 'purchase' ? 
+                    `<button onclick="createPurchaseOrder(${requirement.id}); this.closest('.fixed').remove();" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Create Purchase Order</button>` : 
+                    ''
+                }
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function exportMrpReport() {
+    window.open('/manufacturing/api/export-mrp-report/', '_blank');
+    showNotification('MRP report export started', 'info');
+}
+
+function scheduleMrpRun() {
+    showNotification('MRP scheduling feature coming soon!', 'info');
+}
+
+function viewMrpHistory() {
+    window.open('/manufacturing/mrp/history/', '_blank');
+}
+
+function showHelp() {
+    window.open('/manufacturing/mrp/help/', '_blank');
+}
+
+function viewRunDetails(runId) {
+    window.open(`/manufacturing/mrp/runs/${runId}/`, '_blank');
+}
+
+function initializeMrpHistoryChart() {
+    const ctx = document.getElementById('mrpHistoryChart')?.getContext('2d');
+    if (!ctx) return null;
+    
+    // Sample data - replace with actual data from backend
+    const data = {
+        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+        datasets: [{
+            label: 'Requirements Generated',
+            data: [12, 19, 15, 22],
+            borderColor: 'rgb(147, 51, 234)',
+            backgroundColor: 'rgba(147, 51, 234, 0.1)',
+            tension: 0.1
+        }, {
+            label: 'Requirements Fulfilled',
+            data: [8, 15, 12, 18],
+            borderColor: 'rgb(34, 197, 94)',
+            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            tension: 0.1
+        }]
+    };
+    
+    return new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+// Add CSRF token for AJAX requests
+const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
 </script>
+
+<!-- Add CSRF token if not already present -->
+{% if not csrf_token %}
+    {% csrf_token %}
+{% endif %}
 {% endblock %}

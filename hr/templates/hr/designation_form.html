@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if designation %}Edit Designation{% else %}Add Designation{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    .form-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="form-container">
+        <div class="form-header">
+            <h3><i class="fas fa-id-badge"></i> 
+                {% if designation %}Edit Designation{% else %}Add New Designation{% endif %}
+            </h3>
+        </div>
+
+        <div class="form-card">
+            <form id="designationForm" method="post">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="title" class="form-label">Designation Title <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="title" name="title" 
+                           value="{% if designation %}{{ designation.title }}{% endif %}" required
+                           placeholder="e.g., Software Engineer, Marketing Manager">
+                    <div class="invalid-feedback"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="level" class="form-label">Level</label>
+                    <select class="form-select" id="level" name="level">
+                        {% for value, display in levels %}
+                        <option value="{{ value }}" 
+                                {% if designation and designation.level == value %}selected{% endif %}>
+                            {{ display }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="salary_range_min" class="form-label">Minimum Salary</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="salary_range_min" name="salary_range_min" 
+                                       value="{% if designation %}{{ designation.salary_range_min }}{% endif %}" 
+                                       step="0.01" min="0" placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="salary_range_max" class="form-label">Maximum Salary</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="salary_range_max" name="salary_range_max" 
+                                       value="{% if designation %}{{ designation.salary_range_max }}{% endif %}" 
+                                       step="0.01" min="0" placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">Job Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="4" 
+                              placeholder="Brief description of the role and its purpose">{% if designation %}{{ designation.description }}{% endif %}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="responsibilities" class="form-label">Key Responsibilities</label>
+                    <textarea class="form-control" id="responsibilities" name="responsibilities" rows="4" 
+                              placeholder="List the main responsibilities and duties">{% if designation %}{{ designation.responsibilities }}{% endif %}</textarea>
+                    <small class="form-text text-muted">List each responsibility on a new line</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="requirements" class="form-label">Job Requirements</label>
+                    <textarea class="form-control" id="requirements" name="requirements" rows="4" 
+                              placeholder="Education, experience, skills, and other requirements">{% if designation %}{{ designation.requirements }}{% endif %}</textarea>
+                    <small class="form-text text-muted">Include education, experience, skills, etc.</small>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'hr:designations_ui' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> 
+                        {% if designation %}Update Designation{% else %}Create Designation{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('designationForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    // Show loading state
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    submitBtn.disabled = true;
+    
+    // Clear previous errors
+    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    
+    {% if designation %}
+    const url = '{% url "hr:designations_edit" designation.id %}';
+    {% else %}
+    const url = '{% url "hr:designations_add" %}';
+    {% endif %}
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'Designation {% if designation %}updated{% else %}created{% endif %} successfully',
+                timer: 1500,
+                showConfirmButton: false
+            }).then(() => {
+                window.location.href = '{% url "hr:designations_ui" %}';
+            });
+        } else {
+            // Show error
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.error || 'An error occurred while saving the designation'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An unexpected error occurred'
+        });
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+
+// Validate salary range
+document.getElementById('salary_range_max').addEventListener('change', function() {
+    const minSalary = parseFloat(document.getElementById('salary_range_min').value) || 0;
+    const maxSalary = parseFloat(this.value) || 0;
+    
+    if (maxSalary > 0 && minSalary > 0 && maxSalary < minSalary) {
+        this.setCustomValidity('Maximum salary cannot be less than minimum salary');
+        this.classList.add('is-invalid');
+        this.nextElementSibling.textContent = 'Maximum salary cannot be less than minimum salary';
+    } else {
+        this.setCustomValidity('');
+        this.classList.remove('is-invalid');
+    }
+});
+
+document.getElementById('salary_range_min').addEventListener('change', function() {
+    // Trigger validation on max salary field
+    document.getElementById('salary_range_max').dispatchEvent(new Event('change'));
+});
+</script>
+{% endblock %}

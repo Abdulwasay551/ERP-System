@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Accounting Dashboard | FutureERP{% endblock %}
+{% block title %}Accounting Dashboard | ERP System{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -16,6 +16,24 @@
         background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
         border: 1px solid rgba(59, 130, 246, 0.2);
     }
+    
+    .balance-summary {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        border: 1px solid #cbd5e1;
+    }
+    
+    .integration-status {
+        background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(147, 51, 234, 0.1));
+        border: 1px solid rgba(168, 85, 247, 0.2);
+    }
+    
+    .chart-container {
+        height: 300px;
+        background: #f8fafc;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        border: 1px solid #e5e7eb;
+    }
 </style>
 {% endblock %}
 
@@ -29,7 +47,7 @@
                 <p class="text-gray-600">Financial management and chart of accounts overview</p>
             </div>
             <div class="flex gap-4">
-                <a href="{% url 'accounting_accounts_add' %}" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
+                <a href="{% url 'accounting:account_create' %}" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
@@ -144,7 +162,7 @@
 
         <!-- Quick Actions -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <a href="{% url 'accounting_accounts_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
+            <a href="{% url 'accounting:chart_of_accounts' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
                 <div class="flex items-center">
                     <div class="p-3 bg-emerald-100 rounded-full mr-4">
                         <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,7 +176,7 @@
                 </div>
             </a>
 
-            <a href="{% url 'accounting_journals_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
+            <a href="{% url 'accounting:journal_entries' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
                 <div class="flex items-center">
                     <div class="p-3 bg-blue-100 rounded-full mr-4">
                         <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -172,7 +190,7 @@
                 </div>
             </a>
 
-            <a href="{% url 'accounting_trial_balance_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
+            <a href="{% url 'accounting:trial_balance' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
                 <div class="flex items-center">
                     <div class="p-3 bg-green-100 rounded-full mr-4">
                         <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,7 +204,7 @@
                 </div>
             </a>
 
-            <a href="{% url 'accounting_reports_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
+            <a href="{% url 'accounting:financial_statements' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
                 <div class="flex items-center">
                     <div class="p-3 bg-purple-100 rounded-full mr-4">
                         <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

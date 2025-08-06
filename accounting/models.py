@@ -235,3 +235,96 @@ class RecurringJournal(models.Model):
 
     def __str__(self):
         return f"Recurring {self.journal.name} ({self.schedule})"
+
+
+# Module Integration Models
+# These models handle automatic journal entry creation when transactions occur in other modules
+
+class ModuleAccountMapping(models.Model):
+    """
+    Maps specific transaction types to Chart of Accounts
+    This allows configuration of which accounts to use for different module operations
+    """
+    TRANSACTION_TYPES = [
+        # Sales Module
+        ('sales_invoice', 'Sales Invoice'),
+        ('sales_return', 'Sales Return'),
+        ('sales_discount', 'Sales Discount'),
+        
+        # Purchase Module
+        ('purchase_invoice', 'Purchase Invoice'),
+        ('purchase_return', 'Purchase Return'),
+        ('purchase_discount', 'Purchase Discount'),
+        
+        # Inventory Module
+        ('inventory_receipt', 'Inventory Receipt'),
+        ('inventory_issue', 'Inventory Issue'),
+        ('inventory_adjustment', 'Inventory Adjustment'),
+        ('inventory_transfer', 'Inventory Transfer'),
+        
+        # Manufacturing Module
+        ('material_issue', 'Material Issue to Production'),
+        ('production_completion', 'Production Completion'),
+        ('work_order_cost', 'Work Order Cost'),
+        ('manufacturing_overhead', 'Manufacturing Overhead'),
+        
+        # HR Module
+        ('payroll_salary', 'Payroll Salary'),
+        ('payroll_bonus', 'Payroll Bonus'),
+        ('employee_advance', 'Employee Advance'),
+        ('employee_expense', 'Employee Expense'),
+        
+        # CRM Module
+        ('customer_invoice', 'Customer Invoice'),
+        ('customer_payment', 'Customer Payment'),
+        
+        # Project Module
+        ('project_expense', 'Project Expense'),
+        ('project_billing', 'Project Billing'),
+        
+        # General
+        ('bank_transfer', 'Bank Transfer'),
+        ('cash_receipt', 'Cash Receipt'),
+        ('cash_payment', 'Cash Payment'),
+    ]
+    
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='module_account_mappings')
+    transaction_type = models.CharField(max_length=50, choices=TRANSACTION_TYPES)
+    debit_account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='debit_mappings')
+    credit_account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='credit_mappings')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['company', 'transaction_type']
+        verbose_name = 'Module Account Mapping'
+        verbose_name_plural = 'Module Account Mappings'
+    
+    def __str__(self):
+        return f"{self.get_transaction_type_display()} - {self.company.name}"
+
+
+class AutoJournalEntry(models.Model):
+    """
+    Tracks automatically created journal entries from other modules
+    This provides audit trail and traceability
+    """
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='auto_journal_entries')
+    journal_entry = models.OneToOneField(JournalEntry, on_delete=models.CASCADE, related_name='auto_entry')
+    source_module = models.CharField(max_length=50)
+    source_model = models.CharField(max_length=100)
+    source_object_id = models.CharField(max_length=100)
+    transaction_type = models.CharField(max_length=50)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'Auto Journal Entry'
+        verbose_name_plural = 'Auto Journal Entries'
+        indexes = [
+            models.Index(fields=['source_module', 'source_model', 'source_object_id']),
+            models.Index(fields=['transaction_type']),
+        ]
+    
+    def __str__(self):
+        return f"Auto JE #{self.journal_entry.id} from {self.source_module}.{self.source_model}"

@@ -20,7 +20,7 @@
                         <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                         </svg>
-                        <a href="{% url 'inventory_warehouses_ui' %}" class="ml-1 text-sm font-medium text-gray-700 hover:text-green-600 md:ml-2">Warehouses</a>
+                        <a href="{% url 'inventory:inventory_warehouses_ui' %}" class="ml-1 text-sm font-medium text-gray-700 hover:text-green-600 md:ml-2">Warehouses</a>
                     </div>
                 </li>
                 <li aria-current="page">
@@ -46,7 +46,7 @@
                 <p class="text-gray-600">{{ warehouse.location|default:"No location specified" }}</p>
             </div>
             <div class="flex gap-4">
-                <a href="{% url 'inventory_warehouses_ui' %}" class="action-btn bg-gray-500 text-white px-6 py-3 rounded-2xl hover-lift">
+                <a href="{% url 'inventory:inventory_warehouses_ui' %}" class="action-btn bg-gray-500 text-white px-6 py-3 rounded-2xl hover-lift">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>

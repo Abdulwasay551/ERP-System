@@ -1,0 +1,346 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leave Detail - {{ leave.employee.full_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .leave-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .info-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    .info-card h5 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    .timeline-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+    .timeline-marker {
+        position: absolute;
+        left: -2rem;
+        top: 0.25rem;
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 50%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Leave Header -->
+    <div class="leave-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="mb-1">{{ leave.employee.full_name }}</h2>
+                <p class="mb-1">{{ leave.leave_type.name }} Leave Request</p>
+                <p class="mb-0">
+                    {{ leave.start_date }} to {{ leave.end_date }} 
+                    ({{ leave.days_requested }} day{{ leave.days_requested|pluralize }})
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="status-badge bg-{{ leave.status }}">
+                    {{ leave.get_status_display }}
+                </span>
+                <div class="mt-2">
+                    <a href="{% url 'hr:leaves_ui' %}" class="btn btn-light btn-sm">
+                        <i class="fas fa-arrow-left"></i> Back to Leaves
+                    </a>
+                    {% if leave.status == 'pending' %}
+                    <button class="btn btn-success btn-sm" onclick="approveLeave({{ leave.id }})">
+                        <i class="fas fa-check"></i> Approve
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="rejectLeave({{ leave.id }})">
+                        <i class="fas fa-times"></i> Reject
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Leave Details -->
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5><i class="fas fa-calendar-alt"></i> Leave Details</h5>
+                <div class="row mb-2">
+                    <div class="col-sm-4"><strong>Employee:</strong></div>
+                    <div class="col-sm-8">
+                        <a href="{% url 'hr:employee_detail' leave.employee.id %}" class="text-decoration-none">
+                            {{ leave.employee.full_name }}
+                        </a>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-4"><strong>Employee ID:</strong></div>
+                    <div class="col-sm-8">{{ leave.employee.employee_id }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-4"><strong>Department:</strong></div>
+                    <div class="col-sm-8">{{ leave.employee.department.name|default:"Not assigned" }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-4"><strong>Leave Type:</strong></div>
+                    <div class="col-sm-8">{{ leave.leave_type.name }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-4"><strong>Start Date:</strong></div>
+                    <div class="col-sm-8">{{ leave.start_date|date:"F d, Y" }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-4"><strong>End Date:</strong></div>
+                    <div class="col-sm-8">{{ leave.end_date|date:"F d, Y" }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-4"><strong>Days Requested:</strong></div>
+                    <div class="col-sm-8">{{ leave.days_requested }} day{{ leave.days_requested|pluralize }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-4"><strong>Status:</strong></div>
+                    <div class="col-sm-8">
+                        <span class="badge bg-{{ leave.status }}">{{ leave.get_status_display }}</span>
+                    </div>
+                </div>
+                {% if leave.covering_employee %}
+                <div class="row mb-2">
+                    <div class="col-sm-4"><strong>Covering Employee:</strong></div>
+                    <div class="col-sm-8">
+                        <a href="{% url 'hr:employee_detail' leave.covering_employee.id %}" class="text-decoration-none">
+                            {{ leave.covering_employee.full_name }}
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Leave Type Information -->
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5><i class="fas fa-info-circle"></i> Leave Type Information</h5>
+                <div class="row mb-2">
+                    <div class="col-sm-5"><strong>Leave Type:</strong></div>
+                    <div class="col-sm-7">{{ leave.leave_type.name }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-5"><strong>Code:</strong></div>
+                    <div class="col-sm-7">{{ leave.leave_type.code }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-5"><strong>Is Paid:</strong></div>
+                    <div class="col-sm-7">
+                        <span class="badge {% if leave.leave_type.is_paid %}bg-success{% else %}bg-warning{% endif %}">
+                            {% if leave.leave_type.is_paid %}Paid Leave{% else %}Unpaid Leave{% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-5"><strong>Annual Entitlement:</strong></div>
+                    <div class="col-sm-7">{{ leave.leave_type.annual_entitlement }} days</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-5"><strong>Requires Approval:</strong></div>
+                    <div class="col-sm-7">
+                        <span class="badge {% if leave.leave_type.requires_approval %}bg-info{% else %}bg-secondary{% endif %}">
+                            {% if leave.leave_type.requires_approval %}Yes{% else %}No{% endif %}
+                        </span>
+                    </div>
+                </div>
+                {% if leave.leave_type.advance_notice_days > 0 %}
+                <div class="row mb-2">
+                    <div class="col-sm-5"><strong>Notice Required:</strong></div>
+                    <div class="col-sm-7">{{ leave.leave_type.advance_notice_days }} days in advance</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Reason and Comments -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="info-card">
+                <h5><i class="fas fa-comment-alt"></i> Reason & Comments</h5>
+                {% if leave.reason %}
+                <div class="mb-3">
+                    <strong>Reason for Leave:</strong>
+                    <p class="mt-2 p-3 bg-light rounded">{{ leave.reason|linebreaks }}</p>
+                </div>
+                {% endif %}
+                
+                {% if leave.rejection_reason %}
+                <div class="mb-3">
+                    <strong>Rejection Reason:</strong>
+                    <p class="mt-2 p-3 bg-danger bg-opacity-10 rounded text-danger">{{ leave.rejection_reason|linebreaks }}</p>
+                </div>
+                {% endif %}
+
+                {% if leave.emergency_contact %}
+                <div class="mb-3">
+                    <strong>Emergency Contact:</strong>
+                    <p class="mt-2">{{ leave.emergency_contact }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Leave Timeline -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="info-card">
+                <h5><i class="fas fa-history"></i> Leave Timeline</h5>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-primary"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">Leave Requested</h6>
+                            <p class="timeline-description">Leave application submitted</p>
+                            <small class="text-muted">{{ leave.created_at|date:"F d, Y g:i A" }}</small>
+                        </div>
+                    </div>
+                    
+                    {% if leave.status == 'approved' and leave.approval_date %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-success"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">Leave Approved</h6>
+                            <p class="timeline-description">
+                                Approved by {{ leave.approved_by.get_full_name|default:leave.approved_by.username }}
+                            </p>
+                            <small class="text-muted">{{ leave.approval_date|date:"F d, Y g:i A" }}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if leave.status == 'rejected' %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-danger"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">Leave Rejected</h6>
+                            <p class="timeline-description">Leave application was rejected</p>
+                            <small class="text-muted">{{ leave.updated_at|date:"F d, Y g:i A" }}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions for Pending Leaves -->
+    {% if leave.status == 'pending' %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="info-card">
+                <h5><i class="fas fa-cogs"></i> Actions</h5>
+                <form id="leaveActionForm" class="row">
+                    {% csrf_token %}
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label for="comments" class="form-label">Comments (optional)</label>
+                            <textarea class="form-control" id="comments" name="comments" rows="3" 
+                                      placeholder="Add any comments for approval or rejection..."></textarea>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">Actions</label>
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-success" onclick="processLeave('approve')">
+                                    <i class="fas fa-check"></i> Approve Leave
+                                </button>
+                                <button type="button" class="btn btn-danger" onclick="processLeave('reject')">
+                                    <i class="fas fa-times"></i> Reject Leave
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function processLeave(action) {
+    const actionText = action === 'approve' ? 'approve' : 'reject';
+    const actionColor = action === 'approve' ? '#28a745' : '#dc3545';
+    
+    Swal.fire({
+        title: `${actionText.charAt(0).toUpperCase() + actionText.slice(1)} Leave?`,
+        text: `Are you sure you want to ${actionText} this leave request?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: actionColor,
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: `Yes, ${actionText} it!`
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const formData = new FormData();
+            formData.append('action', action);
+            formData.append('comments', document.getElementById('comments').value);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            
+            fetch('{% url "hr:leave_approve" leave.id %}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire(
+                        `${actionText.charAt(0).toUpperCase() + actionText.slice(1)}d!`,
+                        `Leave has been ${actionText}d.`,
+                        'success'
+                    ).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Error', data.error || 'An error occurred', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire('Error', 'An unexpected error occurred', 'error');
+            });
+        }
+    });
+}
+
+function approveLeave(leaveId) {
+    processLeave('approve');
+}
+
+function rejectLeave(leaveId) {
+    processLeave('reject');
+}
+</script>
+{% endblock %}

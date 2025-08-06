@@ -1,0 +1,737 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}MRP Requirement Details - Manufacturing{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .detail-section {
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .detail-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .detail-item {
+        background: #f8fafc;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .detail-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.5rem;
+    }
+    
+    .detail-value {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #111827;
+    }
+    
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .status-draft { background: #ddd6fe; color: #5b21b6; }
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-approved { background: #d1fae5; color: #065f46; }
+    .status-rejected { background: #fecaca; color: #991b1b; }
+    .status-completed { background: #dbeafe; color: #1e40af; }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: none;
+        font-size: 0.875rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+    }
+    
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+    
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        color: #111827;
+    }
+    
+    .btn-success {
+        background: #10b981;
+        color: white;
+    }
+    
+    .btn-success:hover {
+        background: #059669;
+    }
+    
+    .btn-warning {
+        background: #f59e0b;
+        color: white;
+    }
+    
+    .btn-warning:hover {
+        background: #d97706;
+    }
+    
+    .btn-danger {
+        background: #ef4444;
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        background: #dc2626;
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 0.5rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e5e7eb;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+        background: white;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -1.75rem;
+        top: 1rem;
+        width: 0.75rem;
+        height: 0.75rem;
+        background: #8b5cf6;
+        border-radius: 50%;
+        border: 2px solid white;
+    }
+    
+    .timeline-date {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-bottom: 0.25rem;
+    }
+    
+    .timeline-title {
+        font-weight: 600;
+        color: #111827;
+        margin-bottom: 0.25rem;
+    }
+    
+    .timeline-desc {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+    
+    .action-buttons {
+        position: sticky;
+        top: 0;
+        background: white;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 1rem 0;
+        margin-bottom: 2rem;
+        z-index: 10;
+    }
+    
+    .quantity-breakdown {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .quantity-item {
+        background: white;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid #e5e7eb;
+        text-align: center;
+    }
+    
+    .quantity-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+    
+    .quantity-label {
+        font-size: 0.75rem;
+        color: #6b7280;
+        text-transform: uppercase;
+    }
+    
+    .alert {
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        border: 1px solid;
+    }
+    
+    .alert-info {
+        background: #dbeafe;
+        border-color: #3b82f6;
+        color: #1e40af;
+    }
+    
+    .alert-warning {
+        background: #fef3c7;
+        border-color: #f59e0b;
+        color: #92400e;
+    }
+    
+    .alert-danger {
+        background: #fecaca;
+        border-color: #ef4444;
+        color: #991b1b;
+    }
+    
+    .related-documents {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+    
+    .document-item {
+        display: flex;
+        align-items: center;
+        justify-content: between;
+        padding: 0.5rem;
+        border-bottom: 1px solid #e5e7eb;
+        margin-bottom: 0.5rem;
+    }
+    
+    .document-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    
+    .document-info {
+        flex: 1;
+    }
+    
+    .document-title {
+        font-weight: 500;
+        color: #111827;
+    }
+    
+    .document-meta {
+        font-size: 0.75rem;
+        color: #6b7280;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <div class="container mx-auto px-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-list-alt text-purple-600 mr-2"></i>
+                        MRP Requirement Details
+                    </h1>
+                </div>
+                <div class="flex gap-3">
+                    <a href="{% url 'manufacturing:mrp_ui' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to MRP
+                    </a>
+                    {% if requirement.status == 'pending' %}
+                    <button onclick="approveRequirement()" class="btn btn-success">
+                        <i class="fas fa-check"></i>
+                        Approve
+                    </button>
+                    <button onclick="rejectRequirement()" class="btn btn-danger">
+                        <i class="fas fa-times"></i>
+                        Reject
+                    </button>
+                    {% endif %}
+                    {% if requirement.status == 'approved' and not requirement.purchase_order %}
+                    <button onclick="createPurchaseOrder()" class="btn btn-primary">
+                        <i class="fas fa-shopping-cart"></i>
+                        Create Purchase Order
+                    </button>
+                    {% endif %}
+                    <button onclick="editRequirement()" class="btn btn-warning">
+                        <i class="fas fa-edit"></i>
+                        Edit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        {% if requirement.status == 'rejected' %}
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            This requirement has been rejected. Reason: {{ requirement.rejection_reason|default:"No reason provided" }}
+        </div>
+        {% endif %}
+
+        {% if requirement.is_urgent %}
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            This is an urgent requirement that needs immediate attention!
+        </div>
+        {% endif %}
+
+        <!-- Basic Information -->
+        <div class="detail-card">
+            <div class="detail-section">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                    Basic Information
+                </h3>
+                
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Product</div>
+                        <div class="detail-value">
+                            {% if requirement.product %}
+                                <a href="{% url 'products:product_detail' requirement.product.pk %}" class="text-purple-600 hover:text-purple-800">
+                                    {{ requirement.product.name }}
+                                </a>
+                                <div class="text-sm text-gray-500">{{ requirement.product.sku }}</div>
+                            {% else %}
+                                <span class="text-gray-500">Not specified</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">MRP Plan</div>
+                        <div class="detail-value">
+                            <a href="{% url 'manufacturing:mrp_plan_detail' requirement.mrp_plan.pk %}" class="text-purple-600 hover:text-purple-800">
+                                {{ requirement.mrp_plan.name }}
+                            </a>
+                            <div class="text-sm text-gray-500">{{ requirement.mrp_plan.plan_date }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">Status</div>
+                        <div class="detail-value">
+                            <span class="status-badge status-{{ requirement.status }}">
+                                {{ requirement.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">Priority</div>
+                        <div class="detail-value">
+                            <span class="inline-flex items-center">
+                                {% if requirement.priority == 'high' %}
+                                    <i class="fas fa-exclamation text-red-500 mr-1"></i>
+                                    <span class="text-red-600 font-semibold">High</span>
+                                {% elif requirement.priority == 'medium' %}
+                                    <i class="fas fa-minus text-yellow-500 mr-1"></i>
+                                    <span class="text-yellow-600 font-semibold">Medium</span>
+                                {% else %}
+                                    <i class="fas fa-arrow-down text-green-500 mr-1"></i>
+                                    <span class="text-green-600 font-semibold">Low</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quantity Information -->
+            <div class="detail-section">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-calculator text-green-600 mr-2"></i>
+                    Quantity Breakdown
+                </h3>
+                
+                <div class="quantity-breakdown">
+                    <div class="quantity-item">
+                        <div class="quantity-value text-blue-600">{{ requirement.required_quantity }}</div>
+                        <div class="quantity-label">Required</div>
+                    </div>
+                    <div class="quantity-item">
+                        <div class="quantity-value text-green-600">{{ requirement.available_quantity|default:0 }}</div>
+                        <div class="quantity-label">Available</div>
+                    </div>
+                    <div class="quantity-item">
+                        <div class="quantity-value text-orange-600">{{ requirement.shortage_quantity|default:0 }}</div>
+                        <div class="quantity-label">Shortage</div>
+                    </div>
+                    <div class="quantity-item">
+                        <div class="quantity-value text-purple-600">{{ requirement.ordered_quantity|default:0 }}</div>
+                        <div class="quantity-label">Ordered</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dates and Timing -->
+            <div class="detail-section">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-calendar text-purple-600 mr-2"></i>
+                    Timeline Information
+                </h3>
+                
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Required By</div>
+                        <div class="detail-value">
+                            {{ requirement.required_date|date:"M d, Y" }}
+                            {% if requirement.required_date < today %}
+                                <span class="text-red-500 ml-2">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Overdue
+                                </span>
+                            {% elif requirement.days_until_required <= 7 %}
+                                <span class="text-orange-500 ml-2">
+                                    <i class="fas fa-clock"></i>
+                                    Due soon
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">Order By</div>
+                        <div class="detail-value">
+                            {{ requirement.order_date|date:"M d, Y" }}
+                            <div class="text-sm text-gray-500">
+                                {{ requirement.days_until_order_date }} days remaining
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">Lead Time</div>
+                        <div class="detail-value">
+                            {{ requirement.lead_time_days|default:"Not specified" }}
+                            {% if requirement.lead_time_days %}days{% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">Created</div>
+                        <div class="detail-value">
+                            {{ requirement.created_at|date:"M d, Y g:i A" }}
+                            <div class="text-sm text-gray-500">{{ requirement.created_at|timesince }} ago</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cost Information -->
+            {% if requirement.estimated_cost or requirement.actual_cost %}
+            <div class="detail-section">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-dollar-sign text-green-600 mr-2"></i>
+                    Cost Information
+                </h3>
+                
+                <div class="detail-grid">
+                    {% if requirement.estimated_cost %}
+                    <div class="detail-item">
+                        <div class="detail-label">Estimated Cost</div>
+                        <div class="detail-value">${{ requirement.estimated_cost|floatformat:2 }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if requirement.actual_cost %}
+                    <div class="detail-item">
+                        <div class="detail-label">Actual Cost</div>
+                        <div class="detail-value">${{ requirement.actual_cost|floatformat:2 }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if requirement.estimated_cost and requirement.actual_cost %}
+                    <div class="detail-item">
+                        <div class="detail-label">Variance</div>
+                        <div class="detail-value">
+                            {% with variance=requirement.actual_cost|sub:requirement.estimated_cost %}
+                                <span class="{% if variance > 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                                    ${{ variance|floatformat:2 }}
+                                </span>
+                            {% endwith %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Notes and Comments -->
+            {% if requirement.notes or requirement.supplier_notes %}
+            <div class="detail-section">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-sticky-note text-yellow-600 mr-2"></i>
+                    Notes & Comments
+                </h3>
+                
+                {% if requirement.notes %}
+                <div class="mb-4">
+                    <div class="detail-label mb-2">Internal Notes</div>
+                    <div class="bg-gray-50 p-3 rounded border">{{ requirement.notes }}</div>
+                </div>
+                {% endif %}
+                
+                {% if requirement.supplier_notes %}
+                <div class="mb-4">
+                    <div class="detail-label mb-2">Supplier Notes</div>
+                    <div class="bg-blue-50 p-3 rounded border border-blue-200">{{ requirement.supplier_notes }}</div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Related Documents -->
+        {% if requirement.purchase_order or requirement.work_order %}
+        <div class="detail-card">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-file-alt text-blue-600 mr-2"></i>
+                Related Documents
+            </h3>
+            
+            <div class="related-documents">
+                {% if requirement.purchase_order %}
+                <div class="document-item">
+                    <div class="document-info">
+                        <div class="document-title">
+                            <i class="fas fa-shopping-cart text-purple-600 mr-2"></i>
+                            Purchase Order #{{ requirement.purchase_order.order_number }}
+                        </div>
+                        <div class="document-meta">
+                            Status: {{ requirement.purchase_order.get_status_display }} | 
+                            Date: {{ requirement.purchase_order.order_date|date:"M d, Y" }}
+                        </div>
+                    </div>
+                    <a href="{% url 'purchase:purchase_order_detail' requirement.purchase_order.pk %}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-eye"></i>
+                        View
+                    </a>
+                </div>
+                {% endif %}
+                
+                {% if requirement.work_order %}
+                <div class="document-item">
+                    <div class="document-info">
+                        <div class="document-title">
+                            <i class="fas fa-cogs text-green-600 mr-2"></i>
+                            Work Order #{{ requirement.work_order.order_number }}
+                        </div>
+                        <div class="document-meta">
+                            Status: {{ requirement.work_order.get_status_display }} | 
+                            Date: {{ requirement.work_order.start_date|date:"M d, Y" }}
+                        </div>
+                    </div>
+                    <a href="{% url 'manufacturing:work_order_detail' requirement.work_order.pk %}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-eye"></i>
+                        View
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- History Timeline -->
+        {% if requirement.history.exists %}
+        <div class="detail-card">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-history text-gray-600 mr-2"></i>
+                Change History
+            </h3>
+            
+            <div class="timeline">
+                {% for history in requirement.history.all %}
+                <div class="timeline-item">
+                    <div class="timeline-date">{{ history.history_date|date:"M d, Y g:i A" }}</div>
+                    <div class="timeline-title">{{ history.get_history_type_display }}</div>
+                    <div class="timeline-desc">
+                        {% if history.history_user %}
+                            by {{ history.history_user.get_full_name|default:history.history_user.username }}
+                        {% endif %}
+                        {% if history.history_change_reason %}
+                            - {{ history.history_change_reason }}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function approveRequirement() {
+    if (confirm('Approve this MRP requirement?')) {
+        updateRequirementStatus('approved');
+    }
+}
+
+function rejectRequirement() {
+    const reason = prompt('Please provide a reason for rejection:');
+    if (reason !== null) {
+        updateRequirementStatus('rejected', reason);
+    }
+}
+
+function updateRequirementStatus(status, reason = null) {
+    const data = { status };
+    if (reason) {
+        data.rejection_reason = reason;
+    }
+    
+    fetch(`/manufacturing/api/mrp-requirements/{{ requirement.pk }}/update-status/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`Requirement ${status} successfully!`, 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showNotification('Failed to update requirement status', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Failed to update requirement status', 'error');
+    });
+}
+
+function createPurchaseOrder() {
+    if (confirm('Create a purchase order for this requirement?')) {
+        fetch(`/manufacturing/api/mrp-requirements/{{ requirement.pk }}/create-purchase-order/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Purchase order created successfully!', 'success');
+                setTimeout(() => {
+                    window.location.href = `/purchase/orders/${data.purchase_order_id}/`;
+                }, 1500);
+            } else {
+                showNotification('Failed to create purchase order: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to create purchase order', 'error');
+        });
+    }
+}
+
+function editRequirement() {
+    window.location.href = `{% url 'manufacturing:mrp_requirement_edit' requirement.pk %}`;
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'error' ? 'bg-red-500 text-white' :
+        'bg-blue-500 text-white'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${
+                type === 'success' ? 'fa-check-circle' :
+                type === 'error' ? 'fa-exclamation-triangle' :
+                'fa-info-circle'
+            } mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

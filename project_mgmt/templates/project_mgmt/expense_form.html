@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Expense | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(6, 95, 70, 0.05));
+        border: 1px solid rgba(16, 185, 129, 0.1);
+    }
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e5e7eb;
+    }
+    .form-section h3 {
+        color: #374151;
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    .upload-area {
+        border: 2px dashed #d1d5db;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    .upload-area:hover {
+        border-color: #10b981;
+        background-color: #f0fdf4;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8 max-w-4xl">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center mb-4">
+                <a href="{% url 'project_mgmt:expenses_ui' %}" class="mr-4 p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Add Expense</h1>
+                    <p class="text-gray-600">Record a new project expense</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="form-card p-8 rounded-2xl">
+            <form id="expenseForm" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h3>Expense Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="project" class="block text-sm font-medium text-gray-700 mb-2">Project *</label>
+                            <select name="project" id="project" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <option value="">Select Project</option>
+                                {% for project in projects %}
+                                    <option value="{{ project.id }}">{{ project.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="expense_type" class="block text-sm font-medium text-gray-700 mb-2">Expense Type *</label>
+                            <select name="expense_type" id="expense_type" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <option value="">Select Type</option>
+                                <option value="material">Material</option>
+                                <option value="equipment">Equipment</option>
+                                <option value="travel">Travel</option>
+                                <option value="contractor">Contractor</option>
+                                <option value="software">Software</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                        <input type="text" name="description" id="description" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="Enter expense description">
+                    </div>
+                </div>
+
+                <!-- Financial Details -->
+                <div class="form-section">
+                    <h3>Financial Details</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="amount" class="block text-sm font-medium text-gray-700 mb-2">Amount *</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-3 text-gray-500">$</span>
+                                <input type="number" name="amount" id="amount" step="0.01" min="0" required class="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="0.00">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="expense_date" class="block text-sm font-medium text-gray-700 mb-2">Expense Date *</label>
+                            <input type="date" name="expense_date" id="expense_date" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="is_billable" id="is_billable" class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
+                            <span class="ml-2 text-sm font-medium text-gray-700">This expense is billable to client</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Receipt Upload -->
+                <div class="form-section">
+                    <h3>Receipt (Optional)</h3>
+                    <div class="upload-area">
+                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        <h4 class="text-lg font-medium text-gray-700 mb-2">Upload Receipt</h4>
+                        <p class="text-gray-500 mb-4">Drag and drop your receipt here, or click to browse</p>
+                        <input type="file" name="receipt" id="receipt" class="hidden" accept=".pdf,.jpg,.jpeg,.png">
+                        <button type="button" onclick="document.getElementById('receipt').click()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                            Choose File
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Additional Notes -->
+                <div class="form-section">
+                    <h3>Additional Notes</h3>
+                    <div>
+                        <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                        <textarea name="notes" id="notes" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="Any additional notes about this expense"></textarea>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                    <a href="{% url 'project_mgmt:expenses_ui' %}" class="px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all">
+                        Add Expense
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set today's date as default
+document.getElementById('expense_date').valueAsDate = new Date();
+
+// File upload handling
+document.getElementById('receipt').addEventListener('change', function() {
+    const fileName = this.files[0]?.name;
+    if (fileName) {
+        document.querySelector('.upload-area h4').textContent = fileName;
+        document.querySelector('.upload-area p').textContent = 'Receipt uploaded successfully';
+    }
+});
+
+// Form submission
+document.getElementById('expenseForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('{% url "project_mgmt:expense_add" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = '{% url "project_mgmt:expenses_ui" %}';
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while adding the expense.');
+    });
+});
+</script>
+{% endblock %}

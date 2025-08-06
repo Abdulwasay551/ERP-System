@@ -1,0 +1,1139 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Journal Entries - Accounting{% endblock %}
+
+{% block extra_css %}
+<style>
+    .journal-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .journal-card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 20px 40px rgba(59, 130, 246, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .journal-entry {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        background: white;
+        transition: all 0.3s ease;
+    }
+    
+    .journal-entry:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
+    }
+    
+    .journal-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        padding: 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .journal-body {
+        padding: 0;
+    }
+    
+    .journal-item {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: between;
+        transition: background-color 0.2s ease;
+    }
+    
+    .journal-item:hover {
+        background: #f8fafc;
+    }
+    
+    .journal-item:last-child {
+        border-bottom: none;
+    }
+    
+    .journal-item.debit {
+        border-left: 4px solid #10b981;
+    }
+    
+    .journal-item.credit {
+        border-left: 4px solid #ef4444;
+        background: #fefefe;
+    }
+    
+    .account-info {
+        flex: 1;
+    }
+    
+    .account-code {
+        font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+        font-weight: 600;
+        color: #1f2937;
+        font-size: 0.875rem;
+    }
+    
+    .account-name {
+        color: #374151;
+        font-weight: 500;
+        margin-top: 0.25rem;
+    }
+    
+    .account-description {
+        color: #6b7280;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        font-style: italic;
+    }
+    
+    .amount-info {
+        text-align: right;
+        min-width: 120px;
+    }
+    
+    .amount {
+        font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+    
+    .debit-amount {
+        color: #10b981;
+    }
+    
+    .credit-amount {
+        color: #ef4444;
+    }
+    
+    .amount-label {
+        font-size: 0.75rem;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.25rem;
+    }
+    
+    .journal-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .journal-date {
+        font-weight: 600;
+        color: #1f2937;
+        font-size: 1.125rem;
+    }
+    
+    .journal-reference {
+        font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+        background: #f3f4f6;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        color: #374151;
+    }
+    
+    .journal-description {
+        color: #6b7280;
+        font-style: italic;
+        margin-bottom: 1rem;
+    }
+    
+    .journal-totals {
+        background: #f8fafc;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        font-weight: 600;
+    }
+    
+    .total-debits {
+        color: #10b981;
+    }
+    
+    .total-credits {
+        color: #ef4444;
+    }
+    
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-draft {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    .status-posted {
+        background: #dcfce7;
+        color: #166534;
+    }
+    
+    .status-cancelled {
+        background: #fecaca;
+        color: #991b1b;
+    }
+    
+    .filter-controls {
+        background: #f8fafc;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        align-items: end;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .form-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-input {
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: none;
+        font-size: 0.875rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+    
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+    
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        color: #111827;
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+    }
+    
+    .btn-success:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    }
+    
+    .stats-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        border: 1px solid #e5e7eb;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .journal-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-left: auto;
+    }
+    
+    .floating-add-btn {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        transition: all 0.3s ease;
+        z-index: 40;
+    }
+    
+    .floating-add-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 15px 35px rgba(59, 130, 246, 0.4);
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 2rem;
+    }
+    
+    .pagination button {
+        padding: 0.5rem 1rem;
+        border: 1px solid #d1d5db;
+        background: white;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .pagination button:hover {
+        background: #f3f4f6;
+    }
+    
+    .pagination button.active {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+    
+    .balance-validation {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .balance-valid {
+        color: #10b981;
+    }
+    
+    .balance-invalid {
+        color: #ef4444;
+    }
+
+    @media (max-width: 768px) {
+        .journal-meta {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        
+        .journal-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        
+        .amount-info {
+            align-self: flex-end;
+        }
+        
+        .filter-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .stats-overview {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .floating-add-btn {
+            bottom: 1rem;
+            right: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">
+                        <i class="fas fa-book text-blue-600 mr-3"></i>
+                        Journal Entries
+                    </h1>
+                    <p class="text-gray-600 mt-2">Manage all your accounting journal entries</p>
+                </div>
+                <div class="flex gap-3">
+                    <a href="{% url 'accounting:dashboard' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to Accounting
+                    </a>
+                    <button onclick="importJournalEntries()" class="btn btn-secondary">
+                        <i class="fas fa-upload"></i>
+                        Import
+                    </button>
+                    <button onclick="exportJournalEntries()" class="btn btn-secondary">
+                        <i class="fas fa-download"></i>
+                        Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Statistics Overview -->
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-value text-blue-600">{{ total_entries|default:128 }}</div>
+                <div class="stat-label">Total Entries</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-green-600">{{ posted_entries|default:115 }}</div>
+                <div class="stat-label">Posted Entries</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-yellow-600">{{ draft_entries|default:13 }}</div>
+                <div class="stat-label">Draft Entries</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-purple-600">€{{ total_amount|default:"245,680.00" }}</div>
+                <div class="stat-label">Total Amount</div>
+            </div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="filter-controls">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Filter Journal Entries</h3>
+            <div class="filter-grid">
+                <div class="form-group">
+                    <label class="form-label">From Date</label>
+                    <input type="date" class="form-input" id="fromDate" value="{{ from_date|default:'2024-01-01' }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">To Date</label>
+                    <input type="date" class="form-input" id="toDate" value="{{ to_date|default:'2024-12-31' }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select class="form-input" id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="draft">Draft</option>
+                        <option value="posted">Posted</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Search</label>
+                    <input type="text" class="form-input" placeholder="Search by reference or description..." id="searchInput">
+                </div>
+                <div class="form-group">
+                    <button onclick="applyFilters()" class="btn btn-primary">
+                        <i class="fas fa-filter"></i>
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Journal Entries -->
+        <div id="journalEntries">
+            <!-- Sample Journal Entry 1 -->
+            <div class="journal-entry">
+                <div class="journal-header">
+                    <div class="journal-meta">
+                        <div>
+                            <div class="journal-date">January 15, 2024</div>
+                            <div class="journal-description">Sale of products to ABC Company - Invoice #INV-001</div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="journal-reference">JE-001</span>
+                            <span class="status-badge status-posted">Posted</span>
+                            <div class="journal-actions">
+                                <button onclick="viewJournalEntry('JE-001')" class="btn btn-secondary text-sm">
+                                    <i class="fas fa-eye"></i>
+                                    View
+                                </button>
+                                <button onclick="editJournalEntry('JE-001')" class="btn btn-success text-sm">
+                                    <i class="fas fa-edit"></i>
+                                    Edit
+                                </button>
+                                <button onclick="deleteJournalEntry('JE-001')" class="btn btn-danger text-sm">
+                                    <i class="fas fa-trash"></i>
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="balance-validation balance-valid">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Balanced</span>
+                    </div>
+                </div>
+                <div class="journal-body">
+                    <div class="journal-item debit">
+                        <div class="account-info">
+                            <div class="account-code">1.1.3.1</div>
+                            <div class="account-name">Customers - Local</div>
+                            <div class="account-description">Amount receivable from ABC Company</div>
+                        </div>
+                        <div class="amount-info">
+                            <div class="amount-label">Debit</div>
+                            <div class="amount debit-amount">€12,500.00</div>
+                        </div>
+                    </div>
+                    <div class="journal-item credit">
+                        <div class="account-info">
+                            <div class="account-code">4.1.1.1</div>
+                            <div class="account-name">Product Sales - Local</div>
+                            <div class="account-description">Revenue from product sales</div>
+                        </div>
+                        <div class="amount-info">
+                            <div class="amount-label">Credit</div>
+                            <div class="amount credit-amount">€12,500.00</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="journal-totals">
+                    <div class="total-debits">Total Debits: €12,500.00</div>
+                    <div class="total-credits">Total Credits: €12,500.00</div>
+                </div>
+            </div>
+
+            <!-- Sample Journal Entry 2 -->
+            <div class="journal-entry">
+                <div class="journal-header">
+                    <div class="journal-meta">
+                        <div>
+                            <div class="journal-date">January 18, 2024</div>
+                            <div class="journal-description">Purchase of raw materials from XYZ Supplier - Bill #BILL-005</div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="journal-reference">JE-002</span>
+                            <span class="status-badge status-posted">Posted</span>
+                            <div class="journal-actions">
+                                <button onclick="viewJournalEntry('JE-002')" class="btn btn-secondary text-sm">
+                                    <i class="fas fa-eye"></i>
+                                    View
+                                </button>
+                                <button onclick="editJournalEntry('JE-002')" class="btn btn-success text-sm">
+                                    <i class="fas fa-edit"></i>
+                                    Edit
+                                </button>
+                                <button onclick="deleteJournalEntry('JE-002')" class="btn btn-danger text-sm">
+                                    <i class="fas fa-trash"></i>
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="balance-validation balance-valid">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Balanced</span>
+                    </div>
+                </div>
+                <div class="journal-body">
+                    <div class="journal-item debit">
+                        <div class="account-info">
+                            <div class="account-code">1.1.4.1</div>
+                            <div class="account-name">Raw Material Inventory</div>
+                            <div class="account-description">Steel rods and aluminum sheets</div>
+                        </div>
+                        <div class="amount-info">
+                            <div class="amount-label">Debit</div>
+                            <div class="amount debit-amount">€8,750.00</div>
+                        </div>
+                    </div>
+                    <div class="journal-item credit">
+                        <div class="account-info">
+                            <div class="account-code">2.1.1.1</div>
+                            <div class="account-name">Vendors - Local</div>
+                            <div class="account-description">Amount payable to XYZ Supplier</div>
+                        </div>
+                        <div class="amount-info">
+                            <div class="amount-label">Credit</div>
+                            <div class="amount credit-amount">€8,750.00</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="journal-totals">
+                    <div class="total-debits">Total Debits: €8,750.00</div>
+                    <div class="total-credits">Total Credits: €8,750.00</div>
+                </div>
+            </div>
+
+            <!-- Sample Journal Entry 3 - Unbalanced Draft -->
+            <div class="journal-entry">
+                <div class="journal-header">
+                    <div class="journal-meta">
+                        <div>
+                            <div class="journal-date">January 22, 2024</div>
+                            <div class="journal-description">Monthly salary payment - January 2024</div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="journal-reference">JE-003</span>
+                            <span class="status-badge status-draft">Draft</span>
+                            <div class="journal-actions">
+                                <button onclick="viewJournalEntry('JE-003')" class="btn btn-secondary text-sm">
+                                    <i class="fas fa-eye"></i>
+                                    View
+                                </button>
+                                <button onclick="editJournalEntry('JE-003')" class="btn btn-success text-sm">
+                                    <i class="fas fa-edit"></i>
+                                    Edit
+                                </button>
+                                <button onclick="postJournalEntry('JE-003')" class="btn btn-primary text-sm">
+                                    <i class="fas fa-check"></i>
+                                    Post
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="balance-validation balance-invalid">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Out of Balance</span>
+                    </div>
+                </div>
+                <div class="journal-body">
+                    <div class="journal-item debit">
+                        <div class="account-info">
+                            <div class="account-code">6.1.1.1</div>
+                            <div class="account-name">Employee Salaries</div>
+                            <div class="account-description">Monthly salary expense</div>
+                        </div>
+                        <div class="amount-info">
+                            <div class="amount-label">Debit</div>
+                            <div class="amount debit-amount">€45,000.00</div>
+                        </div>
+                    </div>
+                    <div class="journal-item credit">
+                        <div class="account-info">
+                            <div class="account-code">1.1.2.1</div>
+                            <div class="account-name">Bank - HBL</div>
+                            <div class="account-description">Cash payment from bank</div>
+                        </div>
+                        <div class="amount-info">
+                            <div class="amount-label">Credit</div>
+                            <div class="amount credit-amount">€35,000.00</div>
+                        </div>
+                    </div>
+                    <div class="journal-item credit">
+                        <div class="account-info">
+                            <div class="account-code">2.1.2.1</div>
+                            <div class="account-name">Salaries Payable</div>
+                            <div class="account-description">Remaining salary payable</div>
+                        </div>
+                        <div class="amount-info">
+                            <div class="amount-label">Credit</div>
+                            <div class="amount credit-amount">€10,000.00</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="journal-totals">
+                    <div class="total-debits">Total Debits: €45,000.00</div>
+                    <div class="total-credits">Total Credits: €45,000.00</div>
+                </div>
+            </div>
+
+            <!-- Dynamic Journal Entries -->
+            {% for entry in journal_entries %}
+            <div class="journal-entry">
+                <div class="journal-header">
+                    <div class="journal-meta">
+                        <div>
+                            <div class="journal-date">{{ entry.entry_date|date:"F d, Y" }}</div>
+                            <div class="journal-description">{{ entry.description }}</div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="journal-reference">{{ entry.reference }}</span>
+                            <span class="status-badge status-{{ entry.status }}">{{ entry.status|title }}</span>
+                            <div class="journal-actions">
+                                <button onclick="viewJournalEntry('{{ entry.id }}')" class="btn btn-secondary text-sm">
+                                    <i class="fas fa-eye"></i>
+                                    View
+                                </button>
+                                {% if entry.status == 'draft' %}
+                                <button onclick="editJournalEntry('{{ entry.id }}')" class="btn btn-success text-sm">
+                                    <i class="fas fa-edit"></i>
+                                    Edit
+                                </button>
+                                <button onclick="postJournalEntry('{{ entry.id }}')" class="btn btn-primary text-sm">
+                                    <i class="fas fa-check"></i>
+                                    Post
+                                </button>
+                                {% endif %}
+                                {% if entry.status != 'posted' %}
+                                <button onclick="deleteJournalEntry('{{ entry.id }}')" class="btn btn-danger text-sm">
+                                    <i class="fas fa-trash"></i>
+                                    Delete
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="balance-validation {% if entry.is_balanced %}balance-valid{% else %}balance-invalid{% endif %}">
+                        <i class="fas {% if entry.is_balanced %}fa-check-circle{% else %}fa-exclamation-triangle{% endif %}"></i>
+                        <span>{% if entry.is_balanced %}Balanced{% else %}Out of Balance{% endif %}</span>
+                    </div>
+                </div>
+                <div class="journal-body">
+                    {% for item in entry.items.all %}
+                    <div class="journal-item {% if item.debit_amount %}debit{% else %}credit{% endif %}">
+                        <div class="account-info">
+                            <div class="account-code">{{ item.account.code }}</div>
+                            <div class="account-name">{{ item.account.name }}</div>
+                            <div class="account-description">{{ item.description|default:item.account.description }}</div>
+                        </div>
+                        <div class="amount-info">
+                            <div class="amount-label">{% if item.debit_amount %}Debit{% else %}Credit{% endif %}</div>
+                            <div class="amount {% if item.debit_amount %}debit-amount{% else %}credit-amount{% endif %}">
+                                €{{ item.debit_amount|default:item.credit_amount }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="journal-totals">
+                    <div class="total-debits">Total Debits: €{{ entry.total_debits }}</div>
+                    <div class="total-credits">Total Credits: €{{ entry.total_credits }}</div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="journal-card text-center">
+                <i class="fas fa-book text-4xl text-blue-500 mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">No Journal Entries Found</h3>
+                <p class="text-gray-600 mb-4">Create your first journal entry to get started</p>
+                <button onclick="createJournalEntry()" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Create Journal Entry
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination">
+            <button onclick="previousPage()" {% if not has_previous %}disabled{% endif %}>
+                <i class="fas fa-chevron-left"></i>
+                Previous
+            </button>
+            <span class="px-4">Page {{ current_page|default:1 }} of {{ total_pages|default:1 }}</span>
+            <button onclick="nextPage()" {% if not has_next %}disabled{% endif %}>
+                Next
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Floating Add Button -->
+    <button class="floating-add-btn" onclick="createJournalEntry()" title="Create New Journal Entry">
+        <i class="fas fa-plus"></i>
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function applyFilters() {
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+    const status = document.getElementById('statusFilter').value;
+    const search = document.getElementById('searchInput').value;
+    
+    const params = new URLSearchParams();
+    if (fromDate) params.append('from_date', fromDate);
+    if (toDate) params.append('to_date', toDate);
+    if (status) params.append('status', status);
+    if (search) params.append('search', search);
+    
+    window.location.href = '?' + params.toString();
+}
+
+function createJournalEntry() {
+    window.location.href = '{% url "accounting:journal_entry_create" %}';
+}
+
+function viewJournalEntry(entryId) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-screen overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold">Journal Entry Details</h3>
+                <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <h4 class="font-semibold mb-3">Entry Information</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span>Reference:</span><span class="font-medium">JE-001</span></div>
+                        <div class="flex justify-between"><span>Date:</span><span class="font-medium">January 15, 2024</span></div>
+                        <div class="flex justify-between"><span>Status:</span><span class="text-green-600 font-medium">Posted</span></div>
+                        <div class="flex justify-between"><span>Created By:</span><span>John Doe</span></div>
+                        <div class="flex justify-between"><span>Posted Date:</span><span>January 15, 2024</span></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-3">Entry Totals</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span>Total Debits:</span><span class="text-green-600 font-medium">€12,500.00</span></div>
+                        <div class="flex justify-between"><span>Total Credits:</span><span class="text-red-600 font-medium">€12,500.00</span></div>
+                        <div class="flex justify-between border-t pt-2"><span class="font-semibold">Balance:</span><span class="text-green-600 font-bold">€0.00</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h4 class="font-semibold mb-3">Description</h4>
+                <p class="text-gray-600 text-sm mb-4">Sale of products to ABC Company - Invoice #INV-001</p>
+            </div>
+            
+            <div>
+                <h4 class="font-semibold mb-3">Journal Items</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border border-gray-300 p-2 text-left">Account</th>
+                                <th class="border border-gray-300 p-2 text-left">Description</th>
+                                <th class="border border-gray-300 p-2 text-right">Debit</th>
+                                <th class="border border-gray-300 p-2 text-right">Credit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="border border-gray-300 p-2">1.1.3.1 - Customers - Local</td>
+                                <td class="border border-gray-300 p-2">Amount receivable from ABC Company</td>
+                                <td class="border border-gray-300 p-2 text-right text-green-600">€12,500.00</td>
+                                <td class="border border-gray-300 p-2 text-right">-</td>
+                            </tr>
+                            <tr>
+                                <td class="border border-gray-300 p-2">4.1.1.1 - Product Sales - Local</td>
+                                <td class="border border-gray-300 p-2">Revenue from product sales</td>
+                                <td class="border border-gray-300 p-2 text-right">-</td>
+                                <td class="border border-gray-300 p-2 text-right text-red-600">€12,500.00</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-gray-100 font-semibold">
+                                <td colspan="2" class="border border-gray-300 p-2">TOTAL</td>
+                                <td class="border border-gray-300 p-2 text-right">€12,500.00</td>
+                                <td class="border border-gray-300 p-2 text-right">€12,500.00</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="this.closest('.fixed').remove()" class="btn btn-secondary">
+                    Close
+                </button>
+                <button onclick="printJournalEntry('${entryId}'); this.closest('.fixed').remove();" class="btn btn-secondary">
+                    Print Entry
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function editJournalEntry(entryId) {
+    window.location.href = `/accounting/journal-entries/${entryId}/edit/`;
+}
+
+function postJournalEntry(entryId) {
+    if (confirm('Are you sure you want to post this journal entry? This action cannot be undone.')) {
+        fetch(`/accounting/api/journal-entries/${entryId}/post/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Journal entry posted successfully!', 'success');
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showNotification('Failed to post journal entry: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to post journal entry', 'error');
+        });
+    }
+}
+
+function deleteJournalEntry(entryId) {
+    if (confirm('Are you sure you want to delete this journal entry? This action cannot be undone.')) {
+        fetch(`/accounting/api/journal-entries/${entryId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Journal entry deleted successfully!', 'success');
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showNotification('Failed to delete journal entry: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to delete journal entry', 'error');
+        });
+    }
+}
+
+function exportJournalEntries() {
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+    const status = document.getElementById('statusFilter').value;
+    
+    const params = new URLSearchParams({
+        from_date: fromDate,
+        to_date: toDate,
+        status: status,
+        format: 'excel'
+    });
+    
+    window.open(`/accounting/api/journal-entries/export/?${params}`, '_blank');
+    showNotification('Journal entries export started', 'info');
+}
+
+function importJournalEntries() {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold mb-4">Import Journal Entries</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Select CSV File</label>
+                    <input type="file" accept=".csv,.xlsx,.xls" class="form-input w-full" id="importFile">
+                </div>
+                
+                <div class="text-sm text-gray-600">
+                    <p>File should contain the following columns:</p>
+                    <ul class="list-disc list-inside mt-1">
+                        <li>Date, Reference, Description, Account Code, Debit, Credit</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="this.closest('.fixed').remove()" class="btn btn-secondary">
+                    Cancel
+                </button>
+                <button onclick="processImport(); this.closest('.fixed').remove();" class="btn btn-primary">
+                    Import Entries
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function processImport() {
+    const fileInput = document.getElementById('importFile');
+    if (!fileInput.files.length) {
+        showNotification('Please select a file to import', 'warning');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    
+    fetch('/accounting/api/journal-entries/import/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`Successfully imported ${data.imported_count} journal entries!`, 'success');
+            setTimeout(() => window.location.reload(), 2000);
+        } else {
+            showNotification('Failed to import journal entries: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Failed to import journal entries', 'error');
+    });
+}
+
+function printJournalEntry(entryId) {
+    window.open(`/accounting/journal-entries/${entryId}/print/`, '_blank');
+}
+
+function previousPage() {
+    const currentPage = {{ current_page|default:1 }};
+    if (currentPage > 1) {
+        const params = new URLSearchParams(window.location.search);
+        params.set('page', currentPage - 1);
+        window.location.href = '?' + params.toString();
+    }
+}
+
+function nextPage() {
+    const currentPage = {{ current_page|default:1 }};
+    const totalPages = {{ total_pages|default:1 }};
+    if (currentPage < totalPages) {
+        const params = new URLSearchParams(window.location.search);
+        params.set('page', currentPage + 1);
+        window.location.href = '?' + params.toString();
+    }
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'error' ? 'bg-red-500 text-white' :
+        type === 'warning' ? 'bg-yellow-500 text-white' :
+        'bg-blue-500 text-white'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${
+                type === 'success' ? 'fa-check-circle' :
+                type === 'error' ? 'fa-exclamation-triangle' :
+                type === 'warning' ? 'fa-exclamation-triangle' :
+                'fa-info-circle'
+            } mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+// Initialize search functionality
+document.getElementById('searchInput')?.addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const journalEntries = document.querySelectorAll('.journal-entry');
+    
+    journalEntries.forEach(entry => {
+        const text = entry.textContent.toLowerCase();
+        if (searchTerm === '' || text.includes(searchTerm)) {
+            entry.style.display = 'block';
+        } else {
+            entry.style.display = 'none';
+        }
+    });
+});
+</script>
+
+<!-- Add CSRF token -->
+{% csrf_token %}
+{% endblock %}

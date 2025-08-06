@@ -1,0 +1,432 @@
+{% extends "base.html" %}
+{% block title %}HR Reports | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-card {
+        background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(147, 51, 234, 0.1));
+        border: 1px solid rgba(168, 85, 247, 0.2);
+        transition: all 0.3s ease;
+    }
+    .report-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(168, 85, 247, 0.15);
+    }
+    .chart-container {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(79, 70, 229, 0.1));
+        border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+    .metric-card {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(21, 128, 61, 0.1));
+        border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">HR Reports & Analytics</h1>
+                <p class="text-gray-600">Comprehensive reports and insights for HR management</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="exportAllReports()" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Export Reports
+                </button>
+            </div>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Employees</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ metrics.total_employees }}</p>
+                        <p class="text-sm text-green-600">+{{ metrics.new_employees_this_month }} this month</p>
+                    </div>
+                </div>
+            </div>
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Attendance Rate</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ metrics.attendance_rate }}%</p>
+                        <p class="text-sm text-gray-500">This month</p>
+                    </div>
+                </div>
+            </div>
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-purple-100 rounded-lg">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Payroll</p>
+                        <p class="text-2xl font-bold text-gray-900">${{ metrics.total_payroll|floatformat:0 }}</p>
+                        <p class="text-sm text-gray-500">This month</p>
+                    </div>
+                </div>
+            </div>
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-yellow-100 rounded-lg">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Avg Leave Days</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ metrics.avg_leave_days|floatformat:1 }}</p>
+                        <p class="text-sm text-gray-500">Per employee</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="report-card rounded-2xl p-6 mb-8">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
+                    <select name="report_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="all" {% if report_type == 'all' %}selected{% endif %}>All Reports</option>
+                        <option value="employee" {% if report_type == 'employee' %}selected{% endif %}>Employee Reports</option>
+                        <option value="attendance" {% if report_type == 'attendance' %}selected{% endif %}>Attendance Reports</option>
+                        <option value="leave" {% if report_type == 'leave' %}selected{% endif %}>Leave Reports</option>
+                        <option value="payroll" {% if report_type == 'payroll' %}selected{% endif %}>Payroll Reports</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                    <select name="date_range" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="this_month" {% if date_range == 'this_month' %}selected{% endif %}>This Month</option>
+                        <option value="last_month" {% if date_range == 'last_month' %}selected{% endif %}>Last Month</option>
+                        <option value="this_quarter" {% if date_range == 'this_quarter' %}selected{% endif %}>This Quarter</option>
+                        <option value="this_year" {% if date_range == 'this_year' %}selected{% endif %}>This Year</option>
+                        <option value="custom" {% if date_range == 'custom' %}selected{% endif %}>Custom Range</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                    <select name="department" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if department_filter == dept.id|stringformat:"s" %}selected{% endif %}>
+                            {{ dept.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Generate Report
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Attendance Chart -->
+            <div class="chart-container rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Monthly Attendance Trends</h3>
+                <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+                    <canvas id="attendanceChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Department Distribution -->
+            <div class="chart-container rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Employee Distribution by Department</h3>
+                <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+                    <canvas id="departmentChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Leave Analysis -->
+            <div class="chart-container rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Leave Requests by Type</h3>
+                <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+                    <canvas id="leaveChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Payroll Trends -->
+            <div class="chart-container rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Payroll Trends</h3>
+                <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+                    <canvas id="payrollChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Tables -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Top Performers -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Top Performers (Attendance)</h3>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        {% for performer in top_performers %}
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                        <span class="text-sm font-medium text-green-800">{{ forloop.counter }}</span>
+                                    </div>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-gray-900">{{ performer.employee__full_name }}</p>
+                                    <p class="text-sm text-gray-500">{{ performer.employee__department__name }}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-medium text-gray-900">{{ performer.attendance_rate|floatformat:1 }}%</p>
+                                <p class="text-sm text-gray-500">Attendance</p>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-sm text-gray-500">No data available for the selected period.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Department Summary -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Department Summary</h3>
+                </div>
+                <div class="p-6">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead>
+                                <tr class="border-b border-gray-200">
+                                    <th class="text-left py-2 text-sm font-medium text-gray-500">Department</th>
+                                    <th class="text-left py-2 text-sm font-medium text-gray-500">Employees</th>
+                                    <th class="text-left py-2 text-sm font-medium text-gray-500">Avg Attendance</th>
+                                    <th class="text-left py-2 text-sm font-medium text-gray-500">Leave Requests</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                {% for dept_stat in department_stats %}
+                                <tr>
+                                    <td class="py-2 text-sm text-gray-900">{{ dept_stat.department__name }}</td>
+                                    <td class="py-2 text-sm text-gray-900">{{ dept_stat.employee_count }}</td>
+                                    <td class="py-2 text-sm text-gray-900">{{ dept_stat.avg_attendance|floatformat:1 }}%</td>
+                                    <td class="py-2 text-sm text-gray-900">{{ dept_stat.leave_requests }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="py-2 text-sm text-gray-500 text-center">No data available.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Recent HR Activities</h3>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        {% for activity in recent_activities %}
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0">
+                                <div class="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm text-gray-900">{{ activity.description }}</p>
+                                <p class="text-sm text-gray-500">{{ activity.created_at|timesince }} ago</p>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-sm text-gray-500">No recent activities.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Report Actions -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Quick Reports</h3>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-3">
+                        <button onclick="exportEmployeeReport()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                            📊 Employee Master Report
+                        </button>
+                        <button onclick="exportAttendanceReport()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                            📅 Monthly Attendance Report
+                        </button>
+                        <button onclick="exportLeaveReport()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                            🏖️ Leave Summary Report
+                        </button>
+                        <button onclick="exportPayrollReport()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                            💰 Payroll Summary Report
+                        </button>
+                        <button onclick="exportComplianceReport()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                            📋 Compliance Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Attendance Chart
+const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
+new Chart(attendanceCtx, {
+    type: 'line',
+    data: {
+        labels: {{ attendance_chart_labels|safe }},
+        datasets: [{
+            label: 'Attendance Rate',
+            data: {{ attendance_chart_data|safe }},
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100
+            }
+        }
+    }
+});
+
+// Department Chart
+const departmentCtx = document.getElementById('departmentChart').getContext('2d');
+new Chart(departmentCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ department_chart_labels|safe }},
+        datasets: [{
+            data: {{ department_chart_data|safe }},
+            backgroundColor: [
+                '#ef4444',
+                '#f97316',
+                '#eab308',
+                '#22c55e',
+                '#06b6d4',
+                '#3b82f6',
+                '#8b5cf6',
+                '#ec4899'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false
+    }
+});
+
+// Leave Chart
+const leaveCtx = document.getElementById('leaveChart').getContext('2d');
+new Chart(leaveCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ leave_chart_labels|safe }},
+        datasets: [{
+            label: 'Leave Requests',
+            data: {{ leave_chart_data|safe }},
+            backgroundColor: 'rgba(168, 85, 247, 0.8)',
+            borderColor: 'rgb(168, 85, 247)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Payroll Chart
+const payrollCtx = document.getElementById('payrollChart').getContext('2d');
+new Chart(payrollCtx, {
+    type: 'line',
+    data: {
+        labels: {{ payroll_chart_labels|safe }},
+        datasets: [{
+            label: 'Total Payroll',
+            data: {{ payroll_chart_data|safe }},
+            borderColor: 'rgb(34, 197, 94)',
+            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Export functions
+function exportAllReports() {
+    window.location.href = '/hr/reports-export-all/';
+}
+
+function exportEmployeeReport() {
+    window.location.href = '/hr/reports-export/employee/';
+}
+
+function exportAttendanceReport() {
+    window.location.href = '/hr/reports-export/attendance/';
+}
+
+function exportLeaveReport() {
+    window.location.href = '/hr/reports-export/leave/';
+}
+
+function exportPayrollReport() {
+    window.location.href = '/hr/reports-export/payroll/';
+}
+
+function exportComplianceReport() {
+    window.location.href = '/hr/reports-export/compliance/';
+}
+</script>
+{% endblock %}

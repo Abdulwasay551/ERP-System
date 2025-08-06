@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+{% block title %}Designation Management | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .designation-card {
+        background: linear-gradient(135deg, rgba(245, 101, 101, 0.1), rgba(220, 38, 38, 0.1));
+        border: 1px solid rgba(245, 101, 101, 0.2);
+        transition: all 0.3s ease;
+    }
+    .designation-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(245, 101, 101, 0.15);
+    }
+    .level-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.75rem;
+        font-weight: 500;
+        font-size: 0.75rem;
+    }
+    .level-entry { background-color: #dbeafe; color: #1e40af; }
+    .level-junior { background-color: #fef3c7; color: #92400e; }
+    .level-mid { background-color: #d1fae5; color: #065f46; }
+    .level-senior { background-color: #fce7f3; color: #be185d; }
+    .level-lead { background-color: #e0e7ff; color: #3730a3; }
+    .level-manager { background-color: #fed7d7; color: #c53030; }
+    .level-director { background-color: #f3e8ff; color: #6b46c1; }
+    .level-executive { background-color: #f7fafc; color: #2d3748; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Designation Management</h1>
+                <p class="text-gray-600">Manage job titles and organizational hierarchy</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="addDesignation()" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Add Designation
+                </button>
+            </div>
+        </div>
+
+        <!-- Designation Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-red-100 rounded-lg">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2h8zM8 14v4h8v-4M8 14l4-4 4 4"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Designations</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ designation_stats.total }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Active Designations</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ designation_stats.active }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Assigned Employees</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ designation_stats.assigned_employees }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-purple-100 rounded-lg">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Hierarchy Levels</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ designation_stats.hierarchy_levels }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="designation-card rounded-2xl p-6 mb-8">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" name="search" value="{{ search }}" 
+                           placeholder="Search designations..."
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                    <select name="department" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if department_filter == dept.id|stringformat:"s" %}selected{% endif %}>
+                            {{ dept.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Level</label>
+                    <select name="level" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Levels</option>
+                        <option value="entry" {% if level_filter == 'entry' %}selected{% endif %}>Entry Level</option>
+                        <option value="junior" {% if level_filter == 'junior' %}selected{% endif %}>Junior</option>
+                        <option value="mid" {% if level_filter == 'mid' %}selected{% endif %}>Mid Level</option>
+                        <option value="senior" {% if level_filter == 'senior' %}selected{% endif %}>Senior</option>
+                        <option value="lead" {% if level_filter == 'lead' %}selected{% endif %}>Lead</option>
+                        <option value="manager" {% if level_filter == 'manager' %}selected{% endif %}>Manager</option>
+                        <option value="director" {% if level_filter == 'director' %}selected{% endif %}>Director</option>
+                        <option value="executive" {% if level_filter == 'executive' %}selected{% endif %}>Executive</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Designations Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for designation in designations %}
+            <div class="designation-card rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2h8zM8 14v4h8v-4M8 14l4-4 4 4"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-800">{{ designation.title }}</h3>
+                            {% if designation.code %}
+                            <p class="text-sm text-gray-500">{{ designation.code }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <span class="level-badge level-{{ designation.level }}">
+                        {{ designation.get_level_display }}
+                    </span>
+                </div>
+                
+                <div class="space-y-3 mb-4">
+                    {% if designation.description %}
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Description</p>
+                        <p class="text-sm text-gray-700">{{ designation.description|truncatewords:15 }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Department</p>
+                            <p class="text-sm font-medium text-gray-900">
+                                {% if designation.department %}
+                                    {{ designation.department.name }}
+                                {% else %}
+                                    General
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Employees</p>
+                            <p class="text-sm font-medium text-gray-900">{{ designation.employee_count }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if designation.responsibilities %}
+                    <div>
+                        <p class="text-sm text-gray-500">Key Responsibilities</p>
+                        <p class="text-sm text-gray-700">{{ designation.responsibilities|truncatewords:20 }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if designation.requirements %}
+                    <div>
+                        <p class="text-sm text-gray-500">Requirements</p>
+                        <p class="text-sm text-gray-700">{{ designation.requirements|truncatewords:15 }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if designation.reports_to %}
+                    <div>
+                        <p class="text-sm text-gray-500">Reports To</p>
+                        <p class="text-sm text-gray-700">{{ designation.reports_to.title }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div>
+                        <p class="text-sm text-gray-500">Status</p>
+                        <span class="text-sm px-2 py-1 rounded-full {% if designation.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                            {% if designation.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between items-center pt-4 border-t border-gray-200">
+                    <div class="flex space-x-2">
+                        <button onclick="editDesignation({{ designation.id }})" class="text-blue-600 hover:text-blue-800 text-sm">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                            Edit
+                        </button>
+                        <button onclick="deleteDesignation({{ designation.id }})" class="text-red-600 hover:text-red-800 text-sm">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                            Delete
+                        </button>
+                    </div>
+                    <button onclick="viewEmployees({{ designation.id }})" class="text-gray-600 hover:text-gray-800 text-sm">
+                        View Employees →
+                    </button>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2h8zM8 14v4h8v-4M8 14l4-4 4 4"></path>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No designations found</h3>
+                <p class="mt-1 text-sm text-gray-500">Get started by creating your first designation.</p>
+                <div class="mt-6">
+                    <button onclick="addDesignation()" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                        <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Add Designation
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if designations.has_other_pages %}
+        <div class="mt-8 flex justify-center">
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                {% if designations.has_previous %}
+                <a href="?page={{ designations.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if department_filter %}&department={{ department_filter }}{% endif %}{% if level_filter %}&level={{ level_filter }}{% endif %}" 
+                   class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                    Previous
+                </a>
+                {% endif %}
+                
+                {% for num in designations.paginator.page_range %}
+                {% if designations.number == num %}
+                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">{{ num }}</span>
+                {% else %}
+                <a href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}{% if department_filter %}&department={{ department_filter }}{% endif %}{% if level_filter %}&level={{ level_filter }}{% endif %}" 
+                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{{ num }}</a>
+                {% endif %}
+                {% endfor %}
+                
+                {% if designations.has_next %}
+                <a href="?page={{ designations.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if department_filter %}&department={{ department_filter }}{% endif %}{% if level_filter %}&level={{ level_filter }}{% endif %}" 
+                   class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                    Next
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add/Edit Designation Modal -->
+<div id="designationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center">
+    <div class="bg-white rounded-lg p-6 m-4 max-w-2xl w-full max-h-screen overflow-y-auto">
+        <h3 class="text-lg font-medium text-gray-900 mb-4" id="modalTitle">Add Designation</h3>
+        <form id="designationForm">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                    <input type="text" id="designationTitle" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Code</label>
+                    <input type="text" id="designationCode" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea id="designationDescription" rows="3" 
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                    <select id="designationDepartment" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">General (All Departments)</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}">{{ dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Level *</label>
+                    <select id="designationLevel" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select Level</option>
+                        <option value="entry">Entry Level</option>
+                        <option value="junior">Junior</option>
+                        <option value="mid">Mid Level</option>
+                        <option value="senior">Senior</option>
+                        <option value="lead">Lead</option>
+                        <option value="manager">Manager</option>
+                        <option value="director">Director</option>
+                        <option value="executive">Executive</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Reports To</label>
+                    <select id="designationReportsTo" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">None</option>
+                        {% for designation in all_designations %}
+                        <option value="{{ designation.id }}">{{ designation.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Key Responsibilities</label>
+                <textarea id="designationResponsibilities" rows="4" 
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Requirements</label>
+                <textarea id="designationRequirements" rows="3" 
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            <div class="mb-6">
+                <label class="flex items-center">
+                    <input type="checkbox" id="designationActive" checked class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                    <span class="ml-2 text-sm text-gray-900">Active</span>
+                </label>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button type="button" onclick="closeDesignationModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md">
+                    Save Designation
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let editingDesignationId = null;
+
+function addDesignation() {
+    editingDesignationId = null;
+    document.getElementById('modalTitle').textContent = 'Add Designation';
+    document.getElementById('designationForm').reset();
+    document.getElementById('designationActive').checked = true;
+    document.getElementById('designationModal').classList.remove('hidden');
+    document.getElementById('designationModal').classList.add('flex');
+}
+
+function editDesignation(designationId) {
+    editingDesignationId = designationId;
+    document.getElementById('modalTitle').textContent = 'Edit Designation';
+    
+    // Fetch designation data and populate form
+    fetch(`/hr/designations-get/${designationId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('designationTitle').value = data.designation.title;
+                document.getElementById('designationCode').value = data.designation.code || '';
+                document.getElementById('designationDescription').value = data.designation.description || '';
+                document.getElementById('designationDepartment').value = data.designation.department_id || '';
+                document.getElementById('designationLevel').value = data.designation.level;
+                document.getElementById('designationReportsTo').value = data.designation.reports_to_id || '';
+                document.getElementById('designationResponsibilities').value = data.designation.responsibilities || '';
+                document.getElementById('designationRequirements').value = data.designation.requirements || '';
+                document.getElementById('designationActive').checked = data.designation.is_active;
+                
+                document.getElementById('designationModal').classList.remove('hidden');
+                document.getElementById('designationModal').classList.add('flex');
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while fetching designation data.');
+        });
+}
+
+function closeDesignationModal() {
+    document.getElementById('designationModal').classList.add('hidden');
+    document.getElementById('designationModal').classList.remove('flex');
+}
+
+document.getElementById('designationForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    formData.append('title', document.getElementById('designationTitle').value);
+    formData.append('code', document.getElementById('designationCode').value);
+    formData.append('description', document.getElementById('designationDescription').value);
+    formData.append('department_id', document.getElementById('designationDepartment').value);
+    formData.append('level', document.getElementById('designationLevel').value);
+    formData.append('reports_to_id', document.getElementById('designationReportsTo').value);
+    formData.append('responsibilities', document.getElementById('designationResponsibilities').value);
+    formData.append('requirements', document.getElementById('designationRequirements').value);
+    formData.append('is_active', document.getElementById('designationActive').checked);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    
+    const url = editingDesignationId ? 
+        `/hr/designations-edit/${editingDesignationId}/` : 
+        '/hr/designations-add/';
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeDesignationModal();
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while saving the designation.');
+    });
+});
+
+function deleteDesignation(designationId) {
+    if (confirm('Are you sure you want to delete this designation? This action cannot be undone.')) {
+        fetch(`/hr/designations-delete/${designationId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the designation.');
+        });
+    }
+}
+
+function viewEmployees(designationId) {
+    window.location.href = `/hr/employees-ui/?designation=${designationId}`;
+}
+</script>
+{% endblock %}

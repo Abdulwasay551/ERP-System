@@ -258,7 +258,7 @@
                 <button id="closeAddStockItemModal" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
             </div>
 
-            <form id="addStockItemForm" method="post" action="{% url 'inventory_stockitems_add' %}" class="space-y-6">
+            <form id="addStockItemForm" method="post" action="{% url 'inventory:inventory_stockitems_add' %}" class="space-y-6">
                 {% csrf_token %}
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

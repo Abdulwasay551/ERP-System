@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Project Documents | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .document-card {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(21, 128, 61, 0.1));
+        border: 1px solid rgba(34, 197, 94, 0.2);
+        transition: all 0.3s ease;
+    }
+    .document-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(34, 197, 94, 0.15);
+    }
+    .doc-type-specification { background-color: #2563eb; }
+    .doc-type-requirement { background-color: #7c3aed; }
+    .doc-type-design { background-color: #dc2626; }
+    .doc-type-manual { background-color: #059669; }
+    .doc-type-report { background-color: #d97706; }
+    .doc-type-contract { background-color: #be185d; }
+    .doc-type-other { background-color: #6b7280; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold project-highlight mb-2">Project Documents</h1>
+                <p class="text-gray-600">Manage and organize project documentation</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'project_mgmt:document_add' %}" class="action-btn bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Add Document
+                </a>
+            </div>
+        </div>
+
+        <!-- Project Filter -->
+        <div class="mb-6">
+            <form method="GET" class="flex gap-4 items-center">
+                <select name="project" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    <option value="">All Projects</option>
+                    {% for project in projects %}
+                        <option value="{{ project.id }}" {% if project.id|stringformat:"s" == selected_project %}selected{% endif %}>
+                            {{ project.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                    Filter
+                </button>
+                <a href="{% url 'project_mgmt:documents_ui' %}" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
+                    Clear
+                </a>
+            </form>
+        </div>
+
+        <!-- Documents Grid -->
+        {% if documents %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for document in documents %}
+                    <div class="document-card p-6 rounded-2xl">
+                        <!-- Header -->
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center mr-3">
+                                    {% if document.file %}
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                    {% else %}
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                                        </svg>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800 mb-1">{{ document.name }}</h3>
+                                    <p class="text-sm text-gray-600">{{ document.project.name }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Document Type -->
+                        <div class="mb-4">
+                            <span class="doc-type-{{ document.document_type }} text-white px-3 py-1 rounded-full text-sm font-medium">
+                                {{ document.get_document_type_display|default:document.document_type|title }}
+                            </span>
+                        </div>
+
+                        <!-- Description -->
+                        {% if document.description %}
+                            <p class="text-sm text-gray-600 mb-4">{{ document.description|truncatechars:120 }}</p>
+                        {% endif %}
+
+                        <!-- File Info or External Link -->
+                        <div class="mb-4">
+                            {% if document.file %}
+                                <div class="flex items-center text-sm text-gray-600">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                                    </svg>
+                                    File attached
+                                </div>
+                            {% elif document.external_link %}
+                                <div class="flex items-center text-sm text-gray-600">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                    </svg>
+                                    External link
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Meta Info -->
+                        <div class="text-sm text-gray-500 space-y-1 mb-4">
+                            <p><span class="font-medium">Uploaded by:</span> {{ document.uploaded_by.get_full_name|default:document.uploaded_by.username }}</p>
+                            <p><span class="font-medium">Date:</span> {{ document.created_at|date:"M d, Y" }}</p>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex gap-2">
+                            {% if document.file %}
+                                <a href="{{ document.file.url }}" target="_blank" class="text-green-600 hover:text-green-800 text-sm font-medium">
+                                    Download
+                                </a>
+                            {% elif document.external_link %}
+                                <a href="{{ document.external_link }}" target="_blank" class="text-green-600 hover:text-green-800 text-sm font-medium">
+                                    Open Link
+                                </a>
+                            {% endif %}
+                            <button onclick="editDocument({{ document.id }})" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                Edit
+                            </button>
+                            <button onclick="deleteDocument({{ document.id }})" class="text-red-600 hover:text-red-800 text-sm font-medium">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12">
+                <div class="w-24 h-24 bg-gradient-to-br from-green-100 to-green-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">No Documents Found</h3>
+                <p class="text-gray-500 mb-6">Start by uploading your first project document.</p>
+                <a href="{% url 'project_mgmt:document_add' %}" class="action-btn bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    Upload Document
+                </a>
+            </div>
+        {% endif %}
+
+        {% if error %}
+            <div class="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
+                <div class="flex">
+                    <svg class="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                    </svg>
+                    <p class="text-red-800">{{ error }}</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function editDocument(docId) {
+    // Add edit functionality here
+    console.log('Edit document:', docId);
+}
+
+function deleteDocument(docId) {
+    if (confirm('Are you sure you want to delete this document?')) {
+        // Add delete functionality here
+        console.log('Delete document:', docId);
+    }
+}
+</script>
+{% endblock %}

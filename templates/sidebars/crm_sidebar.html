@@ -14,7 +14,7 @@
     <!-- Navigation Items -->
     <nav class="sidebar-nav flex-1 py-4 space-y-2 mt-2">
         <!-- Dashboard -->
-        <a href="{% url 'crm:crm_dashboard' %}" class="sidebar-item {% if request.resolver_match.url_name == 'crm_dashboard' %}active{% endif %}">
+        <a href="{% url 'crm:dashboard' %}" class="sidebar-item {% if request.resolver_match.url_name == 'crm:dashboard' %}active{% endif %}">
             <i class="fas fa-tachometer-alt sidebar-icon"></i>
             <span class="sidebar-text">Dashboard</span>
         </a>
@@ -68,7 +68,7 @@
         </a>
 
         <!-- Reports -->
-        <a href="/analytics/crm-reports-ui/" class="sidebar-item {% if 'reports' in request.resolver_match.url_name %}active{% endif %}">
+        <a href="{% url 'crm:reports_ui' %}" class="sidebar-item {% if 'reports' in request.resolver_match.url_name %}active{% endif %}">
             <i class="fas fa-chart-pie sidebar-icon"></i>
             <span class="sidebar-text">Reports</span>
         </a>

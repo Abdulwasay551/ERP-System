@@ -1,0 +1,674 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}CRM Reports | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        transition: all 0.3s ease;
+    }
+    .report-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
+    }
+    .metric-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">CRM Reports & Analytics</h1>
+                <p class="text-gray-600">Comprehensive customer relationship insights and performance metrics</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="exportAllReports()" class="action-btn bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Export Report
+                </button>
+                <a href="{% url 'crm:dashboard' %}" class="action-btn bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Overview Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ total_customers|default:0 }}</h3>
+                        <p class="text-gray-600">Total Customers</p>
+                        <p class="text-xs text-green-600 mt-1">+{{ new_customers_this_month|default:0 }} this month</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ total_leads|default:0 }}</h3>
+                        <p class="text-gray-600">Active Leads</p>
+                        <p class="text-xs text-blue-600 mt-1">{{ conversion_rate|default:0 }}% conversion rate</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">₨{{ total_opportunity_value|default:0|floatformat:0 }}</h3>
+                        <p class="text-gray-600">Pipeline Value</p>
+                        <p class="text-xs text-purple-600 mt-1">{{ active_opportunities|default:0 }} active deals</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ pending_followups|default:0 }}</h3>
+                        <p class="text-gray-600">Follow-ups Due</p>
+                        <p class="text-xs text-red-600 mt-1">Requires attention</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Categories -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Customer Acquisition Chart -->
+            <div class="report-card rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Customer Acquisition Trend</h3>
+                <div style="position: relative; height: 300px;">
+                    <canvas id="customerAcquisitionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Lead Conversion Funnel -->
+            <div class="report-card rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Lead Conversion Status</h3>
+                <div class="space-y-6">
+                    <div class="text-center">
+                        <div class="relative inline-flex items-center justify-center w-32 h-32">
+                            <svg class="w-32 h-32 transform -rotate-90" viewBox="0 0 36 36">
+                                <path class="text-gray-300" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"/>
+                                <path class="text-green-600" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3" 
+                                      stroke-dasharray="{% if total_leads %}{% widthratio converted_leads total_leads 100 %}{% else %}0{% endif %}, 100"/>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="text-2xl font-bold text-gray-900">{{ conversion_rate|default:0 }}%</span>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 mt-2">Conversion Rate</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-center p-3 bg-green-50 rounded-lg">
+                            <h4 class="text-lg font-bold text-green-600">{{ converted_leads|default:0 }}</h4>
+                            <p class="text-sm text-green-700">Converted</p>
+                        </div>
+                        <div class="text-center p-3 bg-blue-50 rounded-lg">
+                            <h4 class="text-lg font-bold text-blue-600">{{ qualified_leads|default:0 }}</h4>
+                            <p class="text-sm text-blue-700">Qualified</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Reports -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <a href="{% url 'crm:customer_page' %}" class="report-card rounded-2xl p-6 block hover:shadow-lg transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Customer Analysis</h3>
+                </div>
+                <p class="text-gray-600">View detailed customer information and analytics</p>
+            </a>
+
+            <a href="{% url 'crm:lead_page' %}" class="report-card rounded-2xl p-6 block hover:shadow-lg transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Lead Performance</h3>
+                </div>
+                <p class="text-gray-600">Monitor lead conversion and qualification metrics</p>
+            </a>
+
+            <a href="{% url 'crm:opportunity_page' %}" class="report-card rounded-2xl p-6 block hover:shadow-lg transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Sales Pipeline</h3>
+                </div>
+                <p class="text-gray-600">Analyze sales opportunities and pipeline value</p>
+            </a>
+
+            <a href="{% url 'crm:communicationlog_page' %}" class="report-card rounded-2xl p-6 block hover:shadow-lg transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Communication Log</h3>
+                </div>
+                <p class="text-gray-600">Track all customer interactions and follow-ups</p>
+            </a>
+
+            <a href="{% url 'crm:partner_page' %}" class="report-card rounded-2xl p-6 block hover:shadow-lg transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Partner Relations</h3>
+                </div>
+                <p class="text-gray-600">Manage business partnerships and relationships</p>
+            </a>
+
+            <a href="{% url 'crm:campaign_page' %}" class="report-card rounded-2xl p-6 block hover:shadow-lg transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Campaign Analytics</h3>
+                </div>
+                <p class="text-gray-600">Analyze marketing campaign performance and ROI</p>
+            </a>
+        </div>
+    </div>
+</div>
+
+            <!-- Sales Pipeline by Stage -->
+            <div class="report-card">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Sales Pipeline Distribution</h2>
+                    <div class="flex space-x-2">
+                        <button class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-expand-arrows-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="pipelineChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Customer Communication Activity -->
+            <div class="report-card">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Communication Activity</h2>
+                    <div class="flex space-x-2">
+                        <button class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-expand-arrows-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="communicationChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Team Performance and Customer Insights -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <!-- Team Performance -->
+            <div class="report-card">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Team Performance</h2>
+                <div class="space-y-4">
+                    {% for user in top_performers|default:"" %}
+                    <div class="team-performance-item">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-medium text-gray-800">{{ user.name|default:"Team Member" }}</span>
+                            <span class="text-sm text-gray-500">{{ user.deals_closed|default:0 }} deals</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="progress-bar" style="width: {{ user.performance_percentage|default:75 }}%"></div>
+                        </div>
+                        <div class="flex justify-between mt-2 text-sm text-gray-600">
+                            <span>Revenue: ₨{{ user.revenue|default:0|floatformat:0 }}</span>
+                            <span>{{ user.performance_percentage|default:75 }}%</span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="team-performance-item">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-medium text-gray-800">Sales Rep 1</span>
+                            <span class="text-sm text-gray-500">15 deals</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="progress-bar" style="width: 85%"></div>
+                        </div>
+                        <div class="flex justify-between mt-2 text-sm text-gray-600">
+                            <span>Revenue: ₨1,250,000</span>
+                            <span>85%</span>
+                        </div>
+                    </div>
+                    <div class="team-performance-item">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-medium text-gray-800">Sales Rep 2</span>
+                            <span class="text-sm text-gray-500">12 deals</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="progress-bar" style="width: 75%"></div>
+                        </div>
+                        <div class="flex justify-between mt-2 text-sm text-gray-600">
+                            <span>Revenue: ₨980,000</span>
+                            <span>75%</span>
+                        </div>
+                    </div>
+                    <div class="team-performance-item">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-medium text-gray-800">Sales Rep 3</span>
+                            <span class="text-sm text-gray-500">8 deals</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="progress-bar" style="width: 60%"></div>
+                        </div>
+                        <div class="flex justify-between mt-2 text-sm text-gray-600">
+                            <span>Revenue: ₨720,000</span>
+                            <span>60%</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Customer Insights -->
+            <div class="report-card">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Customer Insights</h2>
+                <div class="space-y-4">
+                    <div class="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-blue-600 font-medium">Avg Customer Value</p>
+                                <p class="text-2xl font-bold text-blue-800">₨{{ avg_customer_value|default:85000|floatformat:0 }}</p>
+                            </div>
+                            <i class="fas fa-user-circle text-blue-500 text-3xl"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-green-600 font-medium">Customer Retention</p>
+                                <p class="text-2xl font-bold text-green-800">{{ customer_retention_rate|default:92 }}%</p>
+                            </div>
+                            <i class="fas fa-heart text-green-500 text-3xl"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-purple-600 font-medium">Avg Deal Size</p>
+                                <p class="text-2xl font-bold text-purple-800">₨{{ avg_deal_size|default:125000|floatformat:0 }}</p>
+                            </div>
+                            <i class="fas fa-handshake text-purple-500 text-3xl"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border border-orange-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-orange-600 font-medium">Sales Cycle</p>
+                                <p class="text-2xl font-bold text-orange-800">{{ avg_sales_cycle|default:45 }} days</p>
+                            </div>
+                            <i class="fas fa-clock text-orange-500 text-3xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="report-card">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Recent Activities</h2>
+                <div class="activity-timeline">
+                    {% for activity in recent_communications|slice:":5" %}
+                    <div class="activity-item">
+                        <div class="flex items-start space-x-3">
+                            <div class="p-2 bg-blue-100 rounded-lg">
+                                <i class="fas fa-phone text-blue-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium text-gray-800">{{ activity.type|title }} with {{ activity.customer.name|default:"Customer" }}</p>
+                                <p class="text-sm text-gray-600">{{ activity.notes|default:"Communication logged" }}</p>
+                                <p class="text-xs text-gray-500 mt-1">{{ activity.timestamp|timesince }} ago</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="activity-item">
+                        <div class="flex items-start space-x-3">
+                            <div class="p-2 bg-green-100 rounded-lg">
+                                <i class="fas fa-user-plus text-green-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium text-gray-800">New customer registered</p>
+                                <p class="text-sm text-gray-600">ABC Corporation joined as a customer</p>
+                                <p class="text-xs text-gray-500 mt-1">2 hours ago</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="flex items-start space-x-3">
+                            <div class="p-2 bg-blue-100 rounded-lg">
+                                <i class="fas fa-phone text-blue-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium text-gray-800">Follow-up call completed</p>
+                                <p class="text-sm text-gray-600">Discussed pricing with XYZ Ltd</p>
+                                <p class="text-xs text-gray-500 mt-1">4 hours ago</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="flex items-start space-x-3">
+                            <div class="p-2 bg-purple-100 rounded-lg">
+                                <i class="fas fa-chart-line text-purple-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium text-gray-800">Deal closed</p>
+                                <p class="text-sm text-gray-600">₨500,000 opportunity won</p>
+                                <p class="text-xs text-gray-500 mt-1">6 hours ago</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Generation Form -->
+        <div class="report-form-card">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Generate Custom Reports</h2>
+            <form id="reportForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
+                    <select name="report_type" class="form-input">
+                        <option value="customer_analysis">Customer Analysis</option>
+                        <option value="sales_performance">Sales Performance</option>
+                        <option value="lead_conversion">Lead Conversion</option>
+                        <option value="pipeline_forecast">Pipeline Forecast</option>
+                        <option value="communication_summary">Communication Summary</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                    <select name="date_range" class="form-input">
+                        <option value="last_30_days">Last 30 Days</option>
+                        <option value="last_quarter">Last Quarter</option>
+                        <option value="last_6_months">Last 6 Months</option>
+                        <option value="last_year">Last Year</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Format</label>
+                    <select name="format" class="form-input">
+                        <option value="pdf">PDF Report</option>
+                        <option value="excel">Excel Spreadsheet</option>
+                        <option value="csv">CSV Data</option>
+                        <option value="dashboard">Dashboard View</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="btn-generate w-full">
+                        <i class="fas fa-chart-bar mr-2"></i>Generate Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js Scripts -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Common chart configuration
+    Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+    Chart.defaults.font.size = 12;
+    Chart.defaults.color = '#6b7280';
+
+    // Customer Acquisition Chart
+    const customerAcquisitionCtx = document.getElementById('customerAcquisitionChart');
+    if (customerAcquisitionCtx) {
+        new Chart(customerAcquisitionCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'New Customers',
+                    data: [8, 12, 15, 18, 22, 25],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#10b981',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff',
+                        borderColor: '#10b981',
+                        borderWidth: 2,
+                        cornerRadius: 8
+                    }
+                },
+                scales: {
+                    x: { grid: { color: 'rgba(0, 0, 0, 0.1)' } },
+                    y: { 
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' }
+                    }
+                }
+            }
+        });
+    }
+
+    // Lead Conversion Chart
+    const leadConversionCtx = document.getElementById('leadConversionChart');
+    if (leadConversionCtx) {
+        new Chart(leadConversionCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Converted', 'Qualified', 'New', 'Lost'],
+                datasets: [{
+                    data: [25, 35, 30, 10],
+                    backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
+                    borderColor: ['#059669', '#2563eb', '#d97706', '#dc2626'],
+                    borderWidth: 2,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 20, usePointStyle: true }
+                    }
+                },
+                cutout: '60%'
+            }
+        });
+    }
+
+    // Pipeline Distribution Chart
+    const pipelineCtx = document.getElementById('pipelineChart');
+    if (pipelineCtx) {
+        new Chart(pipelineCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Qualification', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'],
+                datasets: [{
+                    label: 'Pipeline Value (₨)',
+                    data: [850000, 1200000, 750000, 500000, 200000],
+                    backgroundColor: [
+                        'rgba(16, 185, 129, 0.8)',
+                        'rgba(59, 130, 246, 0.8)',
+                        'rgba(245, 158, 11, 0.8)',
+                        'rgba(34, 197, 94, 0.8)',
+                        'rgba(239, 68, 68, 0.8)'
+                    ],
+                    borderColor: [
+                        '#10b981', '#3b82f6', '#f59e0b', '#22c55e', '#ef4444'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 6,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { grid: { color: 'rgba(0, 0, 0, 0.1)' } },
+                    y: { 
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                        ticks: {
+                            callback: function(value) {
+                                return '₨' + (value / 1000) + 'K';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Communication Activity Chart
+    const communicationCtx = document.getElementById('communicationChart');
+    if (communicationCtx) {
+        new Chart(communicationCtx, {
+            type: 'radar',
+            data: {
+                labels: ['Calls', 'Emails', 'Meetings', 'Follow-ups', 'Proposals', 'Demos'],
+                datasets: [{
+                    label: 'This Month',
+                    data: [85, 70, 60, 90, 45, 55],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#10b981',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5
+                }, {
+                    label: 'Last Month',
+                    data: [75, 65, 55, 80, 40, 50],
+                    borderColor: '#6b7280',
+                    backgroundColor: 'rgba(107, 114, 128, 0.1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#6b7280',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 20 }
+                    }
+                },
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                        angleLines: { color: 'rgba(0, 0, 0, 0.1)' }
+                    }
+                }
+            }
+        });
+    }
+});
+
+// Report Generation Functions
+function exportAllReports() {
+    alert('Exporting all CRM reports...');
+}
+
+function scheduleReport() {
+    alert('Opening report scheduling wizard...');
+}
+
+document.getElementById('reportForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const reportType = formData.get('report_type');
+    const dateRange = formData.get('date_range');
+    const format = formData.get('format');
+    
+    alert(`Generating ${reportType} report for ${dateRange} in ${format} format...`);
+});
+</script>
+{% endblock %}

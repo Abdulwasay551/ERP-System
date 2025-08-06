@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Risk | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(185, 28, 28, 0.05));
+        border: 1px solid rgba(239, 68, 68, 0.1);
+    }
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e5e7eb;
+    }
+    .form-section h3 {
+        color: #374151;
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    .risk-matrix {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    .risk-level {
+        padding: 0.75rem;
+        border-radius: 8px;
+        text-align: center;
+        font-weight: 500;
+    }
+    .risk-low { background-color: #dcfce7; color: #166534; }
+    .risk-medium { background-color: #fef3c7; color: #92400e; }
+    .risk-high { background-color: #fecaca; color: #991b1b; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8 max-w-4xl">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center mb-4">
+                <a href="{% url 'project_mgmt:risks_ui' %}" class="mr-4 p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Add Risk</h1>
+                    <p class="text-gray-600">Identify and assess a new project risk</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="form-card p-8 rounded-2xl">
+            <form id="riskForm" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h3>Risk Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="project" class="block text-sm font-medium text-gray-700 mb-2">Project *</label>
+                            <select name="project" id="project" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                                <option value="">Select Project</option>
+                                {% for project in projects %}
+                                    <option value="{{ project.id }}">{{ project.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="risk_type" class="block text-sm font-medium text-gray-700 mb-2">Risk Type *</label>
+                            <select name="risk_type" id="risk_type" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                                <option value="">Select Type</option>
+                                <option value="technical">Technical</option>
+                                <option value="financial">Financial</option>
+                                <option value="operational">Operational</option>
+                                <option value="external">External</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <label for="title" class="block text-sm font-medium text-gray-700 mb-2">Risk Title *</label>
+                        <input type="text" name="title" id="title" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="Enter risk title">
+                    </div>
+                    <div class="mt-6">
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Risk Description *</label>
+                        <textarea name="description" id="description" rows="4" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="Describe the risk in detail"></textarea>
+                    </div>
+                </div>
+
+                <!-- Risk Assessment -->
+                <div class="form-section">
+                    <h3>Risk Assessment</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label for="probability" class="block text-sm font-medium text-gray-700 mb-2">Probability *</label>
+                            <select name="probability" id="probability" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                                <option value="">Select Probability</option>
+                                <option value="low">Low (0-30%)</option>
+                                <option value="medium">Medium (31-70%)</option>
+                                <option value="high">High (71-100%)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="impact" class="block text-sm font-medium text-gray-700 mb-2">Impact *</label>
+                            <select name="impact" id="impact" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                                <option value="">Select Impact</option>
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Status *</label>
+                            <select name="status" id="status" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                                <option value="identified">Identified</option>
+                                <option value="analyzed">Analyzed</option>
+                                <option value="mitigated">Mitigated</option>
+                                <option value="closed">Closed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Risk Matrix Display -->
+                    <div class="mt-6">
+                        <h4 class="text-sm font-medium text-gray-700 mb-3">Risk Level</h4>
+                        <div id="riskLevel" class="risk-level risk-medium">
+                            Select probability and impact to see risk level
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Risk Owner and Mitigation -->
+                <div class="form-section">
+                    <h3>Risk Management</h3>
+                    <div class="mb-6">
+                        <label for="owner" class="block text-sm font-medium text-gray-700 mb-2">Risk Owner</label>
+                        <select name="owner" id="owner" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            <option value="">Select Owner (Optional)</option>
+                            {% for employee in employees %}
+                                <option value="{{ employee.id }}">{{ employee.first_name }} {{ employee.last_name }} - {{ employee.position|default:"Employee" }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="mitigation_plan" class="block text-sm font-medium text-gray-700 mb-2">Mitigation Plan</label>
+                        <textarea name="mitigation_plan" id="mitigation_plan" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="Describe how this risk will be mitigated"></textarea>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                    <a href="{% url 'project_mgmt:risks_ui' %}" class="px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all">
+                        Add Risk
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Calculate risk level based on probability and impact
+function updateRiskLevel() {
+    const probability = document.getElementById('probability').value;
+    const impact = document.getElementById('impact').value;
+    const riskLevelDiv = document.getElementById('riskLevel');
+    
+    if (probability && impact) {
+        let level = 'low';
+        let text = 'Low Risk';
+        
+        if ((probability === 'high' && impact === 'high') || 
+            (probability === 'high' && impact === 'medium') || 
+            (probability === 'medium' && impact === 'high')) {
+            level = 'high';
+            text = 'High Risk';
+        } else if ((probability === 'medium' && impact === 'medium') ||
+                   (probability === 'high' && impact === 'low') ||
+                   (probability === 'low' && impact === 'high')) {
+            level = 'medium';
+            text = 'Medium Risk';
+        }
+        
+        riskLevelDiv.className = `risk-level risk-${level}`;
+        riskLevelDiv.textContent = text;
+    }
+}
+
+document.getElementById('probability').addEventListener('change', updateRiskLevel);
+document.getElementById('impact').addEventListener('change', updateRiskLevel);
+
+// Form submission
+document.getElementById('riskForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('{% url "project_mgmt:risk_add" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = '{% url "project_mgmt:risks_ui" %}';
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while adding the risk.');
+    });
+});
+</script>
+{% endblock %}

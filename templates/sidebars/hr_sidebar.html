@@ -1,88 +1,88 @@
 {% load static %}
-
+<!-- HR Module Sidebar -->
 <div class="sidebar-content">
-    <!-- Logo -->
-    <div class="sidebar-logo p-6">
-        <a href="{% url 'dashboard' %}" class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur">
-                <img src="{% static 'logo.png' %}" alt="FutureERP Logo" class="w-8 h-8" style="border-radius: 50%;">
-            </div>
-            <span class="sidebar-text text-xl font-bold text-white">FutureERP</span>
-        </a>
+    <!-- Logo/Back Section -->
+    <div class="sidebar-logo p-4 border-b border-white/20">
+        <div class="flex items-center space-x-3 min-h-[3rem]">
+            <a href="{% url 'dashboard' %}" class="w-12 h-12 bg-white/20 backdrop-blur-md hover:bg-white/30 rounded-full flex items-center justify-center transition-all flex-shrink-0 border border-white/30">
+                <i class="fas fa-arrow-left text-white text-base"></i>
+            </a>
+            <span class="text-xl font-bold sidebar-text whitespace-nowrap text-white">Human Resources</span>
+        </div>
     </div>
 
-    <!-- Navigation -->
-    <nav class="sidebar-nav ">
-        <!-- Back to Dashboard -->
-        <a href="{% url 'dashboard' %}" class="sidebar-item bg-white/20 border border-white/20 mb-4">
-            <span class="sidebar-icon">
-                <i class="fas fa-arrow-left"></i>
-            </span>
-            <span class="sidebar-text">Back to Dashboard</span>
+    <!-- Navigation Items -->
+    <nav class="sidebar-nav flex-1 py-4 space-y-2 mt-2">
+        <!-- Dashboard -->
+        <a href="{% url 'hr:dashboard' %}" class="sidebar-item {% if request.resolver_match.url_name == 'hr:dashboard' %}active{% endif %}">
+            <i class="fas fa-tachometer-alt sidebar-icon"></i>
+            <span class="sidebar-text">Dashboard</span>
         </a>
 
-        <!-- HR Dashboard -->
-        <a href="{% url 'hr_dashboard' %}" class="sidebar-item">
-            <span class="sidebar-icon">
-                <i class="fas fa-tachometer-alt"></i>
-            </span>
-            <span class="sidebar-text">HR Dashboard</span>
+        <!-- Employees -->
+        <a href="{% url 'hr:employees_ui' %}" class="sidebar-item {% if 'employee' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-users sidebar-icon"></i>
+            <span class="sidebar-text">Employees</span>
         </a>
 
-        <!-- Employee Management -->
-        <div class="sidebar-section mb-4">
-            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Employee Management</h3>
-            <a href="{% url 'hr_employees_ui' %}" class="sidebar-item">
-                <span class="sidebar-icon">
-                    <i class="fas fa-users"></i>
-                </span>
-                <span class="sidebar-text">Employees</span>
-            </a>
-            <a href="{% url 'hr_employees_add' %}" class="sidebar-item">
-                <span class="sidebar-icon">
-                    <i class="fas fa-user-plus"></i>
-                </span>
-                <span class="sidebar-text">Add Employee</span>
-            </a>
-        </div>
+        <!-- Attendance -->
+        <a href="{% url 'hr:attendance_ui' %}" class="sidebar-item {% if 'attendance' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-clock sidebar-icon"></i>
+            <span class="sidebar-text">Attendance</span>
+        </a>
 
-        <!-- Attendance & Time -->
-        <div class="sidebar-section mb-4">
-            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Attendance & Time</h3>
-            <a href="{% url 'hr_attendance_ui' %}" class="sidebar-item">
-                <span class="sidebar-icon">
-                    <i class="fas fa-clock"></i>
-                </span>
-                <span class="sidebar-text">Attendance</span>
-            </a>
-            <a href="{% url 'hr_leaves_ui' %}" class="sidebar-item">
-                <span class="sidebar-icon">
-                    <i class="fas fa-calendar-alt"></i>
-                </span>
-                <span class="sidebar-text">Leave Management</span>
-            </a>
-        </div>
+        <!-- Leave Management -->
+        <a href="{% url 'hr:leaves_ui' %}" class="sidebar-item {% if 'leave' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-calendar-alt sidebar-icon"></i>
+            <span class="sidebar-text">Leave Management</span>
+        </a>
 
         <!-- Payroll -->
-        <div class="sidebar-section mb-4">
-            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Payroll</h3>
-            <a href="{% url 'hr_payroll_ui' %}" class="sidebar-item">
-                <span class="sidebar-icon">
-                    <i class="fas fa-money-bill-wave"></i>
-                </span>
-                <span class="sidebar-text">Payroll</span>
-            </a>
-        </div>
+        <a href="{% url 'hr:payroll_ui' %}" class="sidebar-item {% if 'payroll' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-money-bill-wave sidebar-icon"></i>
+            <span class="sidebar-text">Payroll</span>
+        </a>
+
+        <!-- Performance -->
+        <a href="{% url 'hr:performance_ui' %}" class="sidebar-item {% if 'performance' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-chart-line sidebar-icon"></i>
+            <span class="sidebar-text">Performance</span>
+        </a>
+
+        <!-- Training -->
+        <a href="{% url 'hr:training_ui' %}" class="sidebar-item {% if 'training' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-graduation-cap sidebar-icon"></i>
+            <span class="sidebar-text">Training</span>
+        </a>
+
+        <!-- Recruitment -->
+        <a href="{% url 'hr:recruitment_ui' %}" class="sidebar-item {% if 'recruitment' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-user-plus sidebar-icon"></i>
+            <span class="sidebar-text">Recruitment</span>
+        </a>
+
+        <!-- Employee Relations -->
+        <a href="{% url 'hr:relations_ui' %}" class="sidebar-item {% if 'relation' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-handshake sidebar-icon"></i>
+            <span class="sidebar-text">Employee Relations</span>
+        </a>
+
+        <!-- Benefits -->
+        <a href="{% url 'hr:benefits_ui' %}" class="sidebar-item {% if 'benefit' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-gift sidebar-icon"></i>
+            <span class="sidebar-text">Benefits</span>
+        </a>
+
+        <!-- Policies -->
+        <a href="{% url 'hr:policies_ui' %}" class="sidebar-item {% if 'polic' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-file-contract sidebar-icon"></i>
+            <span class="sidebar-text">Policies</span>
+        </a>
 
         <!-- Reports -->
-        <div class="sidebar-section">
-            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Reports</h3>
-            <a href="{% url 'hr_reports_ui' %}" class="sidebar-item">
-                <span class="sidebar-icon">
-                    <i class="fas fa-chart-bar"></i>
-                </span>
-                <span class="sidebar-text">HR Reports</span>
-            </a>
-        </div>
+        <a href="{% url 'hr:reports_ui' %}" class="sidebar-item {% if 'reports' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-chart-bar sidebar-icon"></i>
+            <span class="sidebar-text">Reports</span>
+        </a>
     </nav>
 </div>

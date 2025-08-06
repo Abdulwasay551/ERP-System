@@ -1,0 +1,331 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete MRP Plan - Manufacturing{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+    
+    .delete-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+    
+    .delete-icon {
+        width: 80px;
+        height: 80px;
+        background: #fef2f2;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        border: 3px solid #fecaca;
+    }
+    
+    .delete-icon i {
+        font-size: 2rem;
+        color: #ef4444;
+    }
+    
+    .delete-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 1rem;
+    }
+    
+    .delete-message {
+        color: #6b7280;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+    }
+    
+    .object-info {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        text-align: left;
+    }
+    
+    .object-title {
+        font-weight: 600;
+        color: #111827;
+        margin-bottom: 0.5rem;
+    }
+    
+    .object-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .detail-item {
+        text-align: center;
+    }
+    
+    .detail-label {
+        font-size: 0.75rem;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.25rem;
+    }
+    
+    .detail-value {
+        font-weight: 600;
+        color: #111827;
+    }
+    
+    .warning-box {
+        background: #fffbeb;
+        border: 1px solid #fbbf24;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .warning-title {
+        display: flex;
+        align-items: center;
+        font-weight: 600;
+        color: #92400e;
+        margin-bottom: 0.5rem;
+    }
+    
+    .warning-title i {
+        margin-right: 0.5rem;
+    }
+    
+    .warning-list {
+        color: #92400e;
+        font-size: 0.875rem;
+        margin: 0;
+        padding-left: 1.5rem;
+    }
+    
+    .warning-list li {
+        margin-bottom: 0.25rem;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: none;
+        font-size: 0.875rem;
+        margin: 0 0.5rem;
+    }
+    
+    .btn-danger {
+        background: #ef4444;
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        background: #dc2626;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    }
+    
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+    
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        color: #111827;
+    }
+    
+    .confirmation-input {
+        background: #f9fafb;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+        width: 100%;
+        margin: 1rem 0;
+        text-align: center;
+    }
+    
+    .confirmation-input:focus {
+        outline: none;
+        border-color: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+    
+    .actions {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="delete-container">
+        <div class="delete-card">
+            <div class="delete-icon">
+                <i class="fas fa-trash-alt"></i>
+            </div>
+            
+            <h1 class="delete-title">Delete MRP Plan</h1>
+            
+            <p class="delete-message">
+                Are you sure you want to delete this MRP plan? This action cannot be undone and will remove all associated data.
+            </p>
+            
+            <!-- Object Information -->
+            <div class="object-info">
+                <div class="object-title">{{ object.name }}</div>
+                <div class="text-sm text-gray-600 mb-3">{{ object.description|default:"No description" }}</div>
+                
+                <div class="object-details">
+                    <div class="detail-item">
+                        <div class="detail-label">Plan Date</div>
+                        <div class="detail-value">{{ object.plan_date|date:"M d, Y" }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Status</div>
+                        <div class="detail-value">{{ object.get_status_display }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Requirements</div>
+                        <div class="detail-value">{{ object.requirements.count }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Created</div>
+                        <div class="detail-value">{{ object.created_at|date:"M d, Y" }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Warning -->
+            <div class="warning-box">
+                <div class="warning-title">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Warning: This will also delete:
+                </div>
+                <ul class="warning-list">
+                    <li>{{ object.requirements.count }} MRP requirements</li>
+                    <li>All calculation history and results</li>
+                    <li>Any linked purchase requests</li>
+                    <li>Planning timeline and milestones</li>
+                </ul>
+            </div>
+            
+            <!-- Confirmation -->
+            <form method="post" id="deleteForm">
+                {% csrf_token %}
+                
+                <div class="text-left mb-4">
+                    <label for="confirmInput" class="block text-sm font-medium text-gray-700 mb-2">
+                        Type <strong>"{{ object.name }}"</strong> to confirm deletion:
+                    </label>
+                    <input 
+                        type="text" 
+                        id="confirmInput" 
+                        class="confirmation-input"
+                        placeholder="Enter plan name to confirm"
+                        required
+                    >
+                </div>
+                
+                <div class="actions">
+                    <a href="{% url 'manufacturing:mrp_plan_detail' object.pk %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Cancel
+                    </a>
+                    
+                    <button type="submit" id="deleteBtn" class="btn btn-danger" disabled>
+                        <i class="fas fa-trash-alt"></i>
+                        Delete Plan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmInput = document.getElementById('confirmInput');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const deleteForm = document.getElementById('deleteForm');
+    const expectedText = "{{ object.name }}";
+    
+    // Enable/disable delete button based on confirmation input
+    confirmInput.addEventListener('input', function() {
+        if (this.value.trim() === expectedText) {
+            deleteBtn.disabled = false;
+            deleteBtn.classList.remove('opacity-50');
+            this.style.borderColor = '#10b981';
+            this.style.backgroundColor = '#ecfdf5';
+        } else {
+            deleteBtn.disabled = true;
+            deleteBtn.classList.add('opacity-50');
+            this.style.borderColor = '#d1d5db';
+            this.style.backgroundColor = '#f9fafb';
+        }
+    });
+    
+    // Handle form submission
+    deleteForm.addEventListener('submit', function(e) {
+        if (confirmInput.value.trim() !== expectedText) {
+            e.preventDefault();
+            alert('Please enter the exact plan name to confirm deletion.');
+            confirmInput.focus();
+            return false;
+        }
+        
+        if (!confirm('Are you absolutely sure? This action cannot be undone.')) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Show loading state
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+        
+        // Add a small delay to show the loading state
+        setTimeout(() => {
+            // Form will submit naturally
+        }, 500);
+    });
+    
+    // Focus on input when page loads
+    confirmInput.focus();
+    
+    // Add keyboard shortcut (Escape to cancel)
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            window.location.href = "{% url 'manufacturing:mrp_plan_detail' object.pk %}";
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Invoice | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(37, 99, 235, 0.05));
+        border: 1px solid rgba(59, 130, 246, 0.1);
+    }
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e5e7eb;
+    }
+    .form-section h3 {
+        color: #374151;
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    .amount-display {
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1rem;
+        text-align: center;
+        margin-top: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8 max-w-4xl">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center mb-4">
+                <a href="{% url 'project_mgmt:billing_ui' %}" class="mr-4 p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Create Invoice</h1>
+                    <p class="text-gray-600">Generate a new billing invoice for project work</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="form-card p-8 rounded-2xl">
+            <form id="billingForm" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Project and Period -->
+                <div class="form-section">
+                    <h3>Invoice Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="project" class="block text-sm font-medium text-gray-700 mb-2">Project *</label>
+                            <select name="project" id="project" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">Select Project</option>
+                                {% for project in projects %}
+                                    <option value="{{ project.id }}">{{ project.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="invoice_number" class="block text-sm font-medium text-gray-700 mb-2">Invoice Number</label>
+                            <input type="text" name="invoice_number" id="invoice_number" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Auto-generated if empty">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                        <div>
+                            <label for="billing_period_start" class="block text-sm font-medium text-gray-700 mb-2">Billing Period Start *</label>
+                            <input type="date" name="billing_period_start" id="billing_period_start" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label for="billing_period_end" class="block text-sm font-medium text-gray-700 mb-2">Billing Period End *</label>
+                            <input type="date" name="billing_period_end" id="billing_period_end" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <label for="invoice_date" class="block text-sm font-medium text-gray-700 mb-2">Invoice Date</label>
+                        <input type="date" name="invoice_date" id="invoice_date" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                </div>
+
+                <!-- Hours and Billing -->
+                <div class="form-section">
+                    <h3>Hours and Billing</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="total_hours" class="block text-sm font-medium text-gray-700 mb-2">Total Hours *</label>
+                            <input type="number" name="total_hours" id="total_hours" step="0.5" min="0" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0.0">
+                        </div>
+                        <div>
+                            <label for="billable_hours" class="block text-sm font-medium text-gray-700 mb-2">Billable Hours *</label>
+                            <input type="number" name="billable_hours" id="billable_hours" step="0.5" min="0" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0.0">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                        <div>
+                            <label for="hourly_rate" class="block text-sm font-medium text-gray-700 mb-2">Hourly Rate ($)</label>
+                            <input type="number" name="hourly_rate" id="hourly_rate" step="0.01" min="0" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label for="expenses_amount" class="block text-sm font-medium text-gray-700 mb-2">Expenses Amount ($)</label>
+                            <input type="number" name="expenses_amount" id="expenses_amount" step="0.01" min="0" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0.00">
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <label for="total_amount" class="block text-sm font-medium text-gray-700 mb-2">Total Amount ($) *</label>
+                        <input type="number" name="total_amount" id="total_amount" step="0.01" min="0" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0.00">
+                    </div>
+
+                    <!-- Amount Calculation Display -->
+                    <div class="amount-display">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-2">Calculated Total</h4>
+                        <div class="text-sm text-gray-600 space-y-1">
+                            <div class="flex justify-between">
+                                <span>Hours Amount:</span>
+                                <span id="calculated_hours_amount">$0.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Expenses:</span>
+                                <span id="calculated_expenses">$0.00</span>
+                            </div>
+                            <div class="flex justify-between font-semibold text-lg border-t pt-2">
+                                <span>Total:</span>
+                                <span id="calculated_total">$0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Invoice Status -->
+                <div class="form-section">
+                    <h3>Invoice Status</h3>
+                    <div>
+                        <label for="payment_status" class="block text-sm font-medium text-gray-700 mb-2">Payment Status *</label>
+                        <select name="payment_status" id="payment_status" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="draft">Draft</option>
+                            <option value="sent">Sent</option>
+                            <option value="paid">Paid</option>
+                            <option value="overdue">Overdue</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div class="form-section">
+                    <h3>Additional Notes</h3>
+                    <div>
+                        <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                        <textarea name="notes" id="notes" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Any additional notes for this invoice"></textarea>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                    <a href="{% url 'project_mgmt:billing_ui' %}" class="px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all">
+                        Create Invoice
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set today's date as default for invoice date
+document.getElementById('invoice_date').valueAsDate = new Date();
+
+// Auto-calculate amounts
+function calculateTotals() {
+    const billableHours = parseFloat(document.getElementById('billable_hours').value) || 0;
+    const hourlyRate = parseFloat(document.getElementById('hourly_rate').value) || 0;
+    const expensesAmount = parseFloat(document.getElementById('expenses_amount').value) || 0;
+    
+    const hoursAmount = billableHours * hourlyRate;
+    const totalAmount = hoursAmount + expensesAmount;
+    
+    document.getElementById('calculated_hours_amount').textContent = '$' + hoursAmount.toFixed(2);
+    document.getElementById('calculated_expenses').textContent = '$' + expensesAmount.toFixed(2);
+    document.getElementById('calculated_total').textContent = '$' + totalAmount.toFixed(2);
+    
+    // Auto-fill total amount
+    document.getElementById('total_amount').value = totalAmount.toFixed(2);
+}
+
+// Add event listeners for real-time calculation
+document.getElementById('billable_hours').addEventListener('input', calculateTotals);
+document.getElementById('hourly_rate').addEventListener('input', calculateTotals);
+document.getElementById('expenses_amount').addEventListener('input', calculateTotals);
+
+// Ensure billable hours doesn't exceed total hours
+document.getElementById('billable_hours').addEventListener('input', function() {
+    const totalHours = parseFloat(document.getElementById('total_hours').value) || 0;
+    const billableHours = parseFloat(this.value) || 0;
+    
+    if (billableHours > totalHours) {
+        this.value = totalHours;
+        calculateTotals();
+    }
+});
+
+// Form submission
+document.getElementById('billingForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('{% url "project_mgmt:billing_add" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = '{% url "project_mgmt:billing_ui" %}';
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while creating the invoice.');
+    });
+});
+</script>
+{% endblock %}

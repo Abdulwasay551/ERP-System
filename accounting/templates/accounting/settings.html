@@ -1,0 +1,353 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Accounting Settings | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        transition: all 0.3s ease;
+    }
+    .settings-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
+    }
+    .setting-group {
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(16, 185, 129, 0.1);
+    }
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+    }
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 34px;
+    }
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    input:checked + .slider {
+        background-color: #10B981;
+    }
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Accounting Settings</h1>
+                <p class="text-gray-600">Configure accounting preferences and system behavior</p>
+            </div>
+            <div class="flex gap-4">
+                <button class="action-btn bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    Save Settings
+                </button>
+            </div>
+        </div>
+
+        <div class="max-w-6xl mx-auto space-y-8">
+            <!-- General Settings -->
+            <div class="settings-card rounded-2xl p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">General Settings</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="setting-group rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fiscal Year Start</label>
+                        <select class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="1">January</option>
+                            <option value="4">April</option>
+                            <option value="7">July</option>
+                            <option value="10">October</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">When does your fiscal year begin?</p>
+                    </div>
+
+                    <div class="setting-group rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Default Currency</label>
+                        <select class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="USD">USD - US Dollar</option>
+                            <option value="EUR">EUR - Euro</option>
+                            <option value="GBP">GBP - British Pound</option>
+                            <option value="CAD">CAD - Canadian Dollar</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Primary currency for transactions</p>
+                    </div>
+
+                    <div class="setting-group rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Accounting Method</label>
+                        <select class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="accrual">Accrual Basis</option>
+                            <option value="cash">Cash Basis</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">How to recognize revenue and expenses</p>
+                    </div>
+
+                    <div class="setting-group rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tax Year</label>
+                        <select class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="calendar">Calendar Year</option>
+                            <option value="fiscal">Fiscal Year</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Tax reporting period alignment</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Journal Entry Settings -->
+            <div class="settings-card rounded-2xl p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Journal Entry Settings</h3>
+                
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center setting-group rounded-lg p-4">
+                        <div>
+                            <h4 class="font-medium text-gray-900">Auto-numbering</h4>
+                            <p class="text-sm text-gray-600">Automatically assign sequential numbers to journal entries</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="flex justify-between items-center setting-group rounded-lg p-4">
+                        <div>
+                            <h4 class="font-medium text-gray-900">Require Journal Entry Approval</h4>
+                            <p class="text-sm text-gray-600">Require supervisor approval before posting entries</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="flex justify-between items-center setting-group rounded-lg p-4">
+                        <div>
+                            <h4 class="font-medium text-gray-900">Allow Future Dates</h4>
+                            <p class="text-sm text-gray-600">Allow journal entries with future dates</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="setting-group rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Journal Entry Prefix</label>
+                        <input type="text" value="JE-" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <p class="text-xs text-gray-500 mt-1">Prefix for auto-generated journal entry numbers</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Integration Settings -->
+            <div class="settings-card rounded-2xl p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Module Integration</h3>
+                
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center setting-group rounded-lg p-4">
+                        <div>
+                            <h4 class="font-medium text-gray-900">Auto Journal from Sales</h4>
+                            <p class="text-sm text-gray-600">Automatically create journal entries from sales transactions</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="flex justify-between items-center setting-group rounded-lg p-4">
+                        <div>
+                            <h4 class="font-medium text-gray-900">Auto Journal from Purchases</h4>
+                            <p class="text-sm text-gray-600">Automatically create journal entries from purchase transactions</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="flex justify-between items-center setting-group rounded-lg p-4">
+                        <div>
+                            <h4 class="font-medium text-gray-900">Auto Journal from Inventory</h4>
+                            <p class="text-sm text-gray-600">Automatically create journal entries from inventory movements</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="flex justify-between items-center setting-group rounded-lg p-4">
+                        <div>
+                            <h4 class="font-medium text-gray-900">Auto Journal from Payroll</h4>
+                            <p class="text-sm text-gray-600">Automatically create journal entries from payroll processing</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financial Reporting Settings -->
+            <div class="settings-card rounded-2xl p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Financial Reporting</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="setting-group rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Default Report Period</label>
+                        <select class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="month">Current Month</option>
+                            <option value="quarter">Current Quarter</option>
+                            <option value="year">Current Year</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Report Format</label>
+                        <select class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="standard">Standard Format</option>
+                            <option value="comparative">Comparative Format</option>
+                            <option value="detailed">Detailed Format</option>
+                        </select>
+                    </div>
+
+                    <div class="flex justify-between items-center setting-group rounded-lg p-4 md:col-span-2">
+                        <div>
+                            <h4 class="font-medium text-gray-900">Show Zero Balances</h4>
+                            <p class="text-sm text-gray-600">Include accounts with zero balances in reports</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="flex justify-between items-center setting-group rounded-lg p-4 md:col-span-2">
+                        <div>
+                            <h4 class="font-medium text-gray-900">Auto-generate Monthly Reports</h4>
+                            <p class="text-sm text-gray-600">Automatically generate and email monthly financial reports</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Settings -->
+            <div class="settings-card rounded-2xl p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">Security & Access</h3>
+                
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center setting-group rounded-lg p-4">
+                        <div>
+                            <h4 class="font-medium text-gray-900">Lock Accounting Periods</h4>
+                            <p class="text-sm text-gray-600">Prevent changes to closed accounting periods</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="flex justify-between items-center setting-group rounded-lg p-4">
+                        <div>
+                            <h4 class="font-medium text-gray-900">Require Two-Factor Authentication</h4>
+                            <p class="text-sm text-gray-600">Require 2FA for accessing financial data</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="flex justify-between items-center setting-group rounded-lg p-4">
+                        <div>
+                            <h4 class="font-medium text-gray-900">Audit Trail</h4>
+                            <p class="text-sm text-gray-600">Maintain detailed logs of all accounting changes</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="setting-group rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Data Retention Period (Months)</label>
+                        <input type="number" value="84" min="12" max="120" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <p class="text-xs text-gray-500 mt-1">How long to keep accounting records (minimum 12 months)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle toggle switches
+    const toggles = document.querySelectorAll('.toggle-switch input[type="checkbox"]');
+    toggles.forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            // You can add specific logic here for each setting
+            console.log('Setting changed:', this.closest('.setting-group'), 'Value:', this.checked);
+        });
+    });
+
+    // Handle form submission
+    const saveButton = document.querySelector('.action-btn');
+    saveButton.addEventListener('click', function() {
+        // Collect all form data and save
+        console.log('Saving settings...');
+        
+        // Show success message
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        notification.textContent = 'Settings saved successfully!';
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    });
+});
+</script>
+{% endblock %}

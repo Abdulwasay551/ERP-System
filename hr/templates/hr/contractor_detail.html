@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Contractor Detail - {{ contractor.partner.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .contractor-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .info-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    .info-card h5 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .status-active { background-color: #d4edda; color: #155724; }
+    .status-inactive { background-color: #f8d7da; color: #721c24; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Contractor Header -->
+    <div class="contractor-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="mb-1">{{ contractor.partner.name }}</h2>
+                <p class="mb-1">Contractor ID: {{ contractor.contractor_id }}</p>
+                <p class="mb-0">{{ contractor.get_contract_type_display }} Contract</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="status-badge {% if contractor.is_active %}status-active{% else %}status-inactive{% endif %}">
+                    {% if contractor.is_active %}Active{% else %}Inactive{% endif %}
+                </span>
+                <div class="mt-2">
+                    <a href="{% url 'hr:contractors_ui' %}" class="btn btn-light btn-sm">
+                        <i class="fas fa-arrow-left"></i> Back to Contractors
+                    </a>
+                    <button class="btn btn-warning btn-sm" onclick="editContractor({{ contractor.id }})">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Partner Information -->
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5><i class="fas fa-user-tie"></i> Partner Information</h5>
+                <div class="row">
+                    <div class="col-sm-4"><strong>Name:</strong></div>
+                    <div class="col-sm-8">{{ contractor.partner.name }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Email:</strong></div>
+                    <div class="col-sm-8">{{ contractor.partner.email|default:"Not provided" }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Phone:</strong></div>
+                    <div class="col-sm-8">{{ contractor.partner.phone|default:"Not provided" }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Address:</strong></div>
+                    <div class="col-sm-8">{{ contractor.partner.address|default:"Not provided" }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Partner Type:</strong></div>
+                    <div class="col-sm-8">{{ contractor.partner.get_partner_type_display }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contract Information -->
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5><i class="fas fa-file-contract"></i> Contract Information</h5>
+                <div class="row">
+                    <div class="col-sm-4"><strong>Contractor ID:</strong></div>
+                    <div class="col-sm-8">{{ contractor.contractor_id }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Contract Type:</strong></div>
+                    <div class="col-sm-8">{{ contractor.get_contract_type_display }}</div>
+                </div>
+                {% if contractor.contract_type == 'hourly' %}
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Hourly Rate:</strong></div>
+                    <div class="col-sm-8">${{ contractor.hourly_rate|floatformat:2 }}</div>
+                </div>
+                {% else %}
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Contract Amount:</strong></div>
+                    <div class="col-sm-8">${{ contractor.contract_amount|floatformat:2 }}</div>
+                </div>
+                {% endif %}
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Start Date:</strong></div>
+                    <div class="col-sm-8">{{ contractor.contract_start_date|default:"Not specified" }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>End Date:</strong></div>
+                    <div class="col-sm-8">{{ contractor.contract_end_date|default:"Not specified" }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Status:</strong></div>
+                    <div class="col-sm-8">
+                        <span class="badge {% if contractor.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                            {% if contractor.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skills and Additional Information -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="info-card">
+                <h5><i class="fas fa-tools"></i> Skills & Expertise</h5>
+                {% if contractor.skills %}
+                    <div class="skills-container">
+                        {% for skill in contractor.skills|split:',' %}
+                            <span class="badge bg-primary me-1 mb-1">{{ skill|trim }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No skills specified.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Timeline -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="info-card">
+                <h5><i class="fas fa-clock"></i> Recent Activity</h5>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-primary"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">Contractor Created</h6>
+                            <p class="timeline-description">Contract established on {{ contractor.created_at|date:"F d, Y" }}</p>
+                            <small class="text-muted">{{ contractor.created_at|date:"g:i A" }}</small>
+                        </div>
+                    </div>
+                    {% if contractor.updated_at != contractor.created_at %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-info"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">Contract Updated</h6>
+                            <p class="timeline-description">Last updated on {{ contractor.updated_at|date:"F d, Y" }}</p>
+                            <small class="text-muted">{{ contractor.updated_at|date:"g:i A" }}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -2rem;
+    top: 0.25rem;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+}
+
+.timeline-content {
+    padding-left: 1rem;
+}
+
+.timeline-title {
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+}
+
+.timeline-description {
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.skills-container .badge {
+    font-size: 0.85rem;
+    padding: 0.35rem 0.65rem;
+}
+</style>
+
+<script>
+function editContractor(contractorId) {
+    // Redirect to edit form or open modal
+    window.location.href = `/hr/contractors/form/${contractorId}/`;
+}
+</script>
+{% endblock %}

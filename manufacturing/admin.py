@@ -4,7 +4,8 @@ from .models import (
     WorkCenter, BillOfMaterials, BillOfMaterialsItem, BOMOperation, 
     WorkOrder, WorkOrderOperation, OperationLog, QualityCheck,
     MaterialConsumption, MRPPlan, MRPRequirement, ProductionPlan, 
-    ProductionPlanItem, JobCard, Subcontractor, SubcontractWorkOrder
+    ProductionPlanItem, JobCard, Subcontractor, SubcontractWorkOrder,
+    DemandForecast, SupplierLeadTime, MRPRunLog, ReorderRule, CapacityPlan
 )
 
 
@@ -264,6 +265,127 @@ class SubcontractWorkOrderAdmin(ModelAdmin):
         }),
         ('Notes', {
             'fields': ('notes',),
+            'classes': ('collapse',)
+        })
+    )
+
+
+@admin.register(DemandForecast)
+class DemandForecastAdmin(ModelAdmin):
+    list_display = ('product', 'forecast_date', 'forecast_quantity', 'final_forecast', 'forecast_type', 'confidence_level', 'is_active')
+    search_fields = ('product__name', 'product__sku')
+    list_filter = ('company', 'forecast_type', 'forecast_date', 'is_active')
+    date_hierarchy = 'forecast_date'
+    readonly_fields = ('final_forecast',)
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('company', 'product', 'forecast_date')
+        }),
+        ('Forecast Details', {
+            'fields': ('forecast_quantity', 'manual_adjustment', 'final_forecast', 'forecast_type', 'confidence_level')
+        }),
+        ('Settings', {
+            'fields': ('planning_horizon_days', 'is_active')
+        }),
+        ('Notes', {
+            'fields': ('notes',),
+            'classes': ('collapse',)
+        })
+    )
+
+
+@admin.register(SupplierLeadTime)
+class SupplierLeadTimeAdmin(ModelAdmin):
+    list_display = ('supplier', 'product', 'lead_time_days', 'on_time_delivery_rate', 'quality_rating', 'price_per_unit', 'is_preferred', 'is_active')
+    search_fields = ('supplier__name', 'product__name', 'product__sku')
+    list_filter = ('company', 'is_preferred', 'is_active', 'supplier')
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('company', 'supplier', 'product')
+        }),
+        ('Lead Time Details', {
+            'fields': ('lead_time_days', 'min_lead_time_days', 'max_lead_time_days')
+        }),
+        ('Performance Metrics', {
+            'fields': ('on_time_delivery_rate', 'quality_rating', 'actual_deliveries', 'late_deliveries')
+        }),
+        ('Pricing & Terms', {
+            'fields': ('price_per_unit', 'minimum_order_quantity')
+        }),
+        ('Status & Validity', {
+            'fields': ('is_preferred', 'is_active', 'valid_from', 'valid_to')
+        })
+    )
+
+
+@admin.register(MRPRunLog)
+class MRPRunLogAdmin(ModelAdmin):
+    list_display = ('run_timestamp', 'company', 'mrp_plan', 'trigger_source', 'status', 'execution_time_seconds', 'requirements_generated')
+    search_fields = ('company__name', 'mrp_plan__name')
+    list_filter = ('company', 'trigger_source', 'status', 'run_timestamp')
+    date_hierarchy = 'run_timestamp'
+    readonly_fields = ('run_timestamp', 'execution_time_seconds', 'configuration_snapshot')
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('company', 'mrp_plan', 'run_timestamp', 'trigger_source')
+        }),
+        ('Results', {
+            'fields': ('status', 'execution_time_seconds', 'requirements_generated', 'purchase_requests_created')
+        }),
+        ('Error Details', {
+            'fields': ('error_message', 'warnings'),
+            'classes': ('collapse',)
+        }),
+        ('Configuration', {
+            'fields': ('configuration_snapshot',),
+            'classes': ('collapse',)
+        })
+    )
+
+
+@admin.register(ReorderRule)
+class ReorderRuleAdmin(ModelAdmin):
+    list_display = ('product', 'warehouse', 'reorder_method', 'reorder_point', 'minimum_stock', 'maximum_stock', 'auto_create_purchase_request', 'is_active')
+    search_fields = ('product__name', 'product__sku', 'warehouse__name')
+    list_filter = ('company', 'warehouse', 'reorder_method', 'auto_create_purchase_request', 'is_active')
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('company', 'product', 'warehouse', 'reorder_method')
+        }),
+        ('Stock Levels', {
+            'fields': ('minimum_stock', 'maximum_stock', 'reorder_point', 'safety_stock', 'economic_order_quantity')
+        }),
+        ('Demand & Lead Time', {
+            'fields': ('lead_time_days', 'average_daily_demand', 'demand_variability')
+        }),
+        ('Automation', {
+            'fields': ('auto_create_purchase_request', 'auto_create_work_order')
+        }),
+        ('Status', {
+            'fields': ('is_active', 'last_triggered')
+        })
+    )
+
+
+@admin.register(CapacityPlan)
+class CapacityPlanAdmin(ModelAdmin):
+    list_display = ('work_center', 'plan_date', 'available_hours', 'planned_hours', 'utilization_percentage', 'is_overloaded')
+    search_fields = ('work_center__name', 'work_center__code')
+    list_filter = ('company', 'work_center', 'plan_date', 'is_overloaded')
+    date_hierarchy = 'plan_date'
+    readonly_fields = ('utilization_percentage', 'is_overloaded')
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('company', 'work_center', 'plan_date', 'planning_horizon_days')
+        }),
+        ('Capacity Details', {
+            'fields': ('available_hours', 'planned_hours', 'actual_hours')
+        }),
+        ('Metrics', {
+            'fields': ('utilization_percentage', 'efficiency_percentage', 'is_overloaded')
+        }),
+        ('Issues', {
+            'fields': ('capacity_issues',),
             'classes': ('collapse',)
         })
     )

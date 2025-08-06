@@ -1,0 +1,1091 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Chart of Accounts - Accounting{% endblock %}
+
+{% block extra_css %}
+<style>
+    .coa-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .coa-card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 20px 40px rgba(59, 130, 246, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .account-type-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .type-asset {
+        background: #dcfce7;
+        color: #166534;
+    }
+    
+    .type-liability {
+        background: #fecaca;
+        color: #991b1b;
+    }
+    
+    .type-equity {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+    
+    .type-income {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    .type-expense {
+        background: #fed7d7;
+        color: #c53030;
+    }
+    
+    .balance-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .balance-positive {
+        color: #059669;
+    }
+    
+    .balance-negative {
+        color: #dc2626;
+    }
+    
+    .balance-zero {
+        color: #6b7280;
+    }
+    
+    .hierarchy-level-0 {
+        margin-left: 0;
+        font-weight: 700;
+        font-size: 1.125rem;
+    }
+    
+    .hierarchy-level-1 {
+        margin-left: 1rem;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    
+    .hierarchy-level-2 {
+        margin-left: 2rem;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+    
+    .hierarchy-level-3 {
+        margin-left: 3rem;
+        font-weight: 400;
+        font-size: 0.875rem;
+    }
+    
+    .stats-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        border: 1px solid #e5e7eb;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: none;
+        font-size: 0.875rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+    
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+    
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        color: #111827;
+    }
+    
+    .filter-controls {
+        background: #f8fafc;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        align-items: end;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .form-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-input {
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .account-tree {
+        background: white;
+        border-radius: 1rem;
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .tree-node {
+        border-bottom: 1px solid #f3f4f6;
+        padding: 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .tree-node:hover {
+        background: #f8fafc;
+    }
+    
+    .tree-node.expandable::before {
+        content: '▶';
+        margin-right: 0.5rem;
+        transition: transform 0.2s ease;
+    }
+    
+    .tree-node.expanded::before {
+        transform: rotate(90deg);
+    }
+    
+    .account-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-left: auto;
+    }
+    
+    .account-balance {
+        font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+        font-weight: 600;
+        text-align: right;
+        min-width: 120px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">
+                        <i class="fas fa-chart-tree text-blue-600 mr-3"></i>
+                        Chart of Accounts
+                    </h1>
+                    <p class="text-gray-600 mt-2">Manage your complete chart of accounts structure</p>
+                </div>
+                <div class="flex gap-3">
+                    <a href="{% url 'accounting:dashboard' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to Accounting
+                    </a>
+                    <button onclick="addAccount()" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Add Account
+                    </button>
+                    <button onclick="exportCOA()" class="btn btn-secondary">
+                        <i class="fas fa-download"></i>
+                        Export COA
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Statistics Overview -->
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-value text-green-600">{{ total_assets|default:"€124,500" }}</div>
+                <div class="stat-label">Total Assets</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-red-600">{{ total_liabilities|default:"€89,200" }}</div>
+                <div class="stat-label">Total Liabilities</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-blue-600">{{ total_equity|default:"€35,300" }}</div>
+                <div class="stat-label">Total Equity</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-purple-600">{{ total_accounts|default:156 }}</div>
+                <div class="stat-label">Total Accounts</div>
+            </div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="filter-controls">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Filter Accounts</h3>
+            <div class="filter-grid">
+                <div class="form-group">
+                    <label class="form-label">Account Type</label>
+                    <select class="form-input" id="typeFilter">
+                        <option value="">All Types</option>
+                        <option value="asset">Assets</option>
+                        <option value="liability">Liabilities</option>
+                        <option value="equity">Equity</option>
+                        <option value="income">Income</option>
+                        <option value="expense">Expenses</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select class="form-input" id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Search</label>
+                    <input type="text" class="form-input" placeholder="Search accounts..." id="searchInput">
+                </div>
+                <div class="form-group">
+                    <button onclick="applyFilters()" class="btn btn-primary">
+                        <i class="fas fa-filter"></i>
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart of Accounts Tree -->
+        <div class="account-tree">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-sitemap text-blue-600 mr-2"></i>
+                        Account Hierarchy
+                    </h3>
+                    <div class="flex gap-2">
+                        <button onclick="expandAll()" class="btn btn-secondary text-sm">
+                            <i class="fas fa-expand-arrows-alt"></i>
+                            Expand All
+                        </button>
+                        <button onclick="collapseAll()" class="btn btn-secondary text-sm">
+                            <i class="fas fa-compress-arrows-alt"></i>
+                            Collapse All
+                        </button>
+                        <button onclick="refreshBalances()" class="btn btn-secondary text-sm">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh Balances
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="accountTree" class="max-h-screen overflow-y-auto">
+                <!-- Sample Account Tree Structure -->
+                
+                <!-- 1. ASSETS -->
+                <div class="tree-node expandable hierarchy-level-0" data-category="assets" onclick="toggleNode(this)">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <span class="font-bold text-lg">1. ASSETS</span>
+                            <span class="account-type-badge type-asset ml-3">Asset</span>
+                        </div>
+                        <div class="account-balance balance-positive">€124,500.00</div>
+                    </div>
+                </div>
+                
+                <div class="tree-children" data-parent="assets" style="display: none;">
+                    <!-- 1.1 Current Assets -->
+                    <div class="tree-node expandable hierarchy-level-1" data-category="current-assets" onclick="toggleNode(this)">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <span class="font-semibold">1.1 Current Assets</span>
+                            </div>
+                            <div class="account-balance balance-positive">€98,200.00</div>
+                        </div>
+                    </div>
+                    
+                    <div class="tree-children" data-parent="current-assets" style="display: none;">
+                        <!-- Cash Accounts -->
+                        <div class="tree-node hierarchy-level-2">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <span>1.1.1.1 Petty Cash</span>
+                                    <span class="account-type-badge type-asset ml-2">Cash</span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <div class="account-balance balance-positive">€2,500.00</div>
+                                    <div class="account-actions">
+                                        <button onclick="viewAccount('1.1.1.1')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                            View
+                                        </button>
+                                        <button onclick="editAccount('1.1.1.1')" class="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">
+                                            Edit
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="tree-node hierarchy-level-2">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <span>1.1.2.1 Bank - HBL</span>
+                                    <span class="account-type-badge type-asset ml-2">Bank</span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <div class="account-balance balance-positive">€45,700.00</div>
+                                    <div class="account-actions">
+                                        <button onclick="viewAccount('1.1.2.1')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                            View
+                                        </button>
+                                        <button onclick="editAccount('1.1.2.1')" class="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">
+                                            Edit
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="tree-node hierarchy-level-2">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <span>1.1.3.1 Customers - Local</span>
+                                    <span class="account-type-badge type-asset ml-2">Receivable</span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <div class="account-balance balance-positive">€28,500.00</div>
+                                    <div class="account-actions">
+                                        <button onclick="viewAccount('1.1.3.1')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                            View
+                                        </button>
+                                        <button onclick="editAccount('1.1.3.1')" class="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">
+                                            Edit
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="tree-node hierarchy-level-2">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <span>1.1.4.1 Raw Material Inventory</span>
+                                    <span class="account-type-badge type-asset ml-2">Inventory</span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <div class="account-balance balance-positive">€21,500.00</div>
+                                    <div class="account-actions">
+                                        <button onclick="viewAccount('1.1.4.1')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                            View
+                                        </button>
+                                        <button onclick="editAccount('1.1.4.1')" class="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">
+                                            Edit
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. LIABILITIES -->
+                <div class="tree-node expandable hierarchy-level-0" data-category="liabilities" onclick="toggleNode(this)">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <span class="font-bold text-lg">2. LIABILITIES</span>
+                            <span class="account-type-badge type-liability ml-3">Liability</span>
+                        </div>
+                        <div class="account-balance balance-negative">€89,200.00</div>
+                    </div>
+                </div>
+                
+                <div class="tree-children" data-parent="liabilities" style="display: none;">
+                    <div class="tree-node hierarchy-level-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <span>2.1.1.1 Vendors - Local</span>
+                                <span class="account-type-badge type-liability ml-2">Payable</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="account-balance balance-negative">€34,800.00</div>
+                                <div class="account-actions">
+                                    <button onclick="viewAccount('2.1.1.1')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                        View
+                                    </button>
+                                    <button onclick="editAccount('2.1.1.1')" class="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">
+                                        Edit
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tree-node hierarchy-level-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <span>2.1.2.1 Salaries Payable</span>
+                                <span class="account-type-badge type-liability ml-2">Accrued</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="account-balance balance-negative">€15,400.00</div>
+                                <div class="account-actions">
+                                    <button onclick="viewAccount('2.1.2.1')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                        View
+                                    </button>
+                                    <button onclick="editAccount('2.1.2.1')" class="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">
+                                        Edit
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. INCOME -->
+                <div class="tree-node expandable hierarchy-level-0" data-category="income" onclick="toggleNode(this)">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <span class="font-bold text-lg">4. INCOME</span>
+                            <span class="account-type-badge type-income ml-3">Income</span>
+                        </div>
+                        <div class="account-balance balance-positive">€156,800.00</div>
+                    </div>
+                </div>
+                
+                <div class="tree-children" data-parent="income" style="display: none;">
+                    <div class="tree-node hierarchy-level-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <span>4.1.1 Product Sales - Local</span>
+                                <span class="account-type-badge type-income ml-2">Sales</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="account-balance balance-positive">€145,200.00</div>
+                                <div class="account-actions">
+                                    <button onclick="viewAccount('4.1.1')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                        View
+                                    </button>
+                                    <button onclick="editAccount('4.1.1')" class="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">
+                                        Edit
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tree-node hierarchy-level-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <span>4.1.3 Service Revenue</span>
+                                <span class="account-type-badge type-income ml-2">Sales</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="account-balance balance-positive">€11,600.00</div>
+                                <div class="account-actions">
+                                    <button onclick="viewAccount('4.1.3')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                        View
+                                    </button>
+                                    <button onclick="editAccount('4.1.3')" class="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">
+                                        Edit
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Account Rendering -->
+                {% for category in account_categories %}
+                <div class="tree-node expandable hierarchy-level-0" data-category="{{ category.code }}" onclick="toggleNode(this)">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <span class="font-bold text-lg">{{ category.code }}. {{ category.name|upper }}</span>
+                            <span class="account-type-badge type-{{ category.name|lower }} ml-3">{{ category.name }}</span>
+                        </div>
+                        <div class="account-balance balance-positive">€{{ category.total_balance|default:"0.00" }}</div>
+                    </div>
+                </div>
+                
+                <div class="tree-children" data-parent="{{ category.code }}" style="display: none;">
+                    {% for group in category.groups.all %}
+                    <div class="tree-node expandable hierarchy-level-1" data-category="{{ group.code }}" onclick="toggleNode(this)">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <span class="font-semibold">{{ group.code }} {{ group.name }}</span>
+                            </div>
+                            <div class="account-balance balance-positive">€{{ group.total_balance|default:"0.00" }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="tree-children" data-parent="{{ group.code }}" style="display: none;">
+                        {% for account in group.accounts.all %}
+                        <div class="tree-node hierarchy-level-2">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <span>{{ account.code }} {{ account.name }}</span>
+                                    <span class="account-type-badge type-{{ account.type }} ml-2">{{ account.account_type|title }}</span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <div class="account-balance {% if account.balance > 0 %}balance-positive{% elif account.balance < 0 %}balance-negative{% else %}balance-zero{% endif %}">
+                                        €{{ account.balance|default:"0.00" }}
+                                    </div>
+                                    <div class="account-actions">
+                                        <button onclick="viewAccount('{{ account.id }}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                            View
+                                        </button>
+                                        <button onclick="editAccount('{{ account.id }}')" class="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">
+                                            Edit
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% empty %}
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-chart-tree text-4xl mb-4 text-blue-500"></i>
+                    <p>No chart of accounts configured</p>
+                    <button onclick="initializeCOA()" class="mt-2 btn btn-primary">
+                        Initialize Chart of Accounts
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleNode(element) {
+    const isExpanded = element.classList.contains('expanded');
+    const category = element.getAttribute('data-category');
+    const children = document.querySelector(`[data-parent="${category}"]`);
+    
+    if (children) {
+        if (isExpanded) {
+            element.classList.remove('expanded');
+            children.style.display = 'none';
+        } else {
+            element.classList.add('expanded');
+            children.style.display = 'block';
+        }
+    }
+}
+
+function expandAll() {
+    const expandableNodes = document.querySelectorAll('.tree-node.expandable');
+    const childrenNodes = document.querySelectorAll('.tree-children');
+    
+    expandableNodes.forEach(node => {
+        node.classList.add('expanded');
+    });
+    
+    childrenNodes.forEach(children => {
+        children.style.display = 'block';
+    });
+}
+
+function collapseAll() {
+    const expandableNodes = document.querySelectorAll('.tree-node.expandable');
+    const childrenNodes = document.querySelectorAll('.tree-children');
+    
+    expandableNodes.forEach(node => {
+        node.classList.remove('expanded');
+    });
+    
+    childrenNodes.forEach(children => {
+        children.style.display = 'none';
+    });
+}
+
+function refreshBalances() {
+    showNotification('Refreshing account balances...', 'info');
+    
+    fetch('/accounting/api/accounts/refresh-balances/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Account balances updated successfully!', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showNotification('Failed to refresh balances: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Failed to refresh balances', 'error');
+    });
+}
+
+function applyFilters() {
+    const typeFilter = document.getElementById('typeFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    const searchInput = document.getElementById('searchInput').value;
+    
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (typeFilter) params.append('type', typeFilter);
+    if (statusFilter) params.append('status', statusFilter);
+    if (searchInput) params.append('search', searchInput);
+    
+    // Reload page with filters
+    window.location.href = '?' + params.toString();
+}
+
+function viewAccount(accountId) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-screen overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold">Account Details</h3>
+                <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-semibold mb-3">Account Information</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span>Account Code:</span><span class="font-medium">1.1.1.1</span></div>
+                        <div class="flex justify-between"><span>Account Name:</span><span class="font-medium">Petty Cash</span></div>
+                        <div class="flex justify-between"><span>Account Type:</span><span class="text-green-600 font-medium">Asset</span></div>
+                        <div class="flex justify-between"><span>Balance Side:</span><span>Debit</span></div>
+                        <div class="flex justify-between"><span>Status:</span><span class="text-green-600">Active</span></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-3">Current Balance</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span>Total Debits:</span><span class="text-green-600 font-medium">€12,500.00</span></div>
+                        <div class="flex justify-between"><span>Total Credits:</span><span class="text-red-600 font-medium">€10,000.00</span></div>
+                        <div class="flex justify-between border-t pt-2"><span class="font-semibold">Current Balance:</span><span class="text-green-600 font-bold">€2,500.00</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <h4 class="font-semibold mb-3">Recent Transactions</h4>
+                <div class="bg-gray-50 rounded border p-4 max-h-64 overflow-y-auto">
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between items-center border-b pb-1">
+                            <span>2024-08-01 - Office Supplies</span>
+                            <span class="text-red-600">-€250.00</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b pb-1">
+                            <span>2024-07-28 - Cash Deposit</span>
+                            <span class="text-green-600">+€1,000.00</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b pb-1">
+                            <span>2024-07-25 - Miscellaneous Expense</span>
+                            <span class="text-red-600">-€75.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="this.closest('.fixed').remove()" class="btn btn-secondary">
+                    Close
+                </button>
+                <button onclick="editAccount('${accountId}'); this.closest('.fixed').remove();" class="btn btn-primary">
+                    Edit Account
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function editAccount(accountId) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold mb-4">Edit Account</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Account Code</label>
+                    <input type="text" class="form-input w-full" value="1.1.1.1" readonly>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
+                    <input type="text" class="form-input w-full" value="Petty Cash" id="accountName">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Account Type</label>
+                    <select class="form-input w-full" id="accountType">
+                        <option value="asset" selected>Asset</option>
+                        <option value="liability">Liability</option>
+                        <option value="equity">Equity</option>
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Balance Side</label>
+                    <select class="form-input w-full" id="balanceSide">
+                        <option value="debit" selected>Debit</option>
+                        <option value="credit">Credit</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" class="mr-2" checked id="isActive">
+                        <span class="text-sm font-medium text-gray-700">Active</span>
+                    </label>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea class="form-input w-full" rows="3" placeholder="Account description..." id="accountDescription">Cash kept in office for small expenses</textarea>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="this.closest('.fixed').remove()" class="btn btn-secondary">
+                    Cancel
+                </button>
+                <button onclick="saveAccount('${accountId}'); this.closest('.fixed').remove();" class="btn btn-primary">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function addAccount() {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold mb-4">Add New Account</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Account Group</label>
+                    <select class="form-input w-full" id="accountGroup">
+                        <option value="">Select Group</option>
+                        <option value="1.1.1">Cash</option>
+                        <option value="1.1.2">Bank Accounts</option>
+                        <option value="1.1.3">Accounts Receivable</option>
+                        <option value="1.1.4">Inventory</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Account Code</label>
+                    <input type="text" class="form-input w-full" placeholder="e.g., 1.1.1.3" id="newAccountCode">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
+                    <input type="text" class="form-input w-full" placeholder="e.g., Cash at Bank" id="newAccountName">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Account Type</label>
+                    <select class="form-input w-full" id="newAccountType">
+                        <option value="asset">Asset</option>
+                        <option value="liability">Liability</option>
+                        <option value="equity">Equity</option>
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Balance Side</label>
+                    <select class="form-input w-full" id="newBalanceSide">
+                        <option value="debit">Debit</option>
+                        <option value="credit">Credit</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea class="form-input w-full" rows="3" placeholder="Account description..." id="newAccountDescription"></textarea>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="this.closest('.fixed').remove()" class="btn btn-secondary">
+                    Cancel
+                </button>
+                <button onclick="createAccount(); this.closest('.fixed').remove();" class="btn btn-primary">
+                    Create Account
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function saveAccount(accountId) {
+    const accountName = document.getElementById('accountName').value;
+    const accountType = document.getElementById('accountType').value;
+    const balanceSide = document.getElementById('balanceSide').value;
+    const isActive = document.getElementById('isActive').checked;
+    const description = document.getElementById('accountDescription').value;
+    
+    fetch(`/accounting/api/accounts/${accountId}/`, {
+        method: 'PATCH',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            name: accountName,
+            type: accountType,
+            balance_side: balanceSide,
+            is_active: isActive,
+            description: description
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.id) {
+            showNotification('Account updated successfully!', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showNotification('Failed to update account: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Failed to update account', 'error');
+    });
+}
+
+function createAccount() {
+    const groupId = document.getElementById('accountGroup').value;
+    const code = document.getElementById('newAccountCode').value;
+    const name = document.getElementById('newAccountName').value;
+    const type = document.getElementById('newAccountType').value;
+    const balanceSide = document.getElementById('newBalanceSide').value;
+    const description = document.getElementById('newAccountDescription').value;
+    
+    if (!groupId || !code || !name) {
+        showNotification('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    fetch('/accounting/api/accounts/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            group: groupId,
+            code: code,
+            name: name,
+            type: type,
+            balance_side: balanceSide,
+            description: description
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.id) {
+            showNotification('Account created successfully!', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showNotification('Failed to create account: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Failed to create account', 'error');
+    });
+}
+
+function initializeCOA() {
+    if (confirm('Initialize the complete Chart of Accounts? This will create all standard accounts.')) {
+        showNotification('Initializing Chart of Accounts...', 'info');
+        
+        fetch('/accounting/api/initialize-coa/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Chart of Accounts initialized successfully!', 'success');
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                showNotification('Failed to initialize COA: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to initialize COA', 'error');
+        });
+    }
+}
+
+function exportCOA() {
+    window.open('/accounting/api/export-coa/', '_blank');
+    showNotification('COA export started', 'info');
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'error' ? 'bg-red-500 text-white' :
+        type === 'warning' ? 'bg-yellow-500 text-white' :
+        'bg-blue-500 text-white'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${
+                type === 'success' ? 'fa-check-circle' :
+                type === 'error' ? 'fa-exclamation-triangle' :
+                type === 'warning' ? 'fa-exclamation-triangle' :
+                'fa-info-circle'
+            } mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+// Initialize search functionality
+document.getElementById('searchInput')?.addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const treeNodes = document.querySelectorAll('.tree-node');
+    
+    treeNodes.forEach(node => {
+        const text = node.textContent.toLowerCase();
+        if (searchTerm === '' || text.includes(searchTerm)) {
+            node.style.display = 'block';
+        } else {
+            node.style.display = 'none';
+        }
+    });
+});
+</script>
+
+<!-- Add CSRF token -->
+{% csrf_token %}
+{% endblock %}

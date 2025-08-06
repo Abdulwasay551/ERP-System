@@ -1,0 +1,347 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Contractors Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .contractors-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .filter-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    .contractor-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+        border-left: 4px solid #28a745;
+        transition: transform 0.2s ease;
+    }
+    .contractor-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .contract-type-badge {
+        padding: 0.2rem 0.6rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="contractors-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="mb-1"><i class="fas fa-user-tie"></i> Contractors Management</h2>
+                <p class="mb-0">Manage external contractors and their contracts</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'hr:contractor_form' %}" class="btn btn-light btn-lg">
+                    <i class="fas fa-plus"></i> Add New Contractor
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-card">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label for="search" class="form-label">Search</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search }}" placeholder="Search by name, ID, or skills...">
+            </div>
+            <div class="col-md-3">
+                <label for="contract_type" class="form-label">Contract Type</label>
+                <select class="form-select" id="contract_type" name="contract_type">
+                    <option value="">All Types</option>
+                    {% for value, display in contract_types %}
+                    <option value="{{ value }}" {% if contract_type_filter == value %}selected{% endif %}>
+                        {{ display }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                    <a href="{% url 'hr:contractors_ui' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3>{{ contractors.paginator.count }}</h3>
+                    <p class="mb-0">Total Contractors</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>
+                        {% for contractor in contractors %}
+                            {% if contractor.is_active %}{{ forloop.counter0|add:"1" }}{% endif %}
+                        {% empty %}0{% endfor %}
+                    </h3>
+                    <p class="mb-0">Active Contractors</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>
+                        {% for contractor in contractors %}
+                            {% if contractor.contract_type == 'hourly' %}{{ forloop.counter0|add:"1" }}{% endif %}
+                        {% empty %}0{% endfor %}
+                    </h3>
+                    <p class="mb-0">Hourly Contracts</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h3>
+                        {% for contractor in contractors %}
+                            {% if contractor.contract_type == 'project' %}{{ forloop.counter0|add:"1" }}{% endif %}
+                        {% empty %}0{% endfor %}
+                    </h3>
+                    <p class="mb-0">Project Contracts</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contractors List -->
+    <div class="row">
+        {% for contractor in contractors %}
+        <div class="col-md-6 col-lg-4">
+            <div class="contractor-card">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="mb-0">
+                        <a href="{% url 'hr:contractor_detail' contractor.id %}" class="text-decoration-none">
+                            {{ contractor.partner.name }}
+                        </a>
+                    </h5>
+                    <span class="status-badge {% if contractor.is_active %}bg-success text-white{% else %}bg-secondary text-white{% endif %}">
+                        {% if contractor.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </div>
+                
+                <div class="mb-2">
+                    <small class="text-muted">{{ contractor.contractor_id }}</small>
+                </div>
+
+                <div class="mb-2">
+                    <span class="contract-type-badge bg-primary text-white">
+                        {{ contractor.get_contract_type_display }}
+                    </span>
+                </div>
+
+                <div class="mb-2">
+                    {% if contractor.contract_type == 'hourly' %}
+                        <strong>Rate:</strong> ${{ contractor.hourly_rate|floatformat:2 }}/hour
+                    {% else %}
+                        <strong>Amount:</strong> ${{ contractor.contract_amount|floatformat:2 }}
+                    {% endif %}
+                </div>
+
+                {% if contractor.partner.email %}
+                <div class="mb-2">
+                    <small><i class="fas fa-envelope text-muted"></i> {{ contractor.partner.email }}</small>
+                </div>
+                {% endif %}
+
+                {% if contractor.partner.phone %}
+                <div class="mb-2">
+                    <small><i class="fas fa-phone text-muted"></i> {{ contractor.partner.phone }}</small>
+                </div>
+                {% endif %}
+
+                {% if contractor.contract_start_date %}
+                <div class="mb-2">
+                    <small><i class="fas fa-calendar text-muted"></i> 
+                        Started: {{ contractor.contract_start_date|date:"M d, Y" }}
+                        {% if contractor.contract_end_date %}
+                        <br>Ends: {{ contractor.contract_end_date|date:"M d, Y" }}
+                        {% endif %}
+                    </small>
+                </div>
+                {% endif %}
+
+                {% if contractor.skills %}
+                <div class="mb-3">
+                    <small class="text-muted">Skills:</small>
+                    <div class="mt-1">
+                        {% for skill in contractor.skills|split:',' %}
+                            {% if forloop.counter <= 3 %}
+                            <span class="badge bg-light text-dark me-1">{{ skill|trim }}</span>
+                            {% endif %}
+                        {% endfor %}
+                        {% if contractor.skills|split:','|length > 3 %}
+                        <span class="badge bg-secondary">+{{ contractor.skills|split:','|length|add:"-3" }} more</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        Added {{ contractor.created_at|date:"M d, Y" }}
+                    </small>
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'hr:contractor_detail' contractor.id %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{% url 'hr:contractor_form_edit' contractor.id %}" class="btn btn-sm btn-outline-warning">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteContractor({{ contractor.id }}, '{{ contractor.partner.name }}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-user-tie fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">No Contractors Found</h4>
+                <p class="text-muted">
+                    {% if search or contract_type_filter %}
+                        No contractors match your search criteria.
+                    {% else %}
+                        You haven't added any contractors yet.
+                    {% endif %}
+                </p>
+                <a href="{% url 'hr:contractor_form' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add First Contractor
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if contractors.has_other_pages %}
+    <nav aria-label="Contractors pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if contractors.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ contractors.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if contract_type_filter %}&contract_type={{ contract_type_filter }}{% endif %}">
+                        Previous
+                    </a>
+                </li>
+            {% endif %}
+            
+            {% for num in contractors.paginator.page_range %}
+                {% if contractors.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > contractors.number|add:'-3' and num < contractors.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}{% if contract_type_filter %}&contract_type={{ contract_type_filter }}{% endif %}">
+                            {{ num }}
+                        </a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if contractors.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ contractors.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if contract_type_filter %}&contract_type={{ contract_type_filter }}{% endif %}">
+                        Next
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<script>
+function deleteContractor(contractorId, contractorName) {
+    Swal.fire({
+        title: 'Delete Contractor?',
+        text: `Are you sure you want to delete contractor "${contractorName}"? This action cannot be undone.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`{% url 'hr:contractors_delete' 0 %}`.replace('0', contractorId), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Deleted!', 'Contractor has been deleted.', 'success')
+                    .then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Error', data.error || 'An error occurred while deleting the contractor', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire('Error', 'An unexpected error occurred', 'error');
+            });
+        }
+    });
+}
+
+// CSRF token for AJAX requests
+document.addEventListener('DOMContentLoaded', function() {
+    // Add CSRF token to page if it doesn't exist
+    if (!document.querySelector('[name=csrfmiddlewaretoken]')) {
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrfmiddlewaretoken';
+        csrfToken.value = '{{ csrf_token }}';
+        document.body.appendChild(csrfToken);
+    }
+});
+</script>
+{% endblock %}

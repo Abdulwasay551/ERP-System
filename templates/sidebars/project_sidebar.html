@@ -1,94 +1,88 @@
 {% load static %}
-
+<!-- Project Management Module Sidebar -->
 <div class="sidebar-content">
-    <!-- Logo -->
-    <div class="sidebar-logo p-6">
-        <a href="{% url 'dashboard' %}" class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur">
-                <img src="{% static 'logo.png' %}" alt="FutureERP Logo" class="w-8 h-8" style="border-radius: 50%;">
-            </div>
-            <span class="sidebar-text text-xl font-bold text-white">FutureERP</span>
-        </a>
+    <!-- Logo/Back Section -->
+    <div class="sidebar-logo p-4 border-b border-white/20">
+        <div class="flex items-center space-x-3 min-h-[3rem]">
+            <a href="{% url 'dashboard' %}" class="w-12 h-12 bg-white/20 backdrop-blur-md hover:bg-white/30 rounded-full flex items-center justify-center transition-all flex-shrink-0 border border-white/30">
+                <i class="fas fa-arrow-left text-white text-base"></i>
+            </a>
+            <span class="text-xl font-bold sidebar-text whitespace-nowrap text-white">Project Management</span>
+        </div>
     </div>
 
-    <!-- Navigation -->
-    <nav class="sidebar-nav">
-        <!-- Back to Dashboard -->
-        <a href="{% url 'dashboard' %}" class="sidebar-item bg-white/20 border border-white/20 mb-4">
-            <span class="sidebar-icon">
-                <i class="fas fa-arrow-left"></i>
-            </span>
-            <span class="sidebar-text">Back to Dashboard</span>
-        </a>
-
-        <!-- Project Dashboard -->
-        <a href="{% url 'project_dashboard' %}" class="sidebar-item">
-            <span class="sidebar-icon">
-                <i class="fas fa-tachometer-alt"></i>
-            </span>
-            <span class="sidebar-text">Project Dashboard</span>
+    <!-- Navigation Items -->
+    <nav class="sidebar-nav flex-1 py-4 space-y-2 mt-2">
+        <!-- Dashboard -->
+        <a href="{% url 'project_mgmt:project_dashboard' %}" class="sidebar-item {% if request.resolver_match.url_name == 'project_dashboard' %}active{% endif %}">
+            <i class="fas fa-tachometer-alt sidebar-icon"></i>
+            <span class="sidebar-text">Dashboard</span>
         </a>
 
         <!-- Projects -->
-        <div class="sidebar-section mb-4">
-            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Projects</h3>
-            <a href="{% url 'project_mgmt_projects_ui' %}" class="sidebar-item">
-                <span class="sidebar-icon">
-                    <i class="fas fa-project-diagram"></i>
-                </span>
-                <span class="sidebar-text">All Projects</span>
-            </a>
-            <a href="{% url 'project_mgmt_projects_add' %}" class="sidebar-item">
-                <span class="sidebar-icon">
-                    <i class="fas fa-plus-circle"></i>
-                </span>
-                <span class="sidebar-text">New Project</span>
-            </a>
-        </div>
+        <a href="{% url 'project_mgmt:projects_ui' %}" class="sidebar-item {% if 'projects' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-project-diagram sidebar-icon"></i>
+            <span class="sidebar-text">Projects</span>
+        </a>
 
-        <!-- Tasks & Milestones -->
-        <div class="sidebar-section mb-4">
-            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Tasks & Milestones</h3>
-            <a href="{% url 'project_mgmt_tasks_ui' %}" class="sidebar-item">
-                <span class="sidebar-icon">
-                    <i class="fas fa-tasks"></i>
-                </span>
-                <span class="sidebar-text">Tasks</span>
-            </a>
-            <a href="{% url 'project_mgmt_milestones_ui' %}" class="sidebar-item">
-                <span class="sidebar-icon">
-                    <i class="fas fa-flag"></i>
-                </span>
-                <span class="sidebar-text">Milestones</span>
-            </a>
-        </div>
+        <!-- Tasks -->
+        <a href="{% url 'project_mgmt:tasks_ui' %}" class="sidebar-item {% if 'tasks' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-tasks sidebar-icon"></i>
+            <span class="sidebar-text">Tasks</span>
+        </a>
 
-        <!-- Resources & Team -->
-        <div class="sidebar-section mb-4">
-            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Resources & Team</h3>
-            <a href="{% url 'project_mgmt_resources_ui' %}" class="sidebar-item">
-                <span class="sidebar-icon">
-                    <i class="fas fa-users-cog"></i>
-                </span>
-                <span class="sidebar-text">Resources</span>
-            </a>
-            <a href="{% url 'project_mgmt_timetracking_ui' %}" class="sidebar-item">
-                <span class="sidebar-icon">
-                    <i class="fas fa-stopwatch"></i>
-                </span>
-                <span class="sidebar-text">Time Tracking</span>
-            </a>
-        </div>
+        <!-- Milestones -->
+        <a href="{% url 'project_mgmt:milestones_ui' %}" class="sidebar-item {% if 'milestone' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-flag sidebar-icon"></i>
+            <span class="sidebar-text">Milestones</span>
+        </a>
+
+        <!-- Time Tracking -->
+        <a href="{% url 'project_mgmt:timetracking_ui' %}" class="sidebar-item {% if 'timesheet' in request.resolver_match.url_name or 'timetracking' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-stopwatch sidebar-icon"></i>
+            <span class="sidebar-text">Time Tracking</span>
+        </a>
+
+        <!-- Team Management -->
+        <a href="{% url 'project_mgmt:team_ui' %}" class="sidebar-item {% if 'team' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-users sidebar-icon"></i>
+            <span class="sidebar-text">Team Management</span>
+        </a>
+
+        <!-- Documents -->
+        <a href="{% url 'project_mgmt:documents_ui' %}" class="sidebar-item {% if 'document' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-folder-open sidebar-icon"></i>
+            <span class="sidebar-text">Documents</span>
+        </a>
+
+        <!-- Expenses -->
+        <a href="{% url 'project_mgmt:expenses_ui' %}" class="sidebar-item {% if 'expense' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-receipt sidebar-icon"></i>
+            <span class="sidebar-text">Expenses</span>
+        </a>
+
+        <!-- Risk Management -->
+        <a href="{% url 'project_mgmt:risks_ui' %}" class="sidebar-item {% if 'risk' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-exclamation-triangle sidebar-icon"></i>
+            <span class="sidebar-text">Risk Management</span>
+        </a>
+
+        <!-- Billing & Invoicing -->
+        <a href="{% url 'project_mgmt:billing_ui' %}" class="sidebar-item {% if 'billing' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-file-invoice-dollar sidebar-icon"></i>
+            <span class="sidebar-text">Billing</span>
+        </a>
+
+        <!-- Resource Allocation -->
+        <a href="{% url 'project_mgmt:resources_ui' %}" class="sidebar-item {% if 'resource' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-users-cog sidebar-icon"></i>
+            <span class="sidebar-text">Resources</span>
+        </a>
 
         <!-- Reports -->
-        <div class="sidebar-section">
-            <h3 class="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Reports</h3>
-            <a href="{% url 'project_mgmt_reports_ui' %}" class="sidebar-item">
-                <span class="sidebar-icon">
-                    <i class="fas fa-chart-gantt"></i>
-                </span>
-                <span class="sidebar-text">Project Reports</span>
-            </a>
-        </div>
+        <a href="{% url 'project_mgmt:reports_ui' %}" class="sidebar-item {% if 'reports' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-chart-gantt sidebar-icon"></i>
+            <span class="sidebar-text">Reports</span>
+        </a>
     </nav>
 </div>

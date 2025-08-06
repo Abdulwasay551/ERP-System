@@ -1,0 +1,317 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Attendance Detail - {{ attendance.employee.full_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .attendance-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .info-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    .info-card h5 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .time-card {
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        text-align: center;
+        border-left: 4px solid #3498db;
+    }
+    .time-value {
+        font-size: 1.25rem;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+    .time-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Attendance Header -->
+    <div class="attendance-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="mb-1">{{ attendance.employee.full_name }}</h2>
+                <p class="mb-1">Employee ID: {{ attendance.employee.employee_id }}</p>
+                <p class="mb-0">Attendance for {{ attendance.date|date:"F d, Y" }}</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="status-badge bg-{{ attendance.status }}">
+                    {{ attendance.get_status_display }}
+                </span>
+                <div class="mt-2">
+                    <a href="{% url 'hr:attendance_ui' %}" class="btn btn-light btn-sm">
+                        <i class="fas fa-arrow-left"></i> Back to Attendance
+                    </a>
+                    <a href="{% url 'hr:attendance_form_edit' attendance.id %}" class="btn btn-warning btn-sm">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Employee Information -->
+        <div class="col-md-4">
+            <div class="info-card">
+                <h5><i class="fas fa-user"></i> Employee Details</h5>
+                <div class="mb-2">
+                    <strong>Name:</strong> 
+                    <a href="{% url 'hr:employee_detail' attendance.employee.id %}" class="text-decoration-none">
+                        {{ attendance.employee.full_name }}
+                    </a>
+                </div>
+                <div class="mb-2">
+                    <strong>Employee ID:</strong> {{ attendance.employee.employee_id }}
+                </div>
+                <div class="mb-2">
+                    <strong>Department:</strong> {{ attendance.employee.department.name|default:"Not assigned" }}
+                </div>
+                <div class="mb-2">
+                    <strong>Designation:</strong> {{ attendance.employee.designation.title|default:"Not assigned" }}
+                </div>
+                {% if attendance.shift_type %}
+                <div class="mb-2">
+                    <strong>Assigned Shift:</strong> {{ attendance.shift_type.name }}
+                    <br><small class="text-muted">{{ attendance.shift_type.start_time }} - {{ attendance.shift_type.end_time }}</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Attendance Details -->
+        <div class="col-md-8">
+            <div class="info-card">
+                <h5><i class="fas fa-calendar-check"></i> Attendance Details</h5>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h4 class="text-primary">{{ attendance.date|date:"d" }}</h4>
+                            <p class="mb-0">{{ attendance.date|date:"M Y" }}</p>
+                            <small class="text-muted">{{ attendance.date|date:"l" }}</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <span class="status-badge bg-{{ attendance.status }} fs-6">
+                                {{ attendance.get_status_display }}
+                            </span>
+                            <p class="mb-0 mt-2"><small>Attendance Status</small></p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h4 class="text-success">{{ attendance.working_hours|floatformat:1 }}h</h4>
+                            <p class="mb-0">Working Hours</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Time Details -->
+    {% if attendance.status in 'present,late,half_day' %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="info-card">
+                <h5><i class="fas fa-clock"></i> Time Details</h5>
+                <div class="row">
+                    {% if attendance.check_in %}
+                    <div class="col-md-3">
+                        <div class="time-card">
+                            <div class="time-value">{{ attendance.check_in|time:"g:i A" }}</div>
+                            <div class="time-label">Check In</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if attendance.check_out %}
+                    <div class="col-md-3">
+                        <div class="time-card">
+                            <div class="time-value">{{ attendance.check_out|time:"g:i A" }}</div>
+                            <div class="time-label">Check Out</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if attendance.break_start and attendance.break_end %}
+                    <div class="col-md-3">
+                        <div class="time-card">
+                            <div class="time-value">
+                                {{ attendance.break_start|time:"g:i A" }} -<br>
+                                {{ attendance.break_end|time:"g:i A" }}
+                            </div>
+                            <div class="time-label">Break Time</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if attendance.working_hours > 0 %}
+                    <div class="col-md-3">
+                        <div class="time-card">
+                            <div class="time-value">{{ attendance.working_hours|floatformat:1 }}h</div>
+                            <div class="time-label">Total Working Hours</div>
+                            {% if attendance.overtime_hours > 0 %}
+                            <small class="text-warning">(+{{ attendance.overtime_hours|floatformat:1 }}h OT)</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Additional Information -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5><i class="fas fa-info-circle"></i> Additional Information</h5>
+                {% if attendance.location %}
+                <div class="mb-2">
+                    <strong>Work Location:</strong> {{ attendance.location }}
+                </div>
+                {% endif %}
+                
+                {% if attendance.notes %}
+                <div class="mb-2">
+                    <strong>Notes:</strong>
+                    <p class="mt-1 p-2 bg-light rounded">{{ attendance.notes|linebreaks }}</p>
+                </div>
+                {% endif %}
+                
+                {% if attendance.approved_by %}
+                <div class="mb-2">
+                    <strong>Approved By:</strong> {{ attendance.approved_by.get_full_name|default:attendance.approved_by.username }}
+                </div>
+                {% endif %}
+                
+                <div class="mb-2">
+                    <strong>Created:</strong> {{ attendance.created_at|date:"F d, Y g:i A" }}
+                </div>
+                
+                {% if attendance.updated_at != attendance.created_at %}
+                <div class="mb-2">
+                    <strong>Last Updated:</strong> {{ attendance.updated_at|date:"F d, Y g:i A" }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Shift Information -->
+        {% if attendance.shift_type %}
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5><i class="fas fa-business-time"></i> Shift Information</h5>
+                <div class="mb-2">
+                    <strong>Shift Type:</strong> {{ attendance.shift_type.name }}
+                </div>
+                <div class="mb-2">
+                    <strong>Scheduled Time:</strong> {{ attendance.shift_type.start_time }} - {{ attendance.shift_type.end_time }}
+                </div>
+                <div class="mb-2">
+                    <strong>Expected Working Hours:</strong> {{ attendance.shift_type.working_hours }}h
+                </div>
+                {% if attendance.shift_type.break_duration %}
+                <div class="mb-2">
+                    <strong>Break Duration:</strong> {{ attendance.shift_type.break_duration }}
+                </div>
+                {% endif %}
+                {% if attendance.shift_type.grace_period %}
+                <div class="mb-2">
+                    <strong>Grace Period:</strong> {{ attendance.shift_type.grace_period }}
+                </div>
+                {% endif %}
+
+                <!-- Punctuality Analysis -->
+                {% if attendance.check_in and attendance.shift_type.start_time %}
+                <hr>
+                <div class="mb-2">
+                    <strong>Punctuality:</strong>
+                    {% with check_in_time=attendance.check_in scheduled_time=attendance.shift_type.start_time %}
+                        {% if check_in_time <= scheduled_time %}
+                            <span class="badge bg-success">On Time</span>
+                        {% else %}
+                            <span class="badge bg-warning">Late</span>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Actions -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="info-card">
+                <h5><i class="fas fa-cogs"></i> Actions</h5>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'hr:attendance_form_edit' attendance.id %}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Edit Attendance
+                    </a>
+                    
+                    {% if not attendance.approved_by %}
+                    <button class="btn btn-success" onclick="approveAttendance({{ attendance.id }})">
+                        <i class="fas fa-check"></i> Approve
+                    </button>
+                    {% endif %}
+                    
+                    <a href="{% url 'hr:attendance_ui' %}?date={{ attendance.date|date:'Y-m-d' }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-list"></i> View All Attendance for {{ attendance.date|date:"M d" }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function approveAttendance(attendanceId) {
+    Swal.fire({
+        title: 'Approve Attendance?',
+        text: 'Are you sure you want to approve this attendance record?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, approve it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Implementation for approval
+            // This would typically make an AJAX call to approve the attendance
+            Swal.fire('Approved!', 'Attendance has been approved.', 'success');
+        }
+    });
+}
+</script>
+{% endblock %}

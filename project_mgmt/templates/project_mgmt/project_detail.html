@@ -1,0 +1,338 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ project.name }} - Project Details{% endblock %}
+
+{% block extra_css %}
+<style>
+    .project-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .stat-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    .task-item {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border-left: 4px solid #e5e7eb;
+        transition: transform 0.2s ease;
+    }
+    .task-item:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .task-item.completed {
+        border-left-color: #10b981;
+        background: #f0fdf4;
+    }
+    .task-item.in-progress {
+        border-left-color: #f59e0b;
+        background: #fffbeb;
+    }
+    .task-item.pending {
+        border-left-color: #6b7280;
+    }
+    .progress-circle {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto;
+        position: relative;
+    }
+    .progress-ring {
+        transform: rotate(-90deg);
+    }
+    .progress-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Project Header -->
+    <div class="project-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="mb-1">{{ project.name }}</h2>
+                <p class="mb-2">{{ project.description|default:"No description provided" }}</p>
+                <div class="d-flex gap-3">
+                    <span class="badge bg-light text-dark px-3 py-2">
+                        <i class="fas fa-calendar"></i>
+                        {% if project.start_date %}{{ project.start_date|date:"M d, Y" }}{% else %}No start date{% endif %}
+                        {% if project.end_date %} - {{ project.end_date|date:"M d, Y" }}{% endif %}
+                    </span>
+                    <span class="badge bg-light text-dark px-3 py-2">
+                        <i class="fas fa-dollar-sign"></i> ${{ project.budget|floatformat:2 }}
+                    </span>
+                    <span class="badge 
+                        {% if project.status == 'completed' %}bg-success
+                        {% elif project.status == 'in_progress' %}bg-warning
+                        {% elif project.status == 'on_hold' %}bg-danger
+                        {% else %}bg-secondary{% endif %} px-3 py-2">
+                        {{ project.get_status_display }}
+                    </span>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'project_mgmt:projects_edit' project.id %}" class="btn btn-light me-2">
+                    <i class="fas fa-edit"></i> Edit Project
+                </a>
+                <a href="{% url 'project_mgmt:projects_ui' %}" class="btn btn-outline-light">
+                    <i class="fas fa-arrow-left"></i> Back to Projects
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="stat-card">
+                <h3 class="text-primary">{{ task_stats.total_tasks|default:0 }}</h3>
+                <p class="mb-0 text-muted">Total Tasks</p>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card">
+                <h3 class="text-success">{{ task_stats.completed_tasks|default:0 }}</h3>
+                <p class="mb-0 text-muted">Completed</p>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card">
+                <h3 class="text-info">{{ task_stats.total_estimated_hours|default:0|floatformat:1 }}</h3>
+                <p class="mb-0 text-muted">Est. Hours</p>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card">
+                <h3 class="text-warning">{{ task_stats.total_actual_hours|default:0|floatformat:1 }}</h3>
+                <p class="mb-0 text-muted">Actual Hours</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="progress-circle">
+                    <svg class="progress-ring" width="120" height="120">
+                        <circle cx="60" cy="60" r="50" stroke="#e5e7eb" stroke-width="8" fill="transparent"/>
+                        <circle cx="60" cy="60" r="50" stroke="#10b981" stroke-width="8" fill="transparent"
+                                stroke-linecap="round" stroke-dasharray="314" 
+                                stroke-dashoffset="{{ 314|sub:progress|mul:314|div:100 }}"/>
+                    </svg>
+                    <div class="progress-text text-success">{{ progress }}%</div>
+                </div>
+                <p class="mb-0 text-muted mt-2">Project Progress</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Tasks List -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-tasks"></i> Project Tasks</h5>
+                    <button class="btn btn-primary btn-sm" onclick="addTask()">
+                        <i class="fas fa-plus"></i> Add Task
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% for task in tasks %}
+                    <div class="task-item {{ task.status }}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">
+                                    <a href="{% url 'project_mgmt:task_detail' task.id %}" class="text-decoration-none">
+                                        {{ task.name }}
+                                    </a>
+                                </h6>
+                                {% if task.description %}
+                                <p class="text-muted small mb-2">{{ task.description|truncatewords:15 }}</p>
+                                {% endif %}
+                                <div class="d-flex gap-2 align-items-center">
+                                    <span class="badge 
+                                        {% if task.priority == 'High' %}bg-danger
+                                        {% elif task.priority == 'Medium' %}bg-warning
+                                        {% else %}bg-success{% endif %}">
+                                        {{ task.priority }}
+                                    </span>
+                                    <span class="badge 
+                                        {% if task.status == 'completed' %}bg-success
+                                        {% elif task.status == 'in_progress' %}bg-warning
+                                        {% elif task.status == 'review' %}bg-info
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ task.get_status_display }}
+                                    </span>
+                                    {% if task.due_date %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar"></i> {{ task.due_date|date:"M d, Y" }}
+                                    </small>
+                                    {% endif %}
+                                    {% if task.assigned_to_employee %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-user"></i> {{ task.assigned_to_employee.first_name }} {{ task.assigned_to_employee.last_name }}
+                                    </small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                {% if task.estimated_hours %}
+                                <small class="text-muted d-block">{{ task.actual_hours|floatformat:1 }}/{{ task.estimated_hours|floatformat:1 }}h</small>
+                                {% endif %}
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'project_mgmt:task_edit' task.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteTask({{ task.id }}, '{{ task.name }}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Tasks Yet</h5>
+                        <p class="text-muted">Add your first task to get started.</p>
+                        <button class="btn btn-primary" onclick="addTask()">
+                            <i class="fas fa-plus"></i> Add First Task
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-clock"></i> Recent Time Entries</h5>
+                </div>
+                <div class="card-body">
+                    {% for entry in recent_time_entries %}
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                        <div>
+                            <h6 class="mb-0">{{ entry.task.name }}</h6>
+                            <small class="text-muted">
+                                {{ entry.employee.first_name }} {{ entry.employee.last_name }}
+                                <br>{{ entry.date|date:"M d, Y" }}
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-primary">{{ entry.hours }}h</span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-clock fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No time entries yet</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Project Team -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-users"></i> Project Team</h5>
+                </div>
+                <div class="card-body">
+                    {% if project.project_manager %}
+                    <div class="mb-3">
+                        <strong>Project Manager</strong>
+                        <div class="text-muted">{{ project.project_manager.first_name }} {{ project.project_manager.last_name }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <strong>Team Members</strong>
+                        {% regroup tasks by assigned_to_employee as employee_groups %}
+                        {% for employee_group in employee_groups %}
+                            {% if employee_group.grouper %}
+                            <div class="text-muted">
+                                {{ employee_group.grouper.first_name }} {{ employee_group.grouper.last_name }}
+                                <small>({{ employee_group.list|length }} tasks)</small>
+                            </div>
+                            {% endif %}
+                        {% empty %}
+                        <div class="text-muted">No team members assigned</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function addTask() {
+    // You can either redirect to task form or open a modal
+    window.location.href = "{% url 'project_mgmt:task_add' %}?project={{ project.id }}";
+}
+
+function deleteTask(taskId, taskName) {
+    Swal.fire({
+        title: 'Delete Task?',
+        text: `Are you sure you want to delete "${taskName}"?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`{% url 'project_mgmt:task_delete' 0 %}`.replace('0', taskId), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Deleted!', 'Task has been deleted.', 'success')
+                    .then(() => location.reload());
+                } else {
+                    Swal.fire('Error', data.error || 'An error occurred', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire('Error', 'An unexpected error occurred', 'error');
+            });
+        }
+    });
+}
+
+// Add CSRF token if not present
+document.addEventListener('DOMContentLoaded', function() {
+    if (!document.querySelector('[name=csrfmiddlewaretoken]')) {
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrfmiddlewaretoken';
+        csrfToken.value = '{{ csrf_token }}';
+        document.body.appendChild(csrfToken);
+    }
+});
+</script>
+{% endblock %}

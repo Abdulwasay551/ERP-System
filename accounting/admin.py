@@ -1,7 +1,11 @@
 from django.contrib import admin
+from django.db import models
 from unfold.admin import ModelAdmin
 from .models import (
-    Account, Journal, JournalEntry, JournalItem, AccountPayable, AccountReceivable, BankAccount, BankReconciliation, TaxConfig, Currency, FinancialStatement, AccountingAuditLog, RecurringJournal, AccountCategory, AccountGroup
+    Account, Journal, JournalEntry, JournalItem, AccountPayable, AccountReceivable, 
+    BankAccount, BankReconciliation, TaxConfig, Currency, FinancialStatement, 
+    AccountingAuditLog, RecurringJournal, AccountCategory, AccountGroup,
+    ModuleAccountMapping, AutoJournalEntry
 )
 
 @admin.register(AccountCategory)
@@ -93,3 +97,35 @@ class RecurringJournalAdmin(ModelAdmin):
     list_display = ('journal', 'schedule', 'next_run', 'is_active')
     search_fields = ('journal__name', 'schedule')
     list_filter = ('is_active',)
+
+
+@admin.register(ModuleAccountMapping)
+class ModuleAccountMappingAdmin(ModelAdmin):
+    list_display = ('transaction_type', 'debit_account', 'credit_account', 'company', 'is_active')
+    search_fields = ('transaction_type', 'debit_account__name', 'credit_account__name')
+    list_filter = ('company', 'transaction_type', 'is_active')
+    autocomplete_fields = ('debit_account', 'credit_account')
+
+
+@admin.register(AutoJournalEntry)
+class AutoJournalEntryAdmin(ModelAdmin):
+    list_display = ('source_module', 'transaction_type', 'journal_amount', 'source_model', 'source_object_id', 'created_at')
+    search_fields = ('source_module', 'transaction_type', 'source_model', 'source_object_id')
+    list_filter = ('source_module', 'transaction_type', 'company')
+    readonly_fields = ('journal_entry', 'created_at')
+    
+    def journal_amount(self, obj):
+        """Get the total amount from the related journal entry"""
+        if obj.journal_entry:
+            total_debit = obj.journal_entry.items.aggregate(
+                total=models.Sum('debit')
+            )['total'] or 0
+            return total_debit
+        return 0
+    journal_amount.short_description = 'Amount'
+    journal_amount.admin_order_field = 'journal_entry__items__debit'
+    
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('source_module', 'source_model', 'source_object_id', 'transaction_type')
+        return self.readonly_fields

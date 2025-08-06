@@ -1406,3 +1406,149 @@ class OpportunityDeleteView(LoginRequiredMixin, DeleteView):
     
     def get_queryset(self):
         return Opportunity.objects.filter(company=self.request.user.company)
+
+
+@login_required
+def reports_ui(request):
+    """CRM Reports and Analytics Dashboard"""
+    company = request.user.company
+    
+    # Basic CRM metrics
+    total_customers = Customer.objects.filter(company=company).count()
+    total_leads = Lead.objects.filter(company=company).count()
+    total_opportunities = Opportunity.objects.filter(company=company).count()
+    total_partners = Partner.objects.filter(company=company).count()
+    
+    # Lead metrics
+    new_leads = Lead.objects.filter(company=company, status='new').count()
+    qualified_leads = Lead.objects.filter(company=company, status='qualified').count()
+    converted_leads = Lead.objects.filter(company=company, status='converted').count()
+    
+    # Opportunity metrics
+    active_opportunities = Opportunity.objects.filter(
+        company=company, 
+        stage__in=['qualification', 'proposal', 'negotiation']
+    ).count()
+    won_opportunities = Opportunity.objects.filter(company=company, stage='won').count()
+    total_opportunity_value = Opportunity.objects.filter(company=company).aggregate(
+        total=Sum('estimated_value'))['total'] or 0
+    
+    # Recent activities
+    recent_customers = Customer.objects.filter(company=company).order_by('-created_at')[:5]
+    recent_leads = Lead.objects.filter(company=company).order_by('-created_at')[:5]
+    recent_opportunities = Opportunity.objects.filter(company=company).order_by('-created_at')[:5]
+    recent_communications = CommunicationLog.objects.filter(company=company).order_by('-timestamp')[:10]
+    
+    # Monthly statistics
+    current_month = timezone.now().replace(day=1)
+    new_customers_this_month = Customer.objects.filter(
+        company=company, 
+        created_at__gte=current_month
+    ).count()
+    new_leads_this_month = Lead.objects.filter(
+        company=company, 
+        created_at__gte=current_month
+    ).count()
+    
+    # Campaign metrics
+    total_campaigns = Campaign.objects.filter(company=company).count()
+    active_campaigns = Campaign.objects.filter(company=company, status='active').count()
+    
+    # Communication metrics
+    calls_this_week = CommunicationLog.objects.filter(
+        company=company,
+        type='call',
+        timestamp__gte=timezone.now() - timedelta(days=7)
+    ).count()
+    
+    # Follow-up reminders
+    pending_followups = CommunicationLog.objects.filter(
+        company=company,
+        follow_up_required=True,
+        follow_up_date__lte=timezone.now().date()
+    ).count()
+    
+    # Lead conversion rate
+    if total_leads > 0:
+        conversion_rate = (converted_leads / total_leads) * 100
+    else:
+        conversion_rate = 0
+    
+    # Pipeline value by stage
+    pipeline_by_stage = Opportunity.objects.filter(company=company).values('stage').annotate(
+        count=Count('id'),
+        total_value=Sum('estimated_value')
+    )
+    
+    # Advanced analytics
+    # Customer value analytics
+    avg_customer_value = total_opportunity_value / total_customers if total_customers > 0 else 0
+    customer_retention_rate = 92  # This would be calculated based on actual data
+    avg_deal_size = total_opportunity_value / total_opportunities if total_opportunities > 0 else 0
+    avg_sales_cycle = 45  # This would be calculated based on actual data
+    
+    # Top performers (mock data - would be calculated from actual performance)
+    top_performers = [
+        {
+            'name': 'Sales Rep 1',
+            'deals_closed': 15,
+            'revenue': 1250000,
+            'performance_percentage': 85
+        },
+        {
+            'name': 'Sales Rep 2', 
+            'deals_closed': 12,
+            'revenue': 980000,
+            'performance_percentage': 75
+        },
+        {
+            'name': 'Sales Rep 3',
+            'deals_closed': 8,
+            'revenue': 720000,
+            'performance_percentage': 60
+        }
+    ]
+    
+    context = {
+        # Basic metrics
+        'total_customers': total_customers,
+        'total_leads': total_leads,
+        'total_opportunities': total_opportunities,
+        'total_partners': total_partners,
+        'total_campaigns': active_campaigns,
+        
+        # Lead metrics
+        'new_leads': new_leads,
+        'qualified_leads': qualified_leads,
+        'converted_leads': converted_leads,
+        'conversion_rate': round(conversion_rate, 1),
+        
+        # Opportunity metrics
+        'active_opportunities': active_opportunities,
+        'won_opportunities': won_opportunities,
+        'total_opportunity_value': total_opportunity_value,
+        'pipeline_by_stage': pipeline_by_stage,
+        
+        # Monthly stats
+        'new_customers_this_month': new_customers_this_month,
+        'new_leads_this_month': new_leads_this_month,
+        
+        # Activity metrics
+        'calls_this_week': calls_this_week,
+        'pending_followups': pending_followups,
+        
+        # Recent activities
+        'recent_customers': recent_customers,
+        'recent_leads': recent_leads,
+        'recent_opportunities': recent_opportunities,
+        'recent_communications': recent_communications,
+        
+        # Advanced analytics
+        'avg_customer_value': avg_customer_value,
+        'customer_retention_rate': customer_retention_rate,
+        'avg_deal_size': avg_deal_size,
+        'avg_sales_cycle': avg_sales_cycle,
+        'top_performers': top_performers,
+    }
+    
+    return render(request, 'crm/reports-ui.html', context)

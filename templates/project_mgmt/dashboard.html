@@ -29,7 +29,7 @@
                 <p class="text-gray-600">Project overview, tasks, and resource management</p>
             </div>
             <div class="flex gap-4">
-                <a href="{% url 'project_mgmt_projects_add' %}" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
+                <a href="{% url 'project_mgmt:projects_add' %}" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
@@ -154,7 +154,7 @@
 
         <!-- Quick Actions -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <a href="{% url 'project_mgmt_projects_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
+            <a href="{% url 'project_mgmt:projects_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
                 <div class="flex items-center">
                     <div class="p-3 bg-emerald-100 rounded-full mr-4">
                         <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,7 +168,7 @@
                 </div>
             </a>
 
-            <a href="{% url 'project_mgmt_tasks_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
+            <a href="{% url 'project_mgmt:tasks_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
                 <div class="flex items-center">
                     <div class="p-3 bg-blue-100 rounded-full mr-4">
                         <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -182,7 +182,7 @@
                 </div>
             </a>
 
-            <a href="{% url 'project_mgmt_timetracking_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
+            <a href="{% url 'project_mgmt:timetracking_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
                 <div class="flex items-center">
                     <div class="p-3 bg-green-100 rounded-full mr-4">
                         <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -196,7 +196,7 @@
                 </div>
             </a>
 
-            <a href="{% url 'project_mgmt_reports_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
+            <a href="{% url 'project_mgmt:reports_ui' %}" class="bg-white rounded-2xl p-6 hover:shadow-lg transition-all border border-gray-100">
                 <div class="flex items-center">
                     <div class="p-3 bg-purple-100 rounded-full mr-4">
                         <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

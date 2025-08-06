@@ -1,0 +1,1146 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reorder Rules - Manufacturing{% endblock %}
+
+{% block extra_css %}
+<style>
+    .reorder-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .reorder-card:hover {
+        border-color: #f59e0b;
+        box-shadow: 0 20px 40px rgba(245, 158, 11, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-safe {
+        background: #dcfce7;
+        color: #166534;
+    }
+    
+    .status-warning {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    .status-critical {
+        background: #fecaca;
+        color: #991b1b;
+    }
+    
+    .status-reordering {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+    
+    .urgency-badge {
+        width: 1rem;
+        height: 1rem;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 0.5rem;
+    }
+    
+    .urgency-low {
+        background: #10b981;
+    }
+    
+    .urgency-medium {
+        background: #f59e0b;
+    }
+    
+    .urgency-high {
+        background: #ef4444;
+    }
+    
+    .stock-gauge {
+        width: 100%;
+        height: 1rem;
+        background: #f3f4f6;
+        border-radius: 9999px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .stock-level {
+        height: 100%;
+        transition: width 0.3s ease;
+        position: relative;
+    }
+    
+    .stock-safe {
+        background: linear-gradient(90deg, #10b981, #059669);
+    }
+    
+    .stock-warning {
+        background: linear-gradient(90deg, #f59e0b, #d97706);
+    }
+    
+    .stock-critical {
+        background: linear-gradient(90deg, #ef4444, #dc2626);
+    }
+    
+    .stats-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        border: 1px solid #e5e7eb;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        border-color: #f59e0b;
+        box-shadow: 0 10px 25px rgba(245, 158, 11, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: none;
+        font-size: 0.875rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+    }
+    
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+    
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        color: #111827;
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    }
+    
+    .filter-controls {
+        background: #fffbeb;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid #fed7aa;
+    }
+    
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        align-items: end;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .form-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-input {
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+    }
+    
+    .reorder-table {
+        background: white;
+        border-radius: 1rem;
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .reorder-table table {
+        width: 100%;
+    }
+    
+    .reorder-table th {
+        background: #fffbeb;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: #374151;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .reorder-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #f3f4f6;
+        vertical-align: middle;
+    }
+    
+    .reorder-table tr:hover {
+        background: #fffbeb;
+    }
+    
+    .chart-container {
+        height: 300px;
+        background: #fffbeb;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        border: 1px solid #fed7aa;
+    }
+    
+    .stock-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .auto-trigger-toggle {
+        position: relative;
+        display: inline-block;
+        width: 3rem;
+        height: 1.5rem;
+    }
+    
+    .auto-trigger-toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 1.5rem;
+    }
+    
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 1.125rem;
+        width: 1.125rem;
+        left: 0.1875rem;
+        bottom: 0.1875rem;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+        background-color: #f59e0b;
+    }
+    
+    input:checked + .slider:before {
+        transform: translateX(1.5rem);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">
+                        <i class="fas fa-bell text-yellow-600 mr-3"></i>
+                        Reorder Rules
+                    </h1>
+                    <p class="text-gray-600 mt-2">Manage automatic reordering and safety stock levels</p>
+                </div>
+                <div class="flex gap-3">
+                    <a href="{% url 'manufacturing:mrp_ui' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to MRP
+                    </a>
+                    <button onclick="addReorderRule()" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Add Rule
+                    </button>
+                    <button onclick="triggerAutoReorder()" class="btn btn-danger">
+                        <i class="fas fa-sync-alt"></i>
+                        Trigger Auto Reorder
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Statistics Overview -->
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-value text-yellow-600">{{ total_rules|default:45 }}</div>
+                <div class="stat-label">Active Rules</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-red-600">{{ critical_stock|default:7 }}</div>
+                <div class="stat-label">Critical Stock</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-blue-600">{{ pending_orders|default:12 }}</div>
+                <div class="stat-label">Pending Reorders</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-green-600">€{{ saved_amount|default:"24,500" }}</div>
+                <div class="stat-label">Cost Savings</div>
+            </div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="filter-controls">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Filter Reorder Rules</h3>
+            <div class="filter-grid">
+                <div class="form-group">
+                    <label class="form-label">Product Category</label>
+                    <select class="form-input" id="categoryFilter">
+                        <option value="">All Categories</option>
+                        <option value="raw_materials">Raw Materials</option>
+                        <option value="components">Components</option>
+                        <option value="finished_goods">Finished Goods</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Stock Status</label>
+                    <select class="form-input" id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="safe">Safe</option>
+                        <option value="warning">Warning</option>
+                        <option value="critical">Critical</option>
+                        <option value="reordering">Reordering</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Auto Reorder</label>
+                    <select class="form-input" id="autoReorderFilter">
+                        <option value="">All Rules</option>
+                        <option value="enabled">Enabled</option>
+                        <option value="disabled">Disabled</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button onclick="applyFilters()" class="btn btn-primary">
+                        <i class="fas fa-filter"></i>
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stock Level Analysis Chart -->
+        <div class="reorder-card">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-chart-bar text-yellow-600 mr-2"></i>
+                Stock Level Analysis
+            </h3>
+            <div class="chart-container">
+                <canvas id="stockLevelChart" width="800" height="300"></canvas>
+            </div>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div>
+                    <div class="text-xl font-bold text-green-600">92%</div>
+                    <div class="text-sm text-gray-600">Stock Availability</div>
+                </div>
+                <div>
+                    <div class="text-xl font-bold text-yellow-600">15%</div>
+                    <div class="text-sm text-gray-600">Items Below Reorder Point</div>
+                </div>
+                <div>
+                    <div class="text-xl font-bold text-red-600">3%</div>
+                    <div class="text-sm text-gray-600">Critical Stock Items</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reorder Rules Table -->
+        <div class="reorder-table">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-table text-yellow-600 mr-2"></i>
+                        Reorder Rules Details
+                    </h3>
+                    <div class="flex gap-2">
+                        <button onclick="exportReorderRules()" class="btn btn-secondary">
+                            <i class="fas fa-download"></i>
+                            Export
+                        </button>
+                        <button onclick="refreshData()" class="btn btn-secondary">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Current Stock</th>
+                        <th>Reorder Point</th>
+                        <th>Max Stock</th>
+                        <th>Status</th>
+                        <th>Urgency</th>
+                        <th>Auto Reorder</th>
+                        <th>Last Triggered</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="reorderTableBody">
+                    <!-- Sample data - replace with actual Django template data -->
+                    <tr>
+                        <td>
+                            <div class="font-medium text-gray-900">Steel Plate 5mm</div>
+                            <div class="text-xs text-gray-500">SKU: STL-PLT-5MM</div>
+                        </td>
+                        <td>
+                            <div class="stock-indicator">
+                                <div class="stock-gauge">
+                                    <div class="stock-level stock-warning" style="width: 35%"></div>
+                                </div>
+                                <span class="text-sm font-medium text-gray-900 ml-2">150 / 500</span>
+                            </div>
+                        </td>
+                        <td class="text-orange-600 font-medium">200</td>
+                        <td class="text-gray-600">500</td>
+                        <td>
+                            <span class="status-indicator status-warning">
+                                Warning
+                            </span>
+                        </td>
+                        <td>
+                            <div class="flex items-center">
+                                <span class="urgency-badge urgency-medium"></span>
+                                <span class="text-sm font-medium">Medium</span>
+                            </div>
+                        </td>
+                        <td>
+                            <label class="auto-trigger-toggle">
+                                <input type="checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </td>
+                        <td class="text-gray-600">2 days ago</td>
+                        <td>
+                            <div class="flex space-x-1">
+                                <button onclick="editRule('steel-plate')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                    Edit
+                                </button>
+                                <button onclick="triggerReorder('steel-plate')" class="bg-yellow-600 text-white px-2 py-1 rounded text-xs hover:bg-yellow-700">
+                                    Reorder
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="font-medium text-gray-900">Aluminum Rod 10mm</div>
+                            <div class="text-xs text-gray-500">SKU: ALU-ROD-10MM</div>
+                        </td>
+                        <td>
+                            <div class="stock-indicator">
+                                <div class="stock-gauge">
+                                    <div class="stock-level stock-critical" style="width: 15%"></div>
+                                </div>
+                                <span class="text-sm font-medium text-gray-900 ml-2">45 / 300</span>
+                            </div>
+                        </td>
+                        <td class="text-orange-600 font-medium">75</td>
+                        <td class="text-gray-600">300</td>
+                        <td>
+                            <span class="status-indicator status-critical">
+                                Critical
+                            </span>
+                        </td>
+                        <td>
+                            <div class="flex items-center">
+                                <span class="urgency-badge urgency-high"></span>
+                                <span class="text-sm font-medium">High</span>
+                            </div>
+                        </td>
+                        <td>
+                            <label class="auto-trigger-toggle">
+                                <input type="checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </td>
+                        <td class="text-gray-600">Never</td>
+                        <td>
+                            <div class="flex space-x-1">
+                                <button onclick="editRule('aluminum-rod')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                    Edit
+                                </button>
+                                <button onclick="triggerReorder('aluminum-rod')" class="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700">
+                                    Urgent
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="font-medium text-gray-900">Copper Wire 2.5mm</div>
+                            <div class="text-xs text-gray-500">SKU: COP-WIR-2.5MM</div>
+                        </td>
+                        <td>
+                            <div class="stock-indicator">
+                                <div class="stock-gauge">
+                                    <div class="stock-level stock-safe" style="width: 85%"></div>
+                                </div>
+                                <span class="text-sm font-medium text-gray-900 ml-2">850 / 1000</span>
+                            </div>
+                        </td>
+                        <td class="text-orange-600 font-medium">200</td>
+                        <td class="text-gray-600">1000</td>
+                        <td>
+                            <span class="status-indicator status-safe">
+                                Safe
+                            </span>
+                        </td>
+                        <td>
+                            <div class="flex items-center">
+                                <span class="urgency-badge urgency-low"></span>
+                                <span class="text-sm font-medium">Low</span>
+                            </div>
+                        </td>
+                        <td>
+                            <label class="auto-trigger-toggle">
+                                <input type="checkbox">
+                                <span class="slider"></span>
+                            </label>
+                        </td>
+                        <td class="text-gray-600">1 week ago</td>
+                        <td>
+                            <div class="flex space-x-1">
+                                <button onclick="editRule('copper-wire')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                    Edit
+                                </button>
+                                <button onclick="viewHistory('copper-wire')" class="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">
+                                    History
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% for rule in reorder_rules %}
+                    <tr>
+                        <td>
+                            <div class="font-medium text-gray-900">{{ rule.product.name }}</div>
+                            <div class="text-xs text-gray-500">{{ rule.product.sku }}</div>
+                        </td>
+                        <td>
+                            <div class="stock-indicator">
+                                <div class="stock-gauge">
+                                    <div class="stock-level {% if rule.stock_level <= rule.min_stock %}stock-critical{% elif rule.stock_level <= rule.reorder_point %}stock-warning{% else %}stock-safe{% endif %}" 
+                                         style="width: {{ rule.stock_percentage|default:50 }}%"></div>
+                                </div>
+                                <span class="text-sm font-medium text-gray-900 ml-2">
+                                    {{ rule.current_stock|default:0 }} / {{ rule.max_stock|default:100 }}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="text-orange-600 font-medium">{{ rule.reorder_point }}</td>
+                        <td class="text-gray-600">{{ rule.max_stock }}</td>
+                        <td>
+                            <span class="status-indicator status-{{ rule.status|default:'safe' }}">
+                                {{ rule.get_status_display|default:"Safe" }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="flex items-center">
+                                <span class="urgency-badge urgency-{{ rule.urgency|default:'low' }}"></span>
+                                <span class="text-sm font-medium">{{ rule.get_urgency_display|default:"Low" }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <label class="auto-trigger-toggle">
+                                <input type="checkbox" {% if rule.auto_reorder %}checked{% endif %}>
+                                <span class="slider"></span>
+                            </label>
+                        </td>
+                        <td class="text-gray-600">
+                            {% if rule.last_triggered %}
+                                {{ rule.last_triggered|timesince }} ago
+                            {% else %}
+                                Never
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="flex space-x-1">
+                                <button onclick="editRule('{{ rule.id }}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                    Edit
+                                </button>
+                                {% if rule.urgency == 'high' %}
+                                <button onclick="triggerReorder('{{ rule.id }}')" class="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700">
+                                    Urgent
+                                </button>
+                                {% else %}
+                                <button onclick="triggerReorder('{{ rule.id }}')" class="bg-yellow-600 text-white px-2 py-1 rounded text-xs hover:bg-yellow-700">
+                                    Reorder
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-8 text-gray-500">
+                            <i class="fas fa-bell text-4xl mb-4 text-yellow-500"></i>
+                            <p>No reorder rules configured</p>
+                            <button onclick="addReorderRule()" class="mt-2 btn btn-primary">
+                                Create First Rule
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initializeStockLevelChart();
+    setupAutoReorderToggles();
+});
+
+function initializeStockLevelChart() {
+    const ctx = document.getElementById('stockLevelChart')?.getContext('2d');
+    if (!ctx) return;
+    
+    const data = {
+        labels: ['Safe Stock', 'Warning Level', 'Critical Level', 'Out of Stock'],
+        datasets: [{
+            label: 'Number of Items',
+            data: [35, 7, 3, 0],
+            backgroundColor: [
+                'rgba(16, 185, 129, 0.8)',
+                'rgba(245, 158, 11, 0.8)',
+                'rgba(239, 68, 68, 0.8)',
+                'rgba(107, 114, 128, 0.8)'
+            ],
+            borderColor: [
+                'rgb(16, 185, 129)',
+                'rgb(245, 158, 11)',
+                'rgb(239, 68, 68)',
+                'rgb(107, 114, 128)'
+            ],
+            borderWidth: 2
+        }]
+    };
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                title: {
+                    display: true,
+                    text: 'Stock Level Distribution'
+                }
+            }
+        }
+    });
+}
+
+function setupAutoReorderToggles() {
+    document.querySelectorAll('.auto-trigger-toggle input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const ruleId = this.closest('tr').dataset.ruleId || 'demo';
+            toggleAutoReorder(ruleId, this.checked);
+        });
+    });
+}
+
+function toggleAutoReorder(ruleId, enabled) {
+    fetch(`/manufacturing/api/toggle-auto-reorder/${ruleId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            auto_reorder: enabled
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`Auto reorder ${enabled ? 'enabled' : 'disabled'} successfully`, 'success');
+        } else {
+            showNotification('Failed to update auto reorder setting: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Failed to update auto reorder setting', 'error');
+    });
+}
+
+function applyFilters() {
+    const category = document.getElementById('categoryFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    const autoReorder = document.getElementById('autoReorderFilter').value;
+    
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (category) params.append('category', category);
+    if (status) params.append('status', status);
+    if (autoReorder) params.append('auto_reorder', autoReorder);
+    
+    // Reload page with filters
+    window.location.href = '?' + params.toString();
+}
+
+function addReorderRule() {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold mb-4">Add Reorder Rule</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Product</label>
+                    <select class="form-input w-full" id="productSelect">
+                        <option value="">Select Product</option>
+                        <option value="product1">Steel Plate 5mm</option>
+                        <option value="product2">Aluminum Rod 10mm</option>
+                        <option value="product3">Copper Wire 2.5mm</option>
+                    </select>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Reorder Point</label>
+                        <input type="number" class="form-input w-full" placeholder="100" min="0" id="reorderPoint">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Max Stock</label>
+                        <input type="number" class="form-input w-full" placeholder="500" min="0" id="maxStock">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Min Stock</label>
+                        <input type="number" class="form-input w-full" placeholder="50" min="0" id="minStock">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Reorder Quantity</label>
+                        <input type="number" class="form-input w-full" placeholder="300" min="1" id="reorderQuantity">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" class="mr-2" id="autoReorderEnabled">
+                        <span class="text-sm font-medium text-gray-700">Enable Auto Reorder</span>
+                    </label>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <textarea class="form-input w-full" rows="3" placeholder="Additional notes..." id="ruleNotes"></textarea>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="this.closest('.fixed').remove()" class="btn btn-secondary">
+                    Cancel
+                </button>
+                <button onclick="saveReorderRule(); this.closest('.fixed').remove();" class="btn btn-primary">
+                    Create Rule
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function editRule(ruleId) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold mb-4">Edit Reorder Rule</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Product</label>
+                    <input type="text" class="form-input w-full bg-gray-100" value="Steel Plate 5mm" readonly>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Reorder Point</label>
+                        <input type="number" class="form-input w-full" value="200" min="0" id="editReorderPoint">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Max Stock</label>
+                        <input type="number" class="form-input w-full" value="500" min="0" id="editMaxStock">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Min Stock</label>
+                        <input type="number" class="form-input w-full" value="50" min="0" id="editMinStock">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Reorder Quantity</label>
+                        <input type="number" class="form-input w-full" value="300" min="1" id="editReorderQuantity">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" class="mr-2" checked id="editAutoReorderEnabled">
+                        <span class="text-sm font-medium text-gray-700">Enable Auto Reorder</span>
+                    </label>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <textarea class="form-input w-full" rows="3" id="editRuleNotes">Regular supplier - reliable delivery</textarea>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="this.closest('.fixed').remove()" class="btn btn-secondary">
+                    Cancel
+                </button>
+                <button onclick="updateReorderRule('${ruleId}'); this.closest('.fixed').remove();" class="btn btn-primary">
+                    Update Rule
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function saveReorderRule() {
+    const productId = document.getElementById('productSelect').value;
+    const reorderPoint = document.getElementById('reorderPoint').value;
+    const maxStock = document.getElementById('maxStock').value;
+    const minStock = document.getElementById('minStock').value;
+    const reorderQuantity = document.getElementById('reorderQuantity').value;
+    const autoReorder = document.getElementById('autoReorderEnabled').checked;
+    const notes = document.getElementById('ruleNotes').value;
+    
+    if (!productId || !reorderPoint || !maxStock) {
+        showNotification('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    fetch('/manufacturing/api/create-reorder-rule/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            product_id: productId,
+            reorder_point: reorderPoint,
+            max_stock: maxStock,
+            min_stock: minStock,
+            reorder_quantity: reorderQuantity,
+            auto_reorder: autoReorder,
+            notes: notes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Reorder rule created successfully!', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showNotification('Failed to create reorder rule: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Failed to create reorder rule', 'error');
+    });
+}
+
+function updateReorderRule(ruleId) {
+    const reorderPoint = document.getElementById('editReorderPoint').value;
+    const maxStock = document.getElementById('editMaxStock').value;
+    const minStock = document.getElementById('editMinStock').value;
+    const reorderQuantity = document.getElementById('editReorderQuantity').value;
+    const autoReorder = document.getElementById('editAutoReorderEnabled').checked;
+    const notes = document.getElementById('editRuleNotes').value;
+    
+    fetch(`/manufacturing/api/update-reorder-rule/${ruleId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            reorder_point: reorderPoint,
+            max_stock: maxStock,
+            min_stock: minStock,
+            reorder_quantity: reorderQuantity,
+            auto_reorder: autoReorder,
+            notes: notes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Reorder rule updated successfully!', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showNotification('Failed to update reorder rule: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Failed to update reorder rule', 'error');
+    });
+}
+
+function triggerReorder(ruleId) {
+    if (confirm('Trigger manual reorder for this item? This will create a purchase order.')) {
+        fetch(`/manufacturing/api/trigger-reorder/${ruleId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(`Reorder triggered! Purchase order #${data.po_number} created.`, 'success');
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                showNotification('Failed to trigger reorder: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to trigger reorder', 'error');
+        });
+    }
+}
+
+function triggerAutoReorder() {
+    if (confirm('Trigger automatic reorder for all items below reorder point? This may create multiple purchase orders.')) {
+        showNotification('Processing automatic reorders...', 'info');
+        
+        fetch('/manufacturing/api/trigger-auto-reorder/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(`Auto reorder complete! ${data.orders_created} purchase orders created.`, 'success');
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                showNotification('Failed to process auto reorders: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to process auto reorders', 'error');
+        });
+    }
+}
+
+function viewHistory(ruleId) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-screen overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold">Reorder History</h3>
+                <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="border rounded-lg p-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h4 class="font-medium">Automatic Reorder</h4>
+                            <p class="text-sm text-gray-600">PO #PO-2024-001</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-600">2024-01-15</div>
+                            <div class="text-sm font-medium text-green-600">Completed</div>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-700">
+                        Quantity: 300 units | Trigger: Stock below 200
+                    </div>
+                </div>
+                
+                <div class="border rounded-lg p-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h4 class="font-medium">Manual Reorder</h4>
+                            <p class="text-sm text-gray-600">PO #PO-2023-087</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-600">2023-12-20</div>
+                            <div class="text-sm font-medium text-blue-600">Delivered</div>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-700">
+                        Quantity: 400 units | Trigger: Manual request
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end mt-6">
+                <button onclick="this.closest('.fixed').remove()" class="btn btn-secondary">
+                    Close
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function exportReorderRules() {
+    window.open('/manufacturing/api/export-reorder-rules/', '_blank');
+    showNotification('Export started', 'info');
+}
+
+function refreshData() {
+    showNotification('Refreshing data...', 'info');
+    window.location.reload();
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'error' ? 'bg-red-500 text-white' :
+        type === 'warning' ? 'bg-yellow-500 text-white' :
+        'bg-blue-500 text-white'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${
+                type === 'success' ? 'fa-check-circle' :
+                type === 'error' ? 'fa-exclamation-triangle' :
+                type === 'warning' ? 'fa-exclamation-triangle' :
+                'fa-info-circle'
+            } mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+</script>
+
+<!-- Add CSRF token -->
+{% csrf_token %}
+{% endblock %}

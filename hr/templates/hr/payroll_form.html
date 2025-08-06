@@ -1,0 +1,325 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if payroll %}Edit Payroll{% else %}Add Payroll{% endif %} | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(6, 95, 70, 0.05));
+        border: 1px solid rgba(16, 185, 129, 0.1);
+        transition: all 0.3s ease;
+    }
+    .form-card:hover {
+        border-color: rgba(16, 185, 129, 0.2);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.1);
+    }
+    .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 0.75rem;
+        background: white;
+        transition: all 0.2s ease;
+        font-size: 0.875rem;
+    }
+    .form-input:focus {
+        outline: none;
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+    .field-label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    .section-header {
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+    .calculation-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(37, 99, 235, 0.05));
+        border: 1px solid rgba(59, 130, 246, 0.1);
+        padding: 1rem;
+        border-radius: 0.75rem;
+        margin-top: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">
+                    {% if payroll %}Edit Payroll{% else %}Add Payroll{% endif %}
+                </h1>
+                <p class="text-gray-600">
+                    {% if payroll %}Update payroll information{% else %}Create new payroll record{% endif %}
+                </p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'hr:payroll_ui' %}" class="action-btn bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Payroll
+                </a>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="form-card rounded-2xl p-8">
+            <form method="post" id="payrollForm">
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div class="section-header">Basic Information</div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label for="employee_id" class="field-label">Employee *</label>
+                        <select name="employee_id" id="employee_id" class="form-input" required>
+                            <option value="">Select Employee</option>
+                            {% for employee in employees %}
+                                <option value="{{ employee.id }}" 
+                                        data-salary="{{ employee.current_salary }}"
+                                        {% if payroll and payroll.employee_id == employee.id %}selected{% endif %}>
+                                    {{ employee.first_name }} {{ employee.last_name }} ({{ employee.employee_id }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="period_id" class="field-label">Payroll Period *</label>
+                        <select name="period_id" id="period_id" class="form-input" required>
+                            <option value="">Select Period</option>
+                            {% for period in payroll_periods %}
+                                <option value="{{ period.id }}" 
+                                        {% if payroll and payroll.period_id == period.id %}selected{% endif %}>
+                                    {{ period.name }} ({{ period.start_date }} - {{ period.end_date }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Salary Components -->
+                <div class="section-header">Salary Components</div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label for="basic_salary" class="field-label">Basic Salary *</label>
+                        <input type="number" name="basic_salary" id="basic_salary" 
+                               class="form-input" placeholder="0.00" step="0.01" required
+                               value="{% if payroll %}{{ payroll.basic_salary }}{% endif %}">
+                    </div>
+
+                    <div>
+                        <label for="house_allowance" class="field-label">House Allowance</label>
+                        <input type="number" name="house_allowance" id="house_allowance" 
+                               class="form-input" placeholder="0.00" step="0.01"
+                               value="{% if payroll %}{{ payroll.house_allowance }}{% else %}0{% endif %}">
+                    </div>
+
+                    <div>
+                        <label for="transport_allowance" class="field-label">Transport Allowance</label>
+                        <input type="number" name="transport_allowance" id="transport_allowance" 
+                               class="form-input" placeholder="0.00" step="0.01"
+                               value="{% if payroll %}{{ payroll.transport_allowance }}{% else %}0{% endif %}">
+                    </div>
+
+                    <div>
+                        <label for="medical_allowance" class="field-label">Medical Allowance</label>
+                        <input type="number" name="medical_allowance" id="medical_allowance" 
+                               class="form-input" placeholder="0.00" step="0.01"
+                               value="{% if payroll %}{{ payroll.medical_allowance }}{% else %}0{% endif %}">
+                    </div>
+
+                    <div>
+                        <label for="other_allowances" class="field-label">Other Allowances</label>
+                        <input type="number" name="other_allowances" id="other_allowances" 
+                               class="form-input" placeholder="0.00" step="0.01"
+                               value="{% if payroll %}{{ payroll.other_allowances }}{% else %}0{% endif %}">
+                    </div>
+                </div>
+
+                <!-- Deductions -->
+                <div class="section-header">Deductions</div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label for="provident_fund" class="field-label">Provident Fund</label>
+                        <input type="number" name="provident_fund" id="provident_fund" 
+                               class="form-input" placeholder="0.00" step="0.01"
+                               value="{% if payroll %}{{ payroll.provident_fund }}{% else %}0{% endif %}">
+                    </div>
+
+                    <div>
+                        <label for="income_tax" class="field-label">Income Tax</label>
+                        <input type="number" name="income_tax" id="income_tax" 
+                               class="form-input" placeholder="0.00" step="0.01"
+                               value="{% if payroll %}{{ payroll.income_tax }}{% else %}0{% endif %}">
+                    </div>
+
+                    <div>
+                        <label for="other_deductions" class="field-label">Other Deductions</label>
+                        <input type="number" name="other_deductions" id="other_deductions" 
+                               class="form-input" placeholder="0.00" step="0.01"
+                               value="{% if payroll %}{{ payroll.other_deductions }}{% else %}0{% endif %}">
+                    </div>
+                </div>
+
+                <!-- Attendance & Overtime -->
+                <div class="section-header">Attendance & Overtime</div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label for="working_days" class="field-label">Working Days</label>
+                        <input type="number" name="working_days" id="working_days" 
+                               class="form-input" placeholder="22" min="1" max="31"
+                               value="{% if payroll %}{{ payroll.working_days }}{% else %}22{% endif %}">
+                    </div>
+
+                    <div>
+                        <label for="present_days" class="field-label">Present Days</label>
+                        <input type="number" name="present_days" id="present_days" 
+                               class="form-input" placeholder="22" min="0" max="31"
+                               value="{% if payroll %}{{ payroll.present_days }}{% else %}22{% endif %}">
+                    </div>
+
+                    <div>
+                        <label for="overtime_hours" class="field-label">Overtime Hours</label>
+                        <input type="number" name="overtime_hours" id="overtime_hours" 
+                               class="form-input" placeholder="0" step="0.5" min="0"
+                               value="{% if payroll %}{{ payroll.overtime_hours }}{% else %}0{% endif %}">
+                    </div>
+
+                    <div>
+                        <label for="overtime_rate" class="field-label">Overtime Rate (per hour)</label>
+                        <input type="number" name="overtime_rate" id="overtime_rate" 
+                               class="form-input" placeholder="0.00" step="0.01" min="0"
+                               value="{% if payroll %}{{ payroll.overtime_rate }}{% else %}0{% endif %}">
+                    </div>
+                </div>
+
+                <!-- Calculation Summary -->
+                <div class="calculation-card">
+                    <h3 class="text-lg font-semibold text-blue-800 mb-4">Salary Calculation</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="text-center">
+                            <div class="text-green-600 font-medium">Gross Salary</div>
+                            <div id="gross_salary" class="text-2xl font-bold text-green-700">$0.00</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-red-600 font-medium">Total Deductions</div>
+                            <div id="total_deductions" class="text-2xl font-bold text-red-700">$0.00</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-blue-600 font-medium">Net Salary</div>
+                            <div id="net_salary" class="text-2xl font-bold text-blue-700">$0.00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end gap-4 mt-8 pt-6 border-t-2 border-gray-200">
+                    <a href="{% url 'hr:payroll_ui' %}" class="px-8 py-3 bg-gray-200 text-gray-700 rounded-2xl hover:bg-gray-300 transition-all font-medium">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl hover:shadow-lg transition-all font-medium">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        {% if payroll %}Update Payroll{% else %}Create Payroll{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function calculateSalary() {
+    const basicSalary = parseFloat(document.getElementById('basic_salary').value) || 0;
+    const houseAllowance = parseFloat(document.getElementById('house_allowance').value) || 0;
+    const transportAllowance = parseFloat(document.getElementById('transport_allowance').value) || 0;
+    const medicalAllowance = parseFloat(document.getElementById('medical_allowance').value) || 0;
+    const otherAllowances = parseFloat(document.getElementById('other_allowances').value) || 0;
+    const overtimeHours = parseFloat(document.getElementById('overtime_hours').value) || 0;
+    const overtimeRate = parseFloat(document.getElementById('overtime_rate').value) || 0;
+    
+    const providentFund = parseFloat(document.getElementById('provident_fund').value) || 0;
+    const incomeTax = parseFloat(document.getElementById('income_tax').value) || 0;
+    const otherDeductions = parseFloat(document.getElementById('other_deductions').value) || 0;
+    
+    const workingDays = parseInt(document.getElementById('working_days').value) || 22;
+    const presentDays = parseInt(document.getElementById('present_days').value) || 22;
+    
+    // Calculate proportional basic salary based on attendance
+    const proportionalBasic = (basicSalary * presentDays) / workingDays;
+    const overtimePay = overtimeHours * overtimeRate;
+    
+    const grossSalary = proportionalBasic + houseAllowance + transportAllowance + medicalAllowance + otherAllowances + overtimePay;
+    const totalDeductions = providentFund + incomeTax + otherDeductions;
+    const netSalary = grossSalary - totalDeductions;
+    
+    document.getElementById('gross_salary').textContent = '$' + grossSalary.toFixed(2);
+    document.getElementById('total_deductions').textContent = '$' + totalDeductions.toFixed(2);
+    document.getElementById('net_salary').textContent = '$' + netSalary.toFixed(2);
+}
+
+// Auto-populate basic salary when employee is selected
+document.getElementById('employee_id').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const salary = selectedOption.getAttribute('data-salary');
+    if (salary) {
+        document.getElementById('basic_salary').value = salary;
+        calculateSalary();
+    }
+});
+
+// Recalculate when any input changes
+const inputs = ['basic_salary', 'house_allowance', 'transport_allowance', 'medical_allowance', 'other_allowances', 
+                'provident_fund', 'income_tax', 'other_deductions', 'working_days', 'present_days', 
+                'overtime_hours', 'overtime_rate'];
+
+inputs.forEach(id => {
+    document.getElementById(id).addEventListener('input', calculateSalary);
+});
+
+// Calculate on page load
+calculateSalary();
+
+document.getElementById('payrollForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message || 'Payroll saved successfully!');
+            window.location.href = '{% url "hr:payroll_ui" %}';
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while saving the payroll.');
+    });
+});
+</script>
+{% endblock %}

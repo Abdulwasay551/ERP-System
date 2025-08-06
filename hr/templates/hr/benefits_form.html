@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Benefit Form | FutureERP{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8 max-w-4xl">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">
+                    {% if benefit %}Edit Employee Benefit{% else %}New Employee Benefit{% endif %}
+                </h1>
+                <p class="text-gray-600">Create or edit employee benefit</p>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold mb-4">Basic Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Benefit Name</label>
+                        <input type="text" name="name" value="{{ benefit.name }}" 
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Benefit Type</label>
+                        <select name="benefit_type" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            {% for type in benefit_types %}
+                            <option value="{{ type.0 }}" {% if benefit.benefit_type == type.0 %}selected{% endif %}>
+                                {{ type.1 }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Effective Date</label>
+                        <input type="date" name="effective_date" value="{{ benefit.effective_date|date:'Y-m-d' }}" 
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Expiry Date (Optional)</label>
+                        <input type="date" name="expiry_date" value="{{ benefit.expiry_date|date:'Y-m-d' }}" 
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cost Information -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold mb-4">Cost Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Cost to Company</label>
+                        <input type="number" name="cost_to_company" value="{{ benefit.cost_to_company }}" step="0.01" 
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Employee Contribution</label>
+                        <input type="number" name="employee_contribution" value="{{ benefit.employee_contribution }}" step="0.01" 
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold mb-4">Description & Eligibility</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Benefit Description</label>
+                        <textarea name="description" rows="4" 
+                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>{{ benefit.description }}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Eligibility Criteria</label>
+                        <textarea name="eligibility_criteria" rows="3" 
+                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">{{ benefit.eligibility_criteria }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold mb-4">Settings</h3>
+                <div class="space-y-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="is_mandatory" {% if benefit.is_mandatory %}checked{% endif %} 
+                               class="mr-2 text-blue-600 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">Mandatory Benefit</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="is_active" {% if benefit.is_active %}checked{% endif %} 
+                               class="mr-2 text-blue-600 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">Active</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-end space-x-4">
+                <a href="{% url 'hr:benefits_ui' %}" 
+                   class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    {% if benefit %}Update Benefit{% else %}Create Benefit{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

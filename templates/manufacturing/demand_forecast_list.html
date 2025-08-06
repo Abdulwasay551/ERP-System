@@ -1,0 +1,813 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Demand Forecasts - Manufacturing{% endblock %}
+
+{% block extra_css %}
+<style>
+    .forecast-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .forecast-card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 20px 40px rgba(59, 130, 246, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .accuracy-indicator {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .accuracy-high {
+        background: #dcfce7;
+        color: #166534;
+    }
+    
+    .accuracy-medium {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    .accuracy-low {
+        background: #fecaca;
+        color: #991b1b;
+    }
+    
+    .trend-icon {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .trend-up {
+        background: #dcfce7;
+        color: #166534;
+    }
+    
+    .trend-down {
+        background: #fecaca;
+        color: #991b1b;
+    }
+    
+    .trend-stable {
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+    
+    .chart-container {
+        height: 300px;
+        background: #f8fafc;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-box {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        border: 1px solid #e5e7eb;
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: none;
+        font-size: 0.875rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+    
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+    
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        color: #111827;
+    }
+    
+    .filter-section {
+        background: #f8fafc;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        align-items: end;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .form-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-input {
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .forecast-table {
+        background: white;
+        border-radius: 1rem;
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .forecast-table table {
+        width: 100%;
+    }
+    
+    .forecast-table th {
+        background: #f8fafc;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: #374151;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .forecast-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #f3f4f6;
+        vertical-align: middle;
+    }
+    
+    .forecast-table tr:hover {
+        background: #f9fafb;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">
+                        <i class="fas fa-chart-line text-blue-600 mr-3"></i>
+                        Demand Forecasts
+                    </h1>
+                    <p class="text-gray-600 mt-2">Analyze and predict future material requirements</p>
+                </div>
+                <div class="flex gap-3">
+                    <a href="{% url 'manufacturing:mrp_ui' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to MRP
+                    </a>
+                    <button onclick="generateForecast()" class="btn btn-primary">
+                        <i class="fas fa-magic"></i>
+                        Generate Forecast
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Key Statistics -->
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-value text-blue-600">{{ total_forecasts|default:24 }}</div>
+                <div class="stat-label">Active Forecasts</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value text-green-600">87%</div>
+                <div class="stat-label">Average Accuracy</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value text-purple-600">14</div>
+                <div class="stat-label">Days Horizon</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value text-orange-600">3</div>
+                <div class="stat-label">Models Used</div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-section">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Forecast Filters</h3>
+            <div class="filter-row">
+                <div class="form-group">
+                    <label class="form-label">Product Category</label>
+                    <select class="form-input" id="categoryFilter">
+                        <option value="">All Categories</option>
+                        <option value="raw_materials">Raw Materials</option>
+                        <option value="components">Components</option>
+                        <option value="finished_goods">Finished Goods</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Forecast Period</label>
+                    <select class="form-input" id="periodFilter">
+                        <option value="7">Next 7 Days</option>
+                        <option value="14" selected>Next 14 Days</option>
+                        <option value="30">Next 30 Days</option>
+                        <option value="90">Next 90 Days</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Accuracy Level</label>
+                    <select class="form-input" id="accuracyFilter">
+                        <option value="">All Levels</option>
+                        <option value="high">High (>80%)</option>
+                        <option value="medium">Medium (60-80%)</option>
+                        <option value="low">Low (<60%)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button onclick="applyFilters()" class="btn btn-primary">
+                        <i class="fas fa-filter"></i>
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forecast Chart -->
+        <div class="forecast-card">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-chart-area text-blue-600 mr-2"></i>
+                Demand Trend Analysis
+            </h3>
+            <div class="chart-container">
+                <canvas id="demandTrendChart" width="800" height="300"></canvas>
+            </div>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div>
+                    <div class="text-xl font-bold text-blue-600">+12%</div>
+                    <div class="text-sm text-gray-600">Projected Growth</div>
+                </div>
+                <div>
+                    <div class="text-xl font-bold text-green-600">89%</div>
+                    <div class="text-sm text-gray-600">Model Confidence</div>
+                </div>
+                <div>
+                    <div class="text-xl font-bold text-purple-600">5.2</div>
+                    <div class="text-sm text-gray-600">Seasonal Factor</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forecast Table -->
+        <div class="forecast-table">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-table text-blue-600 mr-2"></i>
+                        Detailed Forecasts
+                    </h3>
+                    <div class="flex gap-2">
+                        <button onclick="exportForecasts()" class="btn btn-secondary">
+                            <i class="fas fa-download"></i>
+                            Export
+                        </button>
+                        <button onclick="refreshForecasts()" class="btn btn-secondary">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Current Demand</th>
+                        <th>Forecasted Demand</th>
+                        <th>Trend</th>
+                        <th>Accuracy</th>
+                        <th>Last Updated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="forecastTableBody">
+                    <!-- Sample data - replace with actual Django template data -->
+                    <tr>
+                        <td>
+                            <div class="font-medium text-gray-900">Steel Plate 5mm</div>
+                            <div class="text-xs text-gray-500">SKU: STL-PLT-5MM</div>
+                        </td>
+                        <td class="text-gray-900 font-medium">450 units</td>
+                        <td class="text-blue-600 font-medium">520 units</td>
+                        <td>
+                            <div class="trend-icon trend-up">
+                                <i class="fas fa-arrow-up"></i>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="accuracy-indicator accuracy-high">
+                                High (85%)
+                            </span>
+                        </td>
+                        <td class="text-gray-600">2 hours ago</td>
+                        <td>
+                            <div class="flex space-x-1">
+                                <button onclick="viewForecastDetails('steel-plate')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                    View
+                                </button>
+                                <button onclick="adjustForecast('steel-plate')" class="bg-gray-500 text-white px-2 py-1 rounded text-xs hover:bg-gray-600">
+                                    Adjust
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="font-medium text-gray-900">Aluminum Rod 10mm</div>
+                            <div class="text-xs text-gray-500">SKU: ALU-ROD-10MM</div>
+                        </td>
+                        <td class="text-gray-900 font-medium">280 units</td>
+                        <td class="text-blue-600 font-medium">245 units</td>
+                        <td>
+                            <div class="trend-icon trend-down">
+                                <i class="fas fa-arrow-down"></i>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="accuracy-indicator accuracy-medium">
+                                Medium (72%)
+                            </span>
+                        </td>
+                        <td class="text-gray-600">3 hours ago</td>
+                        <td>
+                            <div class="flex space-x-1">
+                                <button onclick="viewForecastDetails('aluminum-rod')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                    View
+                                </button>
+                                <button onclick="adjustForecast('aluminum-rod')" class="bg-gray-500 text-white px-2 py-1 rounded text-xs hover:bg-gray-600">
+                                    Adjust
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="font-medium text-gray-900">Copper Wire 2.5mm</div>
+                            <div class="text-xs text-gray-500">SKU: COP-WIR-2.5MM</div>
+                        </td>
+                        <td class="text-gray-900 font-medium">1200 meters</td>
+                        <td class="text-blue-600 font-medium">1180 meters</td>
+                        <td>
+                            <div class="trend-icon trend-stable">
+                                <i class="fas fa-minus"></i>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="accuracy-indicator accuracy-high">
+                                High (91%)
+                            </span>
+                        </td>
+                        <td class="text-gray-600">1 hour ago</td>
+                        <td>
+                            <div class="flex space-x-1">
+                                <button onclick="viewForecastDetails('copper-wire')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                    View
+                                </button>
+                                <button onclick="adjustForecast('copper-wire')" class="bg-gray-500 text-white px-2 py-1 rounded text-xs hover:bg-gray-600">
+                                    Adjust
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% for forecast in demand_forecasts %}
+                    <tr>
+                        <td>
+                            <div class="font-medium text-gray-900">{{ forecast.product.name }}</div>
+                            <div class="text-xs text-gray-500">{{ forecast.product.sku }}</div>
+                        </td>
+                        <td class="text-gray-900 font-medium">{{ forecast.current_demand|floatformat:0 }} {{ forecast.product.unit|default:"units" }}</td>
+                        <td class="text-blue-600 font-medium">{{ forecast.forecasted_demand|floatformat:0 }} {{ forecast.product.unit|default:"units" }}</td>
+                        <td>
+                            {% if forecast.trend == 'up' %}
+                            <div class="trend-icon trend-up">
+                                <i class="fas fa-arrow-up"></i>
+                            </div>
+                            {% elif forecast.trend == 'down' %}
+                            <div class="trend-icon trend-down">
+                                <i class="fas fa-arrow-down"></i>
+                            </div>
+                            {% else %}
+                            <div class="trend-icon trend-stable">
+                                <i class="fas fa-minus"></i>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="accuracy-indicator {% if forecast.accuracy >= 80 %}accuracy-high{% elif forecast.accuracy >= 60 %}accuracy-medium{% else %}accuracy-low{% endif %}">
+                                {% if forecast.accuracy >= 80 %}High{% elif forecast.accuracy >= 60 %}Medium{% else %}Low{% endif %} ({{ forecast.accuracy }}%)
+                            </span>
+                        </td>
+                        <td class="text-gray-600">{{ forecast.updated_at|timesince }} ago</td>
+                        <td>
+                            <div class="flex space-x-1">
+                                <button onclick="viewForecastDetails('{{ forecast.id }}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                                    View
+                                </button>
+                                <button onclick="adjustForecast('{{ forecast.id }}')" class="bg-gray-500 text-white px-2 py-1 rounded text-xs hover:bg-gray-600">
+                                    Adjust
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-8 text-gray-500">
+                            <i class="fas fa-chart-line text-4xl mb-4 text-blue-500"></i>
+                            <p>No demand forecasts available</p>
+                            <button onclick="generateForecast()" class="mt-2 btn btn-primary">
+                                Generate Forecasts
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initializeDemandTrendChart();
+});
+
+function initializeDemandTrendChart() {
+    const ctx = document.getElementById('demandTrendChart')?.getContext('2d');
+    if (!ctx) return;
+    
+    const data = {
+        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'],
+        datasets: [{
+            label: 'Historical Demand',
+            data: [65, 59, 80, 81, 56, 72, 69, 74],
+            borderColor: 'rgb(107, 114, 128)',
+            backgroundColor: 'rgba(107, 114, 128, 0.1)',
+            tension: 0.4,
+            fill: true
+        }, {
+            label: 'Forecasted Demand',
+            data: [null, null, null, null, null, 72, 78, 85],
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.4,
+            fill: true,
+            borderDash: [5, 5]
+        }, {
+            label: 'Confidence Interval',
+            data: [null, null, null, null, null, 68, 75, 82],
+            borderColor: 'rgba(59, 130, 246, 0.3)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.4,
+            fill: false,
+            pointRadius: 0
+        }]
+    };
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                title: {
+                    display: true,
+                    text: 'Demand Forecast vs Historical Data'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Demand (Units)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Time Period'
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+}
+
+function generateForecast() {
+    if (confirm('Generate new demand forecasts? This may take a few minutes.')) {
+        showNotification('Generating demand forecasts...', 'info');
+        
+        fetch('/manufacturing/api/generate-demand-forecast/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Demand forecasts generated successfully!', 'success');
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                showNotification('Failed to generate forecasts: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to generate forecasts', 'error');
+        });
+    }
+}
+
+function applyFilters() {
+    const category = document.getElementById('categoryFilter').value;
+    const period = document.getElementById('periodFilter').value;
+    const accuracy = document.getElementById('accuracyFilter').value;
+    
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (category) params.append('category', category);
+    if (period) params.append('period', period);
+    if (accuracy) params.append('accuracy', accuracy);
+    
+    // Reload page with filters
+    window.location.href = '?' + params.toString();
+}
+
+function viewForecastDetails(forecastId) {
+    // Create detailed view modal
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-screen overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold">Forecast Details</h3>
+                <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-semibold mb-3">Forecast Parameters</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span>Model Type:</span><span>ARIMA</span></div>
+                        <div class="flex justify-between"><span>Seasonality:</span><span>Weekly</span></div>
+                        <div class="flex justify-between"><span>Data Points:</span><span>180 days</span></div>
+                        <div class="flex justify-between"><span>Confidence:</span><span>89%</span></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-3">Performance Metrics</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span>MAE:</span><span>12.5</span></div>
+                        <div class="flex justify-between"><span>RMSE:</span><span>18.2</span></div>
+                        <div class="flex justify-between"><span>MAPE:</span><span>8.3%</span></div>
+                        <div class="flex justify-between"><span>R²:</span><span>0.87</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <h4 class="font-semibold mb-3">Forecast Chart</h4>
+                <div class="h-64 bg-gray-100 rounded border flex items-center justify-center">
+                    <span class="text-gray-500">Detailed forecast chart would load here</span>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="this.closest('.fixed').remove()" class="btn btn-secondary">
+                    Close
+                </button>
+                <button onclick="adjustForecast('${forecastId}'); this.closest('.fixed').remove();" class="btn btn-primary">
+                    Adjust Forecast
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function adjustForecast(forecastId) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold mb-4">Adjust Forecast</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Adjustment Factor (%)</label>
+                    <input type="number" class="form-input w-full" placeholder="0" min="-50" max="100" id="adjustmentFactor">
+                    <div class="text-xs text-gray-500 mt-1">Positive values increase forecast, negative values decrease</div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Reason for Adjustment</label>
+                    <select class="form-input w-full" id="adjustmentReason">
+                        <option value="">Select reason...</option>
+                        <option value="market_change">Market Conditions Changed</option>
+                        <option value="seasonal_factor">Seasonal Adjustment</option>
+                        <option value="business_intelligence">Business Intelligence</option>
+                        <option value="customer_feedback">Customer Feedback</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <textarea class="form-input w-full" rows="3" placeholder="Additional notes about this adjustment..." id="adjustmentNotes"></textarea>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="this.closest('.fixed').remove()" class="btn btn-secondary">
+                    Cancel
+                </button>
+                <button onclick="saveAdjustment('${forecastId}'); this.closest('.fixed').remove();" class="btn btn-primary">
+                    Save Adjustment
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function saveAdjustment(forecastId) {
+    const factor = document.getElementById('adjustmentFactor').value;
+    const reason = document.getElementById('adjustmentReason').value;
+    const notes = document.getElementById('adjustmentNotes').value;
+    
+    if (!factor || !reason) {
+        showNotification('Please provide adjustment factor and reason', 'warning');
+        return;
+    }
+    
+    fetch(`/manufacturing/api/adjust-forecast/${forecastId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            adjustment_factor: factor,
+            reason: reason,
+            notes: notes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Forecast adjusted successfully!', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showNotification('Failed to adjust forecast: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Failed to adjust forecast', 'error');
+    });
+}
+
+function exportForecasts() {
+    window.open('/manufacturing/api/export-demand-forecasts/', '_blank');
+    showNotification('Export started', 'info');
+}
+
+function refreshForecasts() {
+    showNotification('Refreshing forecasts...', 'info');
+    window.location.reload();
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'error' ? 'bg-red-500 text-white' :
+        type === 'warning' ? 'bg-yellow-500 text-white' :
+        'bg-blue-500 text-white'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${
+                type === 'success' ? 'fa-check-circle' :
+                type === 'error' ? 'fa-exclamation-triangle' :
+                type === 'warning' ? 'fa-exclamation-triangle' :
+                'fa-info-circle'
+            } mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+</script>
+
+<!-- Add CSRF token -->
+{% csrf_token %}
+{% endblock %}

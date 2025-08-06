@@ -467,3 +467,291 @@ def reports_ui(request):
             'error': str(e)
         }
         return render(request, 'accounting/reports-ui.html', context)
+
+@login_required
+def journal_create(request):
+    """Create new journal entry"""
+    return render(request, 'accounting/journal-create.html')
+
+@login_required
+def analytics_ui(request):
+    """Accounting analytics and insights"""
+    try:
+        company = request.user.company
+        
+        # Monthly trend data for the last 12 months
+        from datetime import datetime, timedelta
+        from django.db.models import Sum, Count
+        from calendar import monthrange
+        
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=365)
+        
+        # Get monthly journal entry counts
+        monthly_entries = []
+        monthly_amounts = []
+        months = []
+        
+        for i in range(12):
+            month_start = (end_date.replace(day=1) - timedelta(days=i*30)).replace(day=1)
+            month_end = month_start.replace(day=monthrange(month_start.year, month_start.month)[1])
+            
+            entries_count = Journal.objects.filter(
+                company=company,
+                date__gte=month_start,
+                date__lte=month_end
+            ).count()
+            
+            total_amount = JournalEntry.objects.filter(
+                journal__company=company,
+                journal__date__gte=month_start,
+                journal__date__lte=month_end
+            ).aggregate(total=Sum('debit'))['total'] or 0
+            
+            monthly_entries.append(entries_count)
+            monthly_amounts.append(float(total_amount))
+            months.append(month_start.strftime('%b %Y'))
+        
+        # Reverse to show chronological order
+        monthly_entries.reverse()
+        monthly_amounts.reverse()
+        months.reverse()
+        
+        # Account type distribution
+        account_distribution = {}
+        for category in ['asset', 'liability', 'equity', 'income', 'expense']:
+            count = Account.objects.filter(company=company, type=category, is_active=True).count()
+            account_distribution[category.title()] = count
+        
+        # Top accounts by transaction volume
+        top_accounts = Account.objects.filter(company=company, is_active=True).annotate(
+            transaction_count=Count('journal_items')
+        ).order_by('-transaction_count')[:10]
+        
+        context = {
+            'monthly_entries': monthly_entries,
+            'monthly_amounts': monthly_amounts,
+            'months': months,
+            'account_distribution': account_distribution,
+            'top_accounts': top_accounts,
+        }
+        return render(request, 'accounting/analytics.html', context)
+    except Exception as e:
+        context = {'error': str(e)}
+        return render(request, 'accounting/analytics.html', context)
+
+@login_required
+def balance_sheet_ui(request):
+    """Balance sheet report"""
+    try:
+        company = request.user.company
+        
+        # Assets
+        asset_accounts = Account.objects.filter(company=company, type='asset', is_active=True)
+        assets = []
+        total_assets = 0
+        
+        for account in asset_accounts:
+            balance = calculate_account_balance(account)
+            assets.append({
+                'account': account,
+                'balance': balance
+            })
+            total_assets += balance
+        
+        # Liabilities
+        liability_accounts = Account.objects.filter(company=company, type='liability', is_active=True)
+        liabilities = []
+        total_liabilities = 0
+        
+        for account in liability_accounts:
+            balance = calculate_account_balance(account)
+            liabilities.append({
+                'account': account,
+                'balance': balance
+            })
+            total_liabilities += balance
+        
+        # Equity
+        equity_accounts = Account.objects.filter(company=company, type='equity', is_active=True)
+        equity = []
+        total_equity = 0
+        
+        for account in equity_accounts:
+            balance = calculate_account_balance(account)
+            equity.append({
+                'account': account,
+                'balance': balance
+            })
+            total_equity += balance
+        
+        context = {
+            'assets': assets,
+            'liabilities': liabilities,
+            'equity': equity,
+            'total_assets': total_assets,
+            'total_liabilities': total_liabilities,
+            'total_equity': total_equity,
+        }
+        return render(request, 'accounting/balance-sheet.html', context)
+    except Exception as e:
+        context = {'error': str(e)}
+        return render(request, 'accounting/balance-sheet.html', context)
+
+@login_required
+def profit_loss_ui(request):
+    """Profit and Loss statement"""
+    try:
+        company = request.user.company
+        
+        # Income
+        income_accounts = Account.objects.filter(company=company, type='income', is_active=True)
+        income = []
+        total_income = 0
+        
+        for account in income_accounts:
+            balance = calculate_account_balance(account)
+            income.append({
+                'account': account,
+                'balance': balance
+            })
+            total_income += balance
+        
+        # Expenses
+        expense_accounts = Account.objects.filter(company=company, type='expense', is_active=True)
+        expenses = []
+        total_expenses = 0
+        
+        for account in expense_accounts:
+            balance = calculate_account_balance(account)
+            expenses.append({
+                'account': account,
+                'balance': balance
+            })
+            total_expenses += balance
+        
+        net_income = total_income - total_expenses
+        
+        context = {
+            'income': income,
+            'expenses': expenses,
+            'total_income': total_income,
+            'total_expenses': total_expenses,
+            'net_income': net_income,
+        }
+        return render(request, 'accounting/profit-loss.html', context)
+    except Exception as e:
+        context = {'error': str(e)}
+        return render(request, 'accounting/profit-loss.html', context)
+
+@login_required
+def cash_flow_ui(request):
+    """Cash flow statement"""
+    try:
+        company = request.user.company
+        
+        # Get cash accounts
+        cash_accounts = Account.objects.filter(
+            company=company, 
+            name__icontains='cash',
+            is_active=True
+        ) | Account.objects.filter(
+            company=company,
+            name__icontains='bank',
+            is_active=True
+        )
+        
+        cash_flows = []
+        total_cash_flow = 0
+        
+        for account in cash_accounts:
+            balance = calculate_account_balance(account)
+            cash_flows.append({
+                'account': account,
+                'balance': balance
+            })
+            total_cash_flow += balance
+        
+        context = {
+            'cash_flows': cash_flows,
+            'total_cash_flow': total_cash_flow,
+        }
+        return render(request, 'accounting/cash-flow.html', context)
+    except Exception as e:
+        context = {'error': str(e)}
+        return render(request, 'accounting/cash-flow.html', context)
+
+@login_required
+def bank_reconciliation_ui(request):
+    """Bank reconciliation interface"""
+    return render(request, 'accounting/bank-reconciliation.html')
+
+@login_required
+def module_mappings_ui(request):
+    """Module integration mappings"""
+    try:
+        company = request.user.company
+        from .models import ModuleAccountMapping
+        
+        mappings = ModuleAccountMapping.objects.filter(company=company)
+        
+        context = {
+            'mappings': mappings,
+        }
+        return render(request, 'accounting/module-mappings.html', context)
+    except Exception as e:
+        context = {'error': str(e)}
+        return render(request, 'accounting/module-mappings.html', context)
+
+@login_required
+def settings_ui(request):
+    """Accounting settings and configuration"""
+    return render(request, 'accounting/settings.html')
+
+@login_required
+def account_categories_ui(request):
+    """Account categories management"""
+    try:
+        company = request.user.company
+        from .models import AccountCategory
+        
+        categories = AccountCategory.objects.filter(company=company)
+        
+        context = {
+            'categories': categories,
+        }
+        return render(request, 'accounting/categories.html', context)
+    except Exception as e:
+        context = {'error': str(e)}
+        return render(request, 'accounting/categories.html', context)
+
+@login_required
+def account_groups_ui(request):
+    """Account groups management"""
+    try:
+        company = request.user.company
+        from .models import AccountGroup
+        
+        groups = AccountGroup.objects.filter(company=company)
+        
+        context = {
+            'groups': groups,
+        }
+        return render(request, 'accounting/groups.html', context)
+    except Exception as e:
+        context = {'error': str(e)}
+        return render(request, 'accounting/groups.html', context)
+
+def calculate_account_balance(account):
+    """Helper function to calculate account balance"""
+    total_debit = account.journal_items.aggregate(
+        total=Sum('debit')
+    )['total'] or 0
+    total_credit = account.journal_items.aggregate(
+        total=Sum('credit')
+    )['total'] or 0
+    
+    if account.balance_side == 'debit':
+        return total_debit - total_credit
+    else:
+        return total_credit - total_debit

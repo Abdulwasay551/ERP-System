@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cash Flow Statement | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .cashflow-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+    .section-header {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+        border-left: 4px solid #3B82F6;
+    }
+    .cash-positive {
+        color: #10B981;
+    }
+    .cash-negative {
+        color: #EF4444;
+    }
+    .account-row:hover {
+        background-color: rgba(59, 130, 246, 0.05);
+    }
+    .total-row {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 95, 70, 0.15));
+        border-top: 2px solid #10B981;
+    }
+    .print-hidden {
+        display: block;
+    }
+    @media print {
+        .print-hidden {
+            display: none !important;
+        }
+        .cashflow-card {
+            box-shadow: none !important;
+            border: 1px solid #ddd !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8 print-hidden">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Cash Flow Statement</h1>
+                <p class="text-gray-600">Cash Position and Liquidity Analysis as of {{ "now"|date:"F d, Y" }}</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="window.print()" class="action-btn bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                    </svg>
+                    Print Report
+                </button>
+                <button class="action-btn bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Export PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- Cash Position Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 print-hidden">
+            <div class="cashflow-card rounded-2xl p-6 text-center">
+                <div class="text-3xl font-bold {% if total_cash_flow >= 0 %}cash-positive{% else %}cash-negative{% endif %} mb-2">
+                    ${{ total_cash_flow|floatformat:0 }}
+                </div>
+                <div class="text-sm text-gray-600">Total Cash Position</div>
+            </div>
+            <div class="cashflow-card rounded-2xl p-6 text-center">
+                <div class="text-3xl font-bold text-blue-600 mb-2">{{ cash_flows|length }}</div>
+                <div class="text-sm text-gray-600">Cash Accounts</div>
+            </div>
+            <div class="cashflow-card rounded-2xl p-6 text-center">
+                <div class="text-3xl font-bold {% if total_cash_flow >= 0 %}cash-positive{% else %}cash-negative{% endif %} mb-2">
+                    {% if total_cash_flow >= 0 %}Positive{% else %}Negative{% endif %}
+                </div>
+                <div class="text-sm text-gray-600">Cash Flow Status</div>
+            </div>
+        </div>
+
+        <div class="max-w-6xl mx-auto">
+            <!-- Cash and Cash Equivalents -->
+            <div class="cashflow-card rounded-2xl p-6 mb-8">
+                <div class="section-header p-4 rounded-lg mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                        CASH & CASH EQUIVALENTS
+                    </h2>
+                </div>
+
+                <div class="space-y-3">
+                    {% for cash_flow in cash_flows %}
+                    <div class="account-row flex justify-between items-center py-4 px-6 rounded-lg transition-colors border border-gray-100">
+                        <div class="flex items-center space-x-4">
+                            <div class="p-3 rounded-full {% if cash_flow.balance >= 0 %}bg-green-100{% else %}bg-red-100{% endif %}">
+                                {% if 'bank' in cash_flow.account.name|lower %}
+                                    <svg class="w-6 h-6 {% if cash_flow.balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                    </svg>
+                                {% else %}
+                                    <svg class="w-6 h-6 {% if cash_flow.balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                    </svg>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-900 text-lg">{{ cash_flow.account.name }}</div>
+                                <div class="text-sm text-gray-500">{{ cash_flow.account.code }} - {{ cash_flow.account.description|truncatewords:10 }}</div>
+                                <div class="text-xs text-gray-400 mt-1">
+                                    Account Type: {{ cash_flow.account.get_type_display }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold {% if cash_flow.balance >= 0 %}cash-positive{% else %}cash-negative{% endif %}">
+                                ${{ cash_flow.balance|floatformat:2 }}
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                {% if cash_flow.balance >= 0 %}Available{% else %}Overdrawn{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-12 text-gray-500">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No Cash Accounts Found</h3>
+                        <p class="text-gray-500">Set up cash and bank accounts to track your cash flow.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if cash_flows %}
+                <div class="total-row flex justify-between items-center py-4 px-6 rounded-lg mt-6">
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        <div class="text-xl font-bold text-gray-900">TOTAL CASH POSITION</div>
+                    </div>
+                    <div class="text-2xl font-bold {% if total_cash_flow >= 0 %}cash-positive{% else %}cash-negative{% endif %}">
+                        ${{ total_cash_flow|floatformat:2 }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Cash Flow Analysis -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- Liquidity Metrics -->
+                <div class="cashflow-card rounded-2xl p-6">
+                    <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        Liquidity Analysis
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                            <span class="text-gray-600">Available Cash</span>
+                            <span class="font-semibold {% if total_cash_flow >= 0 %}cash-positive{% else %}cash-negative{% endif %}">
+                                ${{ total_cash_flow|floatformat:2 }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                            <span class="text-gray-600">Number of Accounts</span>
+                            <span class="font-semibold text-gray-900">{{ cash_flows|length }}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                            <span class="text-gray-600">Cash Flow Status</span>
+                            <span class="font-semibold {% if total_cash_flow >= 0 %}cash-positive{% else %}cash-negative{% endif %}">
+                                {% if total_cash_flow >= 0 %}Healthy{% else %}Critical{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cash Distribution -->
+                <div class="cashflow-card rounded-2xl p-6">
+                    <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
+                        </svg>
+                        Account Distribution
+                    </h3>
+                    <div class="space-y-3">
+                        {% for cash_flow in cash_flows %}
+                        {% if cash_flow.balance > 0 %}
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                <span class="text-sm text-gray-600">{{ cash_flow.account.name|truncatewords:3 }}</span>
+                            </div>
+                            <span class="text-sm font-medium text-gray-900">
+                                {% if total_cash_flow > 0 %}
+                                    {{ cash_flow.balance|div:total_cash_flow|mul:100|floatformat:1 }}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendations -->
+            {% if total_cash_flow < 10000 %}
+            <div class="cashflow-card rounded-2xl p-6 border-l-4 border-orange-500 bg-orange-50">
+                <div class="flex items-start space-x-3">
+                    <svg class="w-6 h-6 text-orange-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    <div>
+                        <h4 class="text-lg font-semibold text-orange-800 mb-2">Cash Flow Recommendation</h4>
+                        <p class="text-orange-700">
+                            Your current cash position is below recommended levels. Consider:
+                        </p>
+                        <ul class="mt-2 space-y-1 text-orange-700">
+                            <li>• Reviewing accounts receivable and collection processes</li>
+                            <li>• Optimizing payment terms with suppliers</li>
+                            <li>• Setting up a cash reserve fund</li>
+                            <li>• Monitoring cash flow projections more frequently</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

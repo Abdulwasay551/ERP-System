@@ -380,7 +380,7 @@ def production_plans_ui(request):
 
 @login_required
 def mrp_ui(request):
-    """Material Requirements Planning interface"""
+    """Enhanced Material Requirements Planning interface"""
     try:
         company = request.user.company
         
@@ -393,14 +393,216 @@ def mrp_ui(request):
             status='pending'
         ).select_related('product', 'mrp_plan').order_by('required_date')[:20]
         
+        # Get shortage alerts (requirements due within next 7 days)
+        from datetime import timedelta
+        shortage_alerts = MRPRequirement.objects.filter(
+            mrp_plan__company=company,
+            status='pending',
+            shortage_quantity__gt=0,
+            required_date__lte=timezone.now().date() + timedelta(days=7)
+        ).select_related('product', 'mrp_plan').order_by('required_date')
+        
+        # Get supply-demand summary
+        try:
+            from .mrp_engine import SupplyDemandAnalyzer
+            analyzer = SupplyDemandAnalyzer(company)
+            supply_demand_data = analyzer.generate_supply_demand_report()[:10]  # Top 10
+        except Exception:
+            supply_demand_data = []
+        
+        # MRP run statistics
+        from .models import MRPRunLog
+        recent_runs = MRPRunLog.objects.filter(company=company).order_by('-run_timestamp')[:5]
+        
         context = {
             'mrp_plans': mrp_plans,
             'pending_requirements': pending_requirements,
+            'shortage_alerts': shortage_alerts,
+            'supply_demand_data': supply_demand_data,
+            'recent_runs': recent_runs,
         }
         return render(request, 'manufacturing/mrp.html', context)
     except Exception as e:
         messages.error(request, f"Error loading MRP data: {str(e)}")
-        return render(request, 'manufacturing/mrp.html', {'mrp_plans': [], 'pending_requirements': []})
+        return render(request, 'manufacturing/mrp.html', {
+            'mrp_plans': [], 
+            'pending_requirements': [],
+            'shortage_alerts': [],
+            'supply_demand_data': [],
+            'recent_runs': []
+        })
+
+
+@login_required
+@require_POST
+def run_mrp_calculation(request):
+    """Run MRP calculation"""
+    try:
+        from .mrp_engine import run_automatic_mrp
+        
+        company = request.user.company
+        mrp_plan, message = run_automatic_mrp(company)
+        
+        messages.success(request, f"MRP calculation completed: {message}")
+        return JsonResponse({
+            'success': True,
+            'message': message,
+            'mrp_plan_id': mrp_plan.id,
+            'requirements_count': mrp_plan.requirements.count()
+        })
+        
+    except Exception as e:
+        messages.error(request, f"MRP calculation failed: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)
+
+
+@login_required
+def supply_demand_report(request):
+    """Supply-Demand Analysis Report"""
+    try:
+        company = request.user.company
+        
+        # Get date range from request
+        from datetime import timedelta
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        
+        if start_date:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        else:
+            start_date = timezone.now().date()
+            
+        if end_date:
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        else:
+            end_date = start_date + timedelta(days=90)
+        
+        # Generate report
+        from .mrp_engine import SupplyDemandAnalyzer
+        analyzer = SupplyDemandAnalyzer(company, start_date, end_date)
+        report_data = analyzer.generate_supply_demand_report()
+        
+        # Filter and pagination
+        search = request.GET.get('search', '')
+        if search:
+            report_data = [
+                item for item in report_data 
+                if search.lower() in item['product'].name.lower()
+            ]
+        
+        # Group by status for summary
+        status_summary = {}
+        for item in report_data:
+            status = item['status']
+            if status not in status_summary:
+                status_summary[status] = 0
+            status_summary[status] += 1
+        
+        context = {
+            'report_data': report_data,
+            'status_summary': status_summary,
+            'start_date': start_date,
+            'end_date': end_date,
+            'search': search
+        }
+        
+        return render(request, 'manufacturing/supply_demand_report.html', context)
+        
+    except Exception as e:
+        messages.error(request, f"Error generating supply-demand report: {str(e)}")
+        return render(request, 'manufacturing/supply_demand_report.html', {
+            'report_data': [],
+            'status_summary': {},
+            'start_date': timezone.now().date(),
+            'end_date': timezone.now().date() + timedelta(days=90)
+        })
+
+
+@login_required
+def mrp_planning_dashboard(request):
+    """Advanced MRP Planning Dashboard with enhanced analytics"""
+    try:
+        company = request.user.company
+        
+        # Get comprehensive MRP data
+        mrp_plans = MRPPlan.objects.filter(company=company).order_by('-plan_date')[:10]
+        
+        # Get pending requirements with detailed analysis
+        pending_requirements = MRPRequirement.objects.filter(
+            mrp_plan__company=company,
+            status='pending'
+        ).select_related('product', 'mrp_plan').order_by('required_date')[:50]
+        
+        # Get critical shortage alerts (due within next 7 days)
+        from datetime import timedelta
+        critical_date = timezone.now().date() + timedelta(days=7)
+        shortage_alerts = MRPRequirement.objects.filter(
+            mrp_plan__company=company,
+            status='pending',
+            shortage_quantity__gt=0,
+            required_date__lte=critical_date
+        ).select_related('product', 'mrp_plan').order_by('required_date')
+        
+        # Get supply-demand analytics
+        try:
+            from .mrp_engine import SupplyDemandAnalyzer
+            analyzer = SupplyDemandAnalyzer(company)
+            supply_demand_data = analyzer.generate_supply_demand_report()
+            
+            # Calculate summary statistics
+            total_products = len(supply_demand_data)
+            critical_products = len([item for item in supply_demand_data 
+                                   if item['status'] in ['Reorder Required', 'Below Safety Stock', 'Shortage Expected']])
+            
+        except Exception as e:
+            supply_demand_data = []
+            total_products = 0
+            critical_products = 0
+        
+        # MRP run statistics with performance metrics
+        from .models import MRPRunLog
+        recent_runs = MRPRunLog.objects.filter(company=company).order_by('-run_timestamp')[:10]
+        
+        # Calculate planning metrics
+        planning_metrics = {
+            'total_requirements': pending_requirements.count(),
+            'critical_items': shortage_alerts.count(),
+            'purchase_requirements': pending_requirements.filter(source_type='purchase').count(),
+            'manufacture_requirements': pending_requirements.filter(source_type='manufacture').count(),
+            'total_value': sum([float(req.shortage_quantity) * 10 for req in pending_requirements]),  # Placeholder calculation
+            'planning_efficiency': 85,  # Placeholder metric
+            'forecast_accuracy': 92,   # Placeholder metric
+            'on_time_delivery': 88,    # Placeholder metric
+        }
+        
+        context = {
+            'mrp_plans': mrp_plans,
+            'pending_requirements': pending_requirements,
+            'shortage_alerts': shortage_alerts,
+            'supply_demand_data': supply_demand_data,
+            'recent_runs': recent_runs,
+            'planning_metrics': planning_metrics,
+            'total_products': total_products,
+            'critical_products': critical_products,
+        }
+        
+        return render(request, 'manufacturing/mrp_planning_dashboard.html', context)
+        
+    except Exception as e:
+        messages.error(request, f"Error loading MRP planning dashboard: {str(e)}")
+        return render(request, 'manufacturing/mrp_planning_dashboard.html', {
+            'mrp_plans': [], 
+            'pending_requirements': [],
+            'shortage_alerts': [],
+            'supply_demand_data': [],
+            'recent_runs': [],
+            'planning_metrics': {},
+            'total_products': 0,
+            'critical_products': 0,
+        })
 
 
 @login_required

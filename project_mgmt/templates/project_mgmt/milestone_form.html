@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Milestone | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: linear-gradient(135deg, rgba(147, 51, 234, 0.05), rgba(124, 58, 237, 0.05));
+        border: 1px solid rgba(147, 51, 234, 0.1);
+    }
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e5e7eb;
+    }
+    .form-section h3 {
+        color: #374151;
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    .progress-slider {
+        background: linear-gradient(to right, #8b5cf6 0%, #8b5cf6 var(--progress, 0%), #e5e7eb var(--progress, 0%), #e5e7eb 100%);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8 max-w-4xl">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center mb-4">
+                <a href="{% url 'project_mgmt:milestones_ui' %}" class="mr-4 p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Add Milestone</h1>
+                    <p class="text-gray-600">Create a new project milestone</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="form-card p-8 rounded-2xl">
+            <form id="milestoneForm" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h3>Milestone Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="project" class="block text-sm font-medium text-gray-700 mb-2">Project *</label>
+                            <select name="project" id="project" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                <option value="">Select Project</option>
+                                {% for project in projects %}
+                                    <option value="{{ project.id }}">{{ project.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Status *</label>
+                            <select name="status" id="status" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                <option value="planned">Planned</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                                <option value="overdue">Overdue</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <label for="title" class="block text-sm font-medium text-gray-700 mb-2">Milestone Title *</label>
+                        <input type="text" name="title" id="title" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Enter milestone title">
+                    </div>
+                    <div class="mt-6">
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <textarea name="description" id="description" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Describe this milestone"></textarea>
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="form-section">
+                    <h3>Timeline</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="target_date" class="block text-sm font-medium text-gray-700 mb-2">Target Date *</label>
+                            <input type="date" name="target_date" id="target_date" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label for="completion_date" class="block text-sm font-medium text-gray-700 mb-2">Completion Date</label>
+                            <input type="date" name="completion_date" id="completion_date" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress -->
+                <div class="form-section">
+                    <h3>Progress</h3>
+                    <div>
+                        <label for="progress" class="block text-sm font-medium text-gray-700 mb-2">Progress Percentage</label>
+                        <div class="relative">
+                            <input type="range" name="progress" id="progress" min="0" max="100" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer progress-slider">
+                            <div class="flex justify-between text-sm text-gray-600 mt-2">
+                                <span>0%</span>
+                                <span id="progress-value" class="font-medium">0%</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Deliverables -->
+                <div class="form-section">
+                    <h3>Deliverables & Dependencies</h3>
+                    <div class="mb-6">
+                        <label for="deliverables" class="block text-sm font-medium text-gray-700 mb-2">Expected Deliverables</label>
+                        <textarea name="deliverables" id="deliverables" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="List the expected deliverables for this milestone"></textarea>
+                    </div>
+                    <div>
+                        <label for="dependencies" class="block text-sm font-medium text-gray-700 mb-2">Dependencies</label>
+                        <textarea name="dependencies" id="dependencies" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="List any dependencies or prerequisites"></textarea>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                    <a href="{% url 'project_mgmt:milestones_ui' %}" class="px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all">
+                        Add Milestone
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update progress slider display
+const progressSlider = document.getElementById('progress');
+const progressValue = document.getElementById('progress-value');
+
+progressSlider.addEventListener('input', function() {
+    const value = this.value;
+    progressValue.textContent = value + '%';
+    
+    // Update slider background
+    this.style.setProperty('--progress', value + '%');
+    
+    // Auto-update status based on progress
+    const statusSelect = document.getElementById('status');
+    if (value == 0) {
+        statusSelect.value = 'planned';
+    } else if (value == 100) {
+        statusSelect.value = 'completed';
+        // Set completion date to today if completed
+        if (!document.getElementById('completion_date').value) {
+            document.getElementById('completion_date').valueAsDate = new Date();
+        }
+    } else {
+        statusSelect.value = 'in_progress';
+    }
+});
+
+// Auto-update progress when status changes
+document.getElementById('status').addEventListener('change', function() {
+    const progress = document.getElementById('progress');
+    if (this.value === 'completed' && progress.value != 100) {
+        progress.value = 100;
+        progressValue.textContent = '100%';
+        progress.style.setProperty('--progress', '100%');
+        // Set completion date to today if completed
+        if (!document.getElementById('completion_date').value) {
+            document.getElementById('completion_date').valueAsDate = new Date();
+        }
+    } else if (this.value === 'planned' && progress.value != 0) {
+        progress.value = 0;
+        progressValue.textContent = '0%';
+        progress.style.setProperty('--progress', '0%');
+    }
+});
+
+// Form submission
+document.getElementById('milestoneForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('{% url "project_mgmt:milestone_add" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = '{% url "project_mgmt:milestones_ui" %}';
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while adding the milestone.');
+    });
+});
+</script>
+{% endblock %}

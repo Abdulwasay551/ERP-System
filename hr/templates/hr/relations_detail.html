@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}Employee Relations Detail | FutureERP{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Employee Relations Case Detail</h1>
+                <p class="text-gray-600">Review and manage employee relations case</p>
+            </div>
+            <div class="space-x-3">
+                <a href="{% url 'hr:relations_edit' relation.pk %}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-edit mr-2"></i>Edit
+                </a>
+                <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-user-plus mr-2"></i>Assign
+                </button>
+                <button class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                    <i class="fas fa-check mr-2"></i>Resolve
+                </button>
+                <form method="post" action="{% url 'hr:relations_delete' relation.pk %}" class="inline" onsubmit="return confirm('Are you sure you want to delete this case?');">
+                    {% csrf_token %}
+                    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors ml-2">
+                        <i class="fas fa-trash mr-2"></i>Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Case Details -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Case Information</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Employee</label>
+                            <p class="text-gray-900">{{ relation.employee.first_name }} {{ relation.employee.last_name }}</p>
+                            <p class="text-sm text-gray-500">{{ relation.employee.employee_id }} - {{ relation.employee.department.name }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Case Type</label>
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full
+                                {% if relation.relation_type == 'grievance' %}bg-red-100 text-red-800
+                                {% elif relation.relation_type == 'complaint' %}bg-yellow-100 text-yellow-800
+                                {% elif relation.relation_type == 'appreciation' %}bg-green-100 text-green-800
+                                {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                {{ relation.get_relation_type_display }}
+                            </span>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Subject</label>
+                            <p class="text-gray-900">{{ relation.subject }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Priority</label>
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full
+                                {% if relation.priority == 'urgent' %}bg-red-100 text-red-800
+                                {% elif relation.priority == 'high' %}bg-orange-100 text-orange-800
+                                {% elif relation.priority == 'medium' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-green-100 text-green-800{% endif %}">
+                                {{ relation.get_priority_display }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Case Status</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Status</label>
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full
+                                {% if relation.status == 'resolved' %}bg-green-100 text-green-800
+                                {% elif relation.status == 'in_progress' %}bg-blue-100 text-blue-800
+                                {% elif relation.status == 'closed' %}bg-gray-100 text-gray-800
+                                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ relation.get_status_display }}
+                            </span>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Reported By</label>
+                            <p class="text-gray-900">{{ relation.reported_by.first_name }} {{ relation.reported_by.last_name }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Assigned To</label>
+                            <p class="text-gray-900">
+                                {% if relation.assigned_to %}
+                                    {{ relation.assigned_to.first_name }} {{ relation.assigned_to.last_name }}
+                                {% else %}
+                                    <span class="text-gray-400">Unassigned</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Created Date</label>
+                            <p class="text-gray-900">{{ relation.created_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Due Date</label>
+                            <p class="text-gray-900">{{ relation.due_date|default:"Not set" }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Resolved Date</label>
+                            <p class="text-gray-900">{{ relation.resolved_date|default:"Not resolved" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Description -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <h3 class="text-lg font-semibold mb-4">Description</h3>
+            <p class="text-gray-900">{{ relation.description }}</p>
+        </div>
+
+        <!-- Action Taken -->
+        {% if relation.action_taken %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <h3 class="text-lg font-semibold mb-4">Action Taken</h3>
+            <p class="text-gray-900">{{ relation.action_taken }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Resolution -->
+        {% if relation.resolution %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold mb-4">Resolution</h3>
+            <p class="text-gray-900">{{ relation.resolution }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Timeline -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold mb-4">Timeline</h3>
+            <div class="space-y-4">
+                <div class="flex items-start space-x-3">
+                    <div class="w-3 h-3 bg-blue-500 rounded-full mt-2"></div>
+                    <div>
+                        <p class="font-medium text-gray-900">Case Created</p>
+                        <p class="text-sm text-gray-500">{{ relation.created_at|date:"M d, Y H:i" }} by {{ relation.reported_by.first_name }} {{ relation.reported_by.last_name }}</p>
+                    </div>
+                </div>
+                {% if relation.assigned_to %}
+                <div class="flex items-start space-x-3">
+                    <div class="w-3 h-3 bg-yellow-500 rounded-full mt-2"></div>
+                    <div>
+                        <p class="font-medium text-gray-900">Case Assigned</p>
+                        <p class="text-sm text-gray-500">Assigned to {{ relation.assigned_to.first_name }} {{ relation.assigned_to.last_name }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                {% if relation.resolved_date %}
+                <div class="flex items-start space-x-3">
+                    <div class="w-3 h-3 bg-green-500 rounded-full mt-2"></div>
+                    <div>
+                        <p class="font-medium text-gray-900">Case Resolved</p>
+                        <p class="text-sm text-gray-500">{{ relation.resolved_date|date:"M d, Y H:i" }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

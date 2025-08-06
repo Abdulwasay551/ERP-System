@@ -3,7 +3,8 @@ from .models import (
     WorkCenter, BillOfMaterials, BillOfMaterialsItem, BOMOperation,
     WorkOrder, WorkOrderOperation, OperationLog, QualityCheck,
     MaterialConsumption, MRPPlan, MRPRequirement, ProductionPlan,
-    ProductionPlanItem, JobCard, Subcontractor, SubcontractWorkOrder
+    ProductionPlanItem, JobCard, Subcontractor, SubcontractWorkOrder,
+    DemandForecast, SupplierLeadTime, MRPRunLog, ReorderRule, CapacityPlan
 )
 
 
@@ -170,4 +171,57 @@ class SubcontractWorkOrderSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = SubcontractWorkOrder
+        fields = '__all__'
+
+
+class DemandForecastSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True)
+    
+    class Meta:
+        model = DemandForecast
+        fields = '__all__'
+
+
+class SupplierLeadTimeSerializer(serializers.ModelSerializer):
+    supplier_name = serializers.CharField(source='supplier.name', read_only=True)
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    reliability_score = serializers.SerializerMethodField()
+    
+    def get_reliability_score(self, obj):
+        return obj.get_reliability_score()
+    
+    class Meta:
+        model = SupplierLeadTime
+        fields = '__all__'
+
+
+class MRPRunLogSerializer(serializers.ModelSerializer):
+    mrp_plan_name = serializers.CharField(source='mrp_plan.name', read_only=True)
+    created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True)
+    
+    class Meta:
+        model = MRPRunLog
+        fields = '__all__'
+
+
+class ReorderRuleSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    warehouse_name = serializers.CharField(source='warehouse.name', read_only=True)
+    calculated_reorder_point = serializers.SerializerMethodField()
+    
+    def get_calculated_reorder_point(self, obj):
+        return obj.calculate_reorder_point()
+    
+    class Meta:
+        model = ReorderRule
+        fields = '__all__'
+
+
+class CapacityPlanSerializer(serializers.ModelSerializer):
+    work_center_name = serializers.CharField(source='work_center.name', read_only=True)
+    work_center_code = serializers.CharField(source='work_center.code', read_only=True)
+    
+    class Meta:
+        model = CapacityPlan
         fields = '__all__' 

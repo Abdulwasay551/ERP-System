@@ -1,0 +1,488 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Material Requirements Planning (MRP) | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .mrp-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(37, 99, 235, 0.05));
+        border: 1px solid rgba(59, 130, 246, 0.1);
+        transition: all 0.3s ease;
+    }
+    .mrp-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        border-color: rgba(59, 130, 246, 0.3);
+    }
+    .requirement-card {
+        background: white;
+        border: 1px solid rgba(229, 231, 235, 1);
+        transition: all 0.3s ease;
+    }
+    .requirement-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    .status-pending { background: rgba(251, 191, 36, 0.1); color: rgba(146, 64, 14, 1); }
+    .status-ordered { background: rgba(59, 130, 246, 0.1); color: rgba(29, 78, 216, 1); }
+    .status-received { background: rgba(16, 185, 129, 0.1); color: rgba(6, 95, 70, 1); }
+    .status-cancelled { background: rgba(239, 68, 68, 0.1); color: rgba(153, 27, 27, 1); }
+    
+    .alert-high { border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.05); }
+    .alert-medium { border-left: 4px solid #f59e0b; background: rgba(245, 158, 11, 0.05); }
+    .alert-low { border-left: 4px solid #10b981; background: rgba(16, 185, 129, 0.05); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">Material Requirements Planning</h1>
+                <p class="text-gray-600">Plan and manage material requirements for production</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="runMRPCalculation()" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-calculator mr-2"></i>
+                    Run MRP
+                </button>
+                <button onclick="viewSupplyDemandReport()" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-chart-line mr-2"></i>
+                    Supply & Demand
+                </button>
+                <button onclick="createMRPPlan()" class="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-2xl hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-plus mr-2"></i>
+                    New MRP Plan
+                </button>
+            </div>
+        </div>
+
+        <!-- MRP Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="mrp-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Active MRP Plans</p>
+                        <p class="text-3xl font-bold text-blue-600">{{ mrp_plans|length }}</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <i class="fas fa-project-diagram text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mrp-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Pending Requirements</p>
+                        <p class="text-3xl font-bold text-yellow-600">{{ pending_requirements|length }}</p>
+                    </div>
+                    <div class="bg-yellow-100 p-3 rounded-full">
+                        <i class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mrp-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Shortage Alerts</p>
+                        <p class="text-3xl font-bold text-red-600">{{ shortage_alerts|length }}</p>
+                    </div>
+                    <div class="bg-red-100 p-3 rounded-full">
+                        <i class="fas fa-warning text-red-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mrp-card rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Recent Runs</p>
+                        <p class="text-3xl font-bold text-green-600">{{ recent_runs|length }}</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MRP Plans and Requirements Tabs -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex">
+                    <button class="tab-button active py-4 px-6 text-sm font-medium border-b-2 border-blue-500 text-blue-600" onclick="switchTab('plans', this)">
+                        MRP Plans
+                    </button>
+                    <button class="tab-button py-4 px-6 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" onclick="switchTab('requirements', this)">
+                        Requirements
+                    </button>
+                    <button class="tab-button py-4 px-6 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" onclick="switchTab('alerts', this)">
+                        Shortage Alerts
+                    </button>
+                    <button class="tab-button py-4 px-6 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" onclick="switchTab('supply-demand', this)">
+                        Supply & Demand
+                    </button>
+                </nav>
+            </div>
+
+            <!-- MRP Plans Tab -->
+            <div id="plans-tab" class="tab-content p-6">
+                <div class="grid gap-4">
+                    {% for plan in mrp_plans %}
+                    <div class="requirement-card rounded-xl p-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-4 mb-2">
+                                    <h3 class="text-lg font-semibold text-gray-900">{{ plan.name }}</h3>
+                                    <span class="status-{{ plan.status }} px-3 py-1 rounded-full text-xs font-medium">
+                                        {{ plan.get_status_display }}
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600">
+                                    <div>
+                                        <span class="font-medium">Plan Date:</span> {{ plan.plan_date }}
+                                    </div>
+                                    <div>
+                                        <span class="font-medium">Horizon:</span> {{ plan.planning_horizon_days }} days
+                                    </div>
+                                    <div>
+                                        <span class="font-medium">Requirements:</span> {{ plan.requirements.count }}
+                                    </div>
+                                    <div>
+                                        <span class="font-medium">Calculation Time:</span> 
+                                        {% if plan.calculation_end and plan.calculation_start %}
+                                            {{ plan.calculation_end|timesince:plan.calculation_start }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="viewMRPPlan({{ plan.id }})" class="bg-blue-100 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                {% if plan.status == 'draft' %}
+                                <button onclick="runMRPPlan({{ plan.id }})" class="bg-green-100 text-green-600 px-4 py-2 rounded-lg hover:bg-green-200 transition-colors">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-12">
+                        <i class="fas fa-project-diagram text-gray-300 text-6xl mb-4"></i>
+                        <h3 class="text-xl font-medium text-gray-500 mb-2">No MRP Plans Found</h3>
+                        <p class="text-gray-400 mb-6">Create your first MRP plan to start material planning</p>
+                        <button onclick="createMRPPlan()" class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                            Create MRP Plan
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Requirements Tab -->
+            <div id="requirements-tab" class="tab-content p-6 hidden">
+                <div class="grid gap-4">
+                    {% for req in pending_requirements %}
+                    <div class="requirement-card rounded-xl p-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-4 mb-3">
+                                    <h4 class="font-semibold text-gray-900">{{ req.product.name }}</h4>
+                                    <span class="status-{{ req.status }} px-3 py-1 rounded-full text-xs font-medium">
+                                        {{ req.get_status_display }}
+                                    </span>
+                                    <span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-medium">
+                                        {{ req.get_source_type_display }}
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 text-sm">
+                                    <div>
+                                        <span class="text-gray-500">Required:</span>
+                                        <span class="font-medium">{{ req.required_quantity }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500">Available:</span>
+                                        <span class="font-medium">{{ req.available_quantity }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500">Shortage:</span>
+                                        <span class="font-medium text-red-600">{{ req.shortage_quantity }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500">Required Date:</span>
+                                        <span class="font-medium">{{ req.required_date }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500">Order Date:</span>
+                                        <span class="font-medium">{{ req.suggested_order_date }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                {% if req.source_type == 'purchase' %}
+                                <button onclick="createPurchaseRequest({{ req.id }})" class="bg-green-100 text-green-600 px-4 py-2 rounded-lg hover:bg-green-200 transition-colors">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </button>
+                                {% elif req.source_type == 'manufacture' %}
+                                <button onclick="createWorkOrder({{ req.id }})" class="bg-blue-100 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors">
+                                    <i class="fas fa-wrench"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-12">
+                        <i class="fas fa-check-circle text-green-300 text-6xl mb-4"></i>
+                        <h3 class="text-xl font-medium text-gray-500 mb-2">No Pending Requirements</h3>
+                        <p class="text-gray-400">All material requirements are satisfied</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Shortage Alerts Tab -->
+            <div id="alerts-tab" class="tab-content p-6 hidden">
+                <div class="grid gap-4">
+                    {% for alert in shortage_alerts %}
+                    <div class="requirement-card rounded-xl p-6 alert-high">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-4 mb-3">
+                                    <i class="fas fa-exclamation-triangle text-red-500"></i>
+                                    <h4 class="font-semibold text-gray-900">{{ alert.product.name }}</h4>
+                                    <span class="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-medium">
+                                        URGENT
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                                    <div>
+                                        <span class="text-gray-500">Shortage:</span>
+                                        <span class="font-medium text-red-600">{{ alert.shortage_quantity }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500">Required By:</span>
+                                        <span class="font-medium">{{ alert.required_date }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500">Days Left:</span>
+                                        <span class="font-medium">{{ alert.required_date|timeuntil }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500">Action:</span>
+                                        <span class="font-medium">{{ alert.get_source_type_display }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="resolveShortage({{ alert.id }})" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                                    <i class="fas fa-bolt"></i> Resolve
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-12">
+                        <i class="fas fa-shield-alt text-green-300 text-6xl mb-4"></i>
+                        <h3 class="text-xl font-medium text-gray-500 mb-2">No Shortage Alerts</h3>
+                        <p class="text-gray-400">All materials are adequately stocked</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Supply & Demand Tab -->
+            <div id="supply-demand-tab" class="tab-content p-6 hidden">
+                <div class="grid gap-4">
+                    {% for item in supply_demand_data %}
+                    <div class="requirement-card rounded-xl p-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-4 mb-3">
+                                    <h4 class="font-semibold text-gray-900">{{ item.product.name }}</h4>
+                                    <span class="{% if item.status == 'OK' %}bg-green-100 text-green-600{% elif item.status == 'Reorder Required' %}bg-red-100 text-red-600{% elif item.status == 'Below Safety Stock' %}bg-yellow-100 text-yellow-600{% else %}bg-gray-100 text-gray-600{% endif %} px-3 py-1 rounded-full text-xs font-medium">
+                                        {{ item.status }}
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-2 lg:grid-cols-6 gap-4 text-sm">
+                                    <div>
+                                        <span class="text-gray-500">Current Stock:</span>
+                                        <span class="font-medium">{{ item.current_stock }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500">Safety Stock:</span>
+                                        <span class="font-medium">{{ item.safety_stock }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500">Total Demand:</span>
+                                        <span class="font-medium">{{ item.total_demand }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500">Total Supply:</span>
+                                        <span class="font-medium">{{ item.total_supply }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500">Net Requirement:</span>
+                                        <span class="font-medium {% if item.net_requirement > 0 %}text-red-600{% else %}text-green-600{% endif %}">{{ item.net_requirement }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500">Days of Stock:</span>
+                                        <span class="font-medium">
+                                            {% if item.days_of_stock %}
+                                                {{ item.days_of_stock|floatformat:1 }}
+                                            {% else %}
+                                                ∞
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-12">
+                        <i class="fas fa-chart-line text-gray-300 text-6xl mb-4"></i>
+                        <h3 class="text-xl font-medium text-gray-500 mb-2">No Supply & Demand Data</h3>
+                        <p class="text-gray-400">Run MRP to generate supply and demand analysis</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MRP Run Progress Modal -->
+<div id="mrpProgressModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full">
+            <div class="text-center">
+                <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Running MRP Calculation</h3>
+                <p class="text-gray-600">Please wait while we calculate material requirements...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function switchTab(tabName, element) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+    
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
+        btn.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Show selected tab content
+    document.getElementById(tabName + '-tab').classList.remove('hidden');
+    
+    // Add active class to clicked button
+    element.classList.add('active', 'border-blue-500', 'text-blue-600');
+    element.classList.remove('border-transparent', 'text-gray-500');
+}
+
+function runMRPCalculation() {
+    document.getElementById('mrpProgressModal').classList.remove('hidden');
+    
+    fetch('/manufacturing/mrp/run/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('mrpProgressModal').classList.add('hidden');
+        if (data.success) {
+            showSuccessMessage('MRP calculation completed successfully!');
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            showErrorMessage('MRP calculation failed: ' + data.error);
+        }
+    })
+    .catch(error => {
+        document.getElementById('mrpProgressModal').classList.add('hidden');
+        showErrorMessage('Error running MRP: ' + error.message);
+    });
+}
+
+function viewSupplyDemandReport() {
+    window.open('/manufacturing/mrp/supply-demand-report/', '_blank');
+}
+
+function createMRPPlan() {
+    // Implement MRP plan creation
+    showInfoMessage('MRP Plan creation coming soon!');
+}
+
+function viewMRPPlan(planId) {
+    // Implement MRP plan view
+    showInfoMessage('View MRP Plan #' + planId);
+}
+
+function runMRPPlan(planId) {
+    // Implement specific MRP plan run
+    showInfoMessage('Running MRP Plan #' + planId);
+}
+
+function createPurchaseRequest(reqId) {
+    // Implement purchase request creation
+    showInfoMessage('Creating purchase request for requirement #' + reqId);
+}
+
+function createWorkOrder(reqId) {
+    // Implement work order creation
+    showInfoMessage('Creating work order for requirement #' + reqId);
+}
+
+function resolveShortage(alertId) {
+    // Implement shortage resolution
+    showInfoMessage('Resolving shortage alert #' + alertId);
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showSuccessMessage(message) {
+    // Implement success message display
+    alert('Success: ' + message);
+}
+
+function showErrorMessage(message) {
+    // Implement error message display
+    alert('Error: ' + message);
+}
+
+function showInfoMessage(message) {
+    // Implement info message display
+    alert('Info: ' + message);
+}
+</script>
+{% endblock %}

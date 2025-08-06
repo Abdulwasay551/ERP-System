@@ -757,3 +757,268 @@ class JobCard(models.Model):
     
     class Meta:
         ordering = ['-created_at']
+
+
+class DemandForecast(models.Model):
+    """Demand forecasting for MRP planning"""
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='demand_forecasts')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='demand_forecasts')
+    
+    # Forecast details
+    forecast_date = models.DateField()
+    forecast_quantity = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
+    # Forecast metadata
+    forecast_type = models.CharField(max_length=20, choices=[
+        ('manual', 'Manual'),
+        ('historical', 'Historical Based'),
+        ('seasonal', 'Seasonal'),
+        ('trend', 'Trend Based'),
+        ('ai_generated', 'AI Generated'),
+    ], default='manual')
+    
+    confidence_level = models.DecimalField(
+        max_digits=5, decimal_places=2, default=50,
+        help_text="Confidence level percentage (0-100)"
+    )
+    
+    # Planning parameters
+    planning_horizon_days = models.IntegerField(default=30)
+    is_active = models.BooleanField(default=True)
+    
+    # Tracking
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_forecasts')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Notes and adjustments
+    notes = models.TextField(blank=True)
+    manual_adjustment = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    final_forecast = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
+    def save(self, *args, **kwargs):
+        # Calculate final forecast with manual adjustments
+        self.final_forecast = self.forecast_quantity + self.manual_adjustment
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"{self.product.name} - {self.forecast_date} - {self.final_forecast}"
+    
+    class Meta:
+        unique_together = ['company', 'product', 'forecast_date']
+        ordering = ['forecast_date', 'product__name']
+
+
+class SupplierLeadTime(models.Model):
+    """Lead time matrix for supplier-product combinations"""
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='supplier_lead_times')
+    supplier = models.ForeignKey('crm.Partner', on_delete=models.CASCADE, related_name='lead_times')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='supplier_lead_times')
+    
+    # Lead time details
+    lead_time_days = models.IntegerField(default=0, help_text="Average lead time in days")
+    min_lead_time_days = models.IntegerField(default=0, help_text="Minimum lead time")
+    max_lead_time_days = models.IntegerField(default=0, help_text="Maximum lead time")
+    
+    # Quality and reliability metrics
+    on_time_delivery_rate = models.DecimalField(
+        max_digits=5, decimal_places=2, default=100,
+        help_text="On-time delivery percentage (0-100)"
+    )
+    
+    quality_rating = models.DecimalField(
+        max_digits=3, decimal_places=2, default=5,
+        help_text="Quality rating (1-10)"
+    )
+    
+    # Pricing and terms
+    price_per_unit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    minimum_order_quantity = models.DecimalField(max_digits=12, decimal_places=2, default=1)
+    
+    # Status and validity
+    is_preferred = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    valid_from = models.DateField(null=True, blank=True)
+    valid_to = models.DateField(null=True, blank=True)
+    
+    # Tracking
+    last_updated = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Performance tracking
+    actual_deliveries = models.IntegerField(default=0)
+    late_deliveries = models.IntegerField(default=0)
+    
+    def get_reliability_score(self):
+        """Calculate overall reliability score"""
+        if self.actual_deliveries == 0:
+            return 0
+        
+        delivery_score = self.on_time_delivery_rate / 100
+        quality_score = self.quality_rating / 10
+        
+        # Weighted average: 60% delivery, 40% quality
+        return (delivery_score * 0.6 + quality_score * 0.4) * 100
+    
+    def __str__(self):
+        return f"{self.supplier.name} - {self.product.name} - {self.lead_time_days} days"
+    
+    class Meta:
+        unique_together = ['company', 'supplier', 'product']
+        ordering = ['supplier__name', 'product__name']
+
+
+class MRPRunLog(models.Model):
+    """Log of MRP runs for audit and tracking"""
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='mrp_run_logs')
+    mrp_plan = models.ForeignKey(MRPPlan, on_delete=models.CASCADE, related_name='run_logs')
+    
+    # Run details
+    run_timestamp = models.DateTimeField(default=timezone.now)
+    trigger_source = models.CharField(max_length=20, choices=[
+        ('manual', 'Manual'),
+        ('scheduled', 'Scheduled'),
+        ('auto', 'Automatic'),
+        ('api', 'API'),
+    ], default='manual')
+    
+    # Execution details
+    execution_time_seconds = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    products_processed = models.IntegerField(default=0)
+    requirements_generated = models.IntegerField(default=0)
+    purchase_requests_created = models.IntegerField(default=0)
+    
+    # Status and results
+    status = models.CharField(max_length=20, choices=[
+        ('success', 'Success'),
+        ('error', 'Error'),
+        ('partial', 'Partial Success'),
+        ('cancelled', 'Cancelled'),
+    ], default='success')
+    
+    error_message = models.TextField(blank=True)
+    warnings = models.TextField(blank=True)
+    
+    # Configuration snapshot
+    configuration_snapshot = models.JSONField(default=dict, blank=True)
+    
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    def __str__(self):
+        return f"MRP Run - {self.run_timestamp} - {self.status}"
+    
+    class Meta:
+        ordering = ['-run_timestamp']
+
+
+class ReorderRule(models.Model):
+    """Reorder rules and policies for inventory planning"""
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='reorder_rules')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reorder_rules')
+    warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE, related_name='reorder_rules')
+    
+    # Reorder logic
+    reorder_method = models.CharField(max_length=20, choices=[
+        ('min_max', 'Min-Max'),
+        ('reorder_point', 'Reorder Point'),
+        ('lot_for_lot', 'Lot for Lot'),
+        ('fixed_quantity', 'Fixed Quantity'),
+        ('period_of_supply', 'Period of Supply'),
+    ], default='reorder_point')
+    
+    # Quantities
+    minimum_stock = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    maximum_stock = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    reorder_point = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    safety_stock = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    economic_order_quantity = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
+    # Lead time and demand
+    lead_time_days = models.IntegerField(default=0)
+    average_daily_demand = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    demand_variability = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    
+    # Auto-execution settings
+    auto_create_purchase_request = models.BooleanField(default=False)
+    auto_create_work_order = models.BooleanField(default=False)
+    
+    # Status
+    is_active = models.BooleanField(default=True)
+    last_triggered = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def calculate_reorder_point(self):
+        """Calculate reorder point based on lead time and demand"""
+        reorder_point = (self.average_daily_demand * self.lead_time_days) + self.safety_stock
+        return max(reorder_point, self.minimum_stock)
+    
+    def should_reorder(self, current_stock):
+        """Check if reorder is needed based on current stock"""
+        if self.reorder_method == 'reorder_point':
+            return current_stock <= self.reorder_point
+        elif self.reorder_method == 'min_max':
+            return current_stock <= self.minimum_stock
+        return False
+    
+    def calculate_order_quantity(self, current_stock):
+        """Calculate how much to order"""
+        if self.reorder_method == 'min_max':
+            return self.maximum_stock - current_stock
+        elif self.reorder_method == 'fixed_quantity':
+            return self.economic_order_quantity
+        elif self.reorder_method == 'lot_for_lot':
+            # Calculate based on future demand
+            return self.average_daily_demand * self.lead_time_days
+        else:
+            return self.economic_order_quantity
+    
+    def __str__(self):
+        return f"{self.product.name} - {self.warehouse.name} - {self.reorder_method}"
+    
+    class Meta:
+        unique_together = ['company', 'product', 'warehouse']
+        ordering = ['product__name', 'warehouse__name']
+
+
+class CapacityPlan(models.Model):
+    """Work center capacity planning"""
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='capacity_plans')
+    work_center = models.ForeignKey(WorkCenter, on_delete=models.CASCADE, related_name='capacity_plans')
+    
+    # Planning period
+    plan_date = models.DateField()
+    planning_horizon_days = models.IntegerField(default=30)
+    
+    # Capacity details
+    available_hours = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    planned_hours = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    actual_hours = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    # Utilization metrics
+    utilization_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    efficiency_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    
+    # Constraints and issues
+    is_overloaded = models.BooleanField(default=False)
+    capacity_issues = models.TextField(blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def calculate_utilization(self):
+        """Calculate capacity utilization"""
+        if self.available_hours > 0:
+            self.utilization_percentage = (self.planned_hours / self.available_hours) * 100
+            self.is_overloaded = self.utilization_percentage > 100
+        else:
+            self.utilization_percentage = 0
+            self.is_overloaded = False
+    
+    def __str__(self):
+        return f"{self.work_center.name} - {self.plan_date} - {self.utilization_percentage}%"
+    
+    class Meta:
+        unique_together = ['company', 'work_center', 'plan_date']
+        ordering = ['plan_date', 'work_center__name']

@@ -1,0 +1,334 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if attendance %}Edit Attendance{% else %}Mark Attendance{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    .form-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    .status-dependent {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="form-container">
+        <div class="form-header">
+            <h3><i class="fas fa-clock"></i> 
+                {% if attendance %}Edit Attendance{% else %}Mark Attendance{% endif %}
+            </h3>
+        </div>
+
+        <div class="form-card">
+            <form id="attendanceForm" method="post">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="employee_id" class="form-label">Employee <span class="text-danger">*</span></label>
+                    <select class="form-select" id="employee_id" name="employee_id" required>
+                        <option value="">Select an employee...</option>
+                        {% for employee in employees %}
+                        <option value="{{ employee.id }}" 
+                                {% if attendance and attendance.employee.id == employee.id %}selected{% endif %}>
+                            {{ employee.full_name }} ({{ employee.employee_id }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="invalid-feedback"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="date" class="form-label">Date <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="date" name="date" 
+                           value="{% if attendance %}{{ attendance.date|date:'Y-m-d' }}{% else %}{{ today|date:'Y-m-d' }}{% endif %}" required>
+                    <div class="invalid-feedback"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        {% for value, display in attendance_statuses %}
+                        <option value="{{ value }}" 
+                                {% if attendance and attendance.status == value %}selected{% endif %}>
+                            {{ display }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="shift_type" class="form-label">Shift Type</label>
+                    <select class="form-select" id="shift_type" name="shift_type">
+                        <option value="">Select shift type...</option>
+                        {% for shift_type in shift_types %}
+                        <option value="{{ shift_type.id }}" 
+                                data-start-time="{{ shift_type.start_time|time:'H:i' }}"
+                                data-end-time="{{ shift_type.end_time|time:'H:i' }}"
+                                {% if attendance and attendance.shift_type and attendance.shift_type.id == shift_type.id %}selected{% endif %}>
+                            {{ shift_type.name }} ({{ shift_type.start_time }} - {{ shift_type.end_time }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="status-dependent" id="timing-fields">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="check_in" class="form-label">Check In Time</label>
+                                <input type="time" class="form-control" id="check_in" name="check_in" 
+                                       value="{% if attendance and attendance.check_in %}{{ attendance.check_in|time:'H:i' }}{% endif %}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="check_out" class="form-label">Check Out Time</label>
+                                <input type="time" class="form-control" id="check_out" name="check_out" 
+                                       value="{% if attendance and attendance.check_out %}{{ attendance.check_out|time:'H:i' }}{% endif %}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="break_start" class="form-label">Break Start</label>
+                                <input type="time" class="form-control" id="break_start" name="break_start" 
+                                       value="{% if attendance and attendance.break_start %}{{ attendance.break_start|time:'H:i' }}{% endif %}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="break_end" class="form-label">Break End</label>
+                                <input type="time" class="form-control" id="break_end" name="break_end" 
+                                       value="{% if attendance and attendance.break_end %}{{ attendance.break_end|time:'H:i' }}{% endif %}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="location" class="form-label">Location</label>
+                    <input type="text" class="form-control" id="location" name="location" 
+                           value="{% if attendance %}{{ attendance.location }}{% endif %}"
+                           placeholder="Office, Home, Client site, etc.">
+                    <small class="form-text text-muted">Work location (optional)</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="notes" class="form-label">Notes</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="3" 
+                              placeholder="Any additional notes about attendance">{% if attendance %}{{ attendance.notes }}{% endif %}</textarea>
+                </div>
+
+                <div id="working-hours-info" class="alert alert-info" style="display: none;">
+                    <strong>Calculated Working Hours: <span id="hours-display">0</span></strong>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'hr:attendance_ui' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> 
+                        {% if attendance %}Update Attendance{% else %}Mark Attendance{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show/hide fields based on attendance status
+function toggleStatusFields() {
+    const status = document.getElementById('status').value;
+    const timingFields = document.getElementById('timing-fields');
+    
+    // Show timing fields for present, late, and half_day statuses
+    if (['present', 'late', 'half_day'].includes(status)) {
+        timingFields.style.display = 'block';
+    } else {
+        timingFields.style.display = 'none';
+    }
+}
+
+// Auto-fill check-in time from shift type
+function autoFillShiftTimes() {
+    const shiftSelect = document.getElementById('shift_type');
+    const selectedOption = shiftSelect.options[shiftSelect.selectedIndex];
+    
+    if (selectedOption.value) {
+        const startTime = selectedOption.getAttribute('data-start-time');
+        const endTime = selectedOption.getAttribute('data-end-time');
+        
+        if (!document.getElementById('check_in').value) {
+            document.getElementById('check_in').value = startTime;
+        }
+        if (!document.getElementById('check_out').value) {
+            document.getElementById('check_out').value = endTime;
+        }
+    }
+}
+
+// Calculate working hours
+function calculateWorkingHours() {
+    const checkIn = document.getElementById('check_in').value;
+    const checkOut = document.getElementById('check_out').value;
+    const breakStart = document.getElementById('break_start').value;
+    const breakEnd = document.getElementById('break_end').value;
+    
+    if (checkIn && checkOut) {
+        const checkInTime = new Date(`2000-01-01 ${checkIn}:00`);
+        const checkOutTime = new Date(`2000-01-01 ${checkOut}:00`);
+        
+        let totalMinutes = (checkOutTime - checkInTime) / (1000 * 60);
+        
+        // Subtract break time if both break start and end are provided
+        if (breakStart && breakEnd) {
+            const breakStartTime = new Date(`2000-01-01 ${breakStart}:00`);
+            const breakEndTime = new Date(`2000-01-01 ${breakEnd}:00`);
+            const breakMinutes = (breakEndTime - breakStartTime) / (1000 * 60);
+            
+            if (breakMinutes > 0) {
+                totalMinutes -= breakMinutes;
+            }
+        }
+        
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        
+        if (totalMinutes > 0) {
+            document.getElementById('hours-display').textContent = `${hours}h ${minutes}m`;
+            document.getElementById('working-hours-info').style.display = 'block';
+        } else {
+            document.getElementById('working-hours-info').style.display = 'none';
+        }
+    } else {
+        document.getElementById('working-hours-info').style.display = 'none';
+    }
+}
+
+// Event listeners
+document.getElementById('status').addEventListener('change', toggleStatusFields);
+document.getElementById('shift_type').addEventListener('change', autoFillShiftTimes);
+document.getElementById('check_in').addEventListener('change', calculateWorkingHours);
+document.getElementById('check_out').addEventListener('change', calculateWorkingHours);
+document.getElementById('break_start').addEventListener('change', calculateWorkingHours);
+document.getElementById('break_end').addEventListener('change', calculateWorkingHours);
+
+// Initialize on page load
+toggleStatusFields();
+calculateWorkingHours();
+
+// Validate break times
+document.getElementById('break_end').addEventListener('change', function() {
+    const breakStart = document.getElementById('break_start').value;
+    const breakEnd = this.value;
+    
+    if (breakStart && breakEnd && breakEnd <= breakStart) {
+        this.setCustomValidity('Break end time must be after break start time');
+        this.classList.add('is-invalid');
+    } else {
+        this.setCustomValidity('');
+        this.classList.remove('is-invalid');
+    }
+});
+
+// Validate check-out time
+document.getElementById('check_out').addEventListener('change', function() {
+    const checkIn = document.getElementById('check_in').value;
+    const checkOut = this.value;
+    
+    if (checkIn && checkOut && checkOut <= checkIn) {
+        this.setCustomValidity('Check out time must be after check in time');
+        this.classList.add('is-invalid');
+    } else {
+        this.setCustomValidity('');
+        this.classList.remove('is-invalid');
+    }
+});
+
+// Form submission
+document.getElementById('attendanceForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    // Show loading state
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    submitBtn.disabled = true;
+    
+    // Clear previous errors
+    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    
+    const url = '{% url "hr:attendance_mark" %}';
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'Attendance {% if attendance %}updated{% else %}marked{% endif %} successfully',
+                timer: 1500,
+                showConfirmButton: false
+            }).then(() => {
+                window.location.href = '{% url "hr:attendance_ui" %}';
+            });
+        } else {
+            // Show error
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.error || 'An error occurred while saving attendance'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An unexpected error occurred'
+        });
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+{% block title %}Leave Management | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .leave-card {
+        background: linear-gradient(135deg, rgba(139, 69, 19, 0.1), rgba(101, 163, 13, 0.1));
+        border: 1px solid rgba(139, 69, 19, 0.2);
+        transition: all 0.3s ease;
+    }
+    .leave-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(139, 69, 19, 0.15);
+    }
+    .leave-status {
+        padding: 0.5rem 1rem;
+        border-radius: 0.75rem;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+    .status-pending { background-color: #fef3c7; color: #92400e; }
+    .status-approved { background-color: #d1fae5; color: #065f46; }
+    .status-rejected { background-color: #fee2e2; color: #991b1b; }
+    .status-cancelled { background-color: #f3f4f6; color: #6b7280; }
+    .balance-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Leave Management</h1>
+                <p class="text-gray-600">Manage employee leave applications and balances</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'hr:leave_apply' %}" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Apply for Leave
+                </a>
+            </div>
+        </div>
+
+        <!-- Leave Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-yellow-100 rounded-lg">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Pending Requests</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ leave_stats.pending }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Approved Today</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ leave_stats.approved_today }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-red-100 rounded-lg">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">On Leave Today</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ leave_stats.on_leave_today }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Requests</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ leave_stats.total }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="leave-card rounded-2xl p-6 mb-8">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Employee</label>
+                    <select name="employee" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Employees</option>
+                        {% for emp in employees %}
+                        <option value="{{ emp.id }}" {% if employee_filter == emp.id|stringformat:"s" %}selected{% endif %}>
+                            {{ emp.full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Leave Type</label>
+                    <select name="leave_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Types</option>
+                        {% for leave_type in leave_types %}
+                        <option value="{{ leave_type.id }}" {% if leave_type_filter == leave_type.id|stringformat:"s" %}selected{% endif %}>
+                            {{ leave_type.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Status</option>
+                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+                        <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
+                        <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+                    <input type="date" name="from_date" value="{{ from_date }}" 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Leave Requests List -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm">
+                    <div class="p-6 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">Leave Requests</h2>
+                    </div>
+                    <div class="divide-y divide-gray-200">
+                        {% for leave in leave_requests %}
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                                            {% if leave.employee.profile_picture %}
+                                            <img class="h-10 w-10 rounded-full" src="{{ leave.employee.profile_picture.url }}" alt="">
+                                            {% else %}
+                                            <span class="text-sm font-medium text-gray-700">{{ leave.employee.first_name.0 }}{{ leave.employee.last_name.0 }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <h3 class="text-sm font-medium text-gray-900">{{ leave.employee.full_name }}</h3>
+                                        <p class="text-sm text-gray-500">{{ leave.employee.designation.title|default:"Employee" }}</p>
+                                    </div>
+                                </div>
+                                <span class="leave-status status-{{ leave.status }}">
+                                    {{ leave.get_status_display }}
+                                </span>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <p class="text-sm text-gray-500">Leave Type</p>
+                                    <p class="font-medium">{{ leave.leave_type.name }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Duration</p>
+                                    <p class="font-medium">{{ leave.start_date|date:"M d" }} - {{ leave.end_date|date:"M d, Y" }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Days</p>
+                                    <p class="font-medium">{{ leave.days_requested }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Applied On</p>
+                                    <p class="font-medium">{{ leave.created_at|date:"M d, Y" }}</p>
+                                </div>
+                            </div>
+                            
+                            {% if leave.reason %}
+                            <div class="mb-4">
+                                <p class="text-sm text-gray-500 mb-1">Reason</p>
+                                <p class="text-sm text-gray-700">{{ leave.reason }}</p>
+                            </div>
+                            {% endif %}
+                            
+                            {% if leave.status == 'pending' %}
+                            <div class="flex space-x-3">
+                                <button onclick="editLeave({{ leave.id }})" class="text-blue-600 hover:text-blue-800 text-sm font-medium">Edit</button>
+                                <button onclick="approveLeave({{ leave.id }})" class="text-green-600 hover:text-green-800 text-sm font-medium">Approve</button>
+                                <button onclick="rejectLeave({{ leave.id }})" class="text-red-600 hover:text-red-800 text-sm font-medium">Reject</button>
+                            </div>
+                            {% else %}
+                            <div class="flex space-x-3">
+                                <button onclick="viewLeave({{ leave.id }})" class="text-blue-600 hover:text-blue-800 text-sm font-medium">View Details</button>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                        <div class="p-6 text-center text-gray-500">
+                            No leave requests found for the selected criteria.
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Pagination -->
+                {% if leave_requests.has_other_pages %}
+                <div class="mt-6 flex justify-center">
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                        {% if leave_requests.has_previous %}
+                        <a href="?page={{ leave_requests.previous_page_number }}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}{% if leave_type_filter %}&leave_type={{ leave_type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if from_date %}&from_date={{ from_date }}{% endif %}" 
+                           class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            Previous
+                        </a>
+                        {% endif %}
+                        
+                        {% for num in leave_requests.paginator.page_range %}
+                        {% if leave_requests.number == num %}
+                        <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">{{ num }}</span>
+                        {% else %}
+                        <a href="?page={{ num }}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}{% if leave_type_filter %}&leave_type={{ leave_type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if from_date %}&from_date={{ from_date }}{% endif %}" 
+                           class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{{ num }}</a>
+                        {% endif %}
+                        {% endfor %}
+                        
+                        {% if leave_requests.has_next %}
+                        <a href="?page={{ leave_requests.next_page_number }}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}{% if leave_type_filter %}&leave_type={{ leave_type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if from_date %}&from_date={{ from_date }}{% endif %}" 
+                           class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            Next
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Leave Balances Sidebar -->
+            <div class="space-y-6">
+                <!-- Leave Balances -->
+                <div class="balance-card rounded-2xl p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Leave Balances</h3>
+                    <div class="space-y-4">
+                        {% for balance in leave_balances %}
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="font-medium text-gray-900">{{ balance.leave_type.name }}</p>
+                                <p class="text-sm text-gray-500">{{ balance.employee.full_name }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-medium text-gray-900">{{ balance.remaining_balance }}/{{ balance.allocated_balance }}</p>
+                                <p class="text-sm text-gray-500">days</p>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-sm text-gray-500">No leave balances found.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <a href="{% url 'hr:leave_apply' %}" class="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Apply for Leave
+                        </a>
+                        <button onclick="exportLeaveReport()" class="block w-full text-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                            Export Report
+                        </button>
+                        <a href="#" class="block w-full text-center px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors">
+                            Leave Calendar
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Leave Types -->
+                <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Leave Types</h3>
+                    <div class="space-y-2">
+                        {% for leave_type in leave_types %}
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-700">{{ leave_type.name }}</span>
+                            <span class="text-sm text-gray-500">{{ leave_type.max_days }} days</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function editLeave(leaveId) {
+    // Navigate to leave edit form page
+    window.location.href = `/hr/leaves/form/${leaveId}/`;
+}
+
+function viewLeave(leaveId) {
+    // Navigate to leave detail page
+    window.location.href = `/hr/leaves/${leaveId}/`;
+}
+
+function approveLeave(leaveId) {
+    if (confirm('Are you sure you want to approve this leave request?')) {
+        fetch(`/hr/leave-approve/${leaveId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while approving the leave request.');
+        });
+    }
+}
+
+function rejectLeave(leaveId) {
+    const reason = prompt('Please enter the reason for rejection:');
+    if (reason) {
+        fetch(`/hr/leave-reject/${leaveId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ reason: reason })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while rejecting the leave request.');
+        });
+    }
+}
+
+function exportLeaveReport() {
+    // Implement export functionality
+    window.location.href = '/hr/leave-export/';
+}
+</script>
+{% endblock %}

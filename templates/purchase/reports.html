@@ -1,670 +1,239 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}Purchase Reports Dashboard{% endblock %}
+
+{% block title %}Purchase Reports | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        transition: all 0.3s ease;
+    }
+    .report-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
+    }
+    .metric-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-    <div class="container mx-auto p-8">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold text-gray-800">Purchase Analytics Dashboard</h1>
-            <div class="flex space-x-2">
-                <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
-                    <i class="fas fa-download mr-2"></i>Export Report
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Purchase Reports & Analytics</h1>
+                <p class="text-gray-600">Comprehensive insights into procurement performance and supplier metrics</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="exportAllReports()" class="action-btn bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Export Report
                 </button>
-                <button class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm">
-                    <i class="fas fa-filter mr-2"></i>Filter
-                </button>
+                <a href="{% url 'purchase:dashboard' %}" class="action-btn bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    Dashboard
+                </a>
             </div>
         </div>
 
-        <!-- Enhanced Summary Stats -->
+        <!-- Overview Metrics -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg rounded-xl p-6 transform hover:scale-105 transition-transform">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-sm font-medium opacity-90">Total Purchase Orders</h3>
-                        <p class="text-3xl font-bold">{{ total_purchase_orders }}</p>
-                        <p class="text-xs opacity-75 mt-1">
-                            <i class="fas fa-arrow-up mr-1"></i>+12% from last month
-                        </p>
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                        </svg>
                     </div>
-                    <div class="bg-white bg-opacity-20 text-black p-3 rounded-full">
-                        <i class="fas fa-shopping-cart text-2xl"></i>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ total_purchase_orders|default:0 }}</h3>
+                        <p class="text-gray-600">Purchase Orders</p>
+                        <p class="text-xs text-green-600 mt-1">+12% from last month</p>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg rounded-xl p-6 transform hover:scale-105 transition-transform">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-sm font-medium opacity-90">Goods Received</h3>
-                        <p class="text-3xl font-bold">{{ total_goods_received }}</p>
-                        <p class="text-xs opacity-75 mt-1">
-                            <i class="fas fa-arrow-up mr-1"></i>+8% from last month
-                        </p>
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        </svg>
                     </div>
-                    <div class="bg-white bg-opacity-20 text-black p-3 rounded-full">
-                        <i class="fas fa-box text-2xl"></i>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ total_goods_received|default:0 }}</h3>
+                        <p class="text-gray-600">Goods Received</p>
+                        <p class="text-xs text-blue-600 mt-1">+8% from last month</p>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg rounded-xl p-6 transform hover:scale-105 transition-transform">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-sm font-medium opacity-90">Total Returns</h3>
-                        <p class="text-3xl font-bold">{{ total_returns }}</p>
-                        <p class="text-xs opacity-75 mt-1">
-                            <i class="fas fa-arrow-down mr-1"></i>-5% from last month
-                        </p>
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                        </svg>
                     </div>
-                    <div class="bg-white bg-opacity-20 text-black p-3 rounded-full">
-                        <i class="fas fa-undo text-2xl"></i>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ total_returns|default:0 }}</h3>
+                        <p class="text-gray-600">Total Returns</p>
+                        <p class="text-xs text-red-600 mt-1">-5% from last month</p>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg rounded-xl p-6 transform hover:scale-105 transition-transform">
-                <div class="flex items-center justify-between">
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
                     <div>
-                        <h3 class="text-sm font-medium opacity-90">Active Suppliers</h3>
-                        <p class="text-3xl font-bold">{{ active_suppliers|default:0 }}</p>
-                        <p class="text-xs opacity-75 mt-1">
-                            <i class="fas fa-arrow-up mr-1"></i>+3 new this month
-                        </p>
-                    </div>
-                    <div class="bg-white bg-opacity-20 text-black p-3 rounded-full">
-                        <i class="fas fa-users text-2xl"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- KPI Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white shadow-lg rounded-xl p-6 border-l-4 border-indigo-500">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-700">Average Order Value</h3>
-                        <p class="text-2xl font-bold text-indigo-600">${{ avg_order_value|default:"0"|floatformat:2 }}</p>
-                    </div>
-                    <div class="text-indigo-500">
-                        <i class="fas fa-chart-line text-3xl"></i>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white shadow-lg rounded-xl p-6 border-l-4 border-yellow-500">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-700">On-Time Delivery Rate</h3>
-                        <p class="text-2xl font-bold text-yellow-600">{{ on_time_delivery_rate|default:"95"|floatformat:1 }}%</p>
-                    </div>
-                    <div class="text-yellow-500">
-                        <i class="fas fa-clock text-3xl"></i>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white shadow-lg rounded-xl p-6 border-l-4 border-teal-500">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-700">Return Rate</h3>
-                        <p class="text-2xl font-bold text-teal-600">{{ return_rate|default:"2.3"|floatformat:1 }}%</p>
-                    </div>
-                    <div class="text-teal-500">
-                        <i class="fas fa-percentage text-3xl"></i>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ active_suppliers|default:0 }}</h3>
+                        <p class="text-gray-600">Active Suppliers</p>
+                        <p class="text-xs text-yellow-600 mt-1">+3 new this month</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Charts Section -->
+        <!-- Report Categories -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <!-- Monthly Purchase Orders Chart -->
-            <div class="bg-white shadow-lg rounded-xl p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-semibold text-gray-800">Monthly Purchase Orders</h2>
-                    <div class="flex space-x-2">
-                        <button class="text-blue-500 hover:text-blue-700 text-sm">
-                            <i class="fas fa-expand-arrows-alt"></i>
-                        </button>
+            <!-- Purchase Performance Analysis -->
+            <div class="report-card rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Purchase Performance Analysis</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center p-3 bg-white rounded-lg">
+                        <div>
+                            <span class="font-medium text-gray-900">Average Order Value</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-2xl font-bold text-blue-600">${{ avg_order_value|default:"0"|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-white rounded-lg">
+                        <div>
+                            <span class="font-medium text-gray-900">On-Time Delivery Rate</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-2xl font-bold text-green-600">{{ on_time_delivery_rate|default:"95"|floatformat:1 }}%</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-white rounded-lg">
+                        <div>
+                            <span class="font-medium text-gray-900">Return Rate</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-2xl font-bold text-purple-600">{{ return_rate|default:"2.3"|floatformat:1 }}%</span>
+                        </div>
                     </div>
                 </div>
-                <div style="position: relative; height: 300px; background: linear-gradient(145deg, #f8fafc, #f1f5f9); border-radius: 8px; padding: 8px;">
+            </div>
+
+            <!-- Monthly Trends -->
+            <div class="report-card rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Monthly Purchase Trends</h3>
+                <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
                     <canvas id="purchaseOrdersChart"></canvas>
                 </div>
             </div>
-
-            <!-- Purchase Order Status Pie Chart -->
-            <div class="bg-white shadow-lg rounded-xl p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-semibold text-gray-800">Order Status Distribution</h2>
-                    <div class="flex space-x-2">
-                        <button class="text-blue-500 hover:text-blue-700 text-sm">
-                            <i class="fas fa-expand-arrows-alt"></i>
-                        </button>
-                    </div>
-                </div>
-                <div style="position: relative; height: 300px; background: linear-gradient(145deg, #f8fafc, #f1f5f9); border-radius: 8px; padding: 8px;">
-                    <canvas id="orderStatusChart"></canvas>
-                </div>
+        </div>
             </div>
         </div>
 
-        <!-- Second Row Charts -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <!-- Goods Receipt vs Returns Chart -->
-            <div class="bg-white shadow-lg rounded-xl p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-semibold text-gray-800">Goods Receipt vs Returns</h2>
-                    <div class="flex space-x-2">
-                        <button class="text-blue-500 hover:text-blue-700 text-sm">
-                            <i class="fas fa-expand-arrows-alt"></i>
-                        </button>
+        <!-- Quick Reports -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <a href="{% url 'purchase:purchaseorders_ui' %}" class="report-card rounded-2xl p-6 block hover:shadow-lg transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                        </svg>
                     </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Purchase Orders</h3>
                 </div>
-                <div style="position: relative; height: 300px; background: linear-gradient(145deg, #f8fafc, #f1f5f9); border-radius: 8px; padding: 8px;">
-                    <canvas id="goodsReceiptChart"></canvas>
-                </div>
-            </div>
+                <p class="text-gray-600">View and manage all purchase orders</p>
+            </a>
 
-            <!-- Supplier Performance Chart -->
-            <div class="bg-white shadow-lg rounded-xl p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-semibold text-gray-800">Top Suppliers by Volume</h2>
-                    <div class="flex space-x-2">
-                        <button class="text-blue-500 hover:text-blue-700 text-sm">
-                            <i class="fas fa-expand-arrows-alt"></i>
-                        </button>
+            <a href="{% url 'purchase:grns_ui' %}" class="report-card rounded-2xl p-6 block hover:shadow-lg transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        </svg>
                     </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Goods Received</h3>
                 </div>
-                <div style="position: relative; height: 300px; background: linear-gradient(145deg, #f8fafc, #f1f5f9); border-radius: 8px; padding: 8px;">
-                    <canvas id="supplierChart"></canvas>
-                </div>
-            </div>
-        </div>
+                <p class="text-gray-600">Track goods receipt and delivery status</p>
+            </a>
 
-        <!-- Additional Analytics -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <!-- Purchase Trends -->
-            <div class="bg-white shadow-lg rounded-xl p-6">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">Purchase Trends</h2>
-                <div style="position: relative; height: 200px; background: linear-gradient(145deg, #f8fafc, #f1f5f9); border-radius: 8px; padding: 8px;">
-                    <canvas id="trendsChart"></canvas>
+            <a href="{% url 'purchase:returns_ui' %}" class="report-card rounded-2xl p-6 block hover:shadow-lg transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Returns Management</h3>
                 </div>
-            </div>
+                <p class="text-gray-600">Process purchase returns and refunds</p>
+            </a>
 
-            <!-- Delivery Performance -->
-            <div class="bg-white shadow-lg rounded-xl p-6">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">Delivery Performance</h2>
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">On Time</span>
-                        <div class="flex items-center">
-                            <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
-                                <div class="bg-green-500 h-2 rounded-full" style="width: 85%"></div>
-                            </div>
-                            <span class="text-sm font-medium">85%</span>
-                        </div>
+            <a href="{% url 'purchase:suppliers_ui' %}" class="report-card rounded-2xl p-6 block hover:shadow-lg transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
                     </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">Early</span>
-                        <div class="flex items-center">
-                            <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
-                                <div class="bg-blue-500 h-2 rounded-full" style="width: 10%"></div>
-                            </div>
-                            <span class="text-sm font-medium">10%</span>
-                        </div>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">Late</span>
-                        <div class="flex items-center">
-                            <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
-                                <div class="bg-red-500 h-2 rounded-full" style="width: 5%"></div>
-                            </div>
-                            <span class="text-sm font-medium">5%</span>
-                        </div>
-                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Supplier Management</h3>
                 </div>
-            </div>
+                <p class="text-gray-600">Manage supplier relationships and performance</p>
+            </a>
 
-            <!-- Recent Activities -->
-            <div class="bg-white shadow-lg rounded-xl p-6">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">Recent Activities</h2>
-                <div class="space-y-3">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <div class="flex-1">
-                            <p class="text-sm text-gray-700">PO #12345 approved</p>
-                            <p class="text-xs text-gray-500">2 hours ago</p>
-                        </div>
+            <a href="{% url 'purchase:dashboard' %}" class="report-card rounded-2xl p-6 block hover:shadow-lg transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
                     </div>
-                    <div class="flex items-center space-x-3">
-                        <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <div class="flex-1">
-                            <p class="text-sm text-gray-700">GRN #67890 received</p>
-                            <p class="text-xs text-gray-500">4 hours ago</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                        <div class="flex-1">
-                            <p class="text-sm text-gray-700">Return #11223 processed</p>
-                            <p class="text-xs text-gray-500">6 hours ago</p>
-                        </div>
-                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Purchase Analytics</h3>
                 </div>
-            </div>
+                <p class="text-gray-600">Analyze purchase performance and trends</p>
+            </a>
+
+            <a href="{% url 'purchase:dashboard' %}" class="report-card rounded-2xl p-6 block hover:shadow-lg transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Budget Tracking</h3>
+                </div>
+                <p class="text-gray-600">Monitor purchase budgets and spending</p>
+            </a>
         </div>
     </div>
+</div>
+
+<script>
+function exportAllReports() {
+    alert('Exporting all purchase reports...');
+}
+</script>
 {% endblock %}
-{% block scripts %}
-    <script>
-        // Wait for DOM to be ready
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Dashboard loading...');
-            console.log('Chart.js version:', Chart.version);
-
-            // Check if Chart.js is loaded
-            if (typeof Chart === 'undefined') {
-                console.error('Chart.js is not loaded!');
-                return;
-            }
-
-            // Chart.js configuration with modern styling
-            Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
-            Chart.defaults.font.size = 12;
-
-            // Provide default empty data if Django variables are not set
-            const purchaseOrderLabels = {{ monthly_purchase_orders_labels|safe|default:"[]" }};
-            const purchaseOrderData = {{ monthly_purchase_orders_data|safe|default:"[]" }};
-            const goodsReceivedLabels = {{ monthly_goods_received_labels|safe|default:"[]" }};
-            const goodsReceivedData = {{ monthly_goods_received_data|safe|default:"[]" }};
-            const returnsData = {{ monthly_returns_data|safe|default:"[]" }};
-
-            console.log('Data loaded:', {
-                purchaseOrderLabels,
-                purchaseOrderData,
-                goodsReceivedLabels,
-                goodsReceivedData,
-                returnsData
-            });
-
-            // Monthly Purchase Orders Chart
-            try {
-                const purchaseOrdersCtx = document.getElementById('purchaseOrdersChart');
-                if (purchaseOrdersCtx) {
-                    new Chart(purchaseOrdersCtx, {
-                        type: 'line',
-                        data: {
-                            labels: purchaseOrderLabels.length ? purchaseOrderLabels : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                            datasets: [{
-                                label: 'Purchase Orders',
-                                data: purchaseOrderData.length ? purchaseOrderData : [12, 19, 15, 25, 22, 30],
-                                borderColor: '#10b981',
-                                backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                                borderWidth: 3,
-                                fill: true,
-                                tension: 0.4,
-                                pointBackgroundColor: '#10b981',
-                                pointBorderColor: '#ffffff',
-                                pointBorderWidth: 2,
-                                pointRadius: 6,
-                                pointHoverRadius: 8
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    display: false
-                                },
-                                tooltip: {
-                                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                                    titleColor: '#ffffff',
-                                    bodyColor: '#ffffff',
-                                    borderColor: '#10b981',
-                                    borderWidth: 2,
-                                    cornerRadius: 8
-                                }
-                            },
-                            scales: {
-                                x: {
-                                    grid: {
-                                        display: true,
-                                        color: 'rgba(0, 0, 0, 0.1)'
-                                    },
-                                    ticks: {
-                                        color: '#374151',
-                                        font: {
-                                            size: 12,
-                                            weight: '500'
-                                        }
-                                    }
-                                },
-                                y: {
-                                    beginAtZero: true,
-                                    grid: {
-                                        color: 'rgba(0, 0, 0, 0.1)'
-                                    },
-                                    ticks: {
-                                        color: '#374151',
-                                        font: {
-                                            size: 12,
-                                            weight: '500'
-                                        }
-                                    }
-                                }
-                            },
-                            interaction: {
-                                intersect: false,
-                                mode: 'index'
-                            }
-                        }
-                    });
-                    console.log('Purchase Orders chart created');
-                }
-            } catch (error) {
-                console.error('Error creating Purchase Orders chart:', error);
-            }
-
-            // Order Status Pie Chart
-            try {
-                const orderStatusCtx = document.getElementById('orderStatusChart');
-                if (orderStatusCtx) {
-                    new Chart(orderStatusCtx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: ['Approved', 'Pending', 'Completed', 'Cancelled'],
-                            datasets: [{
-                                data: [45, 20, 30, 5],
-                                backgroundColor: [
-                                    '#10b981',  // Emerald for Approved
-                                    '#f59e0b',  // Amber for Pending  
-                                    '#3b82f6',  // Blue for Completed
-                                    '#ef4444'   // Red for Cancelled
-                                ],
-                                borderColor: [
-                                    '#059669',
-                                    '#d97706', 
-                                    '#2563eb',
-                                    '#dc2626'
-                                ],
-                                borderWidth: 2,
-                                hoverOffset: 6,
-                                hoverBorderWidth: 3
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    position: 'bottom',
-                                    labels: {
-                                        usePointStyle: true,
-                                        padding: 20,
-                                        color: '#1f2937',
-                                        font: {
-                                            size: 13,
-                                            weight: '600'
-                                        }
-                                    }
-                                },
-                                tooltip: {
-                                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                                    titleColor: '#ffffff',
-                                    bodyColor: '#ffffff',
-                                    cornerRadius: 8,
-                                    borderColor: '#10b981',
-                                    borderWidth: 1
-                                }
-                            },
-                            cutout: '60%'
-                        }
-                    });
-                    console.log('Order Status chart created');
-                }
-            } catch (error) {
-                console.error('Error creating Order Status chart:', error);
-            }
-
-            // Goods Receipt vs Returns Chart
-            try {
-                const goodsReceiptCtx = document.getElementById('goodsReceiptChart');
-                if (goodsReceiptCtx) {
-                    new Chart(goodsReceiptCtx, {
-                        type: 'bar',
-                        data: {
-                            labels: goodsReceivedLabels.length ? goodsReceivedLabels : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                            datasets: [
-                                {
-                                    label: 'Goods Received',
-                                    data: goodsReceivedData.length ? goodsReceivedData : [25, 35, 30, 40, 28, 45],
-                                    backgroundColor: '#10b981',
-                                    borderColor: '#059669',
-                                    borderWidth: 2,
-                                    borderRadius: 4,
-                                    borderSkipped: false
-                                },
-                                {
-                                    label: 'Returns',
-                                    data: returnsData.length ? returnsData : [3, 5, 2, 4, 3, 6],
-                                    backgroundColor: '#ef4444',
-                                    borderColor: '#dc2626',
-                                    borderWidth: 2,
-                                    borderRadius: 4,
-                                    borderSkipped: false
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    position: 'top',
-                                    labels: {
-                                        usePointStyle: true,
-                                        padding: 20,
-                                        color: '#1f2937',
-                                        font: {
-                                            size: 13,
-                                            weight: '600'
-                                        }
-                                    }
-                                },
-                                tooltip: {
-                                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                                    titleColor: '#ffffff',
-                                    bodyColor: '#ffffff',
-                                    cornerRadius: 8,
-                                    borderColor: '#10b981',
-                                    borderWidth: 1
-                                }
-                            },
-                            scales: {
-                                x: {
-                                    grid: {
-                                        display: true,
-                                        color: 'rgba(0, 0, 0, 0.1)'
-                                    },
-                                    ticks: {
-                                        color: '#374151',
-                                        font: {
-                                            size: 12,
-                                            weight: '500'
-                                        }
-                                    }
-                                },
-                                y: {
-                                    beginAtZero: true,
-                                    grid: {
-                                        color: 'rgba(0, 0, 0, 0.1)'
-                                    },
-                                    ticks: {
-                                        color: '#374151',
-                                        font: {
-                                            size: 12,
-                                            weight: '500'
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
-                    console.log('Goods Receipt chart created');
-                }
-            } catch (error) {
-                console.error('Error creating Goods Receipt chart:', error);
-            }
-
-            // Supplier Performance Chart (Fixed for Chart.js v3+)
-            try {
-                const supplierCtx = document.getElementById('supplierChart');
-                if (supplierCtx) {
-                    new Chart(supplierCtx, {
-                        type: 'bar',
-                        data: {
-                            labels: ['Supplier A', 'Supplier B', 'Supplier C', 'Supplier D', 'Supplier E'],
-                            datasets: [{
-                                label: 'Order Volume',
-                                data: [85, 75, 65, 55, 45],
-                                backgroundColor: [
-                                    '#8b5cf6',  // Purple
-                                    '#3b82f6',  // Blue
-                                    '#10b981',  // Emerald
-                                    '#f59e0b',  // Amber
-                                    '#ef4444'   // Red
-                                ],
-                                borderColor: [
-                                    '#7c3aed',
-                                    '#2563eb', 
-                                    '#059669',
-                                    '#d97706',
-                                    '#dc2626'
-                                ],
-                                borderWidth: 2,
-                                borderRadius: 4,
-                                borderSkipped: false
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            indexAxis: 'y', // This makes it horizontal
-                            plugins: {
-                                legend: {
-                                    display: false
-                                },
-                                tooltip: {
-                                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                                    titleColor: '#ffffff',
-                                    bodyColor: '#ffffff',
-                                    cornerRadius: 8,
-                                    borderColor: '#10b981',
-                                    borderWidth: 1
-                                }
-                            },
-                            scales: {
-                                x: {
-                                    beginAtZero: true,
-                                    grid: {
-                                        color: 'rgba(0, 0, 0, 0.1)'
-                                    },
-                                    ticks: {
-                                        color: '#374151',
-                                        font: {
-                                            size: 12,
-                                            weight: '500'
-                                        }
-                                    }
-                                },
-                                y: {
-                                    grid: {
-                                        display: true,
-                                        color: 'rgba(0, 0, 0, 0.1)'
-                                    },
-                                    ticks: {
-                                        color: '#374151',
-                                        font: {
-                                            size: 12,
-                                            weight: '500'
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
-                    console.log('Supplier chart created');
-                }
-            } catch (error) {
-                console.error('Error creating Supplier chart:', error);
-            }
-
-            // Purchase Trends Sparkline
-            try {
-                const trendsCtx = document.getElementById('trendsChart');
-                if (trendsCtx) {
-                    new Chart(trendsCtx, {
-                        type: 'line',
-                        data: {
-                            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                            datasets: [{
-                                data: [12, 19, 15, 25, 22, 30],
-                                borderColor: '#10b981',
-                                backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                                borderWidth: 3,
-                                fill: true,
-                                tension: 0.4,
-                                pointRadius: 0
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    display: false
-                                },
-                                tooltip: {
-                                    enabled: false
-                                }
-                            },
-                            scales: {
-                                x: {
-                                    display: false
-                                },
-                                y: {
-                                    display: false
-                                }
-                            },
-                            elements: {
-                                point: {
-                                    radius: 0
-                                }
-                            }
-                        }
-                    });
-                    console.log('Trends chart created');
-                }
-            } catch (error) {
-                console.error('Error creating Trends chart:', error);
-            }
-
-            // Add hover effects to stat cards
-            const statCards = document.querySelectorAll('.transform');
-            statCards.forEach(card => {
-                card.addEventListener('mouseenter', function() {
-                    this.style.transform = 'scale(1.05)';
-                });
-                card.addEventListener('mouseleave', function() {
-                    this.style.transform = 'scale(1)';
-                });
-            });
-
-            console.log('Dashboard fully loaded');
-        });
-    </script>
-{% endblock %}
+                      

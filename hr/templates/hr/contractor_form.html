@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if contractor %}Edit Contractor{% else %}Add Contractor{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 700px;
+        margin: 0 auto;
+    }
+    .form-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    .contract-type-dependent {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="form-container">
+        <div class="form-header">
+            <h3><i class="fas fa-user-tie"></i> 
+                {% if contractor %}Edit Contractor{% else %}Add New Contractor{% endif %}
+            </h3>
+        </div>
+
+        <div class="form-card">
+            <form id="contractorForm" method="post">
+                {% csrf_token %}
+                
+                {% if not contractor %}
+                <div class="mb-3">
+                    <label for="partner_id" class="form-label">Partner <span class="text-danger">*</span></label>
+                    <select class="form-select" id="partner_id" name="partner_id" required>
+                        <option value="">Select a partner...</option>
+                        {% for partner in partners %}
+                        <option value="{{ partner.id }}">{{ partner.name }} - {{ partner.get_partner_type_display }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="form-text text-muted">Select from existing partners or <a href="{% url 'crm:partners_add' %}" target="_blank">create a new partner</a></small>
+                    <div class="invalid-feedback"></div>
+                </div>
+                {% else %}
+                <div class="mb-3">
+                    <label class="form-label">Partner</label>
+                    <div class="form-control-plaintext">
+                        <strong>{{ contractor.partner.name }}</strong> - {{ contractor.partner.get_partner_type_display }}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label for="contract_type" class="form-label">Contract Type</label>
+                    <select class="form-select" id="contract_type" name="contract_type">
+                        {% for value, display in contract_types %}
+                        <option value="{{ value }}" 
+                                {% if contractor and contractor.contract_type == value %}selected{% endif %}>
+                            {{ display }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3 contract-type-dependent" id="hourly-rate-field">
+                            <label for="hourly_rate" class="form-label">Hourly Rate</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="hourly_rate" name="hourly_rate" 
+                                       value="{% if contractor %}{{ contractor.hourly_rate }}{% endif %}" 
+                                       step="0.01" min="0" placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3 contract-type-dependent" id="contract-amount-field">
+                            <label for="contract_amount" class="form-label">Contract Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="contract_amount" name="contract_amount" 
+                                       value="{% if contractor %}{{ contractor.contract_amount }}{% endif %}" 
+                                       step="0.01" min="0" placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="contract_start_date" class="form-label">Contract Start Date</label>
+                            <input type="date" class="form-control" id="contract_start_date" name="contract_start_date" 
+                                   value="{% if contractor and contractor.contract_start_date %}{{ contractor.contract_start_date|date:'Y-m-d' }}{% endif %}">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="contract_end_date" class="form-label">Contract End Date</label>
+                            <input type="date" class="form-control" id="contract_end_date" name="contract_end_date" 
+                                   value="{% if contractor and contractor.contract_end_date %}{{ contractor.contract_end_date|date:'Y-m-d' }}{% endif %}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="skills" class="form-label">Skills & Expertise</label>
+                    <textarea class="form-control" id="skills" name="skills" rows="4" 
+                              placeholder="List relevant skills, expertise, and qualifications (comma-separated)">{% if contractor %}{{ contractor.skills }}{% endif %}</textarea>
+                    <small class="form-text text-muted">Separate skills with commas (e.g., JavaScript, React, Node.js)</small>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'hr:contractors_ui' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> 
+                        {% if contractor %}Update Contractor{% else %}Create Contractor{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show/hide fields based on contract type
+function toggleContractFields() {
+    const contractType = document.getElementById('contract_type').value;
+    const hourlyField = document.getElementById('hourly-rate-field');
+    const contractField = document.getElementById('contract-amount-field');
+    
+    // Hide all contract-dependent fields first
+    document.querySelectorAll('.contract-type-dependent').forEach(field => {
+        field.style.display = 'none';
+    });
+    
+    // Show relevant fields based on contract type
+    if (contractType === 'hourly') {
+        hourlyField.style.display = 'block';
+    } else {
+        contractField.style.display = 'block';
+    }
+}
+
+// Initialize field visibility
+toggleContractFields();
+
+// Add event listener for contract type changes
+document.getElementById('contract_type').addEventListener('change', toggleContractFields);
+
+// Form submission
+document.getElementById('contractorForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    // Show loading state
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    submitBtn.disabled = true;
+    
+    // Clear previous errors
+    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    
+    {% if contractor %}
+    const url = '{% url "hr:contractors_edit" contractor.id %}';
+    {% else %}
+    const url = '{% url "hr:contractors_add" %}';
+    {% endif %}
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'Contractor {% if contractor %}updated{% else %}created{% endif %} successfully',
+                timer: 1500,
+                showConfirmButton: false
+            }).then(() => {
+                window.location.href = '{% url "hr:contractors_ui" %}';
+            });
+        } else {
+            // Show error
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.error || 'An error occurred while saving the contractor'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An unexpected error occurred'
+        });
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+
+// Validate contract end date
+document.getElementById('contract_end_date').addEventListener('change', function() {
+    const startDate = document.getElementById('contract_start_date').value;
+    const endDate = this.value;
+    
+    if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+        this.setCustomValidity('End date cannot be before start date');
+        this.classList.add('is-invalid');
+    } else {
+        this.setCustomValidity('');
+        this.classList.remove('is-invalid');
+    }
+});
+
+document.getElementById('contract_start_date').addEventListener('change', function() {
+    // Trigger validation on end date field
+    document.getElementById('contract_end_date').dispatchEvent(new Event('change'));
+});
+</script>
+{% endblock %}

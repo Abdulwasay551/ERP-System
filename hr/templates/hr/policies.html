@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}HR Policies | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .policies-card {
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(109, 40, 217, 0.1));
+        border: 1px solid rgba(124, 58, 237, 0.2);
+        transition: all 0.3s ease;
+    }
+    .policies-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(124, 58, 237, 0.15);
+    }
+    .policy-type-badge {
+        background: linear-gradient(135deg, rgba(251, 146, 60, 0.1), rgba(245, 101, 101, 0.1));
+        border: 1px solid rgba(251, 146, 60, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                    HR Policies
+                </h1>
+                <p class="text-gray-600">Manage company policies and procedures</p>
+            </div>
+            <a href="{% url 'hr:policies_add' %}" class="bg-gradient-to-r from-violet-600 to-purple-600 text-white px-6 py-3 rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2">
+                <i class="fas fa-plus"></i>
+                <span>New Policy</span>
+            </a>
+        </div>
+
+        <!-- Policies Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="policies-card rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm">Total Policies</p>
+                        <p class="text-2xl font-bold text-violet-600">{{ policies.count }}</p>
+                    </div>
+                    <i class="fas fa-file-contract text-violet-500 text-2xl"></i>
+                </div>
+            </div>
+            <div class="policies-card rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm">Active Policies</p>
+                        <p class="text-2xl font-bold text-blue-600">{{ policies|length }}</p>
+                    </div>
+                    <i class="fas fa-check-circle text-blue-500 text-2xl"></i>
+                </div>
+            </div>
+            <div class="policies-card rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm">Pending Review</p>
+                        <p class="text-2xl font-bold text-orange-600">0</p>
+                    </div>
+                    <i class="fas fa-clock text-orange-500 text-2xl"></i>
+                </div>
+            </div>
+            <div class="policies-card rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm">Updated This Month</p>
+                        <p class="text-2xl font-bold text-green-600">0</p>
+                    </div>
+                    <i class="fas fa-edit text-green-500 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Policies Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-800">Company Policies</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Policy</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Version</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Effective Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Review Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for policy in policies %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                        <i class="fas fa-file-contract"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">{{ policy.title }}</div>
+                                        <div class="text-sm text-gray-500">{{ policy.content|truncatewords:8 }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="policy-type-badge px-3 py-1 rounded-full text-sm font-medium">
+                                    {{ policy.get_policy_type_display }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                v{{ policy.version }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ policy.effective_date }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ policy.review_date|default:"-" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                    {% if policy.is_active %}bg-green-100 text-green-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {% if policy.is_active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <a href="{% url 'hr:policies_detail' policy.pk %}" class="text-blue-600 hover:text-blue-900 mr-3">View</a>
+                                <a href="{% url 'hr:policies_edit' policy.pk %}" class="text-green-600 hover:text-green-900 mr-3">Edit</a>
+                                {% if policy.document_file %}
+                                    <a href="{{ policy.document_file.url }}" target="_blank" class="text-purple-600 hover:text-purple-900 mr-3">Download</a>
+                                {% endif %}
+                                <form method="post" action="{% url 'hr:policies_delete' policy.pk %}" class="inline" onsubmit="return confirm('Are you sure you want to delete this policy?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                                No policies found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Policy Quick Actions -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-shield-alt text-white text-xl"></i>
+                    </div>
+                    <h3 class="ml-4 text-lg font-semibold text-gray-800">Code of Conduct</h3>
+                </div>
+                <p class="text-gray-600 text-sm mb-4">Define behavioral standards and ethical guidelines</p>
+                <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">Create Policy</button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-user-shield text-white text-xl"></i>
+                    </div>
+                    <h3 class="ml-4 text-lg font-semibold text-gray-800">Leave Policy</h3>
+                </div>
+                <p class="text-gray-600 text-sm mb-4">Set guidelines for vacation and sick leave</p>
+                <button class="text-green-600 hover:text-green-800 text-sm font-medium">Create Policy</button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-violet-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-white text-xl"></i>
+                    </div>
+                    <h3 class="ml-4 text-lg font-semibold text-gray-800">Safety Policy</h3>
+                </div>
+                <p class="text-gray-600 text-sm mb-4">Establish workplace safety and security protocols</p>
+                <button class="text-purple-600 hover:text-purple-800 text-sm font-medium">Create Policy</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

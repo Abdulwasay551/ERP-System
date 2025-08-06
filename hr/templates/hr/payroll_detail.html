@@ -1,0 +1,342 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payroll Detail - {{ payroll.employee.full_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payroll-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .info-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    .info-card h5 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .salary-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #eee;
+    }
+    .salary-item:last-child {
+        border-bottom: none;
+        font-weight: bold;
+        border-top: 2px solid #ddd;
+        margin-top: 0.5rem;
+        padding-top: 1rem;
+    }
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Payroll Header -->
+    <div class="payroll-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="mb-1">{{ payroll.employee.full_name }}</h2>
+                <p class="mb-1">Employee ID: {{ payroll.employee.employee_id }}</p>
+                <p class="mb-0">
+                    {% if payroll.period %}{{ payroll.period.name }}{% else %}Payroll{% endif %}
+                    {% if payroll.period %} ({{ payroll.period.start_date }} - {{ payroll.period.end_date }}){% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="status-badge bg-{{ payroll.status }}">
+                    {{ payroll.get_status_display }}
+                </span>
+                <div class="mt-2">
+                    <a href="{% url 'hr:payroll_ui' %}" class="btn btn-light btn-sm">
+                        <i class="fas fa-arrow-left"></i> Back to Payroll
+                    </a>
+                    {% if payroll.status == 'draft' %}
+                    <button class="btn btn-success btn-sm" onclick="approvePayroll({{ payroll.id }})">
+                        <i class="fas fa-check"></i> Approve
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Employee Information -->
+        <div class="col-md-4">
+            <div class="info-card">
+                <h5><i class="fas fa-user"></i> Employee Details</h5>
+                <div class="mb-2">
+                    <strong>Name:</strong> {{ payroll.employee.full_name }}
+                </div>
+                <div class="mb-2">
+                    <strong>Employee ID:</strong> {{ payroll.employee.employee_id }}
+                </div>
+                <div class="mb-2">
+                    <strong>Department:</strong> {{ payroll.employee.department.name|default:"Not assigned" }}
+                </div>
+                <div class="mb-2">
+                    <strong>Designation:</strong> {{ payroll.employee.designation.title|default:"Not assigned" }}
+                </div>
+                <div class="mb-2">
+                    <strong>Employment Type:</strong> {{ payroll.employee.get_employment_type_display }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Earnings -->
+        <div class="col-md-4">
+            <div class="info-card">
+                <h5><i class="fas fa-plus-circle text-success"></i> Earnings</h5>
+                <div class="salary-item">
+                    <span>Basic Salary:</span>
+                    <span>${{ payroll.basic_salary|floatformat:2 }}</span>
+                </div>
+                {% if payroll.house_allowance > 0 %}
+                <div class="salary-item">
+                    <span>House Allowance:</span>
+                    <span>${{ payroll.house_allowance|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+                {% if payroll.transport_allowance > 0 %}
+                <div class="salary-item">
+                    <span>Transport Allowance:</span>
+                    <span>${{ payroll.transport_allowance|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+                {% if payroll.medical_allowance > 0 %}
+                <div class="salary-item">
+                    <span>Medical Allowance:</span>
+                    <span>${{ payroll.medical_allowance|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+                {% if payroll.other_allowances > 0 %}
+                <div class="salary-item">
+                    <span>Other Allowances:</span>
+                    <span>${{ payroll.other_allowances|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+                {% if payroll.overtime_amount > 0 %}
+                <div class="salary-item">
+                    <span>Overtime:</span>
+                    <span>${{ payroll.overtime_amount|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+                {% if payroll.bonus > 0 %}
+                <div class="salary-item">
+                    <span>Bonus:</span>
+                    <span>${{ payroll.bonus|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+                <div class="salary-item">
+                    <span>Gross Salary:</span>
+                    <span>${{ payroll.gross_salary|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deductions -->
+        <div class="col-md-4">
+            <div class="info-card">
+                <h5><i class="fas fa-minus-circle text-danger"></i> Deductions</h5>
+                {% if payroll.provident_fund > 0 %}
+                <div class="salary-item">
+                    <span>Provident Fund:</span>
+                    <span>${{ payroll.provident_fund|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+                {% if payroll.income_tax > 0 %}
+                <div class="salary-item">
+                    <span>Income Tax:</span>
+                    <span>${{ payroll.income_tax|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+                {% if payroll.loan_deduction > 0 %}
+                <div class="salary-item">
+                    <span>Loan Deduction:</span>
+                    <span>${{ payroll.loan_deduction|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+                {% if payroll.advance_deduction > 0 %}
+                <div class="salary-item">
+                    <span>Advance Deduction:</span>
+                    <span>${{ payroll.advance_deduction|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+                {% if payroll.other_deductions > 0 %}
+                <div class="salary-item">
+                    <span>Other Deductions:</span>
+                    <span>${{ payroll.other_deductions|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+                <div class="salary-item">
+                    <span>Total Deductions:</span>
+                    <span>${{ payroll.total_deductions|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5><i class="fas fa-calculator"></i> Payroll Summary</h5>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h4 class="text-success">${{ payroll.gross_salary|floatformat:2 }}</h4>
+                            <p class="mb-0">Gross Salary</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h4 class="text-danger">${{ payroll.total_deductions|floatformat:2 }}</h4>
+                            <p class="mb-0">Total Deductions</p>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="text-center">
+                    <h3 class="text-primary">${{ payroll.net_salary|floatformat:2 }}</h3>
+                    <p class="mb-0"><strong>Net Salary</strong></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance & Working Details -->
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5><i class="fas fa-clock"></i> Working Days</h5>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h4 class="text-info">{{ payroll.working_days }}</h4>
+                            <p class="mb-0">Working Days</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h4 class="text-success">{{ payroll.present_days }}</h4>
+                            <p class="mb-0">Present Days</p>
+                        </div>
+                    </div>
+                </div>
+                {% if payroll.overtime_hours > 0 %}
+                <hr>
+                <div class="text-center">
+                    <h4 class="text-warning">{{ payroll.overtime_hours }}</h4>
+                    <p class="mb-0">Overtime Hours</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Information -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="info-card">
+                <h5><i class="fas fa-info-circle"></i> Additional Information</h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong>Created:</strong><br>
+                        {{ payroll.created_at|date:"F d, Y g:i A" }}
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Last Updated:</strong><br>
+                        {{ payroll.updated_at|date:"F d, Y g:i A" }}
+                    </div>
+                    {% if payroll.approved_by %}
+                    <div class="col-md-3">
+                        <strong>Approved By:</strong><br>
+                        {{ payroll.approved_by.get_full_name|default:payroll.approved_by.username }}
+                    </div>
+                    {% endif %}
+                    <div class="col-md-3">
+                        <strong>Status:</strong><br>
+                        <span class="badge bg-{{ payroll.status }}">{{ payroll.get_status_display }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    {% if payroll.status == 'approved' %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="info-card">
+                <h5><i class="fas fa-file-download"></i> Generate Documents</h5>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary" onclick="generatePayslip({{ payroll.id }})">
+                        <i class="fas fa-file-pdf"></i> Generate Payslip
+                    </button>
+                    <button class="btn btn-success" onclick="markAsPaid({{ payroll.id }})">
+                        <i class="fas fa-money-bill-wave"></i> Mark as Paid
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function approvePayroll(payrollId) {
+    Swal.fire({
+        title: 'Approve Payroll?',
+        text: 'Are you sure you want to approve this payroll?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, approve it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Implementation for approval
+            Swal.fire('Approved!', 'Payroll has been approved.', 'success');
+        }
+    });
+}
+
+function generatePayslip(payrollId) {
+    // Implementation for payslip generation
+    window.open(`/hr/payroll/${payrollId}/payslip/`, '_blank');
+}
+
+function markAsPaid(payrollId) {
+    Swal.fire({
+        title: 'Mark as Paid?',
+        text: 'Are you sure this payroll has been paid?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, mark as paid!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Implementation for marking as paid
+            Swal.fire('Updated!', 'Payroll has been marked as paid.', 'success');
+        }
+    });
+}
+</script>
+{% endblock %}

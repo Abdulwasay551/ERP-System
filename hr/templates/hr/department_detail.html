@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Department Detail - {{ department.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .department-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .info-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    .info-card h5 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .employee-card {
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        border-left: 4px solid #3498db;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Department Header -->
+    <div class="department-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="mb-1">{{ department.name }}</h2>
+                {% if department.code %}
+                <p class="mb-1">Department Code: {{ department.code }}</p>
+                {% endif %}
+                <p class="mb-0">
+                    {{ employee_count }} Employee{{ employee_count|pluralize }}
+                    {% if department.budget %} | Budget: ${{ department.budget|floatformat:2 }}{% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'hr:departments_ui' %}" class="btn btn-light btn-sm">
+                    <i class="fas fa-arrow-left"></i> Back to Departments
+                </a>
+                <button class="btn btn-warning btn-sm" onclick="editDepartment({{ department.id }})">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Department Information -->
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5><i class="fas fa-building"></i> Department Information</h5>
+                <div class="row">
+                    <div class="col-sm-4"><strong>Name:</strong></div>
+                    <div class="col-sm-8">{{ department.name }}</div>
+                </div>
+                {% if department.code %}
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Code:</strong></div>
+                    <div class="col-sm-8">{{ department.code }}</div>
+                </div>
+                {% endif %}
+                {% if department.description %}
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Description:</strong></div>
+                    <div class="col-sm-8">{{ department.description }}</div>
+                </div>
+                {% endif %}
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Budget:</strong></div>
+                    <div class="col-sm-8">${{ department.budget|floatformat:2 }}</div>
+                </div>
+                {% if department.department_head %}
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Department Head:</strong></div>
+                    <div class="col-sm-8">
+                        <a href="{% url 'hr:employee_detail' department.department_head.id %}">
+                            {{ department.department_head.full_name }}
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+                {% if department.parent_department %}
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Parent Department:</strong></div>
+                    <div class="col-sm-8">
+                        <a href="{% url 'hr:department_detail' department.parent_department.id %}">
+                            {{ department.parent_department.name }}
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Created:</strong></div>
+                    <div class="col-sm-8">{{ department.created_at|date:"F d, Y" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Department Statistics -->
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5><i class="fas fa-chart-bar"></i> Department Statistics</h5>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="text-center">
+                            <h3 class="text-primary">{{ employee_count }}</h3>
+                            <p class="mb-0">Total Employees</p>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-center">
+                            <h3 class="text-success">${{ department.budget|floatformat:0 }}</h3>
+                            <p class="mb-0">Department Budget</p>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="text-center">
+                            <h4 class="text-info">
+                                {% for employee in employees %}
+                                    {% if employee.status == 'active' %}{{ forloop.counter|add:"-1" }}{% endif %}
+                                {% empty %}0{% endfor %}
+                            </h4>
+                            <p class="mb-0">Active Employees</p>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-center">
+                            <h4 class="text-warning">
+                                {% for employee in employees %}
+                                    {% if employee.employment_type == 'full_time' %}{{ forloop.counter|add:"-1" }}{% endif %}
+                                {% empty %}0{% endfor %}
+                            </h4>
+                            <p class="mb-0">Full-time Staff</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Department Employees -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="info-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5><i class="fas fa-users"></i> Department Employees</h5>
+                    <a href="{% url 'hr:employees_add' %}?department={{ department.id }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> Add Employee
+                    </a>
+                </div>
+                
+                {% if employees %}
+                    <div class="row">
+                        {% for employee in employees %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="employee-card">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            <a href="{% url 'hr:employee_detail' employee.id %}" class="text-decoration-none">
+                                                {{ employee.full_name }}
+                                            </a>
+                                        </h6>
+                                        <p class="mb-1 text-muted">{{ employee.employee_id }}</p>
+                                        {% if employee.designation %}
+                                        <p class="mb-1"><small>{{ employee.designation.title }}</small></p>
+                                        {% endif %}
+                                        <p class="mb-0"><small>{{ employee.get_employment_type_display }}</small></p>
+                                    </div>
+                                    <span class="badge bg-{{ employee.status|slice:':5' }}">
+                                        {{ employee.get_status_display }}
+                                    </span>
+                                </div>
+                                {% if employee.email %}
+                                <div class="mt-2">
+                                    <small><i class="fas fa-envelope text-muted"></i> {{ employee.email }}</small>
+                                </div>
+                                {% endif %}
+                                {% if employee.phone %}
+                                <div class="mt-1">
+                                    <small><i class="fas fa-phone text-muted"></i> {{ employee.phone }}</small>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Employees Found</h5>
+                        <p class="text-muted">This department doesn't have any employees assigned yet.</p>
+                        <a href="{% url 'hr:employees_add' %}?department={{ department.id }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add First Employee
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sub-departments -->
+    {% if department.sub_departments.all %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="info-card">
+                <h5><i class="fas fa-sitemap"></i> Sub-departments</h5>
+                <div class="row">
+                    {% for sub_dept in department.sub_departments.all %}
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 mb-2">
+                            <h6>
+                                <a href="{% url 'hr:department_detail' sub_dept.id %}" class="text-decoration-none">
+                                    {{ sub_dept.name }}
+                                </a>
+                            </h6>
+                            <p class="mb-0 text-muted">
+                                {{ sub_dept.employees.count }} employee{{ sub_dept.employees.count|pluralize }}
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function editDepartment(departmentId) {
+    // Redirect to edit form
+    window.location.href = `/hr/departments/form/${departmentId}/`;
+}
+</script>
+{% endblock %}

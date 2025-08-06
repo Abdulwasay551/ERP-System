@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Document | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.05), rgba(21, 128, 61, 0.05));
+        border: 1px solid rgba(34, 197, 94, 0.1);
+    }
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e5e7eb;
+    }
+    .form-section h3 {
+        color: #374151;
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    .upload-area {
+        border: 2px dashed #d1d5db;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    .upload-area:hover {
+        border-color: #10b981;
+        background-color: #f0fdf4;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8 max-w-4xl">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center mb-4">
+                <a href="{% url 'project_mgmt:documents_ui' %}" class="mr-4 p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Add Document</h1>
+                    <p class="text-gray-600">Upload or link a project document</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="form-card p-8 rounded-2xl">
+            <form id="documentForm" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h3>Document Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="project" class="block text-sm font-medium text-gray-700 mb-2">Project *</label>
+                            <select name="project" id="project" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <option value="">Select Project</option>
+                                {% for project in projects %}
+                                    <option value="{{ project.id }}">{{ project.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="document_type" class="block text-sm font-medium text-gray-700 mb-2">Document Type *</label>
+                            <select name="document_type" id="document_type" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <option value="">Select Type</option>
+                                <option value="specification">Specification</option>
+                                <option value="requirement">Requirement</option>
+                                <option value="design">Design</option>
+                                <option value="manual">Manual</option>
+                                <option value="report">Report</option>
+                                <option value="contract">Contract</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Document Name *</label>
+                        <input type="text" name="name" id="name" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="Enter document name">
+                    </div>
+                    <div class="mt-6">
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <textarea name="description" id="description" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="Enter document description"></textarea>
+                    </div>
+                </div>
+
+                <!-- File Upload or External Link -->
+                <div class="form-section">
+                    <h3>Document Source</h3>
+                    <div class="mb-4">
+                        <div class="flex space-x-4 mb-4">
+                            <label class="flex items-center">
+                                <input type="radio" name="source_type" value="file" checked class="mr-2">
+                                <span class="text-sm font-medium text-gray-700">Upload File</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="source_type" value="link" class="mr-2">
+                                <span class="text-sm font-medium text-gray-700">External Link</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- File Upload Area -->
+                    <div id="fileUploadArea" class="upload-area">
+                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        <h4 class="text-lg font-medium text-gray-700 mb-2">Upload Document</h4>
+                        <p class="text-gray-500 mb-4">Drag and drop your file here, or click to browse</p>
+                        <input type="file" name="file" id="file" class="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png">
+                        <button type="button" onclick="document.getElementById('file').click()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                            Choose File
+                        </button>
+                    </div>
+
+                    <!-- External Link Area -->
+                    <div id="externalLinkArea" class="hidden">
+                        <label for="external_link" class="block text-sm font-medium text-gray-700 mb-2">External Link URL</label>
+                        <input type="url" name="external_link" id="external_link" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="https://example.com/document">
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                    <a href="{% url 'project_mgmt:documents_ui' %}" class="px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all">
+                        Add Document
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Toggle between file upload and external link
+document.querySelectorAll('input[name="source_type"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const fileArea = document.getElementById('fileUploadArea');
+        const linkArea = document.getElementById('externalLinkArea');
+        
+        if (this.value === 'file') {
+            fileArea.style.display = 'block';
+            linkArea.style.display = 'none';
+            document.getElementById('external_link').required = false;
+        } else {
+            fileArea.style.display = 'none';
+            linkArea.style.display = 'block';
+            document.getElementById('external_link').required = true;
+        }
+    });
+});
+
+// File upload handling
+document.getElementById('file').addEventListener('change', function() {
+    const fileName = this.files[0]?.name;
+    if (fileName) {
+        document.querySelector('.upload-area h4').textContent = fileName;
+        document.querySelector('.upload-area p').textContent = 'File selected successfully';
+    }
+});
+
+// Form submission
+document.getElementById('documentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('{% url "project_mgmt:document_add" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = '{% url "project_mgmt:documents_ui" %}';
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while adding the document.');
+    });
+});
+</script>
+{% endblock %}

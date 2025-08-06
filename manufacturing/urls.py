@@ -2,12 +2,13 @@ from django.urls import path
 from .views import (
     manufacturing_dashboard, boms_ui, work_orders_ui, work_order_detail,
     start_work_order, complete_work_order, quality_checks_ui, production_plans_ui,
-    mrp_ui, work_centers_ui, create_work_order_from_sales, consume_materials,
+    mrp_ui, mrp_planning_dashboard, work_centers_ui, create_work_order_from_sales, consume_materials,
     manufacturing_reports, boms_add, boms_edit, boms_delete, workorders_ui,
     production_ui, quality_ui, material_tracking_ui, job_cards_ui, 
     subcontracting_ui, reports_ui, settings_ui, work_center_create,
     work_center_detail, work_center_edit, work_center_manage, work_order_create,
-    work_order_edit, production_plan_create, production_plan_edit, production_plan_detail
+    work_order_edit, production_plan_create, production_plan_edit, production_plan_detail,
+    run_mrp_calculation, supply_demand_report
 )
 
 app_name = 'manufacturing'
@@ -42,6 +43,9 @@ urlpatterns = [
     
     # MRP
     path('mrp/', mrp_ui, name='mrp_ui'),
+    path('mrp/planning-dashboard/', mrp_planning_dashboard, name='mrp_planning_dashboard'),
+    path('mrp/run/', run_mrp_calculation, name='run_mrp_calculation'),
+    path('mrp/supply-demand-report/', supply_demand_report, name='supply_demand_report'),
     
     # Work Centers
     path('work-centers/', work_centers_ui, name='work_centers_ui'),

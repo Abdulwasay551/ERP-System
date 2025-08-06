@@ -1,0 +1,404 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Task Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tasks-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .kanban-board {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    .kanban-column {
+        background: #f8fafc;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        min-height: 500px;
+    }
+    .kanban-header {
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid;
+    }
+    .kanban-column.todo .kanban-header {
+        color: #6b7280;
+        border-color: #d1d5db;
+    }
+    .kanban-column.in-progress .kanban-header {
+        color: #f59e0b;
+        border-color: #fbbf24;
+    }
+    .kanban-column.review .kanban-header {
+        color: #3b82f6;
+        border-color: #60a5fa;
+    }
+    .kanban-column.completed .kanban-header {
+        color: #10b981;
+        border-color: #34d399;
+    }
+    .task-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border-left: 4px solid #e5e7eb;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .task-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    .task-card.priority-high {
+        border-left-color: #ef4444;
+    }
+    .task-card.priority-medium {
+        border-left-color: #f59e0b;
+    }
+    .task-card.priority-low {
+        border-left-color: #10b981;
+    }
+    .task-title {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #1f2937;
+    }
+    .task-meta {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+    .priority-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    .priority-high {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+    .priority-medium {
+        background: #fef3c7;
+        color: #d97706;
+    }
+    .priority-low {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+    .add-task-btn {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px dashed #d1d5db;
+        background: transparent;
+        border-radius: 0.5rem;
+        color: #6b7280;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    .add-task-btn:hover {
+        border-color: #10b981;
+        color: #10b981;
+        background: #f0fdf4;
+    }
+    .task-actions {
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+    .task-card:hover .task-actions {
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="tasks-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="mb-1"><i class="fas fa-tasks"></i> Task Management</h2>
+                <p class="mb-0">Organize and track project tasks with Kanban board</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'project_mgmt:task_add' %}" class="btn btn-light btn-lg">
+                    <i class="fas fa-plus"></i> New Task
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3>{{ tasks|length }}</h3>
+                    <p class="mb-0">Total Tasks</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h3>
+                        {% for task in tasks %}
+                            {% if task.status == 'in_progress' %}{{ forloop.counter0|add:"1" }}{% endif %}
+                        {% empty %}0{% endfor %}
+                    </h3>
+                    <p class="mb-0">In Progress</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>
+                        {% for task in tasks %}
+                            {% if task.status == 'review' %}{{ forloop.counter0|add:"1" }}{% endif %}
+                        {% empty %}0{% endfor %}
+                    </h3>
+                    <p class="mb-0">Under Review</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>
+                        {% for task in tasks %}
+                            {% if task.status == 'completed' %}{{ forloop.counter0|add:"1" }}{% endif %}
+                        {% empty %}0{% endfor %}
+                    </h3>
+                    <p class="mb-0">Completed</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="kanban-board">
+        <!-- To Do Column -->
+        <div class="kanban-column todo">
+            <div class="kanban-header">
+                <i class="fas fa-list"></i> To Do
+                <span class="badge bg-secondary ms-2">
+                    {% for task in tasks %}{% if task.status == 'pending' %}{{ forloop.counter0|add:"1" }}{% endif %}{% empty %}0{% endfor %}
+                </span>
+            </div>
+            {% for task in tasks %}
+                {% if task.status == 'pending' %}
+                <div class="task-card priority-{{ task.priority|lower }}">
+                    <div class="task-title">{{ task.name }}</div>
+                    <div class="task-meta mb-2">
+                        <div>{{ task.project.name }}</div>
+                        {% if task.due_date %}
+                        <div><i class="fas fa-calendar"></i> {{ task.due_date|date:"M d, Y" }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="priority-badge priority-{{ task.priority|lower }}">
+                            {{ task.priority }}
+                        </span>
+                        <div class="task-actions">
+                            <a href="{% url 'project_mgmt:task_edit' task.id %}" class="btn btn-sm btn-outline-primary me-1">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button onclick="deleteTask({{ task.id }})" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% if task.estimated_hours %}
+                    <small class="text-muted">{{ task.estimated_hours }}h</small>
+                    {% endif %}
+                </div>
+                {% endif %}
+            {% endfor %}
+            <a href="{% url 'project_mgmt:task_add' %}?status=pending" class="add-task-btn" style="text-decoration: none;">
+                <i class="fas fa-plus"></i> Add Task
+            </a>
+        </div>
+
+        <!-- In Progress Column -->
+        <div class="kanban-column in-progress">
+            <div class="kanban-header">
+                <i class="fas fa-spinner"></i> In Progress
+                <span class="badge bg-warning ms-2">
+                    {% for task in tasks %}{% if task.status == 'in_progress' %}{{ forloop.counter0|add:"1" }}{% endif %}{% empty %}0{% endfor %}
+                </span>
+            </div>
+            {% for task in tasks %}
+                {% if task.status == 'in_progress' %}
+                <div class="task-card priority-{{ task.priority|lower }}">
+                    <div class="task-title">{{ task.name }}</div>
+                    <div class="task-meta mb-2">
+                        <div>{{ task.project.name }}</div>
+                        {% if task.due_date %}
+                        <div><i class="fas fa-calendar"></i> {{ task.due_date|date:"M d, Y" }}</div>
+                        {% endif %}
+                        {% if task.assigned_to_employee %}
+                        <div><i class="fas fa-user"></i> {{ task.assigned_to_employee.first_name }} {{ task.assigned_to_employee.last_name }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="priority-badge priority-{{ task.priority|lower }}">
+                            {{ task.priority }}
+                        </span>
+                        <div class="task-actions">
+                            <a href="{% url 'project_mgmt:task_edit' task.id %}" class="btn btn-sm btn-outline-primary me-1">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button onclick="deleteTask({{ task.id }})" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% if task.actual_hours %}
+                    <small class="text-muted">{{ task.actual_hours }}/{{ task.estimated_hours }}h</small>
+                    {% endif %}
+                </div>
+                {% endif %}
+            {% endfor %}
+            <a href="{% url 'project_mgmt:task_add' %}?status=in_progress" class="add-task-btn" style="text-decoration: none;">
+                <i class="fas fa-plus"></i> Add Task
+            </a>
+        </div>
+
+        <!-- Review Column -->
+        <div class="kanban-column review">
+            <div class="kanban-header">
+                <i class="fas fa-eye"></i> Under Review
+                <span class="badge bg-info ms-2">
+                    {% for task in tasks %}{% if task.status == 'review' %}{{ forloop.counter0|add:"1" }}{% endif %}{% empty %}0{% endfor %}
+                </span>
+            </div>
+            {% for task in tasks %}
+                {% if task.status == 'review' %}
+                <div class="task-card priority-{{ task.priority|lower }}">
+                    <div class="task-title">{{ task.name }}</div>
+                    <div class="task-meta mb-2">
+                        <div>{{ task.project.name }}</div>
+                        {% if task.due_date %}
+                        <div><i class="fas fa-calendar"></i> {{ task.due_date|date:"M d, Y" }}</div>
+                        {% endif %}
+                        {% if task.assigned_to_employee %}
+                        <div><i class="fas fa-user"></i> {{ task.assigned_to_employee.first_name }} {{ task.assigned_to_employee.last_name }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="priority-badge priority-{{ task.priority|lower }}">
+                            {{ task.priority }}
+                        </span>
+                        <div class="task-actions">
+                            <a href="{% url 'project_mgmt:task_edit' task.id %}" class="btn btn-sm btn-outline-primary me-1">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button onclick="deleteTask({{ task.id }})" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% if task.actual_hours %}
+                    <small class="text-muted">{{ task.actual_hours }}h logged</small>
+                    {% endif %}
+                </div>
+                {% endif %}
+            {% endfor %}
+            <a href="{% url 'project_mgmt:task_add' %}?status=review" class="add-task-btn" style="text-decoration: none;">
+                <i class="fas fa-plus"></i> Add Task
+            </a>
+        </div>
+
+        <!-- Completed Column -->
+        <div class="kanban-column completed">
+            <div class="kanban-header">
+                <i class="fas fa-check"></i> Completed
+                <span class="badge bg-success ms-2">
+                    {% for task in tasks %}{% if task.status == 'completed' %}{{ forloop.counter0|add:"1" }}{% endif %}{% empty %}0{% endfor %}
+                </span>
+            </div>
+            {% for task in tasks %}
+                {% if task.status == 'completed' %}
+                <div class="task-card priority-{{ task.priority|lower }}">
+                    <div class="task-title">{{ task.name }}</div>
+                    <div class="task-meta mb-2">
+                        <div>{{ task.project.name }}</div>
+                        {% if task.due_date %}
+                        <div><i class="fas fa-calendar"></i> {{ task.due_date|date:"M d, Y" }}</div>
+                        {% endif %}
+                        {% if task.assigned_to_employee %}
+                        <div><i class="fas fa-user"></i> {{ task.assigned_to_employee.first_name }} {{ task.assigned_to_employee.last_name }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="priority-badge priority-{{ task.priority|lower }}">
+                            {{ task.priority }}
+                        </span>
+                        <div class="task-actions">
+                            <a href="{% url 'project_mgmt:task_edit' task.id %}" class="btn btn-sm btn-outline-primary me-1">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button onclick="deleteTask({{ task.id }})" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% if task.actual_hours %}
+                    <small class="text-success">✓ {{ task.actual_hours }}h</small>
+                    {% endif %}
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    {% if not tasks %}
+    <div class="text-center py-5">
+        <i class="fas fa-tasks fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">No Tasks Found</h4>
+        <p class="text-muted">Create your first task to get started with project management.</p>
+        <a href="{% url 'project_mgmt:task_add' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-plus"></i> Create First Task
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function deleteTask(taskId) {
+    if (confirm('Are you sure you want to delete this task?')) {
+        fetch(`/project_mgmt/tasks/${taskId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Failed to delete task'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the task');
+        });
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if leave %}Edit Leave Application{% else %}Apply for Leave{% endif %} | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(6, 95, 70, 0.05));
+        border: 1px solid rgba(16, 185, 129, 0.1);
+        transition: all 0.3s ease;
+    }
+    .form-card:hover {
+        border-color: rgba(16, 185, 129, 0.2);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.1);
+    }
+    .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 0.75rem;
+        background: white;
+        transition: all 0.2s ease;
+        font-size: 0.875rem;
+    }
+    .form-input:focus {
+        outline: none;
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+    .field-label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">
+                    {% if leave %}Edit Leave Application{% else %}Apply for Leave{% endif %}
+                </h1>
+                <p class="text-gray-600">
+                    {% if leave %}Update your leave application{% else %}Submit a new leave application{% endif %}
+                </p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'hr:leaves_ui' %}" class="action-btn bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Leaves
+                </a>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="form-card rounded-2xl p-8">
+            <form method="post" id="leaveForm">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label for="employee_id" class="field-label">Employee *</label>
+                        <select name="employee_id" id="employee_id" class="form-input" required>
+                            <option value="">Select Employee</option>
+                            {% for employee in employees %}
+                                <option value="{{ employee.id }}" 
+                                        {% if leave and leave.employee_id == employee.id %}selected{% endif %}>
+                                    {{ employee.first_name }} {{ employee.last_name }} ({{ employee.employee_id }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="leave_type_id" class="field-label">Leave Type *</label>
+                        <select name="leave_type_id" id="leave_type_id" class="form-input" required>
+                            <option value="">Select Leave Type</option>
+                            {% for leave_type in leave_types %}
+                                <option value="{{ leave_type.id }}" 
+                                        {% if leave and leave.leave_type_id == leave_type.id %}selected{% endif %}>
+                                    {{ leave_type.name }} ({{ leave_type.days_per_year }} days/year)
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="start_date" class="field-label">Start Date *</label>
+                        <input type="date" name="start_date" id="start_date" 
+                               class="form-input" 
+                               value="{% if leave %}{{ leave.start_date|date:'Y-m-d' }}{% endif %}" required>
+                    </div>
+
+                    <div>
+                        <label for="end_date" class="field-label">End Date *</label>
+                        <input type="date" name="end_date" id="end_date" 
+                               class="form-input" 
+                               value="{% if leave %}{{ leave.end_date|date:'Y-m-d' }}{% endif %}" required>
+                    </div>
+
+                    <div class="lg:col-span-2">
+                        <label for="reason" class="field-label">Reason</label>
+                        <textarea name="reason" id="reason" rows="4" 
+                                  class="form-input" placeholder="Enter reason for leave">{% if leave %}{{ leave.reason }}{% endif %}</textarea>
+                    </div>
+                </div>
+
+                <!-- Days Calculation -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-center justify-between">
+                        <span class="text-blue-800 font-medium">Total Days Requested:</span>
+                        <span id="total_days" class="text-blue-900 font-bold text-lg">0</span>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end gap-4 mt-8 pt-6 border-t-2 border-gray-200">
+                    <a href="{% url 'hr:leaves_ui' %}" class="px-8 py-3 bg-gray-200 text-gray-700 rounded-2xl hover:bg-gray-300 transition-all font-medium">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl hover:shadow-lg transition-all font-medium">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        {% if leave %}Update Application{% else %}Submit Application{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function calculateDays() {
+    const startDate = document.getElementById('start_date').value;
+    const endDate = document.getElementById('end_date').value;
+    
+    if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        
+        if (end >= start) {
+            const timeDiff = end.getTime() - start.getTime();
+            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+            document.getElementById('total_days').textContent = daysDiff;
+        } else {
+            document.getElementById('total_days').textContent = '0';
+        }
+    } else {
+        document.getElementById('total_days').textContent = '0';
+    }
+}
+
+// Calculate days on page load if editing
+calculateDays();
+
+// Recalculate when dates change
+document.getElementById('start_date').addEventListener('change', calculateDays);
+document.getElementById('end_date').addEventListener('change', calculateDays);
+
+document.getElementById('leaveForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message || 'Leave application saved successfully!');
+            window.location.href = '{% url "hr:leaves_ui" %}';
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while processing the leave application.');
+    });
+});
+</script>
+{% endblock %}

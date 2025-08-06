@@ -2,7 +2,7 @@ from django.urls import path
 from . import views
 from .views import (
     crm_dashboard, CustomerPageView, LeadPageView, OpportunityPageView, CommunicationLogPageView,
-    PartnerPageView, CampaignPageView, SupplierIntegrationView, SalesIntegrationView,
+    PartnerPageView, CampaignPageView, SupplierIntegrationView, SalesIntegrationView, reports_ui,
     customers_ui, customers_add, customers_edit, customers_delete,
     leads_add, leads_edit, leads_delete,
     opportunities_add, opportunities_edit, opportunities_delete,
@@ -16,8 +16,12 @@ app_name = 'crm'
 
 urlpatterns = [
     # Dashboard
-    path('dashboard/', crm_dashboard, name='crm_dashboard'),
+    path('dashboard/', crm_dashboard, name='dashboard'),
     path('dashboard-ui/', crm_dashboard, name='crm_dashboard_ui'),
+    
+    # Reports
+    path('reports/', reports_ui, name='reports'),
+    path('reports-ui/', reports_ui, name='reports_ui'),
     
     # Legacy Customer URLs (keeping for compatibility)
     path('customers/', views.CustomerListView.as_view(), name='customer_list'),

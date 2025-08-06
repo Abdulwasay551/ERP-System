@@ -1,153 +1,262 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Accounting Reports | FutureERP{% endblock %}
 
 {% block extra_css %}
-<script>
-    tailwind.config = {
-        theme: {
-            extend: {
-                colors: {
-                    primary: '#10B981',
-                    secondary: '#059669',
-                    accent: '#065F46'
-                }
-            }
-        }
+<style>
+    .report-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        transition: all 0.3s ease;
     }
-</script>
+    .report-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
+    }
+    .metric-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+</style>
 {% endblock %}
 
 {% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
         <!-- Header -->
-        <header class="bg-white shadow-sm border-b border-gray-200">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center py-4">
-                    <div class="flex items-center">
-                        <h1 class="text-2xl font-bold text-gray-900">Financial Reports</h1>
-                        <span class="ml-2 px-2 py-1 bg-primary text-white text-xs rounded-full">Accounting Module</span>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary transition-colors">
-                            <i class="fas fa-download mr-2"></i>Export All Reports
-                        </button>
-                        <button class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-                            <i class="fas fa-calendar-alt mr-2"></i>Schedule Reports
-                        </button>
-                    </div>
-                </div>
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">Accounting Reports & Analytics</h1>
+                <p class="text-gray-600">Comprehensive financial reports and business insights</p>
             </div>
-        </header>
+            <div class="flex gap-4">
+                <button onclick="exportAllReports()" class="action-btn bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Export Report
+                </button>
+                <a href="{% url 'accounting:dashboard' %}" class="action-btn bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    Dashboard
+                </a>
+            </div>
+        </div>
 
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <!-- Report Categories -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-blue-100 rounded-lg">
-                            <i class="fas fa-chart-line text-blue-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-lg font-bold text-gray-900">Financial Statements</p>
-                            <p class="text-sm text-gray-600">P&L, Balance Sheet, Cash Flow</p>
-                        </div>
+        <!-- Overview Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
                     </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-green-100 rounded-lg">
-                            <i class="fas fa-calculator text-green-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-lg font-bold text-gray-900">Management Reports</p>
-                            <p class="text-sm text-gray-600">Budget vs Actual, KPIs</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-yellow-100 rounded-lg">
-                            <i class="fas fa-receipt text-yellow-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-lg font-bold text-gray-900">Tax Reports</p>
-                            <p class="text-sm text-gray-600">VAT, Sales Tax, Income Tax</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-purple-100 rounded-lg">
-                            <i class="fas fa-search text-purple-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-lg font-bold text-gray-900">Audit Reports</p>
-                            <p class="text-sm text-gray-600">Compliance & Reconciliation</p>
-                        </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">${{ total_revenue|default:611050|floatformat:0 }}</h3>
+                        <p class="text-gray-600">Total Revenue</p>
+                        <p class="text-xs text-green-600 mt-1">+15% from last month</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Tab Navigation -->
-            <div class="bg-white rounded-lg shadow mb-6">
-                <div class="border-b border-gray-200">
-                    <nav class="-mb-px flex space-x-8 px-6">
-                        <button class="tab-button py-4 px-1 border-b-2 border-primary font-medium text-sm text-primary" data-tab="financial">
-                            Financial Statements
-                        </button>
-                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="management">
-                            Management Reports
-                        </button>
-                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="tax">
-                            Tax Reports
-                        </button>
-                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="audit">
-                            Audit Reports
-                        </button>
-                    </nav>
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">${{ total_expenses|default:425600|floatformat:0 }}</h3>
+                        <p class="text-gray-600">Total Expenses</p>
+                        <p class="text-xs text-blue-600 mt-1">+8% from last month</p>
+                    </div>
                 </div>
+            </div>
 
-                <!-- Financial Statements Tab -->
-                <div id="financial-tab" class="tab-content p-6">
-                    <!-- Income Statement -->
-                    <div class="mb-8">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-xl font-semibold text-gray-900">Profit & Loss Statement</h3>
-                            <div class="flex space-x-2">
-                                <button class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
-                                    <i class="fas fa-eye mr-1"></i>View
-                                </button>
-                                <button class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
-                                    <i class="fas fa-download mr-1"></i>Export
-                                </button>
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">${{ net_profit|default:185450|floatformat:0 }}</h3>
+                        <p class="text-gray-600">Net Profit</p>
+                        <p class="text-xs text-purple-600 mt-1">+25% from last month</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-2xl p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">${{ accounts_receivable|default:125800|floatformat:0 }}</h3>
+                        <p class="text-gray-600">Accounts Receivable</p>
+                        <p class="text-xs text-yellow-600 mt-1">Outstanding payments</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Categories -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Financial Performance -->
+            <div class="report-card rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Financial Performance Summary</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center p-3 bg-white rounded-lg">
+                        <div>
+                            <span class="font-medium text-gray-900">Sales Revenue</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-2xl font-bold text-green-600">${{ sales_revenue|default:485250|floatformat:0 }}</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-white rounded-lg">
+                        <div>
+                            <span class="font-medium text-gray-900">Service Revenue</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-2xl font-bold text-blue-600">${{ service_revenue|default:125800|floatformat:0 }}</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-white rounded-lg">
+                        <div>
+                            <span class="font-medium text-gray-900">Operating Expenses</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-2xl font-bold text-purple-600">${{ operating_expenses|default:320500|floatformat:0 }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cash Flow Analysis -->
+            <div class="report-card rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Cash Flow Analysis</h3>
+                <div class="space-y-6">
+                    <div class="text-center">
+                        <div class="relative inline-flex items-center justify-center w-32 h-32">
+                            <svg class="w-32 h-32 transform -rotate-90" viewBox="0 0 36 36">
+                                <path class="text-gray-300" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"/>
+                                <path class="text-green-600" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3" 
+                                      stroke-dasharray="70, 100"/>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="text-2xl font-bold text-gray-900">70%</span>
                             </div>
                         </div>
-                        <div class="bg-gray-50 rounded-lg p-6">
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div class="bg-white rounded-lg p-4 border">
-                                    <h4 class="font-medium text-gray-900 mb-2">Revenue</h4>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Sales Revenue</span>
-                                            <span class="font-medium">$485,250</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Service Revenue</span>
-                                            <span class="font-medium">$125,800</span>
-                                        </div>
-                                        <div class="flex justify-between border-t pt-2">
-                                            <span class="font-medium text-gray-900">Total Revenue</span>
-                                            <span class="font-bold text-green-600">$611,050</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="bg-white rounded-lg p-4 border">
-                                    <h4 class="font-medium text-gray-900 mb-2">Expenses</h4>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">COGS</span>
+                        <p class="text-gray-600 mt-2">Cash Position Health</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-center p-3 bg-green-50 rounded-lg">
+                            <h4 class="text-lg font-bold text-green-600">${{ cash_inflow|default:542300|floatformat:0 }}</h4>
+                            <p class="text-sm text-green-700">Cash Inflow</p>
+                        </div>
+                        <div class="text-center p-3 bg-red-50 rounded-lg">
+                            <h4 class="text-lg font-bold text-red-600">${{ cash_outflow|default:398700|floatformat:0 }}</h4>
+                            <p class="text-sm text-red-700">Cash Outflow</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Reports -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <a href="{% url 'accounting:profit_loss' %}" class="report-card rounded-2xl p-6 block hover:shadow-lg transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Profit & Loss</h3>
+                </div>
+                <p class="text-gray-600">Income statement and profitability analysis</p>
+            </a>
+
+            <a href="{% url 'accounting:balance_sheet' %}" class="report-card rounded-2xl p-6 block hover:shadow-lg transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Balance Sheet</h3>
+                </div>
+                <p class="text-gray-600">Assets, liabilities and equity overview</p>
+            </a>
+
+            <a href="{% url 'accounting:cash_flow' %}" class="report-card rounded-2xl p-6 block hover:shadow-lg transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Cash Flow</h3>
+                </div>
+                <p class="text-gray-600">Cash inflows and outflows analysis</p>
+            </a>
+
+            <a href="{% url 'accounting:accounts_receivable' %}" class="report-card rounded-2xl p-6 block hover:shadow-lg transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Accounts Receivable</h3>
+                </div>
+                <p class="text-gray-600">Outstanding customer payments tracking</p>
+            </a>
+
+            <a href="{% url 'accounting:accounts_payable' %}" class="report-card rounded-2xl p-6 block hover:shadow-lg transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Accounts Payable</h3>
+                </div>
+                <p class="text-gray-600">Vendor payment obligations and aging</p>
+            </a>
+
+            <a href="{% url 'accounting:tax_reports' %}" class="report-card rounded-2xl p-6 block hover:shadow-lg transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Tax Reports</h3>
+                </div>
+                <p class="text-gray-600">VAT, sales tax and compliance reports</p>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportAllReports() {
+    alert('Exporting all accounting reports...');
+}
+</script>
+{% endblock %}
                                             <span class="font-medium">$185,450</span>
                                         </div>
                                         <div class="flex justify-between">

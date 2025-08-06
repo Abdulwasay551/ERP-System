@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Designation Detail - {{ designation.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .designation-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .info-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    .info-card h5 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .employee-card {
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        border-left: 4px solid #28a745;
+    }
+    .level-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Designation Header -->
+    <div class="designation-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="mb-1">{{ designation.title }}</h2>
+                <p class="mb-1">Level: {{ designation.get_level_display }}</p>
+                <p class="mb-0">
+                    {{ employee_count }} Employee{{ employee_count|pluralize }}
+                    {% if designation.salary_range_min and designation.salary_range_max %}
+                    | Salary Range: ${{ designation.salary_range_min|floatformat:0 }} - ${{ designation.salary_range_max|floatformat:0 }}
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'hr:designations_ui' %}" class="btn btn-light btn-sm">
+                    <i class="fas fa-arrow-left"></i> Back to Designations
+                </a>
+                <button class="btn btn-warning btn-sm" onclick="editDesignation({{ designation.id }})">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Designation Information -->
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5><i class="fas fa-id-badge"></i> Designation Information</h5>
+                <div class="row">
+                    <div class="col-sm-4"><strong>Title:</strong></div>
+                    <div class="col-sm-8">{{ designation.title }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Level:</strong></div>
+                    <div class="col-sm-8">
+                        <span class="level-badge bg-primary text-white">{{ designation.get_level_display }}</span>
+                    </div>
+                </div>
+                {% if designation.description %}
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Description:</strong></div>
+                    <div class="col-sm-8">{{ designation.description }}</div>
+                </div>
+                {% endif %}
+                {% if designation.responsibilities %}
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Responsibilities:</strong></div>
+                    <div class="col-sm-8">{{ designation.responsibilities|linebreaks }}</div>
+                </div>
+                {% endif %}
+                {% if designation.requirements %}
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Requirements:</strong></div>
+                    <div class="col-sm-8">{{ designation.requirements|linebreaks }}</div>
+                </div>
+                {% endif %}
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Created:</strong></div>
+                    <div class="col-sm-8">{{ designation.created_at|date:"F d, Y" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Salary & Statistics -->
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5><i class="fas fa-chart-line"></i> Salary & Statistics</h5>
+                {% if designation.salary_range_min and designation.salary_range_max %}
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="text-center">
+                            <h4 class="text-success">${{ designation.salary_range_min|floatformat:0 }}</h4>
+                            <p class="mb-0">Minimum Salary</p>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-center">
+                            <h4 class="text-success">${{ designation.salary_range_max|floatformat:0 }}</h4>
+                            <p class="mb-0">Maximum Salary</p>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                {% endif %}
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="text-center">
+                            <h3 class="text-primary">{{ employee_count }}</h3>
+                            <p class="mb-0">Total Employees</p>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-center">
+                            <h3 class="text-info">
+                                {% for employee in employees %}
+                                    {% if employee.status == 'active' %}{{ forloop.counter|add:"-1" }}{% endif %}
+                                {% empty %}0{% endfor %}
+                            </h3>
+                            <p class="mb-0">Active Employees</p>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if employees %}
+                <hr>
+                <div class="row">
+                    <div class="col-sm-12">
+                        <h6>Salary Distribution</h6>
+                        {% with total_salary=0 %}
+                            {% for employee in employees %}
+                                {% if employee.current_salary > 0 %}
+                                    {% with total_salary=total_salary|add:employee.current_salary %}{% endwith %}
+                                {% endif %}
+                            {% endfor %}
+                            {% if total_salary > 0 %}
+                            <p class="mb-0">Average Salary: ${{ total_salary|div:employee_count|floatformat:0 }}</p>
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Employees with this Designation -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="info-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5><i class="fas fa-users"></i> Employees with this Designation</h5>
+                    <a href="{% url 'hr:employees_add' %}?designation={{ designation.id }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> Add Employee
+                    </a>
+                </div>
+                
+                {% if employees %}
+                    <div class="row">
+                        {% for employee in employees %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="employee-card">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            <a href="{% url 'hr:employee_detail' employee.id %}" class="text-decoration-none">
+                                                {{ employee.full_name }}
+                                            </a>
+                                        </h6>
+                                        <p class="mb-1 text-muted">{{ employee.employee_id }}</p>
+                                        {% if employee.department %}
+                                        <p class="mb-1"><small>{{ employee.department.name }}</small></p>
+                                        {% endif %}
+                                        <p class="mb-0"><small>{{ employee.get_employment_type_display }}</small></p>
+                                    </div>
+                                    <span class="badge bg-{{ employee.status|slice:':5' }}">
+                                        {{ employee.get_status_display }}
+                                    </span>
+                                </div>
+                                {% if employee.current_salary > 0 %}
+                                <div class="mt-2">
+                                    <small><i class="fas fa-dollar-sign text-muted"></i> ${{ employee.current_salary|floatformat:0 }}</small>
+                                </div>
+                                {% endif %}
+                                {% if employee.date_joined %}
+                                <div class="mt-1">
+                                    <small><i class="fas fa-calendar text-muted"></i> Joined {{ employee.date_joined|date:"M Y" }}</small>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-user-tie fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Employees Found</h5>
+                        <p class="text-muted">No employees are currently assigned to this designation.</p>
+                        <a href="{% url 'hr:employees_add' %}?designation={{ designation.id }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add First Employee
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Salary Structures -->
+    {% if designation.salary_structures.all %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="info-card">
+                <h5><i class="fas fa-money-check-alt"></i> Salary Structures</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Structure Name</th>
+                                <th>Basic Salary</th>
+                                <th>Gross Salary</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for structure in designation.salary_structures.all %}
+                            <tr>
+                                <td>{{ structure.name }}</td>
+                                <td>${{ structure.basic_salary|floatformat:2 }}</td>
+                                <td>${{ structure.gross_salary|floatformat:2 }}</td>
+                                <td>
+                                    <span class="badge {% if structure.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {% if structure.is_active %}Active{% else %}Inactive{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="viewSalaryStructure({{ structure.id }})">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function editDesignation(designationId) {
+    // Redirect to edit form
+    window.location.href = `/hr/designations/form/${designationId}/`;
+}
+
+function viewSalaryStructure(structureId) {
+    // View salary structure details
+    window.location.href = `/hr/salary-structures/${structureId}/`;
+}
+</script>
+{% endblock %}

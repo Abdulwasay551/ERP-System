@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Project Risk Management | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .risk-card {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(185, 28, 28, 0.1));
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        transition: all 0.3s ease;
+    }
+    .risk-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(239, 68, 68, 0.15);
+    }
+    .probability-low { background-color: #10b981; }
+    .probability-medium { background-color: #f59e0b; }
+    .probability-high { background-color: #ef4444; }
+    .impact-low { background-color: #10b981; }
+    .impact-medium { background-color: #f59e0b; }
+    .impact-high { background-color: #ef4444; }
+    .status-identified { background-color: #6b7280; }
+    .status-analyzed { background-color: #3b82f6; }
+    .status-mitigated { background-color: #10b981; }
+    .status-closed { background-color: #374151; }
+    .risk-type-technical { background-color: #2563eb; }
+    .risk-type-financial { background-color: #059669; }
+    .risk-type-operational { background-color: #7c3aed; }
+    .risk-type-external { background-color: #dc2626; }
+    .risk-type-other { background-color: #6b7280; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold project-highlight mb-2">Risk Management</h1>
+                <p class="text-gray-600">Identify, assess and mitigate project risks</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'project_mgmt:risk_add' %}" class="action-btn bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Add Risk
+                </a>
+            </div>
+        </div>
+
+        <!-- Project Filter -->
+        <div class="mb-6">
+            <form method="GET" class="flex gap-4 items-center">
+                <select name="project" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                    <option value="">All Projects</option>
+                    {% for project in projects %}
+                        <option value="{{ project.id }}" {% if project.id|stringformat:"s" == selected_project %}selected{% endif %}>
+                            {{ project.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                    Filter
+                </button>
+                <a href="{% url 'project_mgmt:risks_ui' %}" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
+                    Clear
+                </a>
+            </form>
+        </div>
+
+        <!-- Risks Grid -->
+        {% if risks %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for risk in risks %}
+                    <div class="risk-card p-6 rounded-2xl">
+                        <!-- Header -->
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800 mb-1">{{ risk.title }}</h3>
+                                <p class="text-sm text-gray-600">{{ risk.project.name }}</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="status-{{ risk.status }} text-white px-2 py-1 rounded text-xs font-medium">
+                                    {{ risk.get_status_display|default:risk.status|title }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Risk Type -->
+                        <div class="mb-4">
+                            <span class="risk-type-{{ risk.risk_type }} text-white px-3 py-1 rounded-full text-sm font-medium">
+                                {{ risk.get_risk_type_display|default:risk.risk_type|title }}
+                            </span>
+                        </div>
+
+                        <!-- Description -->
+                        <p class="text-sm text-gray-600 mb-4">{{ risk.description|truncatechars:120 }}</p>
+
+                        <!-- Risk Assessment -->
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div class="text-center">
+                                <p class="text-xs text-gray-500 mb-1">Probability</p>
+                                <span class="probability-{{ risk.probability }} text-white px-3 py-1 rounded-full text-sm font-medium">
+                                    {{ risk.get_probability_display|default:risk.probability|title }}
+                                </span>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-xs text-gray-500 mb-1">Impact</p>
+                                <span class="impact-{{ risk.impact }} text-white px-3 py-1 rounded-full text-sm font-medium">
+                                    {{ risk.get_impact_display|default:risk.impact|title }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Risk Owner -->
+                        {% if risk.owner %}
+                            <div class="flex items-center mb-4">
+                                <div class="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                                    {{ risk.owner.first_name|first }}{{ risk.owner.last_name|first }}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-800">{{ risk.owner.first_name }} {{ risk.owner.last_name }}</p>
+                                    <p class="text-xs text-gray-600">Risk Owner</p>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Mitigation Plan -->
+                        {% if risk.mitigation_plan %}
+                            <div class="mb-4">
+                                <p class="text-xs text-gray-500 mb-1">Mitigation Plan</p>
+                                <p class="text-sm text-gray-600">{{ risk.mitigation_plan|truncatechars:80 }}</p>
+                            </div>
+                        {% endif %}
+
+                        <!-- Meta Info -->
+                        <div class="text-sm text-gray-500 space-y-1 mb-4">
+                            <p><span class="font-medium">Created by:</span> {{ risk.created_by.get_full_name|default:risk.created_by.username }}</p>
+                            <p><span class="font-medium">Date:</span> {{ risk.created_at|date:"M d, Y" }}</p>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex gap-2">
+                            <button onclick="editRisk({{ risk.id }})" class="text-red-600 hover:text-red-800 text-sm font-medium">
+                                Edit
+                            </button>
+                            <button onclick="viewRisk({{ risk.id }})" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                Details
+                            </button>
+                            <button onclick="deleteRisk({{ risk.id }})" class="text-gray-600 hover:text-gray-800 text-sm font-medium">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12">
+                <div class="w-24 h-24 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">No Risks Identified</h3>
+                <p class="text-gray-500 mb-6">Start by identifying potential risks for your projects.</p>
+                <a href="{% url 'project_mgmt:risk_add' %}" class="action-btn bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    Identify First Risk
+                </a>
+            </div>
+        {% endif %}
+
+        {% if error %}
+            <div class="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
+                <div class="flex">
+                    <svg class="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                    </svg>
+                    <p class="text-red-800">{{ error }}</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function editRisk(riskId) {
+    // Add edit functionality here
+    console.log('Edit risk:', riskId);
+}
+
+function viewRisk(riskId) {
+    // Add view details functionality here
+    console.log('View risk:', riskId);
+}
+
+function deleteRisk(riskId) {
+    if (confirm('Are you sure you want to delete this risk?')) {
+        // Add delete functionality here
+        console.log('Delete risk:', riskId);
+    }
+}
+</script>
+{% endblock %}

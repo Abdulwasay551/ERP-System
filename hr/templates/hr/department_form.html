@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if department %}Edit Department{% else %}Add Department{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    .form-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="form-container">
+        <div class="form-header">
+            <h3><i class="fas fa-building"></i> 
+                {% if department %}Edit Department{% else %}Add New Department{% endif %}
+            </h3>
+        </div>
+
+        <div class="form-card">
+            <form id="departmentForm" method="post">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="name" class="form-label">Department Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="name" name="name" 
+                           value="{% if department %}{{ department.name }}{% endif %}" required>
+                    <div class="invalid-feedback"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="code" class="form-label">Department Code</label>
+                    <input type="text" class="form-control" id="code" name="code" 
+                           value="{% if department %}{{ department.code }}{% endif %}"
+                           placeholder="e.g., IT, HR, FIN">
+                    <small class="form-text text-muted">Short code for the department (optional)</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="budget" class="form-label">Department Budget</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" id="budget" name="budget" 
+                               value="{% if department %}{{ department.budget }}{% endif %}" 
+                               step="0.01" min="0" placeholder="0.00">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="4" 
+                              placeholder="Brief description of the department's role and responsibilities">{% if department %}{{ department.description }}{% endif %}</textarea>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'hr:departments_ui' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> 
+                        {% if department %}Update Department{% else %}Create Department{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('departmentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    // Show loading state
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    submitBtn.disabled = true;
+    
+    // Clear previous errors
+    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    
+    {% if department %}
+    const url = '{% url "hr:departments_edit" department.id %}';
+    {% else %}
+    const url = '{% url "hr:departments_add" %}';
+    {% endif %}
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'Department {% if department %}updated{% else %}created{% endif %} successfully',
+                timer: 1500,
+                showConfirmButton: false
+            }).then(() => {
+                window.location.href = '{% url "hr:departments_ui" %}';
+            });
+        } else {
+            // Show error
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.error || 'An error occurred while saving the department'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An unexpected error occurred'
+        });
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+
+// Auto-generate code from name
+document.getElementById('name').addEventListener('input', function() {
+    const codeField = document.getElementById('code');
+    if (!codeField.value) {
+        const code = this.value.toUpperCase()
+            .replace(/[^A-Z0-9\s]/g, '')
+            .split(' ')
+            .map(word => word.substring(0, 3))
+            .join('');
+        codeField.value = code.substring(0, 10);
+    }
+});
+</script>
+{% endblock %}

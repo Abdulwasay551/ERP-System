@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Employee Detail - {{ employee.full_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .employee-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .info-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    .info-card h5 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .status-active { background-color: #d4edda; color: #155724; }
+    .status-inactive { background-color: #f8d7da; color: #721c24; }
+    .attendance-item {
+        border-left: 4px solid #3498db;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        background: #f8f9fa;
+        border-radius: 0 0.25rem 0.25rem 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Employee Header -->
+    <div class="employee-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="mb-1">{{ employee.full_name }}</h2>
+                <p class="mb-1">Employee ID: {{ employee.employee_id }}</p>
+                <p class="mb-0">
+                    {% if employee.department %}{{ employee.department.name }}{% endif %}
+                    {% if employee.designation %} - {{ employee.designation.title }}{% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="status-badge status-{{ employee.status }}">
+                    {{ employee.get_status_display }}
+                </span>
+                <div class="mt-2">
+                    <a href="{% url 'hr:employees_ui' %}" class="btn btn-light btn-sm">
+                        <i class="fas fa-arrow-left"></i> Back to Employees
+                    </a>
+                    <button class="btn btn-warning btn-sm" onclick="editEmployee({{ employee.id }})">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Personal Information -->
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5><i class="fas fa-user"></i> Personal Information</h5>
+                <div class="row">
+                    <div class="col-sm-4"><strong>Full Name:</strong></div>
+                    <div class="col-sm-8">{{ employee.full_name }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Email:</strong></div>
+                    <div class="col-sm-8">{{ employee.email|default:"Not provided" }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Phone:</strong></div>
+                    <div class="col-sm-8">{{ employee.phone|default:"Not provided" }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Date of Birth:</strong></div>
+                    <div class="col-sm-8">{{ employee.date_of_birth|default:"Not provided" }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Address:</strong></div>
+                    <div class="col-sm-8">{{ employee.address|default:"Not provided" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employment Information -->
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5><i class="fas fa-briefcase"></i> Employment Information</h5>
+                <div class="row">
+                    <div class="col-sm-4"><strong>Employee ID:</strong></div>
+                    <div class="col-sm-8">{{ employee.employee_id }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Department:</strong></div>
+                    <div class="col-sm-8">{{ employee.department.name|default:"Not assigned" }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Designation:</strong></div>
+                    <div class="col-sm-8">{{ employee.designation.title|default:"Not assigned" }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Employment Type:</strong></div>
+                    <div class="col-sm-8">{{ employee.get_employment_type_display }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Date Joined:</strong></div>
+                    <div class="col-sm-8">{{ employee.date_joined|default:"Not provided" }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Current Salary:</strong></div>
+                    <div class="col-sm-8">${{ employee.current_salary|floatformat:2 }}</div>
+                </div>
+                {% if employee.reporting_manager %}
+                <div class="row mt-2">
+                    <div class="col-sm-4"><strong>Reporting Manager:</strong></div>
+                    <div class="col-sm-8">{{ employee.reporting_manager.full_name }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Attendance -->
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5><i class="fas fa-calendar-check"></i> Recent Attendance</h5>
+                {% if recent_attendance %}
+                    {% for attendance in recent_attendance %}
+                    <div class="attendance-item">
+                        <div class="d-flex justify-content-between">
+                            <span><strong>{{ attendance.date }}</strong></span>
+                            <span class="badge bg-{{ attendance.status|slice:':5' }}">{{ attendance.get_status_display }}</span>
+                        </div>
+                        <small>
+                            {% if attendance.check_in %}In: {{ attendance.check_in }}{% endif %}
+                            {% if attendance.check_out %} | Out: {{ attendance.check_out }}{% endif %}
+                            {% if attendance.working_hours %} | Hours: {{ attendance.working_hours }}{% endif %}
+                        </small>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No attendance records found.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Leave Balance -->
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5><i class="fas fa-beach-ball"></i> Leave Balance</h5>
+                {% if leave_balances %}
+                    {% for balance in leave_balances %}
+                    <div class="row mb-2">
+                        <div class="col-6">{{ balance.leave_type.name }}</div>
+                        <div class="col-6">
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {% widthratio balance.used_days balance.entitled_days 100 %}%"
+                                     aria-valuenow="{{ balance.used_days }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="{{ balance.entitled_days }}">
+                                    {{ balance.available_days }}/{{ balance.entitled_days }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No leave balance information available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Leaves -->
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5><i class="fas fa-calendar-times"></i> Recent Leaves</h5>
+                {% if recent_leaves %}
+                    {% for leave in recent_leaves %}
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span><strong>{{ leave.leave_type.name }}</strong></span>
+                            <span class="badge bg-{{ leave.status }}">{{ leave.get_status_display }}</span>
+                        </div>
+                        <small>{{ leave.start_date }} to {{ leave.end_date }} ({{ leave.days_requested }} days)</small>
+                        {% if leave.reason %}
+                        <br><small class="text-muted">{{ leave.reason|truncatechars:50 }}</small>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No leave records found.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Payrolls -->
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5><i class="fas fa-money-bill-wave"></i> Recent Payrolls</h5>
+                {% if recent_payrolls %}
+                    {% for payroll in recent_payrolls %}
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span><strong>{{ payroll.period.name|default:"Payroll" }}</strong></span>
+                            <span class="badge bg-{{ payroll.status }}">{{ payroll.get_status_display }}</span>
+                        </div>
+                        <small>
+                            Gross: ${{ payroll.gross_salary|floatformat:2 }} | 
+                            Net: ${{ payroll.net_salary|floatformat:2 }}
+                        </small>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No payroll records found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function editEmployee(employeeId) {
+    // Redirect to edit form or open modal
+    window.location.href = `/hr/employees/add/?edit=${employeeId}`;
+}
+</script>
+{% endblock %}
