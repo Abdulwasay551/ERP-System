@@ -8,7 +8,9 @@ from .views import (
     subcontracting_ui, reports_ui, settings_ui, work_center_create,
     work_center_detail, work_center_edit, work_center_manage, work_order_create,
     work_order_edit, production_plan_create, production_plan_edit, production_plan_detail,
-    run_mrp_calculation, supply_demand_report
+    run_mrp_calculation, supply_demand_report, mrp_plan_list, mrp_plan_create,
+    mrp_plan_detail, mrp_requirement_list, demand_forecast_list, 
+    supplier_lead_time_list, reorder_rules_list
 )
 
 app_name = 'manufacturing'
@@ -46,6 +48,13 @@ urlpatterns = [
     path('mrp/planning-dashboard/', mrp_planning_dashboard, name='mrp_planning_dashboard'),
     path('mrp/run/', run_mrp_calculation, name='run_mrp_calculation'),
     path('mrp/supply-demand-report/', supply_demand_report, name='supply_demand_report'),
+    path('mrp/plans/', mrp_plan_list, name='mrp_plan_list'),
+    path('mrp/plans/create/', mrp_plan_create, name='mrp_plan_create'),
+    path('mrp/plans/<int:plan_id>/', mrp_plan_detail, name='mrp_plan_detail'),
+    path('mrp/requirements/', mrp_requirement_list, name='mrp_requirement_list'),
+    path('mrp/demand-forecasts/', demand_forecast_list, name='demand_forecast_list'),
+    path('mrp/supplier-lead-times/', supplier_lead_time_list, name='supplier_lead_time_list'),
+    path('mrp/reorder-rules/', reorder_rules_list, name='reorder_rules_list'),
     
     # Work Centers
     path('work-centers/', work_centers_ui, name='work_centers_ui'),

@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}MRP Plans - Manufacturing{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">MRP Plans</h1>
+                    <p class="text-gray-600 mt-2">Material Requirements Planning Plans</p>
+                </div>
+                <div class="flex space-x-3">
+                    <a href="{% url 'manufacturing:mrp_plan_create' %}" class="bg-blue-600 text-white px-6 py-3 rounded-2xl hover:bg-blue-700 transition-all flex items-center">
+                        <i class="fas fa-plus mr-2"></i>
+                        Create MRP Plan
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Total Plans</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ total_plans }}</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-list-alt text-blue-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Active Plans</p>
+                        <p class="text-2xl font-bold text-green-600">{{ plans|length }}</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg">
+                        <i class="fas fa-play text-green-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">This Month</p>
+                        <p class="text-2xl font-bold text-purple-600">{{ plans.object_list|length }}</p>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-lg">
+                        <i class="fas fa-calendar text-purple-600"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Plans Table -->
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900">MRP Plans</h2>
+            </div>
+            
+            {% if plans %}
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Plan Name</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Plan Date</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Horizon</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Requirements</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for plan in plans %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="py-4 px-6">
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ plan.name }}</p>
+                                    {% if plan.description %}
+                                    <p class="text-sm text-gray-500">{{ plan.description|truncatechars:50 }}</p>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="py-4 px-6">
+                                {% if plan.status == 'completed' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    Completed
+                                </span>
+                                {% elif plan.status == 'calculating' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-spinner fa-spin mr-1"></i>
+                                    Calculating
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    <i class="fas fa-circle mr-1"></i>
+                                    {{ plan.get_status_display }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="py-4 px-6 text-sm text-gray-900">
+                                {{ plan.plan_date|date:"M d, Y" }}
+                            </td>
+                            <td class="py-4 px-6 text-sm text-gray-900">
+                                {{ plan.planning_horizon_days }} days
+                            </td>
+                            <td class="py-4 px-6 text-sm text-gray-900">
+                                {{ plan.requirements.count }}
+                            </td>
+                            <td class="py-4 px-6 text-sm text-gray-500">
+                                {{ plan.created_at|date:"M d, Y" }}
+                            </td>
+                            <td class="py-4 px-6">
+                                <div class="flex space-x-2">
+                                    <a href="{% url 'manufacturing:mrp_plan_detail' plan.id %}" class="text-blue-600 hover:text-blue-800">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if plan.status == 'draft' %}
+                                    <a href="{% url 'manufacturing:run_mrp_calculation' %}?plan_id={{ plan.id }}" class="text-green-600 hover:text-green-800">
+                                        <i class="fas fa-play"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if plans.has_other_pages %}
+            <div class="px-6 py-4 border-t border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-700">
+                        Showing {{ plans.start_index }} to {{ plans.end_index }} of {{ plans.paginator.count }} results
+                    </div>
+                    <div class="flex space-x-1">
+                        {% if plans.has_previous %}
+                            <a href="?page={{ plans.previous_page_number }}" class="px-3 py-2 text-sm text-gray-500 hover:text-gray-700">Previous</a>
+                        {% endif %}
+                        
+                        {% for num in plans.paginator.page_range %}
+                            {% if plans.number == num %}
+                                <span class="px-3 py-2 text-sm bg-blue-600 text-white rounded">{{ num }}</span>
+                            {% else %}
+                                <a href="?page={{ num }}" class="px-3 py-2 text-sm text-gray-500 hover:text-gray-700">{{ num }}</a>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if plans.has_next %}
+                            <a href="?page={{ plans.next_page_number }}" class="px-3 py-2 text-sm text-gray-500 hover:text-gray-700">Next</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-12">
+                <i class="fas fa-list-alt text-gray-400 text-6xl mb-4"></i>
+                <h3 class="text-xl font-medium text-gray-900 mb-2">No MRP Plans</h3>
+                <p class="text-gray-600 mb-6">Get started by creating your first MRP plan</p>
+                <a href="{% url 'manufacturing:mrp_plan_create' %}" class="bg-blue-600 text-white px-6 py-3 rounded-2xl hover:bg-blue-700 transition-all">
+                    <i class="fas fa-plus mr-2"></i>Create MRP Plan
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

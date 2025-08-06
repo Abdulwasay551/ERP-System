@@ -5,6 +5,7 @@ from django.views.decorators.http import require_POST
 from django.db.models import Count, Q, Sum, F, Avg
 from django.utils import timezone
 from datetime import datetime, timedelta
+from decimal import Decimal
 from django.core.paginator import Paginator
 from django.contrib import messages
 from django.db import transaction
@@ -17,7 +18,8 @@ from .models import (
     WorkCenter, BillOfMaterials, BillOfMaterialsItem, BOMOperation,
     WorkOrder, WorkOrderOperation, OperationLog, QualityCheck,
     MaterialConsumption, MRPPlan, MRPRequirement, ProductionPlan,
-    ProductionPlanItem, JobCard, Subcontractor, SubcontractWorkOrder
+    ProductionPlanItem, JobCard, Subcontractor, SubcontractWorkOrder,
+    DemandForecast, ReorderRule, SupplierLeadTime
 )
 from .serializers import (
     WorkCenterSerializer, BillOfMaterialsSerializer, WorkOrderSerializer,
@@ -1713,3 +1715,278 @@ def production_plan_detail(request, plan_id):
     except Exception as e:
         messages.error(request, f'Error viewing production plan: {str(e)}')
         return redirect('manufacturing:production_plans_ui')
+
+
+# MRP Views
+@login_required
+def mrp_plan_list(request):
+    """List all MRP plans"""
+    try:
+        company = request.user.company
+        plans = MRPPlan.objects.filter(company=company).order_by('-created_at')
+        
+        # Pagination
+        paginator = Paginator(plans, 20)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        context = {
+            'plans': page_obj,
+            'total_plans': plans.count(),
+        }
+        return render(request, 'manufacturing/mrp_plan_list.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'Error loading MRP plans: {str(e)}')
+        return redirect('manufacturing:mrp_ui')
+
+
+@login_required
+def mrp_plan_create(request):
+    """Create a new MRP plan"""
+    if request.method == 'POST':
+        try:
+            company = request.user.company
+            
+            # Create MRP plan
+            plan = MRPPlan.objects.create(
+                company=company,
+                name=request.POST.get('name'),
+                plan_date=request.POST.get('plan_date') or timezone.now().date(),
+                planning_horizon_days=int(request.POST.get('planning_horizon_days', 90)),
+                include_safety_stock=request.POST.get('include_safety_stock') == 'on',
+                include_reorder_points=request.POST.get('include_reorder_points') == 'on',
+                consider_lead_times=request.POST.get('consider_lead_times') == 'on',
+                auto_create_purchase_requests=request.POST.get('auto_create_purchase_requests') == 'on',
+                description=request.POST.get('description', ''),
+                created_by=request.user,
+                status='draft'
+            )
+            
+            messages.success(request, f'MRP Plan "{plan.name}" created successfully!')
+            return redirect('manufacturing:mrp_plan_detail', plan_id=plan.id)
+            
+        except Exception as e:
+            messages.error(request, f'Error creating MRP plan: {str(e)}')
+    
+    context = {
+        'today': timezone.now().date(),
+    }
+    return render(request, 'manufacturing/mrp_plan_create.html', context)
+
+
+@login_required
+def mrp_plan_detail(request, plan_id):
+    """View MRP plan details"""
+    try:
+        company = request.user.company
+        plan = get_object_or_404(MRPPlan, id=plan_id, company=company)
+        
+        # Get requirements
+        requirements = plan.requirements.select_related('product').order_by('required_date', 'product__name')
+        
+        # Summary statistics
+        total_requirements = requirements.count()
+        total_shortage_value = requirements.aggregate(
+            total=Sum('shortage_quantity')
+        )['total'] or Decimal('0')
+        
+        pending_requirements = requirements.filter(status='pending').count()
+        
+        context = {
+            'plan': plan,
+            'requirements': requirements,
+            'total_requirements': total_requirements,
+            'total_shortage_value': total_shortage_value,
+            'pending_requirements': pending_requirements,
+        }
+        return render(request, 'manufacturing/mrp_plan_detail.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'Error viewing MRP plan: {str(e)}')
+        return redirect('manufacturing:mrp_plan_list')
+
+
+@login_required
+def mrp_requirement_list(request):
+    """List all MRP requirements"""
+    try:
+        company = request.user.company
+        
+        # Get latest MRP plan or filter by plan_id
+        plan_id = request.GET.get('plan_id')
+        if plan_id:
+            requirements = MRPRequirement.objects.filter(
+                mrp_plan__company=company,
+                mrp_plan_id=plan_id
+            ).select_related('product', 'mrp_plan')
+        else:
+            # Get requirements from the latest plan
+            latest_plan = MRPPlan.objects.filter(
+                company=company,
+                status='completed'
+            ).order_by('-created_at').first()
+            
+            if latest_plan:
+                requirements = latest_plan.requirements.select_related('product')
+            else:
+                requirements = MRPRequirement.objects.none()
+        
+        # Filter options
+        status_filter = request.GET.get('status')
+        if status_filter:
+            requirements = requirements.filter(status=status_filter)
+        
+        source_type_filter = request.GET.get('source_type')
+        if source_type_filter:
+            requirements = requirements.filter(source_type=source_type_filter)
+        
+        # Pagination
+        paginator = Paginator(requirements, 20)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        # Get available plans for filter
+        available_plans = MRPPlan.objects.filter(company=company).order_by('-created_at')[:10]
+        
+        context = {
+            'requirements': page_obj,
+            'available_plans': available_plans,
+            'current_plan_id': plan_id,
+            'status_filter': status_filter,
+            'source_type_filter': source_type_filter,
+        }
+        return render(request, 'manufacturing/mrp_requirement_list.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'Error loading MRP requirements: {str(e)}')
+        return redirect('manufacturing:mrp_ui')
+
+
+@login_required
+def demand_forecast_list(request):
+    """List demand forecasts"""
+    try:
+        company = request.user.company
+        forecasts = DemandForecast.objects.filter(company=company).select_related('product').order_by('-forecast_date')
+        
+        # Filter by product
+        product_filter = request.GET.get('product')
+        if product_filter:
+            forecasts = forecasts.filter(product_id=product_filter)
+        
+        # Filter by date range
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        if start_date:
+            forecasts = forecasts.filter(forecast_date__gte=start_date)
+        if end_date:
+            forecasts = forecasts.filter(forecast_date__lte=end_date)
+        
+        # Pagination
+        paginator = Paginator(forecasts, 20)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        # Get products for filter
+        products = Product.objects.filter(company=company).order_by('name')
+        
+        context = {
+            'forecasts': page_obj,
+            'products': products,
+            'product_filter': product_filter,
+            'start_date': start_date,
+            'end_date': end_date,
+        }
+        return render(request, 'manufacturing/demand_forecast_list.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'Error loading demand forecasts: {str(e)}')
+        return redirect('manufacturing:mrp_ui')
+
+
+@login_required
+def supplier_lead_time_list(request):
+    """List supplier lead times"""
+    try:
+        company = request.user.company
+        lead_times = SupplierLeadTime.objects.filter(company=company).select_related('product', 'supplier').order_by('product__name')
+        
+        # Filter by product
+        product_filter = request.GET.get('product')
+        if product_filter:
+            lead_times = lead_times.filter(product_id=product_filter)
+        
+        # Filter by supplier
+        supplier_filter = request.GET.get('supplier')
+        if supplier_filter:
+            lead_times = lead_times.filter(supplier_id=supplier_filter)
+        
+        # Pagination
+        paginator = Paginator(lead_times, 20)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        # Get products and suppliers for filters
+        products = Product.objects.filter(company=company).order_by('name')
+        from crm.models import Contact
+        suppliers = Contact.objects.filter(company=company, is_supplier=True).order_by('name')
+        
+        context = {
+            'lead_times': page_obj,
+            'products': products,
+            'suppliers': suppliers,
+            'product_filter': product_filter,
+            'supplier_filter': supplier_filter,
+        }
+        return render(request, 'manufacturing/supplier_lead_time_list.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'Error loading supplier lead times: {str(e)}')
+        return redirect('manufacturing:mrp_ui')
+
+
+@login_required
+def reorder_rules_list(request):
+    """List reorder rules"""
+    try:
+        company = request.user.company
+        reorder_rules = ReorderRule.objects.filter(company=company).select_related('product', 'warehouse').order_by('product__name')
+        
+        # Filter by product
+        product_filter = request.GET.get('product')
+        if product_filter:
+            reorder_rules = reorder_rules.filter(product_id=product_filter)
+        
+        # Filter by warehouse
+        warehouse_filter = request.GET.get('warehouse')
+        if warehouse_filter:
+            reorder_rules = reorder_rules.filter(warehouse_id=warehouse_filter)
+        
+        # Filter by active status
+        active_filter = request.GET.get('active')
+        if active_filter:
+            reorder_rules = reorder_rules.filter(is_active=active_filter == 'true')
+        
+        # Pagination
+        paginator = Paginator(reorder_rules, 20)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        # Get products and warehouses for filters
+        products = Product.objects.filter(company=company).order_by('name')
+        warehouses = Warehouse.objects.filter(company=company).order_by('name')
+        
+        context = {
+            'reorder_rules': page_obj,
+            'products': products,
+            'warehouses': warehouses,
+            'product_filter': product_filter,
+            'warehouse_filter': warehouse_filter,
+            'active_filter': active_filter,
+        }
+        return render(request, 'manufacturing/reorder_rules_list.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'Error loading reorder rules: {str(e)}')
+        return redirect('manufacturing:mrp_ui')

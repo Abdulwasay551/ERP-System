@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ plan.name }} - MRP Plan Details{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'manufacturing:mrp_plan_list' %}" class="text-gray-600 hover:text-gray-800">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </a>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">{{ plan.name }}</h1>
+                        <p class="text-gray-600 mt-2">MRP Plan Details</p>
+                    </div>
+                </div>
+                <div class="flex space-x-3">
+                    {% if plan.status == 'draft' %}
+                    <a href="{% url 'manufacturing:run_mrp_calculation' %}?plan_id={{ plan.id }}" 
+                       class="bg-green-600 text-white px-6 py-3 rounded-2xl hover:bg-green-700 transition-all flex items-center">
+                        <i class="fas fa-play mr-2"></i>
+                        Run Calculation
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Plan Information -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-500">Status</label>
+                    {% if plan.status == 'completed' %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 mt-1">
+                        <i class="fas fa-check-circle mr-1"></i>
+                        Completed
+                    </span>
+                    {% elif plan.status == 'calculating' %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 mt-1">
+                        <i class="fas fa-spinner fa-spin mr-1"></i>
+                        Calculating
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 mt-1">
+                        <i class="fas fa-circle mr-1"></i>
+                        {{ plan.get_status_display }}
+                    </span>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-500">Plan Date</label>
+                    <p class="text-lg font-medium text-gray-900 mt-1">{{ plan.plan_date|date:"M d, Y" }}</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-500">Planning Horizon</label>
+                    <p class="text-lg font-medium text-gray-900 mt-1">{{ plan.planning_horizon_days }} days</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-500">Created</label>
+                    <p class="text-lg font-medium text-gray-900 mt-1">{{ plan.created_at|date:"M d, Y" }}</p>
+                </div>
+            </div>
+            
+            {% if plan.description %}
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <label class="block text-sm font-medium text-gray-500 mb-2">Description</label>
+                <p class="text-gray-900">{{ plan.description }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Total Requirements</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ total_requirements }}</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-list-alt text-blue-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Pending Items</p>
+                        <p class="text-2xl font-bold text-orange-600">{{ pending_requirements }}</p>
+                    </div>
+                    <div class="bg-orange-100 p-3 rounded-lg">
+                        <i class="fas fa-clock text-orange-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Total Shortage</p>
+                        <p class="text-2xl font-bold text-red-600">{{ total_shortage_value|floatformat:0 }}</p>
+                    </div>
+                    <div class="bg-red-100 p-3 rounded-lg">
+                        <i class="fas fa-exclamation-triangle text-red-600"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Requirements Table -->
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900">Material Requirements</h2>
+            </div>
+            
+            {% if requirements %}
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Required Qty</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Available Qty</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Shortage</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Required Date</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for req in requirements %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="py-4 px-6">
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ req.product.name }}</p>
+                                    <p class="text-sm text-gray-500">{{ req.product.internal_reference }}</p>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6 text-sm text-gray-900">
+                                {{ req.required_quantity|floatformat:2 }}
+                            </td>
+                            <td class="py-4 px-6 text-sm text-gray-900">
+                                {{ req.available_quantity|floatformat:2 }}
+                            </td>
+                            <td class="py-4 px-6">
+                                {% if req.shortage_quantity > 0 %}
+                                <span class="text-red-600 font-medium">{{ req.shortage_quantity|floatformat:2 }}</span>
+                                {% else %}
+                                <span class="text-green-600">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-4 px-6 text-sm text-gray-900">
+                                {{ req.required_date|date:"M d, Y" }}
+                            </td>
+                            <td class="py-4 px-6">
+                                {% if req.source_type == 'purchase' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    <i class="fas fa-shopping-cart mr-1"></i>
+                                    Purchase
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                    <i class="fas fa-industry mr-1"></i>
+                                    Manufacture
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="py-4 px-6">
+                                {% if req.status == 'pending' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    Pending
+                                </span>
+                                {% elif req.status == 'ordered' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    Ordered
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Complete
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-12">
+                <i class="fas fa-list-alt text-gray-400 text-6xl mb-4"></i>
+                <h3 class="text-xl font-medium text-gray-900 mb-2">No Requirements</h3>
+                {% if plan.status == 'draft' %}
+                <p class="text-gray-600 mb-6">Run the MRP calculation to generate requirements</p>
+                <a href="{% url 'manufacturing:run_mrp_calculation' %}?plan_id={{ plan.id }}" 
+                   class="bg-green-600 text-white px-6 py-3 rounded-2xl hover:bg-green-700 transition-all">
+                    <i class="fas fa-play mr-2"></i>Run Calculation
+                </a>
+                {% else %}
+                <p class="text-gray-600">No material requirements were found for this plan</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

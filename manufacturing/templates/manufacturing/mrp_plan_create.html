@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Create MRP Plan - Manufacturing{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center space-x-4">
+                <a href="{% url 'manufacturing:mrp_plan_list' %}" class="text-gray-600 hover:text-gray-800">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </a>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Create MRP Plan</h1>
+                    <p class="text-gray-600 mt-2">Set up a new Material Requirements Planning plan</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="bg-white rounded-xl border border-gray-200 p-8">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Plan Name *</label>
+                        <input type="text" name="name" id="name" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Enter plan name">
+                    </div>
+                    
+                    <div>
+                        <label for="plan_date" class="block text-sm font-medium text-gray-700 mb-2">Plan Date *</label>
+                        <input type="date" name="plan_date" id="plan_date" required
+                               value="{{ today }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="planning_horizon_days" class="block text-sm font-medium text-gray-700 mb-2">Planning Horizon (Days) *</label>
+                    <input type="number" name="planning_horizon_days" id="planning_horizon_days" required
+                           value="90" min="1" max="365"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <p class="text-sm text-gray-500 mt-1">Number of days to plan ahead (1-365)</p>
+                </div>
+
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea name="description" id="description" rows="3"
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Optional description for this MRP plan"></textarea>
+                </div>
+
+                <!-- Planning Options -->
+                <div class="border-t border-gray-200 pt-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Planning Options</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <input type="checkbox" name="include_safety_stock" id="include_safety_stock" checked
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <label for="include_safety_stock" class="ml-3 block text-sm text-gray-700">
+                                Include Safety Stock in calculations
+                            </label>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <input type="checkbox" name="include_reorder_points" id="include_reorder_points" checked
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <label for="include_reorder_points" class="ml-3 block text-sm text-gray-700">
+                                Consider Reorder Points
+                            </label>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <input type="checkbox" name="consider_lead_times" id="consider_lead_times" checked
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <label for="consider_lead_times" class="ml-3 block text-sm text-gray-700">
+                                Consider Lead Times
+                            </label>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <input type="checkbox" name="auto_create_purchase_requests" id="auto_create_purchase_requests"
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <label for="auto_create_purchase_requests" class="ml-3 block text-sm text-gray-700">
+                                Automatically create Purchase Requests for shortages
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                    <a href="{% url 'manufacturing:mrp_plan_list' %}" 
+                       class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-save mr-2"></i>
+                        Create MRP Plan
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Help Text -->
+        <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h4 class="text-lg font-medium text-blue-900 mb-2">
+                <i class="fas fa-info-circle mr-2"></i>
+                About MRP Plans
+            </h4>
+            <div class="text-blue-800 space-y-2">
+                <p>• MRP (Material Requirements Planning) calculates what materials are needed, how much, and when</p>
+                <p>• Plans analyze sales orders, forecasts, and current inventory to determine requirements</p>
+                <p>• Lead times and safety stock levels are considered to ensure timely availability</p>
+                <p>• The system can automatically generate purchase requests for items that need to be ordered</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

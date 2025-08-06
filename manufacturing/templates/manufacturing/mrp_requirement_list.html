@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}MRP Requirements - Manufacturing{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">MRP Requirements</h1>
+                    <p class="text-gray-600 mt-2">Material Requirements from MRP Planning</p>
+                </div>
+                <div class="flex space-x-3">
+                    <a href="{% url 'manufacturing:mrp_ui' %}" class="bg-blue-600 text-white px-6 py-3 rounded-2xl hover:bg-blue-700 transition-all flex items-center">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Back to MRP
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+            <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label for="plan_id" class="block text-sm font-medium text-gray-700 mb-2">MRP Plan</label>
+                    <select name="plan_id" id="plan_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Latest Plan</option>
+                        {% for plan in available_plans %}
+                        <option value="{{ plan.id }}" {% if plan.id|stringformat:"s" == current_plan_id %}selected{% endif %}>
+                            {{ plan.name }} ({{ plan.plan_date|date:"M d, Y" }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select name="status" id="status" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Statuses</option>
+                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="ordered" {% if status_filter == 'ordered' %}selected{% endif %}>Ordered</option>
+                        <option value="complete" {% if status_filter == 'complete' %}selected{% endif %}>Complete</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="source_type" class="block text-sm font-medium text-gray-700 mb-2">Source Type</label>
+                    <select name="source_type" id="source_type" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Types</option>
+                        <option value="purchase" {% if source_type_filter == 'purchase' %}selected{% endif %}>Purchase</option>
+                        <option value="manufacture" {% if source_type_filter == 'manufacture' %}selected{% endif %}>Manufacture</option>
+                    </select>
+                </div>
+                
+                <div class="flex items-end">
+                    <button type="submit" class="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-filter mr-2"></i>
+                        Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Requirements Table -->
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900">Material Requirements</h2>
+            </div>
+            
+            {% if requirements %}
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">MRP Plan</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Required Qty</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Available Qty</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Shortage</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Required Date</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Suggested Order Date</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                            <th class="text-left py-3 px-6 font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for req in requirements %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="py-4 px-6">
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ req.product.name }}</p>
+                                    <p class="text-sm text-gray-500">{{ req.product.internal_reference }}</p>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">{{ req.mrp_plan.name }}</p>
+                                    <p class="text-xs text-gray-500">{{ req.mrp_plan.plan_date|date:"M d, Y" }}</p>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6 text-sm text-gray-900">
+                                {{ req.required_quantity|floatformat:2 }}
+                            </td>
+                            <td class="py-4 px-6 text-sm text-gray-900">
+                                {{ req.available_quantity|floatformat:2 }}
+                            </td>
+                            <td class="py-4 px-6">
+                                {% if req.shortage_quantity > 0 %}
+                                <span class="text-red-600 font-medium">{{ req.shortage_quantity|floatformat:2 }}</span>
+                                {% else %}
+                                <span class="text-green-600">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-4 px-6 text-sm text-gray-900">
+                                {{ req.required_date|date:"M d, Y" }}
+                            </td>
+                            <td class="py-4 px-6 text-sm text-gray-900">
+                                {{ req.suggested_order_date|date:"M d, Y" }}
+                            </td>
+                            <td class="py-4 px-6">
+                                {% if req.source_type == 'purchase' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    <i class="fas fa-shopping-cart mr-1"></i>
+                                    Purchase
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                    <i class="fas fa-industry mr-1"></i>
+                                    Manufacture
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="py-4 px-6">
+                                {% if req.status == 'pending' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    Pending
+                                </span>
+                                {% elif req.status == 'ordered' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    Ordered
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Complete
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if requirements.has_other_pages %}
+            <div class="px-6 py-4 border-t border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-700">
+                        Showing {{ requirements.start_index }} to {{ requirements.end_index }} of {{ requirements.paginator.count }} results
+                    </div>
+                    <div class="flex space-x-1">
+                        {% if requirements.has_previous %}
+                            <a href="?page={{ requirements.previous_page_number }}&plan_id={{ current_plan_id }}&status={{ status_filter }}&source_type={{ source_type_filter }}" class="px-3 py-2 text-sm text-gray-500 hover:text-gray-700">Previous</a>
+                        {% endif %}
+                        
+                        {% for num in requirements.paginator.page_range %}
+                            {% if requirements.number == num %}
+                                <span class="px-3 py-2 text-sm bg-blue-600 text-white rounded">{{ num }}</span>
+                            {% else %}
+                                <a href="?page={{ num }}&plan_id={{ current_plan_id }}&status={{ status_filter }}&source_type={{ source_type_filter }}" class="px-3 py-2 text-sm text-gray-500 hover:text-gray-700">{{ num }}</a>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if requirements.has_next %}
+                            <a href="?page={{ requirements.next_page_number }}&plan_id={{ current_plan_id }}&status={{ status_filter }}&source_type={{ source_type_filter }}" class="px-3 py-2 text-sm text-gray-500 hover:text-gray-700">Next</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-12">
+                <i class="fas fa-clipboard-check text-gray-400 text-6xl mb-4"></i>
+                <h3 class="text-xl font-medium text-gray-900 mb-2">No Requirements Found</h3>
+                <p class="text-gray-600 mb-6">No MRP requirements match your current filters</p>
+                <a href="{% url 'manufacturing:mrp_ui' %}" class="bg-blue-600 text-white px-6 py-3 rounded-2xl hover:bg-blue-700 transition-all">
+                    <i class="fas fa-plus mr-2"></i>Run MRP Analysis
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
