@@ -444,8 +444,16 @@
             {% include 'sidebars/crm_sidebar.html' %}
         {% elif '/hr/' in request.path %}
             {% include 'sidebars/hr_sidebar.html' %}
+        {% elif '/accounting/reports' in request.path or '/accounting/trial_balance' in request.path or '/accounting/profit_loss' in request.path or '/accounting/balance_sheet' in request.path or '/accounting/cash_flow' in request.path %}
+            {% include 'sidebars/financial_reports_sidebar.html' %}
+        {% elif '/accounting/journal' in request.path or '/accounting/auto_entries' in request.path %}
+            {% include 'sidebars/journal_sidebar.html' %}
+        {% elif '/accounting/account' in request.path or '/accounting/chart-of-accounts/' in request.path or '/accounting/categories/' in request.path or '/accounting/groups/' in request.path or '/accounting/templates/' in request.path or '/accounting/types/' in request.path or '/accounting/analysis/' in request.path  or '/accounting/reconciliation/' in request.path or '/accounting/import-export/' in request.path or '/accounting/coa-settings/' in request.path %}
+            {% include 'sidebars/coa_sidebar.html' %}
         {% elif '/accounting/' in request.path %}
             {% include 'sidebars/accounting_sidebar.html' %}
+        {% elif '/manufacturing/mrp' in request.path %}
+            {% include 'sidebars/mrp_sidebar.html' %}
         {% elif '/manufacturing/' in request.path %}
             {% include 'sidebars/manufacturing_sidebar.html' %}
         {% elif '/project_mgmt/' in request.path %}

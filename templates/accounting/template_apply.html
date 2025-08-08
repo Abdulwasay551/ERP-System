@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Apply Template - ERP System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .template-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
+    .stats-card {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        text-align: center;
+    }
+    .confirmation-section {
+        background: #f8f9fa;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        border-left: 4px solid #28a745;
+        margin: 2rem 0;
+    }
+    .warning-section {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin: 2rem 0;
+    }
+    .btn-apply {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        border: none;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Template Header -->
+            <div class="template-header">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2 class="mb-1">{{ template.name }}</h2>
+                        <p class="mb-0 opacity-75">{{ template.description }}</p>
+                        <span class="badge bg-light text-dark mt-2">{{ template.get_category_display }}</span>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="stats-card">
+                                    <h4 class="mb-1">{{ template.template_groups.count }}</h4>
+                                    <small>Account Groups</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stats-card">
+                                    <h4 class="mb-1">{{ template.template_accounts.count }}</h4>
+                                    <small>Accounts</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Template Preview -->
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-eye me-2"></i>Template Preview</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if template.template_groups.exists %}
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Group Code</th>
+                                                <th>Group Name</th>
+                                                <th>Category</th>
+                                                <th>Accounts</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for group in template.template_groups.all %}
+                                            <tr>
+                                                <td><code>{{ group.code }}</code></td>
+                                                <td>{{ group.name }}</td>
+                                                <td>{{ group.category_name }}</td>
+                                                <td>
+                                                    <small class="text-muted">
+                                                        {{ group.template_accounts.count }} accounts
+                                                    </small>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+
+                            {% if template.template_accounts.exists %}
+                                <h6 class="mt-4 mb-3">Sample Accounts</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Code</th>
+                                                <th>Name</th>
+                                                <th>Type</th>
+                                                <th>Balance Side</th>
+                                                <th>Group</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for account in template.template_accounts.all|slice:":10" %}
+                                            <tr>
+                                                <td><code>{{ account.code }}</code></td>
+                                                <td>{{ account.name }}</td>
+                                                <td>
+                                                    <span class="badge bg-secondary">{{ account.get_account_type_display }}</span>
+                                                </td>
+                                                <td>{{ account.get_balance_side_display }}</td>
+                                                <td>{{ account.group_code|default:"-" }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                            {% if template.template_accounts.count > 10 %}
+                                            <tr>
+                                                <td colspan="5" class="text-center text-muted">
+                                                    ... and {{ template.template_accounts.count|add:"-10" }} more accounts
+                                                </td>
+                                            </tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <!-- Application Form -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Apply Template</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="warning-section">
+                                <h6 class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>Important</h6>
+                                <ul class="mb-0 small">
+                                    <li>This will create new account groups and accounts</li>
+                                    <li>Existing accounts with same codes will be skipped</li>
+                                    <li>This action cannot be undone</li>
+                                    <li>Review the template preview before applying</li>
+                                </ul>
+                            </div>
+
+                            <form method="post">
+                                {% csrf_token %}
+                                
+                                <div class="confirmation-section">
+                                    <h6 class="text-success"><i class="fas fa-check-circle me-2"></i>Ready to Apply</h6>
+                                    <p class="mb-3 small">This template will create:</p>
+                                    <ul class="mb-3 small">
+                                        <li>{{ template.template_groups.count }} account groups</li>
+                                        <li>{{ template.template_accounts.count }} accounts</li>
+                                        <li>All necessary account categories</li>
+                                    </ul>
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-apply text-white">
+                                        <i class="fas fa-magic me-2"></i>Apply Template
+                                    </button>
+                                    <a href="{% url 'accounting:account_templates' %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>Back to Templates
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Additional Info -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Template Info</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6">
+                                    <small class="text-muted">Created</small>
+                                    <div class="fw-bold">{{ template.created_at|date:"M d, Y" }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Category</small>
+                                    <div class="fw-bold">{{ template.get_category_display }}</div>
+                                </div>
+                            </div>
+                            {% if template.created_by %}
+                            <div class="mt-2">
+                                <small class="text-muted">Created by</small>
+                                <div class="fw-bold">{{ template.created_by.get_full_name|default:template.created_by.username }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Confirmation before applying template
+    const applyForm = document.querySelector('form');
+    const applyBtn = document.querySelector('.btn-apply');
+    
+    applyForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (confirm('Are you sure you want to apply this template? This will create new accounts and groups in your chart of accounts.')) {
+            applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Applying...';
+            applyBtn.disabled = true;
+            this.submit();
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,287 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Account Categories - Accounting{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header Section -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">
+                {% if current_category %}
+                    {{ current_category|title }} Accounts
+                {% else %}
+                    Account Categories
+                {% endif %}
+            </h1>
+            <p class="text-gray-600 mt-2">
+                {% if current_category %}
+                    Manage your {{ current_category }} accounts
+                {% else %}
+                    Manage your chart of accounts categories
+                {% endif %}
+            </p>
+        </div>
+        <div class="flex space-x-3">
+            {% if current_category %}
+                <a href="{% url 'accounting:account_categories' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    All Categories
+                </a>
+            {% endif %}
+            <a href="{% url 'accounting:account_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                <i class="fas fa-plus mr-2"></i>
+                Add Account
+            </a>
+        </div>
+    </div>
+
+    {% if error %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            <strong>Error:</strong> {{ error }}
+        </div>
+    {% endif %}
+
+    {% if current_category and filtered_accounts %}
+        <!-- Filtered Category View -->
+        <div class="bg-white rounded-lg shadow-md">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">{{ current_category|title }} Accounts ({{ filtered_accounts.count }})</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Group</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance Side</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for account in filtered_accounts %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {{ account.code }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ account.name }}</div>
+                                {% if account.description %}
+                                    <div class="text-sm text-gray-500">{{ account.description|truncatechars:50 }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {% if account.group %}
+                                    {{ account.group.name }}
+                                {% else %}
+                                    <span class="text-gray-400">No Group</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    {% if account.balance_side == 'debit' %}bg-blue-100 text-blue-800
+                                    {% else %}bg-green-100 text-green-800{% endif %}">
+                                    {{ account.balance_side|title }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if account.is_active %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        Active
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        Inactive
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <a href="{% url 'accounting:account_edit' account.id %}" class="text-blue-600 hover:text-blue-900 mr-3">Edit</a>
+                                <a href="{% url 'accounting:account_delete' account.id %}" class="text-red-600 hover:text-red-900">Delete</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                                No {{ current_category }} accounts found.
+                                <a href="{% url 'accounting:account_create' %}" class="text-blue-600 hover:text-blue-800 font-medium">Create your first {{ current_category }} account</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% else %}
+
+    <!-- Categories Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Assets -->
+        <div class="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-home text-green-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Assets</h3>
+                        <p class="text-sm text-gray-600">Resources owned by the company</p>
+                    </div>
+                </div>
+                <div class="text-2xl font-bold text-gray-900 mb-2">
+                    {{ categories.assets.count|default:0 }}
+                </div>
+                <div class="text-sm text-gray-600">Accounts</div>
+                <div class="mt-4">
+                    <a href="{% url 'accounting:accounts' %}?type=asset" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        View All Assets →
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Liabilities -->
+        <div class="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-credit-card text-red-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Liabilities</h3>
+                        <p class="text-sm text-gray-600">Debts and obligations</p>
+                    </div>
+                </div>
+                <div class="text-2xl font-bold text-gray-900 mb-2">
+                    {{ categories.liabilities.count|default:0 }}
+                </div>
+                <div class="text-sm text-gray-600">Accounts</div>
+                <div class="mt-4">
+                    <a href="{% url 'accounting:accounts' %}?type=liability" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        View All Liabilities →
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Equity -->
+        <div class="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-chart-pie text-purple-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Equity</h3>
+                        <p class="text-sm text-gray-600">Owner's stake in the business</p>
+                    </div>
+                </div>
+                <div class="text-2xl font-bold text-gray-900 mb-2">
+                    {{ categories.equity.count|default:0 }}
+                </div>
+                <div class="text-sm text-gray-600">Accounts</div>
+                <div class="mt-4">
+                    <a href="{% url 'accounting:accounts' %}?type=equity" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        View All Equity →
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Income -->
+        <div class="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-arrow-up text-blue-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Income</h3>
+                        <p class="text-sm text-gray-600">Revenue and earnings</p>
+                    </div>
+                </div>
+                <div class="text-2xl font-bold text-gray-900 mb-2">
+                    {{ categories.income.count|default:0 }}
+                </div>
+                <div class="text-sm text-gray-600">Accounts</div>
+                <div class="mt-4">
+                    <a href="{% url 'accounting:accounts' %}?type=income" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        View All Income →
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expenses -->
+        <div class="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-arrow-down text-orange-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Expenses</h3>
+                        <p class="text-sm text-gray-600">Costs and expenditures</p>
+                    </div>
+                </div>
+                <div class="text-2xl font-bold text-gray-900 mb-2">
+                    {{ categories.expenses.count|default:0 }}
+                </div>
+                <div class="text-sm text-gray-600">Accounts</div>
+                <div class="mt-4">
+                    <a href="{% url 'accounting:accounts' %}?type=expense" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        View All Expenses →
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cost of Goods Sold -->
+        <div class="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-box text-yellow-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Cost of Goods Sold</h3>
+                        <p class="text-sm text-gray-600">Direct costs of production</p>
+                    </div>
+                </div>
+                <div class="text-2xl font-bold text-gray-900 mb-2">
+                    {{ categories.cogs.count|default:0 }}
+                </div>
+                <div class="text-sm text-gray-600">Accounts</div>
+                <div class="mt-4">
+                    <a href="{% url 'accounting:accounts' %}?type=cogs" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        View All COGS →
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quick Actions -->
+    <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <a href="{% url 'accounting:account_create' %}" class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <i class="fas fa-plus text-blue-600 mr-3"></i>
+                <span>Add New Account</span>
+            </a>
+            <a href="{% url 'accounting:accounts' %}" class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <i class="fas fa-list text-green-600 mr-3"></i>
+                <span>View All Accounts</span>
+            </a>
+            <a href="{% url 'accounting:chart_of_accounts' %}" class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <i class="fas fa-sitemap text-purple-600 mr-3"></i>
+                <span>Chart of Accounts</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

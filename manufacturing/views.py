@@ -495,13 +495,22 @@ def supply_demand_report(request):
                 if search.lower() in item['product'].name.lower()
             ]
         
+        # Add percentage calculations for template
+        for item in report_data:
+            if item.get('reorder_point', 0) > 0:
+                item['stock_percentage'] = min(100, (item['current_stock'] / item['reorder_point']) * 100)
+            else:
+                item['stock_percentage'] = 100
+        
         # Group by status for summary
         status_summary = {}
         for item in report_data:
             status = item['status']
-            if status not in status_summary:
-                status_summary[status] = 0
-            status_summary[status] += 1
+            # Convert status to template-friendly keys
+            status_key = status.replace(' ', '_').replace('-', '_').lower()
+            if status_key not in status_summary:
+                status_summary[status_key] = 0
+            status_summary[status_key] += 1
         
         context = {
             'report_data': report_data,
@@ -1929,8 +1938,8 @@ def supplier_lead_time_list(request):
         
         # Get products and suppliers for filters
         products = Product.objects.filter(company=company).order_by('name')
-        from crm.models import Contact
-        suppliers = Contact.objects.filter(company=company, is_supplier=True).order_by('name')
+        from crm.models import Partner
+        suppliers = Partner.objects.filter(company=company, is_supplier=True).order_by('name')
         
         context = {
             'lead_times': page_obj,

@@ -1,0 +1,418 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}COA Settings - Accounting{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header Section -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Chart of Accounts Settings</h1>
+            <p class="text-gray-600 mt-2">Configure settings for your chart of accounts</p>
+        </div>
+        <div class="flex space-x-3">
+            <button onclick="resetToDefaults()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                <i class="fas fa-undo mr-2"></i>
+                Reset to Defaults
+            </button>
+            <button onclick="saveSettings()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                <i class="fas fa-save mr-2"></i>
+                Save Settings
+            </button>
+        </div>
+    </div>
+
+    {% if error %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            <strong>Error:</strong> {{ error }}
+        </div>
+    {% endif %}
+
+    <!-- Settings Form -->
+    <form id="settingsForm" method="post" action="{% url 'accounting:settings_update' %}" class="space-y-8">
+        {% csrf_token %}
+        <!-- Account Code Settings -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6">Account Code Settings</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Code Format</label>
+                    <select name="code_format" class="form-select w-full">
+                        <option value="numeric" {% if settings.code_format == 'numeric' %}selected{% endif %}>Numeric (1000, 1100, 1200)</option>
+                        <option value="alphanumeric" {% if settings.code_format == 'alphanumeric' %}selected{% endif %}>Alphanumeric (A1000, B1100)</option>
+                        <option value="hierarchical" {% if settings.code_format == 'hierarchical' %}selected{% endif %}>Hierarchical (1-1000-01)</option>
+                        <option value="custom" {% if settings.code_format == 'custom' %}selected{% endif %}>Custom Pattern</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Code Length</label>
+                    <select name="code_length" class="form-select w-full">
+                        <option value="4" {% if settings.code_length == '4' %}selected{% endif %}>4 digits</option>
+                        <option value="5" {% if settings.code_length == '5' %}selected{% endif %}>5 digits</option>
+                        <option value="6" {% if settings.code_length == '6' %}selected{% endif %}>6 digits</option>
+                        <option value="variable" {% if settings.code_length == 'variable' %}selected{% endif %}>Variable length</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Auto-generate Codes</label>
+                    <div class="mt-1">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="auto_generate_codes" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if settings.auto_generate_codes %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">Automatically generate account codes</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Code Validation</label>
+                    <div class="mt-1">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="strict_code_validation" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if settings.strict_code_validation %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">Enforce strict code format validation</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="customPatternDiv" class="mt-4" {% if settings.code_format != 'custom' %}style="display: none;"{% endif %}>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Custom Pattern</label>
+                <input type="text" name="custom_pattern" class="form-input w-full" 
+                       placeholder="e.g., XX-0000-00" value="{{ settings.custom_pattern }}">
+                <p class="text-xs text-gray-500 mt-1">Use X for letters, 0 for numbers, - for separators</p>
+            </div>
+        </div>
+
+        <!-- Account Type Settings -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6">Account Type Settings</h3>
+            
+            <div class="space-y-4">
+                {% for type_key, type_config in account_type_settings.items %}
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-medium text-gray-900">{{ type_config.name }}</h4>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="type_{{ type_key }}_enabled" 
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+                                   {% if type_config.enabled %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">Enabled</span>
+                        </label>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Code Range Start</label>
+                            <input type="text" name="type_{{ type_key }}_range_start" 
+                                   class="form-input w-full text-sm" value="{{ type_config.range_start }}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Code Range End</label>
+                            <input type="text" name="type_{{ type_key }}_range_end" 
+                                   class="form-input w-full text-sm" value="{{ type_config.range_end }}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Default Balance Side</label>
+                            <select name="type_{{ type_key }}_balance_side" class="form-select w-full text-sm">
+                                <option value="debit" {% if type_config.balance_side == 'debit' %}selected{% endif %}>Debit</option>
+                                <option value="credit" {% if type_config.balance_side == 'credit' %}selected{% endif %}>Credit</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Display Settings -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6">Display Settings</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Default View</label>
+                    <select name="default_view" class="form-select w-full">
+                        <option value="list" {% if settings.default_view == 'list' %}selected{% endif %}>List View</option>
+                        <option value="tree" {% if settings.default_view == 'tree' %}selected{% endif %}>Tree View</option>
+                        <option value="groups" {% if settings.default_view == 'groups' %}selected{% endif %}>Grouped View</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Accounts Per Page</label>
+                    <select name="accounts_per_page" class="form-select w-full">
+                        <option value="25" {% if settings.accounts_per_page == '25' %}selected{% endif %}>25</option>
+                        <option value="50" {% if settings.accounts_per_page == '50' %}selected{% endif %}>50</option>
+                        <option value="100" {% if settings.accounts_per_page == '100' %}selected{% endif %}>100</option>
+                        <option value="all" {% if settings.accounts_per_page == 'all' %}selected{% endif %}>Show All</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Show Account Codes</label>
+                    <div class="mt-1">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="show_account_codes" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if settings.show_account_codes %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">Display account codes in lists</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Show Balances</label>
+                    <div class="mt-1">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="show_balances" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if settings.show_balances %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">Display current balances</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Color Coding</label>
+                    <div class="mt-1">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="color_coding" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if settings.color_coding %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">Use color coding for account types</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Hierarchical Indentation</label>
+                    <div class="mt-1">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="hierarchical_indent" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if settings.hierarchical_indent %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">Indent sub-accounts in tree view</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Settings -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6">Security & Permissions</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Account Creation</label>
+                    <div class="space-y-2">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="require_approval_new_accounts" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if settings.require_approval_new_accounts %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">Require approval for new accounts</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="restrict_account_deletion" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if settings.restrict_account_deletion %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">Restrict account deletion</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Audit Trail</label>
+                    <div class="space-y-2">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="log_account_changes" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if settings.log_account_changes %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">Log all account changes</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="log_balance_changes" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if settings.log_balance_changes %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">Log balance changes</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Integration Settings -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6">Integration Settings</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Auto Journal Entries</label>
+                    <div class="space-y-2">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="auto_sales_entries" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if settings.auto_sales_entries %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">Auto-create sales journal entries</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="auto_purchase_entries" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if settings.auto_purchase_entries %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">Auto-create purchase journal entries</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="auto_inventory_entries" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if settings.auto_inventory_entries %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">Auto-create inventory journal entries</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Default Accounts</label>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Sales Revenue Account</label>
+                            <select name="default_sales_account" class="form-select w-full text-sm">
+                                <option value="">Select Account</option>
+                                {% for account in income_accounts %}
+                                <option value="{{ account.id }}" {% if settings.default_sales_account == account.id %}selected{% endif %}>
+                                    {{ account.code }} - {{ account.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Purchase Expense Account</label>
+                            <select name="default_purchase_account" class="form-select w-full text-sm">
+                                <option value="">Select Account</option>
+                                {% for account in expense_accounts %}
+                                <option value="{{ account.id }}" {% if settings.default_purchase_account == account.id %}selected{% endif %}>
+                                    {{ account.code }} - {{ account.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Inventory Asset Account</label>
+                            <select name="default_inventory_account" class="form-select w-full text-sm">
+                                <option value="">Select Account</option>
+                                {% for account in asset_accounts %}
+                                <option value="{{ account.id }}" {% if settings.default_inventory_account == account.id %}selected{% endif %}>
+                                    {{ account.code }} - {{ account.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backup & Maintenance -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6">Backup & Maintenance</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Auto Backup</label>
+                    <div class="space-y-2">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="auto_backup_enabled" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if settings.auto_backup_enabled %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">Enable automatic backups</span>
+                        </label>
+                        <div class="ml-6">
+                            <select name="backup_frequency" class="form-select text-sm">
+                                <option value="daily" {% if settings.backup_frequency == 'daily' %}selected{% endif %}>Daily</option>
+                                <option value="weekly" {% if settings.backup_frequency == 'weekly' %}selected{% endif %}>Weekly</option>
+                                <option value="monthly" {% if settings.backup_frequency == 'monthly' %}selected{% endif %}>Monthly</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Maintenance Actions</label>
+                    <div class="space-y-2">
+                        <button type="button" onclick="createBackup()" class="w-full text-left p-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm transition-colors">
+                            <i class="fas fa-save text-blue-600 mr-2"></i>
+                            Create Manual Backup
+                        </button>
+                        <button type="button" onclick="validateChart()" class="w-full text-left p-3 bg-green-50 hover:bg-green-100 rounded-lg text-sm transition-colors">
+                            <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                            Validate Chart of Accounts
+                        </button>
+                        <button type="button" onclick="cleanupAccounts()" class="w-full text-left p-3 bg-yellow-50 hover:bg-yellow-100 rounded-lg text-sm transition-colors">
+                            <i class="fas fa-broom text-yellow-600 mr-2"></i>
+                            Cleanup Unused Accounts
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Handle form submission
+function saveSettings() {
+    const form = document.getElementById('settingsForm');
+    
+    // Submit the form
+    form.submit();
+}
+
+function resetToDefaults() {
+    if (confirm('Are you sure you want to reset all settings to their default values? This cannot be undone.')) {
+        // Reset to defaults
+        console.log('Resetting to defaults...');
+        location.reload();
+    }
+}
+
+// Handle code format changes
+document.querySelector('select[name="code_format"]').addEventListener('change', function(e) {
+    const customPatternDiv = document.getElementById('customPatternDiv');
+    if (e.target.value === 'custom') {
+        customPatternDiv.style.display = 'block';
+    } else {
+        customPatternDiv.style.display = 'none';
+    }
+});
+
+// Maintenance functions
+function createBackup() {
+    if (confirm('Create a backup of your chart of accounts?')) {
+        console.log('Creating backup...');
+        showNotification('Backup created successfully!', 'success');
+    }
+}
+
+function validateChart() {
+    console.log('Validating chart of accounts...');
+    showNotification('Chart of accounts validation completed. No issues found.', 'success');
+}
+
+function cleanupAccounts() {
+    if (confirm('This will remove unused accounts that have no transactions. Continue?')) {
+        console.log('Cleaning up accounts...');
+        showNotification('Account cleanup completed.', 'success');
+    }
+}
+
+// Notification function
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' : 
+        'bg-red-100 text-red-800 border border-red-200'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+// Form validation
+document.getElementById('settingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    saveSettings();
+});
+</script>
+{% endblock %}

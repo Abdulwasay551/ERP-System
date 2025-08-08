@@ -12,7 +12,7 @@ from .models import (
 )
 from inventory.models import StockItem
 from sales.models import SalesOrder, SalesOrderItem
-from purchase.models import PurchaseRequest, PurchaseRequestItem
+from purchase.models import PurchaseRequisition, PurchaseRequisitionItem, PurchaseOrder, PurchaseOrderItem
 from products.models import Product
 
 
@@ -347,7 +347,7 @@ class MRPEngine:
         
         for order_date, requirements in reqs_by_date.items():
             # Create a purchase request
-            pr = PurchaseRequest.objects.create(
+            pr = PurchaseRequisition.objects.create(
                 company=self.company,
                 title=f"MRP Generated PR - {order_date}",
                 description=f"Auto-generated from MRP Plan: {self.mrp_plan.name}",
@@ -359,7 +359,7 @@ class MRPEngine:
             
             # Add items to purchase request
             for req in requirements:
-                PurchaseRequestItem.objects.create(
+                PurchaseRequisitionItem.objects.create(
                     purchase_request=pr,
                     product=req.product,
                     description=req.product.description or req.product.name,

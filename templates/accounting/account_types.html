@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Account Types - Accounting{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header Section -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Account Types</h1>
+            <p class="text-gray-600 mt-2">Overview of all account types in your chart of accounts</p>
+        </div>
+        <div class="flex space-x-3">
+            <a href="{% url 'accounting:account_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                <i class="fas fa-plus mr-2"></i>
+                Add Account
+            </a>
+        </div>
+    </div>
+
+    {% if error %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            <strong>Error:</strong> {{ error }}
+        </div>
+    {% endif %}
+
+    <!-- Account Types Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for type_key, type_info in account_types.items %}
+        <div class="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 
+                        {% if type_info.color == 'green' %}bg-green-100 text-green-600
+                        {% elif type_info.color == 'red' %}bg-red-100 text-red-600
+                        {% elif type_info.color == 'purple' %}bg-purple-100 text-purple-600
+                        {% elif type_info.color == 'blue' %}bg-blue-100 text-blue-600
+                        {% elif type_info.color == 'orange' %}bg-orange-100 text-orange-600
+                        {% elif type_info.color == 'yellow' %}bg-yellow-100 text-yellow-600
+                        {% else %}bg-gray-100 text-gray-600{% endif %}
+                        rounded-lg flex items-center justify-center">
+                        <i class="{{ type_info.icon }} text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-gray-900">{{ type_info.name }}</h3>
+                        <p class="text-sm text-gray-600">{{ type_info.description }}</p>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="text-3xl font-bold text-gray-900 mb-1">
+                        {{ type_info.count }}
+                    </div>
+                    <div class="text-sm text-gray-600">Accounts</div>
+                </div>
+
+                <div class="space-y-3">
+                    <a href="{% url 'accounting:accounts' %}?type={{ type_key }}" 
+                       class="block w-full text-center bg-gray-50 hover:bg-gray-100 text-gray-700 py-2 px-4 rounded-lg transition-colors">
+                        <i class="fas fa-list mr-2"></i>
+                        View All {{ type_info.name }}
+                    </a>
+                    
+                    <a href="{% url 'accounting:account_create' %}?type={{ type_key }}" 
+                       class="block w-full text-center 
+                       {% if type_info.color == 'green' %}bg-green-50 hover:bg-green-100 text-green-700
+                       {% elif type_info.color == 'red' %}bg-red-50 hover:bg-red-100 text-red-700
+                       {% elif type_info.color == 'purple' %}bg-purple-50 hover:bg-purple-100 text-purple-700
+                       {% elif type_info.color == 'blue' %}bg-blue-50 hover:bg-blue-100 text-blue-700
+                       {% elif type_info.color == 'orange' %}bg-orange-50 hover:bg-orange-100 text-orange-700
+                       {% elif type_info.color == 'yellow' %}bg-yellow-50 hover:bg-yellow-100 text-yellow-700
+                       {% else %}bg-gray-50 hover:bg-gray-100 text-gray-700{% endif %}
+                       py-2 px-4 rounded-lg transition-colors">
+                        <i class="fas fa-plus mr-2"></i>
+                        Add {{ type_info.name|slice:'-1' }} Account
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Account Type Information -->
+    <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Account Type Guidelines</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h4 class="font-medium text-gray-900 mb-2">Balance Sheet Accounts</h4>
+                <ul class="space-y-1 text-sm text-gray-600">
+                    <li><strong>Assets:</strong> Resources owned by the company (Cash, Inventory, Equipment)</li>
+                    <li><strong>Liabilities:</strong> Debts and obligations (Accounts Payable, Loans)</li>
+                    <li><strong>Equity:</strong> Owner's stake in the business (Capital, Retained Earnings)</li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-medium text-gray-900 mb-2">Income Statement Accounts</h4>
+                <ul class="space-y-1 text-sm text-gray-600">
+                    <li><strong>Income:</strong> Revenue from business operations (Sales, Service Revenue)</li>
+                    <li><strong>Expenses:</strong> Costs of running the business (Rent, Utilities, Salaries)</li>
+                    <li><strong>COGS:</strong> Direct costs of producing goods (Materials, Labor)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <a href="{% url 'accounting:accounts' %}" class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <i class="fas fa-list text-blue-600 mr-3"></i>
+                <span>All Accounts</span>
+            </a>
+            <a href="{% url 'accounting:chart_of_accounts' %}" class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <i class="fas fa-sitemap text-green-600 mr-3"></i>
+                <span>Chart View</span>
+            </a>
+            <a href="{% url 'accounting:account_groups' %}" class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <i class="fas fa-layer-group text-purple-600 mr-3"></i>
+                <span>Account Groups</span>
+            </a>
+            <a href="{% url 'accounting:account_categories' %}" class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <i class="fas fa-folder text-orange-600 mr-3"></i>
+                <span>Categories</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

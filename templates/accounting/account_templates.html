@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Account Templates - Accounting{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header Section -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Account Templates</h1>
+            <p class="text-gray-600 mt-2">Pre-configured chart of accounts templates for different business types</p>
+        </div>
+        <div class="flex space-x-3">
+            <button onclick="showCreateTemplateModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                <i class="fas fa-plus mr-2"></i>
+                Create Template
+            </button>
+        </div>
+    </div>
+
+    {% if error %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            <strong>Error:</strong> {{ error }}
+        </div>
+    {% endif %}
+
+    <!-- Template Categories -->
+    <div class="mb-8">
+        <div class="flex flex-wrap gap-2">
+            <button onclick="filterTemplates('all')" class="template-filter-btn active px-4 py-2 rounded-full text-sm font-medium transition-colors bg-blue-100 text-blue-700">
+                All Templates
+            </button>
+            {% for category in template_categories %}
+            <button onclick="filterTemplates('{{ category.key }}')" class="template-filter-btn px-4 py-2 rounded-full text-sm font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200">
+                {{ category.name }}
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Templates Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for template in templates %}
+        <div class="template-card bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow" data-category="{{ template.category }}">
+            <div class="p-6">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 {{ template.color_class }} rounded-lg flex items-center justify-center">
+                            <i class="{{ template.icon }} text-xl"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-lg font-semibold text-gray-900">{{ template.name }}</h3>
+                            <p class="text-sm text-gray-600">{{ template.category_name }}</p>
+                        </div>
+                    </div>
+                    {% if template.is_system %}
+                    <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">System</span>
+                    {% else %}
+                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Custom</span>
+                    {% endif %}
+                </div>
+                
+                <p class="text-gray-600 mb-4">{{ template.description }}</p>
+                
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-gray-900">{{ template.account_count }}</div>
+                        <div class="text-xs text-gray-600">Accounts</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-gray-900">{{ template.group_count }}</div>
+                        <div class="text-xs text-gray-600">Groups</div>
+                    </div>
+                </div>
+
+                <div class="flex space-x-2">
+                    <button onclick="previewTemplate('{{ template.id }}')" class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-700 py-2 px-3 rounded-lg text-sm transition-colors">
+                        <i class="fas fa-eye mr-1"></i>
+                        Preview
+                    </button>
+                    <button onclick="applyTemplate('{{ template.id }}')" class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 py-2 px-3 rounded-lg text-sm transition-colors">
+                        <i class="fas fa-download mr-1"></i>
+                        Apply
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Template Preview Modal -->
+    <div id="templatePreviewModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-90vh overflow-hidden">
+            <div class="flex justify-between items-center p-6 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Template Preview</h3>
+                <button onclick="closePreviewModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto max-h-96">
+                <div id="templatePreviewContent">
+                    <!-- Preview content will be loaded here -->
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 p-6 border-t">
+                <button onclick="closePreviewModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Close
+                </button>
+                <button id="applyFromPreview" onclick="" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Apply Template
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Apply Template Modal -->
+    <div id="applyTemplateModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Apply Template</h3>
+                <p class="text-gray-600 mb-6">This will add the template's accounts and groups to your chart of accounts. Existing accounts will not be affected.</p>
+                
+                <div class="mb-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked>
+                        <span class="ml-2 text-sm text-gray-700">Include account groups</span>
+                    </label>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked>
+                        <span class="ml-2 text-sm text-gray-700">Set opening balances to zero</span>
+                    </label>
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button onclick="closeApplyModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button onclick="confirmApplyTemplate()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        Apply Template
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Information Section -->
+    <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">About Account Templates</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h4 class="font-medium text-gray-900 mb-2">What are Templates?</h4>
+                <p class="text-sm text-gray-600">
+                    Account templates are pre-configured sets of accounts and groups designed for specific business types.
+                    They help you quickly set up a professional chart of accounts structure.
+                </p>
+            </div>
+            <div>
+                <h4 class="font-medium text-gray-900 mb-2">How to Use</h4>
+                <ul class="space-y-1 text-sm text-gray-600">
+                    <li>• Browse templates by category</li>
+                    <li>• Preview template structure</li>
+                    <li>• Apply templates to your chart of accounts</li>
+                    <li>• Customize accounts after applying</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterTemplates(category) {
+    const cards = document.querySelectorAll('.template-card');
+    const buttons = document.querySelectorAll('.template-filter-btn');
+    
+    // Update button states
+    buttons.forEach(btn => btn.classList.remove('active', 'bg-blue-100', 'text-blue-700'));
+    event.target.classList.add('active', 'bg-blue-100', 'text-blue-700');
+    
+    // Filter cards
+    cards.forEach(card => {
+        if (category === 'all' || card.dataset.category === category) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+function previewTemplate(templateId) {
+    // Load template preview content
+    document.getElementById('templatePreviewModal').classList.remove('hidden');
+    document.getElementById('applyFromPreview').onclick = () => applyTemplate(templateId);
+    
+    // Here you would typically make an AJAX call to load the template details
+    document.getElementById('templatePreviewContent').innerHTML = `
+        <div class="text-center py-8">
+            <i class="fas fa-spinner fa-spin text-3xl text-gray-400 mb-4"></i>
+            <p class="text-gray-600">Loading template preview...</p>
+        </div>
+    `;
+}
+
+function closePreviewModal() {
+    document.getElementById('templatePreviewModal').classList.add('hidden');
+}
+
+function applyTemplate(templateId) {
+    // Redirect to template apply page
+    window.location.href = "{% url 'accounting:template_apply' 0 %}".replace('0', templateId);
+}
+
+function closeApplyModal() {
+    document.getElementById('applyTemplateModal').classList.add('hidden');
+}
+
+function confirmApplyTemplate() {
+    // Redirect to template apply page with selected template
+    if (window.selectedTemplateId) {
+        window.location.href = "{% url 'accounting:template_apply' 0 %}".replace('0', window.selectedTemplateId);
+    }
+    closeApplyModal();
+}
+
+function showCreateTemplateModal() {
+    // Redirect to create template page
+    window.location.href = "{% url 'accounting:template_create' %}";
+}
+</script>
+{% endblock %}

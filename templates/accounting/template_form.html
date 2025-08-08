@@ -1,0 +1,763 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Create Account Template - ERP System{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Modern Template Form Styling */
+    .create-template-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        min-height: 100vh;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+        padding: 2rem;
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e9ecef;
+    }
+    
+    .page-header h2 {
+        color: #2c3e50;
+        font-weight: 700;
+        margin: 0;
+        font-size: 2rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .page-header h2 i {
+        margin-right: 1rem;
+        color: #007bff;
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .form-section {
+        background: #fff;
+        padding: 2.5rem;
+        border-radius: 1.25rem;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .form-section:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+    }
+    
+    .form-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 5px;
+        height: 100%;
+        background: linear-gradient(180deg, #007bff 0%, #6610f2 50%, #e83e8c 100%);
+        border-radius: 0 3px 3px 0;
+    }
+    
+    .form-section-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 2px solid #f8f9fa;
+        position: relative;
+    }
+    
+    .form-section-header::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 60px;
+        height: 2px;
+        background: linear-gradient(90deg, #007bff, #0056b3);
+        border-radius: 1px;
+    }
+    
+    .form-section-header i {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1.25rem;
+        font-size: 1.5rem;
+        box-shadow: 0 8px 20px rgba(0, 123, 255, 0.3);
+    }
+    
+    .form-section-header h5 {
+        color: #2c3e50;
+        margin: 0;
+        font-weight: 700;
+        font-size: 1.4rem;
+        letter-spacing: -0.025em;
+    }
+    
+    .form-section-header p {
+        color: #6c757d;
+        margin: 0.5rem 0 0 0;
+        font-size: 0.95rem;
+    }
+    
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 1rem;
+        padding: 1rem 1.25rem;
+        font-size: 1rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background-color: #fff;
+        font-weight: 500;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.375rem rgba(0, 123, 255, 0.12);
+        background-color: #fff;
+        transform: translateY(-1px);
+    }
+    
+    .form-control:hover, .form-select:hover {
+        border-color: #ced4da;
+    }
+    
+    .form-label {
+        font-weight: 700;
+        color: #495057;
+        margin-bottom: 0.875rem;
+        font-size: 1rem;
+        letter-spacing: -0.01em;
+        display: flex;
+        align-items: center;
+    }
+    
+    .form-label i {
+        margin-right: 0.5rem;
+        color: #007bff;
+        font-size: 0.9rem;
+    }
+    
+    .required-indicator {
+        color: #dc3545;
+        font-weight: bold;
+        margin-left: 6px;
+        font-size: 1.1rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        border: none;
+        padding: 1rem 3rem;
+        border-radius: 1rem;
+        font-weight: 700;
+        font-size: 1.1rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 8px 25px rgba(0, 123, 255, 0.35);
+        letter-spacing: 0.025em;
+        text-transform: uppercase;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(0, 123, 255, 0.4);
+        background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    }
+    
+    .btn-primary:active {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
+    }
+    
+    .btn-secondary {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        border: none;
+        padding: 1rem 2.5rem;
+        border-radius: 1rem;
+        font-weight: 600;
+        color: white;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+        letter-spacing: 0.025em;
+    }
+    
+    .btn-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4);
+        background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+        color: white;
+    }
+    
+    .help-card {
+        background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
+        border: 1px solid rgba(33, 150, 243, 0.2);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .help-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #2196f3, #1976d2);
+        border-radius: 0 2px 2px 0;
+    }
+    
+    .help-card h6 {
+        color: #1976d2;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        font-size: 1.1rem;
+    }
+    
+    .help-card h6 i {
+        margin-right: 0.75rem;
+        color: #2196f3;
+        font-size: 1.2rem;
+    }
+    
+    .help-card ul {
+        color: #37474f;
+        margin: 0;
+        padding-left: 1.5rem;
+        line-height: 1.6;
+    }
+    
+    .help-card li {
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    .action-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 1.5rem;
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 2px solid #f8f9fa;
+    }
+    
+    .form-floating {
+        position: relative;
+    }
+    
+    .form-floating label {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        padding: 1rem 1.25rem;
+        pointer-events: none;
+        border: 1px solid transparent;
+        transform-origin: 0 0;
+        transition: opacity 0.1s ease-in-out, transform 0.1s ease-in-out;
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .account-item {
+        background: #fff;
+        border: 2px solid #f8f9fa;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .account-item:hover {
+        border-color: #e9ecef;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    }
+    
+    .account-item h6 {
+        color: #2c3e50;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .account-item h6 i {
+        margin-right: 0.75rem;
+        color: #007bff;
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+    }
+    
+    .remove-account-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+        border: none;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+    }
+    
+    .remove-account-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+    }
+    
+    .add-account-btn {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        margin-top: 1rem;
+        letter-spacing: 0.025em;
+    }
+    
+    .add-account-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+        background: linear-gradient(135deg, #20c997, #17a2b8);
+    }
+    
+    .add-account-btn i {
+        margin-right: 0.75rem;
+        font-size: 1.1rem;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .create-template-container {
+            padding: 1rem;
+        }
+        
+        .form-section {
+            padding: 1.5rem;
+        }
+        
+        .page-header {
+            padding: 1.5rem;
+        }
+        
+        .page-header h2 {
+            font-size: 1.75rem;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .btn-primary, .btn-secondary {
+            width: 100%;
+        }
+    }
+    
+    /* Animation for form interactions */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .form-section {
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    .account-item {
+        animation: fadeInUp 0.4s ease-out;
+    }
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    
+    .help-card-header {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        padding: 1.25rem;
+        font-weight: 600;
+    }
+    
+    .help-card-body {
+        padding: 1.5rem;
+    }
+    
+    .help-section {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .help-section:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+    
+    .help-section h6 {
+        color: #007bff;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        font-size: 1rem;
+    }
+    
+    .help-section p, .help-section li {
+        color: #6c757d;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        margin-bottom: 0.5rem;
+    }
+    
+    .help-section ul {
+        padding-left: 1.25rem;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        border-radius: 1rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border: 1px solid #e9ecef;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    
+    .page-header h2 {
+        color: #2c3e50;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .page-header p {
+        color: #6c757d;
+        margin-bottom: 0;
+        font-size: 1.1rem;
+    }
+    
+    .form-actions {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 2rem;
+    }
+    
+    .invalid-feedback {
+        display: block;
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    
+    .form-text {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+    }
+    
+    @media (max-width: 768px) {
+        .create-template-container {
+            padding: 1rem;
+        }
+        
+        .form-section {
+            padding: 1.5rem;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .btn-primary, .btn-secondary {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="create-template-container">
+    <!-- Modern Header -->
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="fas fa-plus-circle"></i>Create Account Template</h2>
+                <p class="text-muted mb-0">Design a professional chart of accounts template for specific business types</p>
+            </div>
+            <a href="{% url 'accounting:account_templates' %}" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-arrow-left me-2"></i>Back to Templates
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Form Container -->
+    <div class="row">
+        <div class="col-lg-8">
+            <form method="post" class="needs-validation" novalidate id="templateForm">
+                {% csrf_token %}
+                
+                <!-- Basic Information Section -->
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <h5>Template Information</h5>
+                            <p>Define the basic properties of your account template</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="name" class="form-label">
+                                    <i class="fas fa-tag"></i>Template Name <span class="required-indicator">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="name" name="name" required
+                                       placeholder="e.g., Manufacturing Business Template"
+                                       value="{{ form.name.value|default:'' }}">
+                                <div class="invalid-feedback">
+                                    Please provide a descriptive template name.
+                                </div>
+                                <div class="form-text">Choose a clear, descriptive name for your template</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="category" class="form-label">
+                                    <i class="fas fa-folder"></i>Business Category <span class="required-indicator">*</span>
+                                </label>
+                                <select class="form-select" id="category" name="category" required>
+                                    <option value="">Select Business Category</option>
+                                    <option value="retail">Retail & E-commerce</option>
+                                    <option value="manufacturing">Manufacturing</option>
+                                    <option value="service">Service Business</option>
+                                    <option value="construction">Construction</option>
+                                    <option value="restaurant">Restaurant & Food</option>
+                                    <option value="healthcare">Healthcare</option>
+                                    <option value="nonprofit">Non-Profit</option>
+                                    <option value="professional">Professional Services</option>
+                                    <option value="technology">Technology & Software</option>
+                                    <option value="agriculture">Agriculture</option>
+                                    <option value="real_estate">Real Estate</option>
+                                    <option value="custom">Custom/Other</option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Please select a business category.
+                                </div>
+                                <div class="form-text">Select the industry or business type this template serves</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="description" class="form-label">
+                            <i class="fas fa-align-left"></i>Template Description
+                        </label>
+                        <textarea class="form-control" id="description" name="description" rows="4"
+                                  placeholder="Describe the purpose, target business type, and key features of this template..."
+                                  >{{ form.description.value|default:'' }}</textarea>
+                        <div class="form-text">Provide a detailed explanation of what this template is designed for and its intended use cases</div>
+                    </div>
+                </div>
+
+                <!-- Template Configuration Section -->
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <i class="fas fa-cogs"></i>
+                        <div>
+                            <h5>Template Configuration</h5>
+                            <p>Set up the structure and properties for your template</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="currency" class="form-label">
+                                    <i class="fas fa-dollar-sign"></i>Default Currency
+                                </label>
+                                <select class="form-select" id="currency" name="currency">
+                                    <option value="USD">USD - US Dollar</option>
+                                    <option value="EUR">EUR - Euro</option>
+                                    <option value="GBP">GBP - British Pound</option>
+                                    <option value="CAD">CAD - Canadian Dollar</option>
+                                    <option value="AUD">AUD - Australian Dollar</option>
+                                    <option value="INR">INR - Indian Rupee</option>
+                                    <option value="CNY">CNY - Chinese Yuan</option>
+                                    <option value="JPY">JPY - Japanese Yen</option>
+                                </select>
+                                <div class="form-text">Select the primary currency for this template</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="account_numbering" class="form-label">
+                                    <i class="fas fa-sort-numeric-up"></i>Account Numbering System
+                                </label>
+                                <select class="form-select" id="account_numbering" name="account_numbering">
+                                    <option value="sequential">Sequential (1001, 1002, 1003...)</option>
+                                    <option value="grouped">Grouped (1000-1999 Assets, 2000-2999 Liabilities...)</option>
+                                    <option value="custom">Custom Numbering</option>
+                                </select>
+                                <div class="form-text">Choose how accounts will be numbered in this template</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="include_subcategories" name="include_subcategories" checked>
+                                <label class="form-check-label" for="include_subcategories">
+                                    <strong>Include Subcategories</strong>
+                                    <div class="form-text">Create detailed account subcategories</div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="enable_multicurrency" name="enable_multicurrency">
+                                <label class="form-check-label" for="enable_multicurrency">
+                                    <strong>Multi-Currency Support</strong>
+                                    <div class="form-text">Enable multiple currency handling</div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="is_public" name="is_public" checked>
+                                <label class="form-check-label" for="is_public">
+                                    <strong>Public Template</strong>
+                                    <div class="form-text">Share with other users</div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="action-buttons">
+                    <a href="{% url 'accounting:account_templates' %}" class="btn btn-secondary btn-lg">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-magic me-2"></i>Create Template
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Enhanced Help Section -->
+        <div class="col-lg-4">
+            <div class="help-card">
+                <h6><i class="fas fa-lightbulb"></i>Template Creation Guide</h6>
+                <ul>
+                    <li><strong>Choose a Clear Name:</strong> Use descriptive names that clearly indicate the business type</li>
+                    <li><strong>Select Appropriate Category:</strong> This helps users find relevant templates</li>
+                    <li><strong>Write Detailed Description:</strong> Explain the target business and use cases</li>
+                    <li><strong>Configure Settings:</strong> Set up currency, numbering, and features</li>
+                    <li><strong>Test Your Template:</strong> Verify it works for the intended business type</li>
+                </ul>
+            </div>
+            
+            <div class="help-card mt-4">
+                <h6><i class="fas fa-industry"></i>Popular Template Categories</h6>
+                <ul>
+                    <li><strong>Retail:</strong> For stores, online shops, and merchandise businesses</li>
+                    <li><strong>Manufacturing:</strong> For production companies with inventory</li>
+                    <li><strong>Service:</strong> For consulting, professional services, and service providers</li>
+                    <li><strong>Construction:</strong> For contractors and construction companies</li>
+                    <li><strong>Technology:</strong> For software companies and tech startups</li>
+                </ul>
+            </div>
+            
+            <div class="help-card mt-4">
+                <h6><i class="fas fa-shield-alt"></i>Best Practices</h6>
+                <ul>
+                    <li>Include all standard account types for the business category</li>
+                    <li>Use consistent naming conventions</li>
+                    <li>Follow industry-standard account numbering</li>
+                    <li>Consider tax reporting requirements</li>
+                    <li>Make templates flexible for different business sizes</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        // Bootstrap form validation
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+</script>
+{% endblock %}

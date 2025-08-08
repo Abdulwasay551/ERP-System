@@ -63,70 +63,16 @@
         </a>
 
         <!-- Chart of Accounts -->
-        <div class="group relative">
-            <a href="{% url 'accounting:accounts' %}" class="sidebar-item {% if 'account' in request.resolver_match.url_name %}active{% endif %}">
-                <i class="fas fa-list-alt sidebar-icon"></i>
-                <span class="sidebar-text">Chart of Accounts</span>
-                <i class="fas fa-chevron-down sidebar-text text-xs ml-auto transform transition-transform group-hover:rotate-180"></i>
-            </a>
-            
-            <!-- COA Submenu -->
-            <div class="sidebar-submenu hidden group-hover:block absolute left-full top-0 ml-2 w-56 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 z-50 shadow-lg">
-                <div class="p-2 space-y-1">
-                    <a href="{% url 'accounting:accounts' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-list mr-2 w-4 text-center"></i>
-                        All Accounts
-                    </a>
-                    <a href="{% url 'accounting:account_create' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-plus mr-2 w-4 text-center"></i>
-                        Add Account
-                    </a>
-                    <a href="{% url 'accounting:chart_of_accounts' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-sitemap mr-2 w-4 text-center"></i>
-                        Chart View
-                    </a>
-                    <a href="{% url 'accounting:account_categories' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-folder mr-2 w-4 text-center"></i>
-                        Categories
-                    </a>
-                    <a href="{% url 'accounting:account_groups' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-layer-group mr-2 w-4 text-center"></i>
-                        Groups
-                    </a>
-                </div>
-            </div>
-        </div>
+        <a href="{% url 'accounting:accounts' %}" class="sidebar-item {% if 'account' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-list-alt sidebar-icon"></i>
+            <span class="sidebar-text">Chart of Accounts</span>
+        </a>
 
         <!-- Journal Entries -->
-        <div class="group relative">
-            <a href="{% url 'accounting:journal_entries' %}" class="sidebar-item {% if 'journal' in request.resolver_match.url_name %}active{% endif %}">
-                <i class="fas fa-book sidebar-icon"></i>
-                <span class="sidebar-text">Journal Entries</span>
-                <i class="fas fa-chevron-down sidebar-text text-xs ml-auto transform transition-transform group-hover:rotate-180"></i>
-            </a>
-            
-            <!-- Journal Submenu -->
-            <div class="sidebar-submenu hidden group-hover:block absolute left-full top-0 ml-2 w-56 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 z-50 shadow-lg">
-                <div class="p-2 space-y-1">
-                    <a href="{% url 'accounting:journal_entries' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-list mr-2 w-4 text-center"></i>
-                        All Entries
-                    </a>
-                    <a href="{% url 'accounting:journal_entry_create' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-plus mr-2 w-4 text-center"></i>
-                        Create Entry
-                    </a>
-                    <a href="{% url 'accounting:journal' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-book-open mr-2 w-4 text-center"></i>
-                        Journal Book
-                    </a>
-                    <a href="{% url 'accounting:auto_entries' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-magic mr-2 w-4 text-center"></i>
-                        Auto Entries
-                    </a>
-                </div>
-            </div>
-        </div>
+        <a href="{% url 'accounting:journal_entries' %}" class="sidebar-item {% if 'journal' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-book sidebar-icon"></i>
+            <span class="sidebar-text">Journal Entries</span>
+        </a>
 
         <!-- General Ledger -->
         <a href="{% url 'accounting:general_ledger' %}" class="sidebar-item {% if 'ledger' in request.resolver_match.url_name %}active{% endif %}">
@@ -135,39 +81,10 @@
         </a>
 
         <!-- Financial Reports -->
-        <div class="group relative">
-            <a href="{% url 'accounting:reports' %}" class="sidebar-item {% if 'report' in request.resolver_match.url_name %}active{% endif %}">
-                <i class="fas fa-chart-line sidebar-icon"></i>
-                <span class="sidebar-text">Financial Reports</span>
-                <i class="fas fa-chevron-down sidebar-text text-xs ml-auto transform transition-transform group-hover:rotate-180"></i>
-            </a>
-            
-            <!-- Reports Submenu -->
-            <div class="sidebar-submenu hidden group-hover:block absolute left-full top-0 ml-2 w-56 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 z-50 shadow-lg">
-                <div class="p-2 space-y-1">
-                    <a href="{% url 'accounting:trial_balance' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-balance-scale mr-2 w-4 text-center"></i>
-                        Trial Balance
-                    </a>
-                    <a href="{% url 'accounting:profit_loss' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-chart-pie mr-2 w-4 text-center"></i>
-                        Profit & Loss
-                    </a>
-                    <a href="{% url 'accounting:balance_sheet' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-calculator mr-2 w-4 text-center"></i>
-                        Balance Sheet
-                    </a>
-                    <a href="{% url 'accounting:cash_flow' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-money-bill-wave mr-2 w-4 text-center"></i>
-                        Cash Flow
-                    </a>
-                    <a href="{% url 'accounting:financial_statements' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-file-alt mr-2 w-4 text-center"></i>
-                        All Statements
-                    </a>
-                </div>
-            </div>
-        </div>
+        <a href="{% url 'accounting:reports' %}" class="sidebar-item {% if 'report' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-chart-line sidebar-icon"></i>
+            <span class="sidebar-text">Financial Reports</span>
+        </a>
 
         <!-- Bank Reconciliation -->
         <a href="{% url 'accounting:bank_reconciliation' %}" class="sidebar-item {% if 'bank' in request.resolver_match.url_name %}active{% endif %}">

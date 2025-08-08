@@ -152,23 +152,23 @@
         <!-- Summary Cards -->
         <div class="summary-grid">
             <div class="summary-card">
-                <div class="text-3xl font-bold text-green-600 mb-2">{{ status_summary.OK|default:0 }}</div>
+                <div class="text-3xl font-bold text-green-600 mb-2">{{ status_summary.ok|default:0 }}</div>
                 <div class="text-sm text-gray-600">Products OK</div>
             </div>
             <div class="summary-card">
-                <div class="text-3xl font-bold text-red-600 mb-2">{{ status_summary.Reorder Required|default:0 }}</div>
+                <div class="text-3xl font-bold text-red-600 mb-2">{{ status_summary.reorder_required|default:0 }}</div>
                 <div class="text-sm text-gray-600">Reorder Required</div>
             </div>
             <div class="summary-card">
-                <div class="text-3xl font-bold text-yellow-600 mb-2">{{ status_summary.Below Safety Stock|default:0 }}</div>
+                <div class="text-3xl font-bold text-yellow-600 mb-2">{{ status_summary.below_safety_stock|default:0 }}</div>
                 <div class="text-sm text-gray-600">Below Safety Stock</div>
             </div>
             <div class="summary-card">
-                <div class="text-3xl font-bold text-purple-600 mb-2">{{ status_summary.Shortage Expected|default:0 }}</div>
+                <div class="text-3xl font-bold text-purple-600 mb-2">{{ status_summary.shortage_expected|default:0 }}</div>
                 <div class="text-sm text-gray-600">Shortage Expected</div>
             </div>
             <div class="summary-card">
-                <div class="text-3xl font-bold text-blue-600 mb-2">{{ status_summary.Overstock|default:0 }}</div>
+                <div class="text-3xl font-bold text-blue-600 mb-2">{{ status_summary.overstock|default:0 }}</div>
                 <div class="text-sm text-gray-600">Overstock</div>
             </div>
             <div class="summary-card">
@@ -196,7 +196,7 @@
                                 <div class="font-medium text-gray-900">{{ item.product.name }}</div>
                                 <div class="text-sm text-gray-600">Current: {{ item.current_stock|floatformat:0 }} | Required: {{ item.total_demand|floatformat:0 }}</div>
                             </div>
-                            <span class="status-badge status-{{ item.status|lower|replace:" ","-" }}">
+                            <span class="status-badge status-{{ item.status|lower|cut:' '|cut:'-' }}">
                                 {{ item.status }}
                             </span>
                         </div>
@@ -244,7 +244,7 @@
                                 <div class="font-medium">{{ item.current_stock|floatformat:0 }}</div>
                                 <div class="w-20 progress-bar mt-1">
                                     <div class="progress-fill {% if item.current_stock < item.safety_stock %}bg-red-500{% elif item.current_stock < item.reorder_point %}bg-yellow-500{% else %}bg-green-500{% endif %}" 
-                                         style="width: {% if item.reorder_point > 0 %}{{ item.current_stock|div:item.reorder_point|mul:100|floatformat:0 }}%{% else %}100%{% endif %}"></div>
+                                         style="width: {{ item.stock_percentage|floatformat:0 }}%"></div>
                                 </div>
                             </td>
                             <td class="px-6 py-4">
@@ -281,7 +281,7 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4">
-                                <span class="status-badge status-{{ item.status|lower|replace:" ","-" }}">
+                                <span class="status-badge status-{{ item.status|lower|cut:' '|cut:'-' }}">
                                     {{ item.status }}
                                 </span>
                             </td>
@@ -355,11 +355,11 @@ function initializeStatusChart() {
     if (!ctx) return;
     
     const statusData = {
-        'OK': {{ status_summary.OK|default:0 }},
-        'Reorder Required': {{ status_summary.Reorder Required|default:0 }},
-        'Below Safety Stock': {{ status_summary.Below Safety Stock|default:0 }},
-        'Shortage Expected': {{ status_summary.Shortage Expected|default:0 }},
-        'Overstock': {{ status_summary.Overstock|default:0 }}
+        'OK': {{ status_summary.ok|default:0 }},
+        'Reorder Required': {{ status_summary.reorder_required|default:0 }},
+        'Below Safety Stock': {{ status_summary.below_safety_stock|default:0 }},
+        'Shortage Expected': {{ status_summary.shortage_expected|default:0 }},
+        'Overstock': {{ status_summary.overstock|default:0 }}
     };
     
     new Chart(ctx, {
@@ -380,7 +380,7 @@ function initializeStatusChart() {
             }]
         },
         options: {
-            responsive: true,
+            responsive: false,
             maintainAspectRatio: false,
             plugins: {
                 legend: {

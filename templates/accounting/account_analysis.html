@@ -1,0 +1,361 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Account Analysis - Accounting{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header Section -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Account Analysis</h1>
+            <p class="text-gray-600 mt-2">Comprehensive analysis and insights for your chart of accounts</p>
+        </div>
+        <div class="flex space-x-3">
+            <button onclick="refreshAnalysis()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                <i class="fas fa-sync-alt mr-2"></i>
+                Refresh
+            </button>
+            <button onclick="exportAnalysis()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                <i class="fas fa-download mr-2"></i>
+                Export
+            </button>
+        </div>
+    </div>
+
+    {% if error %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            <strong>Error:</strong> {{ error }}
+        </div>
+    {% endif %}
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+            <div class="flex items-center">
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-900">Total Accounts</h3>
+                    <p class="text-3xl font-bold text-blue-600">{{ summary.total_accounts }}</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-chart-bar text-blue-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+            <div class="flex items-center">
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-900">Active Accounts</h3>
+                    <p class="text-3xl font-bold text-green-600">{{ summary.active_accounts }}</p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
+            <div class="flex items-center">
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-900">Unused Accounts</h3>
+                    <p class="text-3xl font-bold text-yellow-600">{{ summary.unused_accounts }}</p>
+                </div>
+                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-red-500">
+            <div class="flex items-center">
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-900">Duplicate Codes</h3>
+                    <p class="text-3xl font-bold text-red-600">{{ summary.duplicate_codes }}</p>
+                </div>
+                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-copy text-red-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analysis Tabs -->
+    <div class="bg-white rounded-lg shadow-md">
+        <div class="border-b border-gray-200">
+            <nav class="flex space-x-8 px-6" aria-label="Tabs">
+                <button onclick="showTab('overview')" class="analysis-tab active py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600">
+                    Overview
+                </button>
+                <button onclick="showTab('distribution')" class="analysis-tab py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    Distribution
+                </button>
+                <button onclick="showTab('usage')" class="analysis-tab py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    Usage
+                </button>
+                <button onclick="showTab('recommendations')" class="analysis-tab py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    Recommendations
+                </button>
+            </nav>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="overview-tab" class="tab-content p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Account Type Distribution Chart -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Account Type Distribution</h3>
+                    <div class="relative h-64">
+                        <canvas id="accountTypeChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+                    <div class="space-y-3">
+                        {% for activity in recent_activities %}
+                        <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                <i class="{{ activity.icon }} text-blue-600 text-sm"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-900">{{ activity.description }}</p>
+                                <p class="text-xs text-gray-500">{{ activity.timestamp|timesince }} ago</p>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-gray-500 text-center py-8">No recent activity</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Distribution Tab -->
+        <div id="distribution-tab" class="tab-content p-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Balance Distribution -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Balance Distribution</h3>
+                    <div class="relative h-64">
+                        <canvas id="balanceChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Account Groups -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Accounts by Group</h3>
+                    <div class="space-y-2">
+                        {% for group in account_groups %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span class="font-medium text-gray-900">{{ group.name }}</span>
+                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">{{ group.account_count }}</span>
+                        </div>
+                        {% empty %}
+                        <p class="text-gray-500 text-center py-8">No account groups found</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Usage Tab -->
+        <div id="usage-tab" class="tab-content p-6 hidden">
+            <div class="space-y-6">
+                <!-- Most Used Accounts -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Most Used Accounts</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transactions</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Used</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for account in most_used_accounts %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ account.name }}</div>
+                                        <div class="text-sm text-gray-500">{{ account.code }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ account.type }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ account.transaction_count }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ account.last_used|default:"Never" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="px-6 py-4 text-center text-gray-500">No transaction data available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Unused Accounts -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Unused Accounts</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {% for account in unused_accounts %}
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ account.name }}</p>
+                                    <p class="text-sm text-gray-500">{{ account.code }}</p>
+                                </div>
+                                <button onclick="reviewAccount('{{ account.id }}')" class="text-yellow-600 hover:text-yellow-800">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-span-full text-center text-gray-500 py-8">
+                            All accounts are being used!
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations Tab -->
+        <div id="recommendations-tab" class="tab-content p-6 hidden">
+            <div class="space-y-6">
+                {% for recommendation in recommendations %}
+                <div class="border border-gray-200 rounded-lg p-6">
+                    <div class="flex items-start">
+                        <div class="w-8 h-8 
+                            {% if recommendation.priority == 'high' %}bg-red-100 text-red-600
+                            {% elif recommendation.priority == 'medium' %}bg-yellow-100 text-yellow-600
+                            {% else %}bg-green-100 text-green-600{% endif %}
+                            rounded-full flex items-center justify-center mr-4">
+                            <i class="{{ recommendation.icon }} text-sm"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-900 mb-2">{{ recommendation.title }}</h4>
+                            <p class="text-gray-600 mb-4">{{ recommendation.description }}</p>
+                            {% if recommendation.actions %}
+                            <div class="flex space-x-2">
+                                {% for action in recommendation.actions %}
+                                <button onclick="{{ action.onclick }}" class="text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1 rounded">
+                                    {{ action.label }}
+                                </button>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-12">
+                    <i class="fas fa-thumbs-up text-4xl text-green-500 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Great job!</h3>
+                    <p class="text-gray-600">Your chart of accounts looks well-organized. No recommendations at this time.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize charts when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+});
+
+function initializeCharts() {
+    // Account Type Distribution Chart
+    const typeCtx = document.getElementById('accountTypeChart').getContext('2d');
+    new Chart(typeCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ type_distribution.labels|safe }},
+            datasets: [{
+                data: {{ type_distribution.data|safe }},
+                backgroundColor: [
+                    '#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#F97316'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Balance Distribution Chart
+    const balanceCtx = document.getElementById('balanceChart').getContext('2d');
+    new Chart(balanceCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ balance_distribution.labels|safe }},
+            datasets: [{
+                label: 'Number of Accounts',
+                data: {{ balance_distribution.data|safe }},
+                backgroundColor: '#3B82F6'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function showTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+    
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.analysis-tab').forEach(btn => {
+        btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
+        btn.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Show selected tab
+    document.getElementById(tabName + '-tab').classList.remove('hidden');
+    
+    // Add active class to selected tab button
+    event.target.classList.add('active', 'border-blue-500', 'text-blue-600');
+    event.target.classList.remove('border-transparent', 'text-gray-500');
+}
+
+function refreshAnalysis() {
+    // Refresh analysis data
+    location.reload();
+}
+
+function exportAnalysis() {
+    // Export analysis to CSV/PDF
+    alert('Export functionality would be implemented here');
+}
+
+function reviewAccount(accountId) {
+    // Navigate to account details
+    window.location.href = '/accounting/accounts/' + accountId + '/';
+}
+</script>
+{% endblock %}

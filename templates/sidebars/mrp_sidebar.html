@@ -1,0 +1,152 @@
+{% load static %}
+<style>
+    .sidebar-submenu {
+        transition: all 0.3s ease;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateX(-10px);
+    }
+    
+    .group:hover .sidebar-submenu {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(0);
+    }
+    
+    .sidebar.collapsed .sidebar-submenu {
+        left: 4rem !important;
+        top: 0;
+    }
+    
+    .sidebar.collapsed .group .sidebar-item .fa-chevron-down {
+        display: none;
+    }
+    
+    /* Mobile submenu */
+    @media (max-width: 768px) {
+        .sidebar-submenu {
+            position: relative;
+            left: 0 !important;
+            top: 0 !important;
+            margin-left: 0 !important;
+            width: 100% !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: none !important;
+            border-radius: 0.5rem !important;
+            margin-top: 0.5rem;
+        }
+        
+        .group:hover .sidebar-submenu {
+            display: block;
+        }
+    }
+</style>
+
+<!-- MRP Module Sidebar -->
+<div class="sidebar-content">
+    <!-- Logo/Back Section -->
+    <div class="sidebar-logo p-4 border-b border-white/20">
+        <div class="flex items-center space-x-3 min-h-[3rem]">
+            <a href="{% url 'manufacturing:dashboard' %}" class="w-12 h-12 bg-white/20 backdrop-blur-md hover:bg-white/30 rounded-full flex items-center justify-center transition-all flex-shrink-0 border border-white/30">
+                <i class="fas fa-arrow-left text-white text-base"></i>
+            </a>
+            <span class="text-xl font-bold sidebar-text whitespace-nowrap text-white">Manufacturing</span>
+        </div>
+    </div>
+
+    <!-- Navigation Items -->
+    <nav class="sidebar-nav flex-1 py-4 space-y-2 mt-2">
+        <!-- MRP Dashboard -->
+        <a href="{% url 'manufacturing:mrp_ui' %}" class="sidebar-item {% if request.resolver_match.url_name == 'mrp_ui' %}active{% endif %}">
+            <i class="fas fa-tachometer-alt sidebar-icon"></i>
+            <span class="sidebar-text">MRP Dashboard</span>
+        </a>
+
+        <!-- MRP Plans -->
+        <a href="{% url 'manufacturing:mrp_plan_list' %}" class="sidebar-item {% if 'mrp_plan' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-list-alt sidebar-icon"></i>
+            <span class="sidebar-text">MRP Plans</span>
+        </a>
+
+        <!-- MRP Requirements -->
+        <a href="{% url 'manufacturing:mrp_requirement_list' %}" class="sidebar-item {% if 'mrp_requirement' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-clipboard-check sidebar-icon"></i>
+            <span class="sidebar-text">MRP Requirements</span>
+        </a>
+
+        <!-- MRP Planning Dashboard -->
+        <a href="{% url 'manufacturing:mrp_planning_dashboard' %}" class="sidebar-item {% if 'mrp_planning_dashboard' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-project-diagram sidebar-icon"></i>
+            <span class="sidebar-text">Planning Dashboard</span>
+        </a>
+
+        <!-- Supply & Demand Report -->
+        <a href="{% url 'manufacturing:supply_demand_report' %}" class="sidebar-item {% if 'supply_demand_report' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-chart-area sidebar-icon"></i>
+            <span class="sidebar-text">Supply & Demand</span>
+        </a>
+
+        <!-- Demand Forecasts -->
+        <a href="{% url 'manufacturing:demand_forecast_list' %}" class="sidebar-item {% if 'demand_forecast' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-chart-line sidebar-icon"></i>
+            <span class="sidebar-text">Demand Forecasts</span>
+        </a>
+
+        <!-- Supplier Lead Times -->
+        <a href="{% url 'manufacturing:supplier_lead_time_list' %}" class="sidebar-item {% if 'supplier_lead_time' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-truck sidebar-icon"></i>
+            <span class="sidebar-text">Supplier Lead Times</span>
+        </a>
+
+        <!-- Reorder Rules -->
+        <a href="{% url 'manufacturing:reorder_rules_list' %}" class="sidebar-item {% if 'reorder_rules' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-bell sidebar-icon"></i>
+            <span class="sidebar-text">Reorder Rules</span>
+        </a>
+
+        {% comment %} <!-- Divider -->
+        <div class="my-4 border-t border-white/20"></div>
+
+        <!-- MRP Analysis & Reports -->
+        <!-- Material Analysis -->
+        <a href="#" class="sidebar-item">
+            <i class="fas fa-cubes sidebar-icon"></i>
+            <span class="sidebar-text">Material Analysis</span>
+        </a>
+
+        <!-- Capacity Planning -->
+        <a href="#" class="sidebar-item">
+            <i class="fas fa-industry sidebar-icon"></i>
+            <span class="sidebar-text">Capacity Planning</span>
+        </a>
+
+        <!-- MRP Reports -->
+        <a href="#" class="sidebar-item">
+            <i class="fas fa-file-alt sidebar-icon"></i>
+            <span class="sidebar-text">MRP Reports</span>
+        </a>
+
+        <!-- Divider -->
+        <div class="my-4 border-t border-white/20"></div>
+
+        <!-- MRP Settings -->
+
+        <!-- MRP Parameters -->
+        <a href="#" class="sidebar-item">
+            <i class="fas fa-sliders-h sidebar-icon"></i>
+            <span class="sidebar-text">MRP Parameters</span>
+        </a>
+
+        <!-- Planning Policies -->
+        <a href="#" class="sidebar-item">
+            <i class="fas fa-cogs sidebar-icon"></i>
+            <span class="sidebar-text">Planning Policies</span>
+        </a>
+
+        <!-- Master Schedule -->
+        <a href="#" class="sidebar-item">
+            <i class="fas fa-calendar-check sidebar-icon"></i>
+            <span class="sidebar-text">Master Schedule</span>
+        </a> {% endcomment %}
+    </nav>
+</div>

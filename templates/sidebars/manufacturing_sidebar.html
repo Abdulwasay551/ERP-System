@@ -92,57 +92,11 @@
             <span class="sidebar-text">Quality Control</span>
         </a>
 
-        <!-- Material Requirements Planning -->
-        <div class="group relative">
-            <a href="{% url 'manufacturing:mrp_ui' %}" class="sidebar-item {% if 'mrp' in request.resolver_match.url_name %}active{% endif %}">
-                <i class="fas fa-chart-line sidebar-icon"></i>
-                <span class="sidebar-text">MRP</span>
-                <i class="fas fa-chevron-down sidebar-text text-xs ml-auto transform transition-transform group-hover:rotate-180"></i>
-            </a>
-            
-            <!-- MRP Submenu -->
-            <div class="sidebar-submenu hidden group-hover:block absolute left-full top-0 ml-2 w-56 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 z-50 shadow-lg">
-                <div class="p-2 space-y-1">
-                    <a href="{% url 'manufacturing:mrp_ui' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-home mr-2 w-4 text-center"></i>
-                        MRP Dashboard
-                    </a>
-                    <a href="{% url 'manufacturing:mrp_plan_list' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-list-alt mr-2 w-4 text-center"></i>
-                        MRP Plans
-                    </a>
-                    <a href="{% url 'manufacturing:mrp_plan_create' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-plus mr-2 w-4 text-center"></i>
-                        Create Plan
-                    </a>
-                    <a href="{% url 'manufacturing:mrp_requirement_list' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-clipboard-check mr-2 w-4 text-center"></i>
-                        Requirements
-                    </a>
-                    <a href="{% url 'manufacturing:mrp_planning_dashboard' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-project-diagram mr-2 w-4 text-center"></i>
-                        Planning Dashboard
-                    </a>
-                    <a href="{% url 'manufacturing:supply_demand_report' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-chart-area mr-2 w-4 text-center"></i>
-                        Supply & Demand
-                    </a>
-                    <a href="{% url 'manufacturing:demand_forecast_list' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-chart-line mr-2 w-4 text-center"></i>
-                        Demand Forecasts
-                    </a> 
-                    <a href="{% url 'manufacturing:supplier_lead_time_list' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-truck mr-2 w-4 text-center"></i>
-                        Lead Times
-                    </a>
-                    <a href="{% url 'manufacturing:reorder_rules_list' %}" class="flex items-center px-3 py-2 text-sm text-white/90 hover:bg-white/20 rounded-md transition-colors">
-                        <i class="fas fa-bell mr-2 w-4 text-center"></i>
-                        Reorder Rules
-                    </a>
-                </div>
-            </div>
-        </div>
-
+        <!-- MRP - Material Requirements Planning -->
+        <a href="{% url 'manufacturing:mrp_ui' %}" class="sidebar-item {% if 'mrp' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-project-diagram sidebar-icon"></i>
+            <span class="sidebar-text">MRP</span>
+        </a>
         <!-- Material Consumption -->
         <a href="{% url 'manufacturing:material_tracking_ui' %}" class="sidebar-item {% if 'material' in request.resolver_match.url_name %}active{% endif %}">
             <i class="fas fa-boxes sidebar-icon"></i>

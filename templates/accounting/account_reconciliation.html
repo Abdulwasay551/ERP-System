@@ -1,0 +1,417 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Account Reconciliation - Accounting{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header Section -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Account Reconciliation</h1>
+            <p class="text-gray-600 mt-2">Reconcile bank statements and account balances</p>
+        </div>
+        <div class="flex space-x-3">
+            <button onclick="showNewReconciliationModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                <i class="fas fa-plus mr-2"></i>
+                New Reconciliation
+            </button>
+            <button onclick="importBankStatement()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                <i class="fas fa-upload mr-2"></i>
+                Import Statement
+            </button>
+        </div>
+    </div>
+
+    {% if error %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            <strong>Error:</strong> {{ error }}
+        </div>
+    {% endif %}
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-balance-scale text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-sm font-medium text-gray-500">Reconcilable Accounts</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ summary.reconcilable_accounts }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-sm font-medium text-gray-500">Reconciled This Month</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ summary.reconciled_this_month }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-sm font-medium text-gray-500">Pending</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ summary.pending_reconciliations }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-sm font-medium text-gray-500">Discrepancies</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ summary.discrepancies }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reconciliation Tabs -->
+    <div class="bg-white rounded-lg shadow-md">
+        <div class="border-b border-gray-200">
+            <nav class="flex space-x-8 px-6" aria-label="Tabs">
+                <button onclick="showTab('accounts')" class="reconciliation-tab active py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600">
+                    Accounts
+                </button>
+                <button onclick="showTab('reconciliations')" class="reconciliation-tab py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    Reconciliations
+                </button>
+                <button onclick="showTab('history')" class="reconciliation-tab py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    History
+                </button>
+            </nav>
+        </div>
+
+        <!-- Accounts Tab -->
+        <div id="accounts-tab" class="tab-content p-6">
+            <div class="mb-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-900">Reconcilable Accounts</h3>
+                    <div class="flex space-x-2">
+                        <select class="form-select text-sm" onchange="filterAccountsByType(this.value)">
+                            <option value="">All Types</option>
+                            <option value="bank">Bank Accounts</option>
+                            <option value="credit_card">Credit Cards</option>
+                            <option value="asset">Other Assets</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Balance</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Reconciled</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for account in reconcilable_accounts %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ account.name }}</div>
+                                <div class="text-sm text-gray-500">{{ account.code }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ account.type }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                ${{ account.current_balance|floatformat:2 }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ account.last_reconciled|default:"Never" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if account.reconciliation_status == 'current' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Current
+                                    </span>
+                                {% elif account.reconciliation_status == 'overdue' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        Overdue
+                                    </span>
+                                {% else %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                        Pending
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button onclick="startReconciliation('{{ account.id }}')" class="text-blue-600 hover:text-blue-900 mr-3">
+                                    Reconcile
+                                </button>
+                                <button onclick="viewAccountHistory('{{ account.id }}')" class="text-gray-600 hover:text-gray-900">
+                                    History
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-4 text-center text-gray-500">No reconcilable accounts found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Reconciliations Tab -->
+        <div id="reconciliations-tab" class="tab-content p-6 hidden">
+            <div class="mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Active Reconciliations</h3>
+            </div>
+
+            <div class="space-y-4">
+                {% for reconciliation in active_reconciliations %}
+                <div class="border border-gray-200 rounded-lg p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h4 class="font-medium text-gray-900">{{ reconciliation.account.name }}</h4>
+                            <p class="text-sm text-gray-500">Started {{ reconciliation.started_at|timesince }} ago</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="continueReconciliation('{{ reconciliation.id }}')" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                                Continue
+                            </button>
+                            <button onclick="cancelReconciliation('{{ reconciliation.id }}')" class="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-600">Statement Balance</p>
+                            <p class="font-medium">${{ reconciliation.statement_balance|floatformat:2 }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Book Balance</p>
+                            <p class="font-medium">${{ reconciliation.book_balance|floatformat:2 }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Difference</p>
+                            <p class="font-medium {% if reconciliation.difference == 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                ${{ reconciliation.difference|floatformat:2 }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-12">
+                    <i class="fas fa-clipboard-list text-4xl text-gray-300 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Active Reconciliations</h3>
+                    <p class="text-gray-600">Start a new reconciliation to get started.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="history-tab" class="tab-content p-6 hidden">
+            <div class="mb-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-900">Reconciliation History</h3>
+                    <select class="form-select text-sm" onchange="filterHistoryByPeriod(this.value)">
+                        <option value="all">All Time</option>
+                        <option value="month">This Month</option>
+                        <option value="quarter">This Quarter</option>
+                        <option value="year">This Year</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statement Balance</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for reconciliation in reconciliation_history %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ reconciliation.completed_at|date:"M d, Y" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ reconciliation.account.name }}</div>
+                                <div class="text-sm text-gray-500">{{ reconciliation.account.code }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ reconciliation.period_start|date:"M d" }} - {{ reconciliation.period_end|date:"M d, Y" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                ${{ reconciliation.statement_balance|floatformat:2 }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if reconciliation.status == 'completed' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Completed
+                                    </span>
+                                {% else %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        Failed
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button onclick="viewReconciliation('{{ reconciliation.id }}')" class="text-blue-600 hover:text-blue-900">
+                                    View
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-4 text-center text-gray-500">No reconciliation history found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Reconciliation Modal -->
+    <div id="newReconciliationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Start New Reconciliation</h3>
+                
+                <form id="newReconciliationForm">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Account</label>
+                        <select name="account" class="form-select w-full" required>
+                            <option value="">Select Account</option>
+                            {% for account in reconcilable_accounts %}
+                            <option value="{{ account.id }}">{{ account.name }} ({{ account.code }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Statement Date</label>
+                        <input type="date" name="statement_date" class="form-input w-full" required>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Statement Balance</label>
+                        <input type="number" step="0.01" name="statement_balance" class="form-input w-full" placeholder="0.00" required>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeNewReconciliationModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            Start Reconciliation
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+    
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.reconciliation-tab').forEach(btn => {
+        btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
+        btn.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Show selected tab
+    document.getElementById(tabName + '-tab').classList.remove('hidden');
+    
+    // Add active class to selected tab button
+    event.target.classList.add('active', 'border-blue-500', 'text-blue-600');
+    event.target.classList.remove('border-transparent', 'text-gray-500');
+}
+
+function showNewReconciliationModal() {
+    // Redirect to create reconciliation page
+    window.location.href = "{% url 'accounting:reconciliation_create' %}";
+}
+
+function closeNewReconciliationModal() {
+    document.getElementById('newReconciliationModal').classList.add('hidden');
+}
+
+function startReconciliation(accountId) {
+    // Navigate to reconciliation workflow
+    window.location.href = '/accounting/reconciliation/start/' + accountId + '/';
+}
+
+function continueReconciliation(reconciliationId) {
+    // Continue existing reconciliation
+    window.location.href = "{% url 'accounting:reconciliation_detail' 0 %}".replace('0', reconciliationId);
+}
+
+function cancelReconciliation(reconciliationId) {
+    if (confirm('Are you sure you want to cancel this reconciliation?')) {
+        // Cancel reconciliation
+        console.log('Cancelling reconciliation:', reconciliationId);
+    }
+}
+
+function viewReconciliation(reconciliationId) {
+    // View reconciliation details
+    window.location.href = '/accounting/reconciliation/' + reconciliationId + '/view/';
+}
+
+function importBankStatement() {
+    // Import bank statement
+    alert('Import bank statement functionality would be implemented here');
+}
+
+function filterAccountsByType(type) {
+    // Filter accounts by type
+    console.log('Filtering by type:', type);
+}
+
+function filterHistoryByPeriod(period) {
+    // Filter history by period
+    console.log('Filtering by period:', period);
+}
+
+function viewAccountHistory(accountId) {
+    // View account reconciliation history
+    window.location.href = '/accounting/accounts/' + accountId + '/reconciliation-history/';
+}
+
+// Form submission
+document.getElementById('newReconciliationForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    // Submit form data
+    console.log('Starting new reconciliation');
+    closeNewReconciliationModal();
+});
+</script>
+{% endblock %}

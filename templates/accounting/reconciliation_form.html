@@ -1,0 +1,809 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Create Reconciliation - ERP System{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Modern Reconciliation Form Styling */
+    .reconciliation-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        min-height: 100vh;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+        padding: 2rem;
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e9ecef;
+    }
+    
+    .page-header h2 {
+        color: #2c3e50;
+        font-weight: 700;
+        margin: 0;
+        font-size: 2rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .page-header h2 i {
+        margin-right: 1rem;
+        color: #17a2b8;
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .form-section {
+        background: #fff;
+        padding: 2.5rem;
+        border-radius: 1.25rem;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .form-section:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+    }
+    
+    .form-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 5px;
+        height: 100%;
+        background: linear-gradient(180deg, #17a2b8 0%, #20c997 50%, #fd7e14 100%);
+        border-radius: 0 3px 3px 0;
+    }
+    
+    .section-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 2px solid #f8f9fa;
+        position: relative;
+    }
+    
+    .section-header::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 60px;
+        height: 2px;
+        background: linear-gradient(90deg, #17a2b8, #138496);
+        border-radius: 1px;
+    }
+    
+    .section-header i {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        color: white;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1.25rem;
+        font-size: 1.5rem;
+        box-shadow: 0 8px 20px rgba(23, 162, 184, 0.3);
+    }
+    
+    .section-header h5 {
+        color: #2c3e50;
+        margin: 0;
+        font-weight: 700;
+        font-size: 1.4rem;
+        letter-spacing: -0.025em;
+    }
+    
+    .section-header p {
+        color: #6c757d;
+        margin: 0.5rem 0 0 0;
+        font-size: 0.95rem;
+    }
+    
+    .account-preview {
+        background: linear-gradient(135deg, #e8f8f5 0%, #d4edda 100%);
+        border: 2px solid #20c997;
+        border-radius: 1.25rem;
+        padding: 2rem;
+        margin-top: 1.5rem;
+        display: none;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .account-preview::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #20c997, #17a2b8);
+        border-radius: 0 2px 2px 0;
+    }
+    
+    .balance-info {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 1.25rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 8px 25px rgba(23, 162, 184, 0.4);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .balance-info::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        transform: rotate(45deg);
+        animation: shimmer 3s infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { transform: translateX(-100%) rotate(45deg); }
+        100% { transform: translateX(100%) rotate(45deg); }
+    }
+    
+    .balance-item {
+        text-align: center;
+        padding: 1.5rem;
+        position: relative;
+    }
+    
+    .balance-value {
+        font-size: 2rem;
+        font-weight: 800;
+        margin-bottom: 0.75rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .balance-label {
+        font-size: 1rem;
+        opacity: 0.95;
+        font-weight: 600;
+        letter-spacing: 0.025em;
+    }
+    
+    .difference-highlight {
+        background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+        color: #2d3436;
+        padding: 1rem;
+        border-radius: 1rem;
+        font-weight: 700;
+        text-align: center;
+        margin-top: 1rem;
+        border: 2px solid #fdcb6e;
+    }
+    
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 1rem;
+        padding: 1rem 1.25rem;
+        font-size: 1rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background-color: #fff;
+        font-weight: 500;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #17a2b8;
+        box-shadow: 0 0 0 0.375rem rgba(23, 162, 184, 0.12);
+        background-color: #fff;
+        transform: translateY(-1px);
+    }
+    
+    .form-control:hover, .form-select:hover {
+        border-color: #ced4da;
+    }
+    
+    .form-label {
+        font-weight: 700;
+        color: #495057;
+        margin-bottom: 0.875rem;
+        font-size: 1rem;
+        letter-spacing: -0.01em;
+        display: flex;
+        align-items: center;
+    }
+    
+    .form-label i {
+        margin-right: 0.5rem;
+        color: #17a2b8;
+        font-size: 0.9rem;
+    }
+    
+    .required-indicator {
+        color: #dc3545;
+        font-weight: bold;
+        margin-left: 6px;
+        font-size: 1.1rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        border: none;
+        padding: 1rem 3rem;
+        border-radius: 1rem;
+        font-weight: 700;
+        font-size: 1.1rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 8px 25px rgba(23, 162, 184, 0.35);
+        letter-spacing: 0.025em;
+        text-transform: uppercase;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(23, 162, 184, 0.4);
+        background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+    }
+    
+    .btn-primary:active {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(23, 162, 184, 0.3);
+    }
+    
+    .btn-secondary {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        border: none;
+        padding: 1rem 2.5rem;
+        border-radius: 1rem;
+        font-weight: 600;
+        color: white;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+        letter-spacing: 0.025em;
+    }
+    
+    .btn-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4);
+        background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+        color: white;
+    }
+    
+    .reconciliation-status {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .status-draft {
+        background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+        color: #2d3436;
+    }
+    
+    .status-in-progress {
+        background: linear-gradient(135deg, #74b9ff, #0984e3);
+        color: white;
+    }
+    
+    .status-completed {
+        background: linear-gradient(135deg, #00b894, #00a085);
+        color: white;
+    }
+    
+    .action-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 1.5rem;
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 2px solid #f8f9fa;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .reconciliation-container {
+            padding: 1rem;
+        }
+        
+        .form-section {
+            padding: 1.5rem;
+        }
+        
+        .page-header {
+            padding: 1.5rem;
+        }
+        
+        .page-header h2 {
+            font-size: 1.75rem;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .btn-primary, .btn-secondary {
+            width: 100%;
+        }
+        
+        .balance-item {
+            padding: 1rem;
+        }
+        
+        .balance-value {
+            font-size: 1.5rem;
+        }
+    }
+    
+    /* Animation for form interactions */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .form-section {
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    .account-preview {
+        animation: fadeInUp 0.4s ease-out;
+    }
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        background-color: #fff;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #17a2b8;
+        box-shadow: 0 0 0 0.25rem rgba(23, 162, 184, 0.15);
+        background-color: #fff;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.75rem;
+        font-size: 0.95rem;
+    }
+    
+    .required-indicator {
+        color: #dc3545;
+        font-weight: bold;
+        margin-left: 4px;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        border: none;
+        padding: 0.875rem 2.5rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(23, 162, 184, 0.4);
+        background: linear-gradient(135deg, #138496, #117a8b);
+    }
+    
+    .btn-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        padding: 0.875rem 2rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+        transform: translateY(-1px);
+        background: linear-gradient(135deg, #495057, #343a40);
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        border-radius: 1rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border: 1px solid #e9ecef;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    
+    .page-header h2 {
+        color: #2c3e50;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .page-header p {
+        color: #6c757d;
+        margin-bottom: 0;
+        font-size: 1.1rem;
+    }
+    
+    .form-actions {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 2rem;
+    }
+    
+    @media (max-width: 768px) {
+        .reconciliation-container {
+            padding: 1rem;
+        }
+        
+        .form-section {
+            padding: 1.5rem;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .btn-primary, .btn-secondary {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reconciliation-container">
+    <!-- Modern Header -->
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="fas fa-balance-scale"></i>Create Account Reconciliation</h2>
+                <p class="text-muted mb-0">Start a comprehensive reconciliation process for your accounts</p>
+            </div>
+            <a href="{% url 'accounting:account_reconciliation' %}" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-arrow-left me-2"></i>Back to Reconciliations
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Form Container -->
+    <div class="row">
+        <div class="col-lg-8">
+            <form method="post" class="needs-validation" novalidate id="reconciliationForm">
+                {% csrf_token %}
+                
+                <!-- Account Selection Section -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-university"></i>
+                        <div>
+                            <h5>Account Selection</h5>
+                            <p>Choose the account you want to reconcile</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="account" class="form-label">
+                            <i class="fas fa-piggy-bank"></i>Select Account <span class="required-indicator">*</span>
+                        </label>
+                        <select class="form-select" id="account" name="account" required>
+                            <option value="">Choose an account to reconcile</option>
+                            {% for account in reconcilable_accounts %}
+                                <option value="{{ account.id }}" 
+                                        data-code="{{ account.code }}"
+                                        data-balance="{{ account.current_balance|default:0 }}"
+                                        data-type="{{ account.get_type_display }}"
+                                        data-name="{{ account.name }}">
+                                    {{ account.code }} - {{ account.name }} ({{ account.get_type_display }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">
+                            Please select an account to reconcile.
+                        </div>
+                        <div class="form-text">Select the account you want to reconcile with external statements</div>
+                    </div>
+                    
+                    <!-- Enhanced Account Preview -->
+                    <div class="account-preview" id="accountPreview">
+                        <h6><i class="fas fa-info-circle me-2"></i>Account Overview</h6>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <small class="text-muted d-block">Account Code</small>
+                                <div class="fw-bold fs-5" id="previewCode">-</div>
+                            </div>
+                            <div class="col-md-3">
+                                <small class="text-muted d-block">Account Type</small>
+                                <div class="fw-bold fs-6" id="previewType">-</div>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted d-block">Current Book Balance</small>
+                                <div class="fw-bold text-primary h4" id="previewBalance">$0.00</div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted d-block">Account Name</small>
+                            <div class="fw-bold" id="previewName">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statement Information Section -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <div>
+                            <h5>Statement Information</h5>
+                            <p>Enter details from your external statement</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="statement_date" class="form-label">
+                                    <i class="fas fa-calendar-alt"></i>Statement Date <span class="required-indicator">*</span>
+                                </label>
+                                <input type="date" class="form-control" id="statement_date" name="statement_date" required>
+                                <div class="invalid-feedback">
+                                    Please provide the statement date.
+                                </div>
+                                <div class="form-text">The ending date of the statement period</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="statement_balance" class="form-label">
+                                    <i class="fas fa-dollar-sign"></i>Statement Balance <span class="required-indicator">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" step="0.01" class="form-control" 
+                                           id="statement_balance" name="statement_balance" 
+                                           placeholder="0.00" required>
+                                </div>
+                                <div class="invalid-feedback">
+                                    Please enter the statement balance.
+                                </div>
+                                <div class="form-text">The ending balance shown on your statement</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="notes" class="form-label">
+                            <i class="fas fa-sticky-note"></i>Reconciliation Notes
+                        </label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"
+                                  placeholder="Add any notes about this reconciliation process..."></textarea>
+                        <div class="form-text">Optional notes about this reconciliation (e.g., statement source, special considerations)</div>
+                    </div>
+                    
+                    <!-- Balance Difference Preview -->
+                    <div class="difference-highlight" id="differencePreview" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-calculator me-2"></i>Difference:</span>
+                            <span class="h5 mb-0" id="differenceAmount">$0.00</span>
+                        </div>
+                        <small class="d-block mt-1">This will need to be reconciled through transaction matching</small>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="action-buttons">
+                    <a href="{% url 'accounting:account_reconciliation' %}" class="btn btn-secondary btn-lg">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-rocket me-2"></i>Start Reconciliation
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Enhanced Help and Info Section -->
+        <div class="col-lg-4">
+            <!-- Balance Information Card -->
+            <div class="balance-info" id="balanceInfo" style="display: none;">
+                <h6 class="mb-4"><i class="fas fa-chart-line me-2"></i>Balance Summary</h6>
+                <div class="row text-center">
+                    <div class="col-12 mb-4">
+                        <div class="balance-item">
+                            <div class="balance-value" id="bookBalanceDisplay">$0.00</div>
+                            <div class="balance-label">Current Book Balance</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <small class="opacity-90">💡 Enter statement balance to see the difference</small>
+                </div>
+            </div>
+
+            <!-- Process Guide -->
+            <div class="help-card">
+                <h6><i class="fas fa-route"></i>Reconciliation Process</h6>
+                <ul>
+                    <li><strong>Select Account:</strong> Choose the account you want to reconcile</li>
+                    <li><strong>Enter Statement Info:</strong> Provide statement date and ending balance</li>
+                    <li><strong>Match Transactions:</strong> Compare and match statement items with book entries</li>
+                    <li><strong>Resolve Differences:</strong> Account for outstanding items and discrepancies</li>
+                    <li><strong>Complete:</strong> Finalize the reconciliation when balanced</li>
+                </ul>
+            </div>
+            
+            <!-- Best Practices -->
+            <div class="help-card mt-4">
+                <h6><i class="fas fa-star"></i>Best Practices</h6>
+                <ul>
+                    <li>Reconcile accounts monthly for accuracy</li>
+                    <li>Ensure all transactions are recorded first</li>
+                    <li>Keep bank statements and supporting documents</li>
+                    <li>Investigate and resolve discrepancies promptly</li>
+                    <li>Document unusual items in the notes section</li>
+                </ul>
+            </div>
+            
+            <!-- Account Types Info -->
+            <div class="help-card mt-4">
+                <h6><i class="fas fa-question-circle"></i>Reconcilable Accounts</h6>
+                <ul>
+                    <li><strong>Bank Accounts:</strong> Cash, checking, savings accounts</li>
+                    <li><strong>Credit Cards:</strong> Credit card liability accounts</li>
+                    <li><strong>Investment Accounts:</strong> Asset accounts with external statements</li>
+                    <li><strong>Loan Accounts:</strong> Liability accounts with lender statements</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+    
+    // Bootstrap form validation
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+
+    let currentBookBalance = 0;
+
+    // Enhanced account selection handler
+    document.getElementById('account').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const accountPreview = document.getElementById('accountPreview');
+        const balanceInfo = document.getElementById('balanceInfo');
+        
+        if (this.value) {
+            // Update account preview with enhanced information
+            document.getElementById('previewCode').textContent = selectedOption.dataset.code;
+            document.getElementById('previewType').textContent = selectedOption.dataset.type;
+            document.getElementById('previewName').textContent = selectedOption.dataset.name || 'N/A';
+            
+            currentBookBalance = parseFloat(selectedOption.dataset.balance) || 0;
+            document.getElementById('previewBalance').textContent = '$' + currentBookBalance.toLocaleString('en-US', {minimumFractionDigits: 2});
+            document.getElementById('bookBalanceDisplay').textContent = '$' + currentBookBalance.toLocaleString('en-US', {minimumFractionDigits: 2});
+            
+            // Show elements with smooth animation
+            accountPreview.style.display = 'block';
+            balanceInfo.style.display = 'block';
+            
+            // Recalculate difference if statement balance is entered
+            calculateDifference();
+        } else {
+            accountPreview.style.display = 'none';
+            balanceInfo.style.display = 'none';
+            document.getElementById('differencePreview').style.display = 'none';
+            currentBookBalance = 0;
+        }
+    });
+
+    // Enhanced statement balance handler
+    document.getElementById('statement_balance').addEventListener('input', function() {
+        calculateDifference();
+    });
+
+    function calculateDifference() {
+        const statementBalance = parseFloat(document.getElementById('statement_balance').value) || 0;
+        const differencePreview = document.getElementById('differencePreview');
+        const differenceAmount = document.getElementById('differenceAmount');
+        
+        if (currentBookBalance !== 0 && statementBalance !== 0) {
+            const difference = statementBalance - currentBookBalance;
+            differenceAmount.textContent = '$' + Math.abs(difference).toLocaleString('en-US', {minimumFractionDigits: 2});
+            
+            // Color code the difference
+            if (difference > 0) {
+                differenceAmount.className = 'h5 mb-0 text-success';
+                differenceAmount.innerHTML = '+$' + difference.toLocaleString('en-US', {minimumFractionDigits: 2});
+            } else if (difference < 0) {
+                differenceAmount.className = 'h5 mb-0 text-danger';
+                differenceAmount.innerHTML = '-$' + Math.abs(difference).toLocaleString('en-US', {minimumFractionDigits: 2});
+            } else {
+                differenceAmount.className = 'h5 mb-0 text-success';
+                differenceAmount.innerHTML = '$0.00 ✓';
+            }
+            
+            differencePreview.style.display = 'block';
+        } else {
+            differencePreview.style.display = 'none';
+        }
+    }
+
+    // Set default statement date to today
+    const today = new Date();
+    document.getElementById('statement_date').value = today.toISOString().split('T')[0];
+
+    // Enhanced form submission with loading state
+    document.getElementById('reconciliationForm').addEventListener('submit', function(e) {
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        if (this.checkValidity()) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Starting Reconciliation...';
+            
+            // Re-enable button after a timeout in case of errors
+            setTimeout(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }, 10000);
+        }
+    });
+
+    // Add tooltips for better UX
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Auto-focus on account selection
+    setTimeout(() => {
+        document.getElementById('account').focus();
+    }, 500);
+})();
+</script>
+{% endblock %}

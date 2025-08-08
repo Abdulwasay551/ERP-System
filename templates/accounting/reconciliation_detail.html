@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Reconciliation Detail - ERP System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .reconciliation-header {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
+    .balance-card {
+        background: white;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        text-align: center;
+        height: 100%;
+    }
+    .status-badge {
+        font-size: 0.875rem;
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+    }
+    .transaction-item {
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+    .transaction-item:hover {
+        border-color: #17a2b8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .difference-alert {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+        border: none;
+    }
+    .matched-alert {
+        background: linear-gradient(135deg, #28a745, #1e7e34);
+        color: white;
+        border: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Reconciliation Header -->
+            <div class="reconciliation-header">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2 class="mb-1">{{ reconciliation.account.name }} Reconciliation</h2>
+                        <p class="mb-0 opacity-75">{{ reconciliation.account.code }} - Statement Date: {{ reconciliation.statement_date|date:"M d, Y" }}</p>
+                        <div class="mt-2">
+                            {% if reconciliation.status == 'pending' %}
+                                <span class="status-badge bg-warning text-dark">
+                                    <i class="fas fa-clock me-1"></i>In Progress
+                                </span>
+                            {% elif reconciliation.status == 'completed' %}
+                                <span class="status-badge bg-success">
+                                    <i class="fas fa-check me-1"></i>Completed
+                                </span>
+                            {% elif reconciliation.status == 'cancelled' %}
+                                <span class="status-badge bg-secondary">
+                                    <i class="fas fa-times me-1"></i>Cancelled
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-end">
+                            <small class="opacity-75">Started {{ reconciliation.created_at|date:"M d, Y g:i A" }}</small>
+                            {% if reconciliation.completed_at %}
+                                <br><small class="opacity-75">Completed {{ reconciliation.completed_at|date:"M d, Y g:i A" }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Balance Summary -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="balance-card">
+                        <h6 class="text-muted mb-2">Book Balance</h6>
+                        <h4 class="text-primary mb-0">${{ reconciliation.book_balance|floatformat:2 }}</h4>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="balance-card">
+                        <h6 class="text-muted mb-2">Statement Balance</h6>
+                        <h4 class="text-info mb-0">${{ reconciliation.statement_balance|floatformat:2 }}</h4>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="balance-card">
+                        <h6 class="text-muted mb-2">Difference</h6>
+                        {% with diff=reconciliation.statement_balance|add:reconciliation.book_balance|add:"-"|add:reconciliation.book_balance %}
+                        <h4 class="{% if diff != 0 %}text-danger{% else %}text-success{% endif %} mb-0">
+                            ${{ diff|floatformat:2 }}
+                        </h4>
+                        {% endwith %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="balance-card">
+                        <h6 class="text-muted mb-2">Status</h6>
+                        <div class="h6 mb-0">
+                            {% if reconciliation.status == 'pending' %}
+                                <span class="text-warning">In Progress</span>
+                            {% elif reconciliation.status == 'completed' %}
+                                <span class="text-success">Completed</span>
+                            {% elif reconciliation.status == 'cancelled' %}
+                                <span class="text-secondary">Cancelled</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Alert -->
+            {% with diff=reconciliation.statement_balance|add:reconciliation.book_balance|add:"-"|add:reconciliation.book_balance %}
+            {% if diff == 0 and reconciliation.status == 'pending' %}
+                <div class="alert matched-alert" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-check-circle fa-2x me-3"></i>
+                        <div class="flex-grow-1">
+                            <h5 class="mb-1">Balances Match!</h5>
+                            <p class="mb-0">The book balance matches the statement balance. You can complete this reconciliation.</p>
+                        </div>
+                    </div>
+                </div>
+            {% elif diff != 0 %}
+                <div class="alert difference-alert" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                        <div class="flex-grow-1">
+                            <h5 class="mb-1">Balance Difference: ${{ diff|floatformat:2 }}</h5>
+                            <p class="mb-0">There's a difference between the book balance and statement balance. Review transactions to identify discrepancies.</p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            {% endwith %}
+
+            <!-- Reconciliation Actions -->
+            {% if reconciliation.status == 'pending' %}
+            <div class="row">
+                <div class="col-lg-8">
+                    <!-- Transactions Section -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Recent Transactions</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Sample transactions - in real implementation, this would be dynamic -->
+                            <div class="transaction-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">Opening Balance</h6>
+                                        <small class="text-muted">{{ reconciliation.reconciliation_date|date:"M d, Y" }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="h6 text-success">${{ reconciliation.book_balance|floatformat:2 }}</span>
+                                        <div>
+                                            <input type="checkbox" class="form-check-input" checked disabled>
+                                            <small class="text-muted ms-1">Matched</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center py-3">
+                                <p class="text-muted mb-0">Additional transaction matching interface would appear here</p>
+                                <small class="text-muted">Import bank statement or manually enter transactions to reconcile</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <!-- Actions Panel -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Reconciliation Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                
+                                <div class="d-grid gap-2">
+                                    {% with diff=reconciliation.statement_balance|add:reconciliation.book_balance|add:"-"|add:reconciliation.book_balance %}
+                                    {% if diff == 0 %}
+                                        <button type="submit" name="action" value="complete" class="btn btn-success">
+                                            <i class="fas fa-check me-2"></i>Complete Reconciliation
+                                        </button>
+                                    {% else %}
+                                        <button type="button" class="btn btn-success" disabled title="Resolve balance differences first">
+                                            <i class="fas fa-check me-2"></i>Complete Reconciliation
+                                        </button>
+                                    {% endif %}
+                                    {% endwith %}
+                                    
+                                    <button type="submit" name="action" value="cancel" class="btn btn-outline-danger"
+                                            onclick="return confirm('Are you sure you want to cancel this reconciliation?')">
+                                        <i class="fas fa-times me-2"></i>Cancel Reconciliation
+                                    </button>
+                                    
+                                    <a href="{% url 'accounting:account_reconciliation' %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>Back to List
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Tips -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Reconciliation Tips</h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="mb-0 small">
+                                <li>Check for outstanding checks</li>
+                                <li>Verify deposits in transit</li>
+                                <li>Look for bank fees or charges</li>
+                                <li>Check for interest earned</li>
+                                <li>Verify all dates are correct</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Completed/Cancelled Status -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body text-center py-5">
+                            {% if reconciliation.status == 'completed' %}
+                                <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                                <h4>Reconciliation Completed</h4>
+                                <p class="text-muted mb-3">This reconciliation was completed on {{ reconciliation.completed_at|date:"M d, Y g:i A" }}</p>
+                            {% elif reconciliation.status == 'cancelled' %}
+                                <i class="fas fa-times-circle fa-4x text-secondary mb-3"></i>
+                                <h4>Reconciliation Cancelled</h4>
+                                <p class="text-muted mb-3">This reconciliation was cancelled and is no longer active</p>
+                            {% endif %}
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-auto">
+                                    <a href="{% url 'accounting:account_reconciliation' %}" class="btn btn-primary">
+                                        <i class="fas fa-arrow-left me-2"></i>Back to Reconciliations
+                                    </a>
+                                </div>
+                                <div class="col-auto">
+                                    <a href="{% url 'accounting:reconciliation_create' %}" class="btn btn-outline-primary">
+                                        <i class="fas fa-plus me-2"></i>New Reconciliation
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add any interactive functionality for transaction matching here
+    console.log('Reconciliation detail page loaded');
+});
+</script>
+{% endblock %}
