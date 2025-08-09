@@ -2211,7 +2211,7 @@ def payments_export(request):
             payment.get_method_display(),
             payment.payment_date.strftime('%Y-%m-%d'),
             payment.reference,
-            payment.received_by.username if payment.received_by else 'N/A',
+            payment.received_by.email if payment.received_by else 'N/A',
             payment.created_at.strftime('%Y-%m-%d %H:%M')
         ])
     
@@ -3484,7 +3484,7 @@ def commissions_create(request):
             'message': 'Sales commission created successfully!',
             'commission': {
                 'id': commission.id,
-                'sales_person': sales_person.get_full_name() or sales_person.username,
+                'sales_person': sales_person.get_full_name() or sales_person.email,
                 'commission_amount': float(commission.commission_amount),
                 'commission_rate': float(commission.commission_rate),
                 'is_paid': commission.is_paid
@@ -3530,7 +3530,7 @@ def commissions_update(request, pk):
             'message': 'Sales commission updated successfully!',
             'commission': {
                 'id': commission.id,
-                'sales_person': sales_person.get_full_name() or sales_person.username,
+                'sales_person': sales_person.get_full_name() or sales_person.email,
                 'commission_amount': float(commission.commission_amount),
                 'commission_rate': float(commission.commission_rate),
                 'is_paid': commission.is_paid
@@ -3551,7 +3551,7 @@ def commission_detail(request, pk):
             'commission': {
                 'id': commission.id,
                 'sales_person_id': commission.sales_person.id,
-                'sales_person_name': commission.sales_person.get_full_name() or commission.sales_person.username,
+                'sales_person_name': commission.sales_person.get_full_name() or commission.sales_person.email,
                 'invoice_id': commission.invoice.id,
                 'invoice_number': commission.invoice.invoice_number,
                 'commission_rate': str(commission.commission_rate),

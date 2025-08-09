@@ -129,6 +129,38 @@ class JournalItem(models.Model):
     def __str__(self):
         return f"{self.account.name}: D{self.debit} C{self.credit}"
 
+class JournalTemplate(models.Model):
+    """Template for creating journal entries with predefined accounts and structure"""
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='journal_templates')
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        unique_together = ['company', 'name']
+
+class JournalTemplateItem(models.Model):
+    """Individual line items for journal templates"""
+    template = models.ForeignKey(JournalTemplate, on_delete=models.CASCADE, related_name='items')
+    account = models.ForeignKey(Account, on_delete=models.CASCADE)
+    description = models.CharField(max_length=255, blank=True)
+    debit_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0, blank=True, null=True)
+    credit_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0, blank=True, null=True)
+    is_amount_variable = models.BooleanField(default=True, help_text="Allow amount to be changed when applying template")
+    order = models.IntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.template.name} - {self.account.name}"
+
+    class Meta:
+        ordering = ['order']
+
 class AccountPayable(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='payables')
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='payables',null=True,blank=True)  

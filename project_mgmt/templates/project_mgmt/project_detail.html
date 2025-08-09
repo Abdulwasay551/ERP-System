@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load accounting_filters %}
 
 {% block title %}{{ project.name }} - Project Details{% endblock %}
 
@@ -132,9 +133,11 @@
                 <div class="progress-circle">
                     <svg class="progress-ring" width="120" height="120">
                         <circle cx="60" cy="60" r="50" stroke="#e5e7eb" stroke-width="8" fill="transparent"/>
+                        {% with offset_value=progress|mul:314|div:100 %}
                         <circle cx="60" cy="60" r="50" stroke="#10b981" stroke-width="8" fill="transparent"
                                 stroke-linecap="round" stroke-dasharray="314" 
-                                stroke-dashoffset="{{ 314|sub:progress|mul:314|div:100 }}"/>
+                                stroke-dashoffset="{{ 314|sub:offset_value }}"/>
+                        {% endwith %}
                     </svg>
                     <div class="progress-text text-success">{{ progress }}%</div>
                 </div>

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load accounting_filters %}
 
 {% block title %}Profit & Loss Statement | FutureERP{% endblock %}
 
@@ -190,7 +191,7 @@
                             <div class="text-sm text-gray-600">Profit Margin</div>
                             <div class="text-lg font-semibold {% if net_income >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
                                 {% if total_income > 0 %}
-                                    {{ net_income|div:total_income|mul:100|floatformat:1 }}%
+                                    {{ net_income|percentage:total_income|floatformat:1 }}%
                                 {% else %}
                                     0.0%
                                 {% endif %}
@@ -219,7 +220,7 @@
                 <div class="pl-card rounded-2xl p-6 text-center">
                     <div class="text-2xl font-bold {% if net_income >= 0 %}text-green-600{% else %}text-red-600{% endif %} mb-2">
                         {% if total_income > 0 %}
-                            {{ net_income|div:total_income|mul:100|floatformat:1 }}%
+                            {{ net_income|percentage:total_income|floatformat:1 }}%
                         {% else %}
                             0.0%
                         {% endif %}

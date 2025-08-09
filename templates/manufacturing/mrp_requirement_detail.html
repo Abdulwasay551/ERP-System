@@ -615,7 +615,7 @@
                     <div class="timeline-title">{{ history.get_history_type_display }}</div>
                     <div class="timeline-desc">
                         {% if history.history_user %}
-                            by {{ history.history_user.get_full_name|default:history.history_user.username }}
+                            by {{ history.history_user.get_full_name|default:history.history_user.email }}
                         {% endif %}
                         {% if history.history_change_reason %}
                             - {{ history.history_change_reason }}

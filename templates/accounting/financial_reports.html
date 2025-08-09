@@ -1,0 +1,763 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}IFRS 18 Financial Reports | FutureERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        transition: all 0.3s ease;
+    }
+    .report-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 35px rgba(16, 185, 129, 0.2);
+    }
+    .metric-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+    .ifrs-badge {
+        background: linear-gradient(45deg, #10b981, #34d399);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .report-loading {
+        display: none;
+    }
+    .report-loading.active {
+        display: block;
+    }
+    .financial-table {
+        background: white;
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    .table-header {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        font-weight: 600;
+    }
+    .comparison-table {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(67, 56, 202, 0.1));
+        border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-24 pb-8">
+    <div class="mx-auto px-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold accounting-highlight mb-2">IFRS 18 Financial Reports</h1>
+                <p class="text-gray-600">Comprehensive financial statements with international compliance</p>
+                <span class="ifrs-badge mt-2 inline-block">IFRS 18 Compliant</span>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="exportAllReports()" class="action-btn bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <i class="fas fa-download mr-2"></i>Export All Reports
+                </button>
+                <a href="{% url 'accounting:dashboard' %}" class="action-btn bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Period Selection -->
+        <div class="bg-white rounded-2xl p-6 mb-8 shadow-lg">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold text-gray-800">Reporting Period</h3>
+                <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                    <span class="text-sm text-green-600 font-medium">Real-time Data</span>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Period Start</label>
+                    <input type="date" id="periodStart" class="form-input w-full" value="2024-01-01">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Period End</label>
+                    <input type="date" id="periodEnd" class="form-input w-full" value="2024-12-31">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Comparison Year (Optional)</label>
+                    <select id="comparisonYear" class="form-select w-full">
+                        <option value="">No Comparison</option>
+                        <option value="2023">2023</option>
+                        <option value="2022">2022</option>
+                        <option value="2021">2021</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button onclick="generateReports()" class="btn-primary w-full h-12">
+                        <i class="fas fa-chart-line mr-2"></i>Generate Reports
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Primary Financial Statements -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Balance Sheet -->
+            <div class="report-card rounded-2xl p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-gray-800">Statement of Financial Position</h3>
+                    <button onclick="generateReport('balance_sheet')" class="btn-primary">
+                        <i class="fas fa-balance-scale mr-2"></i>Generate
+                    </button>
+                </div>
+                <p class="text-gray-600 mb-4">IFRS 18 compliant balance sheet showing assets, liabilities, and equity</p>
+                <div id="balanceSheetContainer" class="report-content">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-chart-bar text-4xl mb-4"></i>
+                        <p>Click Generate to load balance sheet</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Income Statement -->
+            <div class="report-card rounded-2xl p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-gray-800">Statement of Financial Performance</h3>
+                    <button onclick="generateReport('income_statement')" class="btn-primary">
+                        <i class="fas fa-chart-line mr-2"></i>Generate
+                    </button>
+                </div>
+                <p class="text-gray-600 mb-4">Comprehensive income statement with detailed revenue and expense analysis</p>
+                <div id="incomeStatementContainer" class="report-content">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-chart-area text-4xl mb-4"></i>
+                        <p>Click Generate to load income statement</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cash Flow Statement -->
+            <div class="report-card rounded-2xl p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-gray-800">Statement of Cash Flows</h3>
+                    <button onclick="generateReport('cash_flow')" class="btn-primary">
+                        <i class="fas fa-money-bill-wave mr-2"></i>Generate
+                    </button>
+                </div>
+                <p class="text-gray-600 mb-4">Operating, investing, and financing cash flow activities</p>
+                <div id="cashFlowContainer" class="report-content">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-coins text-4xl mb-4"></i>
+                        <p>Click Generate to load cash flow statement</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statement of Changes in Equity -->
+            <div class="report-card rounded-2xl p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-gray-800">Statement of Changes in Equity</h3>
+                    <button onclick="generateReport('equity_changes')" class="btn-primary">
+                        <i class="fas fa-exchange-alt mr-2"></i>Generate
+                    </button>
+                </div>
+                <p class="text-gray-600 mb-4">Movement in equity components during the reporting period</p>
+                <div id="equityChangesContainer" class="report-content">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-arrows-alt text-4xl mb-4"></i>
+                        <p>Click Generate to load equity changes</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supporting Reports -->
+        <div class="bg-white rounded-2xl p-6 mb-8 shadow-lg">
+            <h3 class="text-xl font-semibold text-gray-800 mb-6">Supporting Reports</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Trial Balance -->
+                <div class="report-card rounded-xl p-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="text-lg font-medium">Trial Balance</h4>
+                        <button onclick="generateReport('trial_balance')" class="btn-secondary text-sm">Generate</button>
+                    </div>
+                    <p class="text-gray-600 text-sm">Detailed trial balance with account balances</p>
+                </div>
+
+                <!-- General Ledger -->
+                <div class="report-card rounded-xl p-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="text-lg font-medium">General Ledger</h4>
+                        <button onclick="viewGeneralLedger()" class="btn-secondary text-sm">View</button>
+                    </div>
+                    <p class="text-gray-600 text-sm">Complete general ledger with all transactions</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trial Balance Display -->
+        <div id="trialBalanceContainer" class="hidden">
+            <div class="bg-white rounded-2xl p-6 shadow-lg">
+                <h3 class="text-xl font-semibold text-gray-800 mb-6">Trial Balance</h3>
+                <div id="trialBalanceContent"></div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+            <div class="bg-white rounded-2xl p-8 max-w-sm mx-4">
+                <div class="text-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+                    <h4 class="text-lg font-semibold mb-2">Generating Report</h4>
+                    <p class="text-gray-600">Please wait while we compile your financial data...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPeriodStart = '2024-01-01';
+let currentPeriodEnd = '2024-12-31';
+let currentComparisonYear = '';
+
+function generateReports() {
+    currentPeriodStart = document.getElementById('periodStart').value;
+    currentPeriodEnd = document.getElementById('periodEnd').value;
+    currentComparisonYear = document.getElementById('comparisonYear').value;
+    
+    if (!currentPeriodStart || !currentPeriodEnd) {
+        alert('Please select both start and end dates');
+        return;
+    }
+    
+    // Generate all primary reports
+    generateReport('balance_sheet');
+    generateReport('income_statement');
+    generateReport('cash_flow');
+    generateReport('equity_changes');
+}
+
+function generateReport(reportType) {
+    showLoading();
+    
+    const url = `/accounting/api/financial-reports/?type=${reportType}&period_start=${currentPeriodStart}&period_end=${currentPeriodEnd}&comparison_year=${currentComparisonYear}`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                displayReport(reportType, data);
+            } else {
+                alert('Error generating report: ' + data.error);
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            console.error('Error:', error);
+            alert('Error generating report: ' + error.message);
+        });
+}
+
+function displayReport(reportType, data) {
+    const containerId = getContainerId(reportType);
+    const container = document.getElementById(containerId);
+    
+    if (!container) return;
+    
+    switch (reportType) {
+        case 'balance_sheet':
+            container.innerHTML = renderBalanceSheet(data);
+            break;
+        case 'income_statement':
+            container.innerHTML = renderIncomeStatement(data);
+            break;
+        case 'cash_flow':
+            container.innerHTML = renderCashFlow(data);
+            break;
+        case 'equity_changes':
+            container.innerHTML = renderEquityChanges(data);
+            break;
+        case 'trial_balance':
+            container.innerHTML = renderTrialBalance(data);
+            document.getElementById('trialBalanceContainer').classList.remove('hidden');
+            break;
+    }
+}
+
+function getContainerId(reportType) {
+    const mapping = {
+        'balance_sheet': 'balanceSheetContainer',
+        'income_statement': 'incomeStatementContainer',
+        'cash_flow': 'cashFlowContainer',
+        'equity_changes': 'equityChangesContainer',
+        'trial_balance': 'trialBalanceContent'
+    };
+    return mapping[reportType];
+}
+
+function renderBalanceSheet(data) {
+    const assets = data.data.assets;
+    const liabilities = data.data.liabilities;
+    const equity = data.data.equity;
+    const totals = data.data.totals;
+    
+    return `
+        <div class="financial-table">
+            <div class="table-header px-6 py-4">
+                <h4 class="text-lg font-semibold">Statement of Financial Position</h4>
+                <p class="text-sm opacity-90">As at ${data.period_end}</p>
+            </div>
+            <div class="p-6">
+                <!-- Assets -->
+                <div class="mb-6">
+                    <h5 class="text-lg font-semibold text-green-700 mb-3">ASSETS</h5>
+                    
+                    <!-- Current Assets -->
+                    <div class="mb-4">
+                        <h6 class="font-medium text-gray-700 mb-2">Current Assets</h6>
+                        ${assets.current.map(asset => `
+                            <div class="flex justify-between py-1 border-b border-gray-100">
+                                <span class="text-gray-600">${asset.name}</span>
+                                <span class="font-medium">${formatCurrency(asset.balance)}</span>
+                            </div>
+                        `).join('')}
+                        <div class="flex justify-between py-2 font-semibold border-t-2 border-green-200">
+                            <span>Total Current Assets</span>
+                            <span>${formatCurrency(totals.current_assets)}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Non-Current Assets -->
+                    <div class="mb-4">
+                        <h6 class="font-medium text-gray-700 mb-2">Non-Current Assets</h6>
+                        ${assets.non_current.map(asset => `
+                            <div class="flex justify-between py-1 border-b border-gray-100">
+                                <span class="text-gray-600">${asset.name}</span>
+                                <span class="font-medium">${formatCurrency(asset.balance)}</span>
+                            </div>
+                        `).join('')}
+                        <div class="flex justify-between py-2 font-semibold border-t-2 border-green-200">
+                            <span>Total Non-Current Assets</span>
+                            <span>${formatCurrency(totals.non_current_assets)}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between py-3 text-lg font-bold border-t-4 border-green-500">
+                        <span>TOTAL ASSETS</span>
+                        <span>${formatCurrency(totals.total_assets)}</span>
+                    </div>
+                </div>
+                
+                <!-- Liabilities and Equity -->
+                <div>
+                    <h5 class="text-lg font-semibold text-blue-700 mb-3">LIABILITIES AND EQUITY</h5>
+                    
+                    <!-- Current Liabilities -->
+                    <div class="mb-4">
+                        <h6 class="font-medium text-gray-700 mb-2">Current Liabilities</h6>
+                        ${liabilities.current.map(liability => `
+                            <div class="flex justify-between py-1 border-b border-gray-100">
+                                <span class="text-gray-600">${liability.name}</span>
+                                <span class="font-medium">${formatCurrency(liability.balance)}</span>
+                            </div>
+                        `).join('')}
+                        <div class="flex justify-between py-2 font-semibold border-t-2 border-blue-200">
+                            <span>Total Current Liabilities</span>
+                            <span>${formatCurrency(totals.current_liabilities)}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Non-Current Liabilities -->
+                    <div class="mb-4">
+                        <h6 class="font-medium text-gray-700 mb-2">Non-Current Liabilities</h6>
+                        ${liabilities.non_current.map(liability => `
+                            <div class="flex justify-between py-1 border-b border-gray-100">
+                                <span class="text-gray-600">${liability.name}</span>
+                                <span class="font-medium">${formatCurrency(liability.balance)}</span>
+                            </div>
+                        `).join('')}
+                        <div class="flex justify-between py-2 font-semibold border-t-2 border-blue-200">
+                            <span>Total Non-Current Liabilities</span>
+                            <span>${formatCurrency(totals.non_current_liabilities)}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Equity -->
+                    <div class="mb-4">
+                        <h6 class="font-medium text-gray-700 mb-2">Equity</h6>
+                        ${equity.map(item => `
+                            <div class="flex justify-between py-1 border-b border-gray-100">
+                                <span class="text-gray-600">${item.name}</span>
+                                <span class="font-medium">${formatCurrency(item.balance)}</span>
+                            </div>
+                        `).join('')}
+                        <div class="flex justify-between py-2 font-semibold border-t-2 border-purple-200">
+                            <span>Total Equity</span>
+                            <span>${formatCurrency(totals.total_equity)}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between py-3 text-lg font-bold border-t-4 border-blue-500">
+                        <span>TOTAL LIABILITIES AND EQUITY</span>
+                        <span>${formatCurrency(totals.total_liabilities_equity)}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderIncomeStatement(data) {
+    const revenue = data.data.revenue;
+    const costOfSales = data.data.cost_of_sales;
+    const operatingExpenses = data.data.operating_expenses;
+    const otherIncome = data.data.other_income;
+    const financeCosts = data.data.finance_costs;
+    const metrics = data.data.metrics;
+    
+    return `
+        <div class="financial-table">
+            <div class="table-header px-6 py-4">
+                <h4 class="text-lg font-semibold">Statement of Financial Performance</h4>
+                <p class="text-sm opacity-90">For the period ${data.period_start} to ${data.period_end}</p>
+            </div>
+            <div class="p-6">
+                <!-- Revenue -->
+                <div class="mb-4">
+                    <h6 class="font-medium text-green-700 mb-2">Revenue</h6>
+                    ${revenue.map(item => `
+                        <div class="flex justify-between py-1 border-b border-gray-100">
+                            <span class="text-gray-600">${item.name}</span>
+                            <span class="font-medium">${formatCurrency(item.balance)}</span>
+                        </div>
+                    `).join('')}
+                    <div class="flex justify-between py-2 font-semibold border-t-2 border-green-200">
+                        <span>Total Revenue</span>
+                        <span>${formatCurrency(metrics.total_revenue)}</span>
+                    </div>
+                </div>
+                
+                <!-- Cost of Sales -->
+                <div class="mb-4">
+                    <h6 class="font-medium text-red-700 mb-2">Cost of Sales</h6>
+                    ${costOfSales.map(item => `
+                        <div class="flex justify-between py-1 border-b border-gray-100">
+                            <span class="text-gray-600">${item.name}</span>
+                            <span class="font-medium">(${formatCurrency(item.balance)})</span>
+                        </div>
+                    `).join('')}
+                    <div class="flex justify-between py-2 font-semibold border-t-2 border-red-200">
+                        <span>Total Cost of Sales</span>
+                        <span>(${formatCurrency(metrics.total_cost_of_sales)})</span>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between py-3 text-lg font-bold border-t-2 border-gray-300">
+                    <span>GROSS PROFIT</span>
+                    <span>${formatCurrency(metrics.gross_profit)}</span>
+                </div>
+                
+                <!-- Operating Expenses -->
+                <div class="mb-4 mt-4">
+                    <h6 class="font-medium text-orange-700 mb-2">Operating Expenses</h6>
+                    ${operatingExpenses.map(item => `
+                        <div class="flex justify-between py-1 border-b border-gray-100">
+                            <span class="text-gray-600">${item.name}</span>
+                            <span class="font-medium">(${formatCurrency(item.balance)})</span>
+                        </div>
+                    `).join('')}
+                    <div class="flex justify-between py-2 font-semibold border-t-2 border-orange-200">
+                        <span>Total Operating Expenses</span>
+                        <span>(${formatCurrency(metrics.total_operating_expenses)})</span>
+                    </div>
+                </div>
+                
+                <!-- Other Income -->
+                ${otherIncome.length > 0 ? `
+                <div class="mb-4">
+                    <h6 class="font-medium text-blue-700 mb-2">Other Income</h6>
+                    ${otherIncome.map(item => `
+                        <div class="flex justify-between py-1 border-b border-gray-100">
+                            <span class="text-gray-600">${item.name}</span>
+                            <span class="font-medium">${formatCurrency(item.balance)}</span>
+                        </div>
+                    `).join('')}
+                    <div class="flex justify-between py-2 font-semibold border-t-2 border-blue-200">
+                        <span>Total Other Income</span>
+                        <span>${formatCurrency(metrics.total_other_income)}</span>
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div class="flex justify-between py-3 text-lg font-bold border-t-2 border-gray-300">
+                    <span>OPERATING PROFIT</span>
+                    <span>${formatCurrency(metrics.operating_profit)}</span>
+                </div>
+                
+                <!-- Finance Costs -->
+                ${financeCosts.length > 0 ? `
+                <div class="mb-4 mt-4">
+                    <h6 class="font-medium text-red-700 mb-2">Finance Costs</h6>
+                    ${financeCosts.map(item => `
+                        <div class="flex justify-between py-1 border-b border-gray-100">
+                            <span class="text-gray-600">${item.name}</span>
+                            <span class="font-medium">(${formatCurrency(item.balance)})</span>
+                        </div>
+                    `).join('')}
+                    <div class="flex justify-between py-2 font-semibold border-t-2 border-red-200">
+                        <span>Total Finance Costs</span>
+                        <span>(${formatCurrency(metrics.total_finance_costs)})</span>
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div class="flex justify-between py-3 text-lg font-bold border-t-2 border-gray-400">
+                    <span>PROFIT BEFORE TAX</span>
+                    <span>${formatCurrency(metrics.profit_before_tax)}</span>
+                </div>
+                
+                <div class="flex justify-between py-2 font-medium">
+                    <span>Estimated Tax</span>
+                    <span>(${formatCurrency(metrics.estimated_tax)})</span>
+                </div>
+                
+                <div class="flex justify-between py-4 text-xl font-bold border-t-4 border-green-500">
+                    <span>NET PROFIT</span>
+                    <span>${formatCurrency(metrics.net_profit)}</span>
+                </div>
+                
+                <!-- Key Ratios -->
+                <div class="mt-6 grid grid-cols-2 gap-4">
+                    <div class="bg-gray-50 p-3 rounded-lg">
+                        <div class="text-sm text-gray-600">Gross Margin</div>
+                        <div class="text-lg font-semibold">${metrics.gross_profit_margin.toFixed(1)}%</div>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded-lg">
+                        <div class="text-sm text-gray-600">Net Margin</div>
+                        <div class="text-lg font-semibold">${metrics.net_margin.toFixed(1)}%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderCashFlow(data) {
+    const operating = data.data.operating_activities;
+    const investing = data.data.investing_activities;
+    const financing = data.data.financing_activities;
+    const totals = data.data.totals;
+    const cashBalances = data.data.cash_balances;
+    
+    return `
+        <div class="financial-table">
+            <div class="table-header px-6 py-4">
+                <h4 class="text-lg font-semibold">Statement of Cash Flows</h4>
+                <p class="text-sm opacity-90">For the period ${data.period_start} to ${data.period_end}</p>
+            </div>
+            <div class="p-6">
+                <!-- Operating Activities -->
+                <div class="mb-6">
+                    <h6 class="font-medium text-green-700 mb-3">Cash Flows from Operating Activities</h6>
+                    ${operating.map(item => `
+                        <div class="flex justify-between py-1 border-b border-gray-100">
+                            <span class="text-gray-600">${item.description}</span>
+                            <span class="font-medium">${formatCurrency(item.amount)}</span>
+                        </div>
+                    `).join('')}
+                    <div class="flex justify-between py-3 font-bold border-t-2 border-green-200">
+                        <span>Net Cash from Operating Activities</span>
+                        <span>${formatCurrency(totals.operating)}</span>
+                    </div>
+                </div>
+                
+                <!-- Investing Activities -->
+                <div class="mb-6">
+                    <h6 class="font-medium text-blue-700 mb-3">Cash Flows from Investing Activities</h6>
+                    ${investing.length > 0 ? investing.map(item => `
+                        <div class="flex justify-between py-1 border-b border-gray-100">
+                            <span class="text-gray-600">${item.description}</span>
+                            <span class="font-medium">${formatCurrency(item.amount)}</span>
+                        </div>
+                    `).join('') : '<div class="text-gray-500 italic">No investing activities</div>'}
+                    <div class="flex justify-between py-3 font-bold border-t-2 border-blue-200">
+                        <span>Net Cash from Investing Activities</span>
+                        <span>${formatCurrency(totals.investing)}</span>
+                    </div>
+                </div>
+                
+                <!-- Financing Activities -->
+                <div class="mb-6">
+                    <h6 class="font-medium text-purple-700 mb-3">Cash Flows from Financing Activities</h6>
+                    ${financing.length > 0 ? financing.map(item => `
+                        <div class="flex justify-between py-1 border-b border-gray-100">
+                            <span class="text-gray-600">${item.description}</span>
+                            <span class="font-medium">${formatCurrency(item.amount)}</span>
+                        </div>
+                    `).join('') : '<div class="text-gray-500 italic">No financing activities</div>'}
+                    <div class="flex justify-between py-3 font-bold border-t-2 border-purple-200">
+                        <span>Net Cash from Financing Activities</span>
+                        <span>${formatCurrency(totals.financing)}</span>
+                    </div>
+                </div>
+                
+                <!-- Net Cash Flow -->
+                <div class="border-t-4 border-gray-500 pt-4">
+                    <div class="flex justify-between py-2 text-lg font-bold">
+                        <span>Net Increase/(Decrease) in Cash</span>
+                        <span>${formatCurrency(totals.net_cash_flow)}</span>
+                    </div>
+                    <div class="flex justify-between py-1">
+                        <span>Cash at Beginning of Period</span>
+                        <span>${formatCurrency(cashBalances.opening_cash)}</span>
+                    </div>
+                    <div class="flex justify-between py-3 text-lg font-bold border-t-2 border-gray-300">
+                        <span>Cash at End of Period</span>
+                        <span>${formatCurrency(cashBalances.closing_cash)}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderEquityChanges(data) {
+    const movements = data.data.equity_movements;
+    const totals = data.data.totals;
+    
+    return `
+        <div class="financial-table">
+            <div class="table-header px-6 py-4">
+                <h4 class="text-lg font-semibold">Statement of Changes in Equity</h4>
+                <p class="text-sm opacity-90">For the period ${data.period_start} to ${data.period_end}</p>
+            </div>
+            <div class="p-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b-2 border-gray-200">
+                                <th class="text-left py-2">Account</th>
+                                <th class="text-right py-2">Opening Balance</th>
+                                <th class="text-right py-2">Movement</th>
+                                <th class="text-right py-2">Closing Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${movements.map(item => `
+                                <tr class="border-b border-gray-100">
+                                    <td class="py-2 text-gray-700">${item.name}</td>
+                                    <td class="py-2 text-right font-medium">${formatCurrency(item.opening_balance)}</td>
+                                    <td class="py-2 text-right font-medium">${formatCurrency(item.period_movement)}</td>
+                                    <td class="py-2 text-right font-medium">${formatCurrency(item.closing_balance)}</td>
+                                </tr>
+                            `).join('')}
+                            <tr class="border-t-2 border-gray-300 font-bold">
+                                <td class="py-3">Total Equity</td>
+                                <td class="py-3 text-right">${formatCurrency(totals.opening_balance)}</td>
+                                <td class="py-3 text-right">${formatCurrency(totals.period_movement)}</td>
+                                <td class="py-3 text-right">${formatCurrency(totals.closing_balance)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderTrialBalance(data) {
+    const accounts = data.data.accounts;
+    const totals = data.data.totals;
+    const isBalanced = data.data.is_balanced;
+    
+    return `
+        <div class="financial-table">
+            <div class="table-header px-6 py-4 flex justify-between items-center">
+                <div>
+                    <h4 class="text-lg font-semibold">Trial Balance</h4>
+                    <p class="text-sm opacity-90">As at ${data.period_end}</p>
+                </div>
+                <div class="text-right">
+                    <span class="px-3 py-1 rounded-full text-sm font-medium ${isBalanced ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                        ${isBalanced ? 'Balanced' : 'Not Balanced'}
+                    </span>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b-2 border-gray-200">
+                                <th class="text-left py-2">Account Code</th>
+                                <th class="text-left py-2">Account Name</th>
+                                <th class="text-right py-2">Debit</th>
+                                <th class="text-right py-2">Credit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${accounts.map(account => `
+                                <tr class="border-b border-gray-100">
+                                    <td class="py-2 font-mono text-sm">${account.code}</td>
+                                    <td class="py-2">${account.name}</td>
+                                    <td class="py-2 text-right font-medium">${account.debit > 0 ? formatCurrency(account.debit) : '-'}</td>
+                                    <td class="py-2 text-right font-medium">${account.credit > 0 ? formatCurrency(account.credit) : '-'}</td>
+                                </tr>
+                            `).join('')}
+                            <tr class="border-t-4 border-gray-400 font-bold text-lg">
+                                <td colspan="2" class="py-4">TOTALS</td>
+                                <td class="py-4 text-right">${formatCurrency(totals.debit)}</td>
+                                <td class="py-4 text-right">${formatCurrency(totals.credit)}</td>
+                            </tr>
+                            ${!isBalanced ? `
+                                <tr class="bg-red-50">
+                                    <td colspan="2" class="py-2 text-red-700 font-medium">Difference</td>
+                                    <td colspan="2" class="py-2 text-right text-red-700 font-medium">${formatCurrency(Math.abs(totals.difference))}</td>
+                                </tr>
+                            ` : ''}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2
+    }).format(amount);
+}
+
+function showLoading() {
+    document.getElementById('loadingOverlay').classList.remove('hidden');
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').classList.add('hidden');
+}
+
+function exportAllReports() {
+    alert('Export functionality will be implemented with PDF generation');
+}
+
+function viewGeneralLedger() {
+    window.location.href = '{% url "accounting:general_ledger" %}';
+}
+
+// Initialize with current year
+document.addEventListener('DOMContentLoaded', function() {
+    const currentYear = new Date().getFullYear();
+    document.getElementById('periodStart').value = `${currentYear}-01-01`;
+    document.getElementById('periodEnd').value = `${currentYear}-12-31`;
+});
+</script>
+{% endblock %}

@@ -159,7 +159,7 @@ class WorkOrderOperationAdmin(ModelAdmin):
 @admin.register(OperationLog)
 class OperationLogAdmin(ModelAdmin):
     list_display = ('work_order_operation', 'operator', 'log_type', 'timestamp', 'quantity_produced', 'quality_passed')
-    search_fields = ('work_order_operation__work_order__wo_number', 'operator__username', 'downtime_reason')
+    search_fields = ('work_order_operation__work_order__wo_number', 'operator__email', 'downtime_reason')
     list_filter = ('log_type', 'quality_passed', 'timestamp')
     ordering = ['-timestamp']
 
@@ -167,7 +167,7 @@ class OperationLogAdmin(ModelAdmin):
 @admin.register(QualityCheck)
 class QualityCheckAdmin(ModelAdmin):
     list_display = ('work_order', 'product', 'quality_type', 'status', 'inspector', 'inspection_date', 'quantity_passed', 'quantity_failed')
-    search_fields = ('work_order__wo_number', 'product__name', 'inspector__username')
+    search_fields = ('work_order__wo_number', 'product__name', 'inspector__email')
     list_filter = ('quality_type', 'status', 'inspection_date')
     ordering = ['-inspection_date']
 

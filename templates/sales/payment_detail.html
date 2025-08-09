@@ -157,7 +157,7 @@
             <div class="p-6">
                 <div class="flex justify-between items-center">
                     <span class="text-gray-600 font-medium">Received By:</span>
-                    <span class="text-gray-900 font-semibold">{{ payment.received_by.get_full_name|default:payment.received_by.username }}</span>
+                    <span class="text-gray-900 font-semibold">{{ payment.received_by.get_full_name|default:payment.received_by.email }}</span>
                 </div>
             </div>
         </div>

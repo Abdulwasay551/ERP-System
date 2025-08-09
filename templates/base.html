@@ -17,9 +17,21 @@
         }
         
         .gradient-bg {
-            background: linear-gradient(135deg, #10b981 0%, #065f46 50%, #ffffff 100%);
+            background-color: black; /* Base solid color */
+            background-image: 
+                radial-gradient(circle at bottom left, rgba(21, 196, 129, 0.57) 0%, rgba(0, 0, 0, 0) 40%),
+                radial-gradient(circle at center, rgba(21, 196, 129, 0.25) 0%, rgba(0, 0, 0, 0) 60%),
+                radial-gradient(circle at 80%, rgba(21, 196, 129, 0.25) 0%, rgba(0, 0, 0, 0) 30%);
+            background-blend-mode: screen;
         }
-        
+        .nav-gradient-bg {
+            background-color: black; /* Base solid color */
+            background-image: 
+                radial-gradient(ellipse at  left, rgba(21, 196, 129, 0.25) 0%, rgba(0, 0, 0, 0) 30%),
+                radial-gradient(ellipse at center, rgba(21, 196, 129, 0.05) 0%, rgba(0, 0, 0, 0) 0%),
+                radial-gradient(ellipse at 80%, rgba(9, 65, 43, 0.25) 0%, rgba(0, 0, 0, 0) 40%);
+            background-blend-mode: screen;
+        }
         .glass-effect {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px);
@@ -80,8 +92,8 @@
             left: 0;
             top: 0;
             height: 100vh;
-            z-index: 40;
-            overflow: hidden;
+            z-index: 50;
+            overflow: visible;
             box-shadow: 0 10px 40px rgba(16, 185, 129, 0.3);
         }
         
@@ -95,7 +107,7 @@
             height: 100%;
             padding-bottom: 4rem; /* Add space for toggle button */
             position: relative;
-            overflow: hidden;
+            overflow: visible;
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px);
         }
@@ -110,7 +122,7 @@
         .sidebar-nav {
             flex: 1;
             overflow-y: auto;
-            overflow-x: hidden;
+            overflow-x: visible;
             padding: 0 1rem 2rem 1rem; /* Add bottom padding */
         }
         
@@ -215,6 +227,49 @@
         
         .sidebar.collapsed .sidebar-nav div:has(h6) {
             display: none;
+        }
+        
+        /* Submenu Styles - Enhanced for visibility */
+        .sidebar .sidebar-submenu {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            transform: translateX(-10px) !important;
+            transition: all 0.3s ease !important;
+            pointer-events: none !important;
+            z-index: 9999 !important;
+            position: absolute !important;
+            left: 100% !important;
+            top: 0 !important;
+            margin-left: 0.5rem !important;
+            min-width: 250px !important;
+            max-width: 300px !important;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3) !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        }
+        
+        .sidebar .group:hover .sidebar-submenu {
+            opacity: 1 !important;
+            visibility: visible !important;
+            transform: translateX(0) !important;
+            pointer-events: auto !important;
+        }
+        
+        .sidebar.collapsed .sidebar-submenu {
+            display: none !important;
+        }
+        
+        /* Ensure parent has relative positioning */
+        .sidebar .group {
+            position: relative !important;
+        }
+        
+        /* Debugging: make hover area visible */
+        .sidebar .group {
+            overflow: visible !important;
+        }
+        
+        .sidebar .group:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
         }
         
         .sidebar-toggle {
@@ -429,6 +484,7 @@
 </head>
 <body class="bg-gray-50 overflow-x-hidden">
     <!-- Dynamic Sidebar -->
+    {% if user.is_authenticated %}
     <div id="sidebar" class="sidebar bg-green-900">
         {% load static %}
         
@@ -444,9 +500,7 @@
             {% include 'sidebars/crm_sidebar.html' %}
         {% elif '/hr/' in request.path %}
             {% include 'sidebars/hr_sidebar.html' %}
-        {% elif '/accounting/reports' in request.path or '/accounting/trial_balance' in request.path or '/accounting/profit_loss' in request.path or '/accounting/balance_sheet' in request.path or '/accounting/cash_flow' in request.path %}
-            {% include 'sidebars/financial_reports_sidebar.html' %}
-        {% elif '/accounting/journal' in request.path or '/accounting/auto_entries' in request.path %}
+        {% elif '/accounting/journal' in request.path or '/accounting/auto_entries' in request.path or '/accounting/dynamic_journal' in request.path or '/accounting/templates' in request.path or '/accounting/dynamic-journal-entries/' in request.path %}
             {% include 'sidebars/journal_sidebar.html' %}
         {% elif '/accounting/account' in request.path or '/accounting/chart-of-accounts/' in request.path or '/accounting/categories/' in request.path or '/accounting/groups/' in request.path or '/accounting/templates/' in request.path or '/accounting/types/' in request.path or '/accounting/analysis/' in request.path  or '/accounting/reconciliation/' in request.path or '/accounting/import-export/' in request.path or '/accounting/coa-settings/' in request.path %}
             {% include 'sidebars/coa_sidebar.html' %}
@@ -472,9 +526,9 @@
 
     <!-- Sidebar Overlay for Mobile -->
     <div id="sidebar-overlay" class="sidebar-overlay fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
-
+    {% endif %}
     <!-- Header Navigation -->
-    <nav class="relative glass-effect w-full z-20 px-6 py-4">
+    <nav class="relative {% if public %} nav-gradient-bg{%else%}bg-white{%endif%} w-full z-20 px-6 py-4">
         <div class="max-w-7xl mx-auto flex items-center justify-between">
             <!-- Logo and Title -->
             <div class="flex items-center space-x-4">
@@ -484,13 +538,13 @@
                 </button>
                 
                 <a href='/' class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-gradient-to-r from-green-500/10 to-emerald-600/10 rounded-full outset-0 flex items-center justify-center pulse-green">
+                    <div class="w-10 h-10 bg-gradient-to-r from-green-500/10 to-emerald-600/10 rounded-full outset-0 flex items-center justify-center">
                         <img src="{% static 'logo.png' %}" alt="FutureERP Logo" class="w-10 h-10 mask-radial-at-bottom" style="filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.5));border-radius: 50%;">
                     </div>
                     <span class="text-2xl font-bold text-green-800">FutureERP</span>
                 </a>
             </div>
-            
+        
             
             {% if user.is_authenticated %}
             <div class="flex items-center space-x-4">
@@ -508,7 +562,7 @@
     </nav>
 
     <!-- Main Content -->
-    <div id="main-content" class="main-content">
+    <div id="{% if user.is_authenticated %}main-content{% endif %}" class="{% if user.is_authenticated %}main-content{% else %}min-h-screen bg-gray-50 transition-all duration-300{% endif %}">
         {% block content %}{% endblock %}
     </div>    <!-- Footer -->
     <footer class="bg-green-900 text-white py-12">

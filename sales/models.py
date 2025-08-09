@@ -968,7 +968,7 @@ class SalesCommission(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Commission for {self.sales_person.username} - {self.commission_amount}"
+        return f"Commission for {self.sales_person.email} - {self.commission_amount}"
 
 
 class CreditNote(models.Model):

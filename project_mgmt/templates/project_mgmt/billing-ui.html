@@ -182,7 +182,7 @@
 
                         <!-- Meta Info -->
                         <div class="text-sm text-gray-500 mb-4">
-                            <p><span class="font-medium">Created by:</span> {{ billing.created_by.get_full_name|default:billing.created_by.username }}</p>
+                            <p><span class="font-medium">Created by:</span> {{ billing.created_by.get_full_name|default:billing.created_by.email }}</p>
                             <p><span class="font-medium">Date:</span> {{ billing.created_at|date:"M d, Y" }}</p>
                         </div>
 

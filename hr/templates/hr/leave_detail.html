@@ -232,7 +232,7 @@
                         <div class="timeline-content">
                             <h6 class="timeline-title">Leave Approved</h6>
                             <p class="timeline-description">
-                                Approved by {{ leave.approved_by.get_full_name|default:leave.approved_by.username }}
+                                Approved by {{ leave.approved_by.get_full_name|default:leave.approved_by.email }}
                             </p>
                             <small class="text-muted">{{ leave.approval_date|date:"F d, Y g:i A" }}</small>
                         </div>

@@ -122,7 +122,7 @@
 
                         <!-- Meta Info -->
                         <div class="text-sm text-gray-500 space-y-1 mb-4">
-                            <p><span class="font-medium">Uploaded by:</span> {{ document.uploaded_by.get_full_name|default:document.uploaded_by.username }}</p>
+                            <p><span class="font-medium">Uploaded by:</span> {{ document.uploaded_by.get_full_name|default:document.uploaded_by.email }}</p>
                             <p><span class="font-medium">Date:</span> {{ document.created_at|date:"M d, Y" }}</p>
                         </div>
 

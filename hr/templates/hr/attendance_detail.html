@@ -210,7 +210,7 @@
                 
                 {% if attendance.approved_by %}
                 <div class="mb-2">
-                    <strong>Approved By:</strong> {{ attendance.approved_by.get_full_name|default:attendance.approved_by.username }}
+                    <strong>Approved By:</strong> {{ attendance.approved_by.get_full_name|default:attendance.approved_by.email }}
                 </div>
                 {% endif %}
                 

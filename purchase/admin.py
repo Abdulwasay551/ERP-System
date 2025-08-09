@@ -110,7 +110,7 @@ class TaxChargesTemplateAdmin(ModelAdmin):
 @admin.register(PurchaseRequisition)
 class PurchaseRequisitionAdmin(ModelAdmin):
     list_display = ('pr_number', 'company', 'requested_by', 'department', 'warehouse', 'request_date', 'required_date', 'status', 'total_estimated_cost')
-    search_fields = ('pr_number', 'department', 'purpose', 'requested_by__username')
+    search_fields = ('pr_number', 'department', 'purpose', 'requested_by__email')
     list_filter = ('company', 'status', 'request_date', 'required_date', 'created_at')
     inlines = [PurchaseRequisitionItemInline]
     fieldsets = (
@@ -133,7 +133,7 @@ class PurchaseRequisitionAdmin(ModelAdmin):
 @admin.register(RequestForQuotation)
 class RequestForQuotationAdmin(ModelAdmin):
     list_display = ('rfq_number', 'company', 'purchase_requisition', 'warehouse', 'issue_date', 'response_deadline', 'status', 'created_by')
-    search_fields = ('rfq_number', 'purchase_requisition__pr_number', 'created_by__username')
+    search_fields = ('rfq_number', 'purchase_requisition__pr_number', 'created_by__email')
     list_filter = ('company', 'status', 'issue_date', 'response_deadline', 'created_at')
     filter_horizontal = ('suppliers',)
     inlines = [RFQItemInline]
@@ -298,7 +298,7 @@ class PurchaseReturnAdmin(ModelAdmin):
 @admin.register(PurchaseApproval)
 class PurchaseApprovalAdmin(ModelAdmin):
     list_display = ('document_type', 'document_id', 'requested_by', 'approver', 'amount', 'status', 'approved_at')
-    search_fields = ('document_type', 'document_id', 'requested_by__username', 'approver__username')
+    search_fields = ('document_type', 'document_id', 'requested_by__email', 'approver__email')
     list_filter = ('company', 'document_type', 'status', 'approved_at', 'created_at')
     fieldsets = (
         ('Approval Request', {

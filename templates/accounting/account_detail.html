@@ -605,7 +605,7 @@
                                                 <small>{{ entry.entry.date|date:"M d, Y" }}</small>
                                                 <span class="mx-2">•</span>
                                                 <i class="fas fa-user me-1"></i>
-                                                <small>{{ entry.entry.created_by.get_full_name|default:entry.entry.created_by.username }}</small>
+                                                <small>{{ entry.entry.created_by.get_full_name|default:entry.entry.created_by.email }}</small>
                                             </div>
                                             {% if entry.description %}
                                                 <p class="small text-muted mb-0 mt-1">

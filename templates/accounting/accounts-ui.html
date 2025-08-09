@@ -161,9 +161,14 @@
     <div id="journal-tab" class="tab-content hidden bg-white rounded-lg shadow-md p-6">
         <div class="mb-4 flex justify-between items-center">
             <h3 class="text-lg font-medium text-gray-900">Journal Entries</h3>
-            <button id="addJournalBtn" class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">
-                <i class="fas fa-plus mr-2"></i>New Journal Entry
-            </button>
+            <div class="flex gap-3">
+                <a href="{% url 'accounting:dynamic_journal_entries' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-external-link-alt mr-2"></i>Full Journal Interface
+                </a>
+                <button id="addJournalBtn" class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">
+                    <i class="fas fa-plus mr-2"></i>New Journal Entry
+                </button>
+            </div>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200" id="journalEntriesTable">

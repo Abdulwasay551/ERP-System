@@ -894,7 +894,7 @@ def leave_approve(request, pk):
             'leave': {
                 'id': leave.id,
                 'status': leave.status,
-                'approved_by': leave.approved_by.username if leave.approved_by else '',
+                'approved_by': leave.approved_by.email if leave.approved_by else '',
             }
         })
         

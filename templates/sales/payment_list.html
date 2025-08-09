@@ -243,7 +243,7 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm font-medium text-gray-900">{{ payment.payment_date|date:"M d, Y" }}</div>
                                 {% if payment.received_by %}
-                                <div class="text-sm text-gray-500">by {{ payment.received_by.username }}</div>
+                                <div class="text-sm text-gray-500">by {{ payment.received_by.email }}</div>
                                 {% endif %}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

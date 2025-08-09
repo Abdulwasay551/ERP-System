@@ -1,8 +1,8 @@
 from django.urls import path, include
 from .views import (
     accounting_dashboard, accounts_ui, accounts_add, accounts_edit, accounts_delete, accounts_detail,
-    journals_ui, journal_create, ledger_ui, trial_balance_ui, reports_ui, analytics_ui,
-    balance_sheet_ui, profit_loss_ui, cash_flow_ui, bank_reconciliation_ui,
+    journals_ui, dynamic_journals, journal_templates_management, journal_create, ledger_ui, trial_balance_ui, reports_ui, analytics_ui,
+    balance_sheet_ui, profit_loss_ui, cash_flow_ui, bank_reconciliation_ui, financial_reports_ui,
     module_mappings_ui, settings_ui, account_categories_ui, account_groups_ui,
     chart_of_accounts_ui, account_group_create, account_group_edit, account_group_delete,
     account_types_ui, account_templates_ui, account_analysis_ui, account_reconciliation_ui,
@@ -10,7 +10,10 @@ from .views import (
     template_create, template_apply, reconciliation_create, reconciliation_detail,
     settings_update, import_accounts, export_accounts,
     api_chart_of_accounts, api_journal_entries, api_create_journal_entry,
-    api_financial_reports, api_reconciliations, api_create_reconciliation
+    api_journal_entry_detail, api_update_journal_entry, api_delete_journal_entry,
+    api_post_journal_entry, api_journal_templates, api_apply_journal_template,
+    api_create_journal_template, api_journal_template_detail, api_update_journal_template,
+    api_delete_journal_template, api_financial_reports, api_reconciliations, api_create_reconciliation
 )
 from . import api_urls
 
@@ -57,6 +60,8 @@ urlpatterns = [
     
     # Journal Entries
     path('journal-entries/', journals_ui, name='journal_entries'),
+    path('dynamic-journal-entries/', dynamic_journals, name='dynamic_journal_entries'),
+    path('journal-templates/', journal_templates_management, name='journal_templates'),
     path('journal-entries/create/', journal_create, name='journal_entry_create'),
     path('journal/', journals_ui, name='journal'),
     path('auto-entries/', journals_ui, name='auto_entries'),
@@ -72,6 +77,7 @@ urlpatterns = [
     path('cash-flow/', cash_flow_ui, name='cash_flow'),
     path('financial-statements/', reports_ui, name='financial_statements'),
     path('reports/', reports_ui, name='reports'),
+    path('financial-reports/', financial_reports_ui, name='financial_reports'),
     
     # Bank Reconciliation
     path('bank-reconciliation/', bank_reconciliation_ui, name='bank_reconciliation'),
@@ -89,6 +95,16 @@ urlpatterns = [
     path('api/chart-of-accounts/', api_chart_of_accounts, name='api_chart_of_accounts'),
     path('api/journal-entries/', api_journal_entries, name='api_journal_entries'),
     path('api/journal-entries/create/', api_create_journal_entry, name='api_create_journal_entry'),
+    path('api/journal-entries/<int:entry_id>/', api_journal_entry_detail, name='api_journal_entry_detail'),
+    path('api/journal-entries/<int:entry_id>/update/', api_update_journal_entry, name='api_update_journal_entry'),
+    path('api/journal-entries/<int:entry_id>/delete/', api_delete_journal_entry, name='api_delete_journal_entry'),
+    path('api/journal-entries/<int:entry_id>/post/', api_post_journal_entry, name='api_post_journal_entry'),
+    path('api/journal-templates/', api_journal_templates, name='api_journal_templates'),
+    path('api/journal-templates/create/', api_create_journal_template, name='api_create_journal_template'),
+    path('api/journal-templates/<int:template_id>/', api_journal_template_detail, name='api_journal_template_detail'),
+    path('api/journal-templates/<int:template_id>/update/', api_update_journal_template, name='api_update_journal_template'),
+    path('api/journal-templates/<int:template_id>/delete/', api_delete_journal_template, name='api_delete_journal_template'),
+    path('api/journal-templates/apply/', api_apply_journal_template, name='api_apply_journal_template'),
     path('api/financial-reports/', api_financial_reports, name='api_financial_reports'),
     path('api/reconciliations/', api_reconciliations, name='api_reconciliations'),
     path('api/reconciliations/create/', api_create_reconciliation, name='api_create_reconciliation'),

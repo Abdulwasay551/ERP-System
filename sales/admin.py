@@ -116,7 +116,7 @@ class PaymentAdmin(ModelAdmin):
 class SalesCommissionAdmin(ModelAdmin):
     list_display = ('sales_person', 'invoice', 'commission_rate', 'commission_amount', 
                    'calculation_base', 'is_paid', 'paid_date')
-    search_fields = ('sales_person__username', 'invoice__invoice_number')
+    search_fields = ('sales_person__email', 'invoice__invoice_number')
     list_filter = ('company', 'sales_person', 'is_paid')
     date_hierarchy = 'created_at'
 

@@ -195,7 +195,7 @@
         <div class="footer">
             <p>Thank you for your payment!</p>
             <p>Generated on {{ payment.created_at|date:"M d, Y H:i" }}
-            {% if payment.received_by %} by {{ payment.received_by.get_full_name|default:payment.received_by.username }}{% endif %}</p>
+            {% if payment.received_by %} by {{ payment.received_by.get_full_name|default:payment.received_by.email }}{% endif %}</p>
             <p style="margin-top: 15px; font-size: 10px;">
                 This is a computer-generated receipt and does not require a signature.
             </p>

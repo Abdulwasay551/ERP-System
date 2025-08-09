@@ -354,7 +354,7 @@ class Opportunity(models.Model):
         self.stage_history.append({
             'from_stage': old_stage,
             'to_stage': new_stage,
-            'changed_by': user.username if user else 'System',
+            'changed_by': user.email if user else 'System',
             'changed_at': timezone.now().isoformat(),
             'notes': notes
         })

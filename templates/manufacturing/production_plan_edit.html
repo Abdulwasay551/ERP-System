@@ -274,7 +274,7 @@
                         <div class="form-group">
                             <label class="form-label">Created By</label>
                             <div class="text-sm text-gray-700">
-                                {{ production_plan.created_by.get_full_name|default:production_plan.created_by.username }}
+                                {{ production_plan.created_by.get_full_name|default:production_plan.created_by.email }}
                             </div>
                         </div>
                         
@@ -289,7 +289,7 @@
                         <div class="form-group">
                             <label class="form-label">Approved By</label>
                             <div class="text-sm text-gray-700">
-                                {{ production_plan.approved_by.get_full_name|default:production_plan.approved_by.username }}
+                                {{ production_plan.approved_by.get_full_name|default:production_plan.approved_by.email }}
                             </div>
                         </div>
                         {% endif %}

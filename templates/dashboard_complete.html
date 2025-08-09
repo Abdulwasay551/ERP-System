@@ -44,8 +44,8 @@
 
 {% block content %}
 <!-- Dashboard Header -->
-<section class="pt-24 pb-8 gradient-bg">
-    <div class="max-w-7xl mx-auto px-6">
+<section class="pt-24 pb-8 flex  gradient-bg items-center relative justify-center">
+    <div class="max-w-7xl pt-16 mt-24 min-h-[50vh] mx-auto px-6 ">
         <div class="text-center text-white">
             <h1 class="text-4xl md:text-5xl font-bold mb-4">
                 Welcome to <span class="text-green-200">FutureERP</span>
@@ -150,9 +150,12 @@
                 <h3 class="text-2xl font-bold text-green-800 mb-4">Customer Relationship</h3>
                 <p class="text-gray-600 mb-6">Manage customers, leads, and opportunities</p>
                 <div class="space-y-2">
-                    <a href="/crm/customers-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Customers</a>
-                    <a href="/crm/leads-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Leads</a>
-                    <a href="/crm/opportunities-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Opportunities</a>
+                    <a href="{% url 'crm:dashboard' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ CRM Dashboard</a>
+                    <a href="{% url 'crm:customer_list' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Customers</a>
+                    <a href="{% url 'crm:lead_list' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Leads</a>
+                    <a href="{% url 'crm:opportunity_list' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Opportunities</a>
+                    <a href="{% url 'crm:partner_list' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Partners</a>
+                    <a href="{% url 'crm:campaign_list' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Campaigns</a>
                 </div>
             </div>
 
@@ -166,10 +169,12 @@
                 <h3 class="text-2xl font-bold text-green-800 mb-4">Sales Management</h3>
                 <p class="text-gray-600 mb-6">Products, quotations, orders, and invoices</p>
                 <div class="space-y-2">
-                    <a href="/sales/products-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Products</a>
-                    <a href="/sales/quotations-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Quotations</a>
-                    <a href="/sales/orders-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Sales Orders</a>
-                    <a href="/sales/invoices-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Invoices</a>
+                    <a href="{% url 'sales:dashboard' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Sales Dashboard</a>
+                    <a href="{% url 'sales:sales_products' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Products</a>
+                    <a href="{% url 'sales:quotations' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Quotations</a>
+                    <a href="{% url 'sales:sales_orders' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Sales Orders</a>
+                    <a href="{% url 'sales:invoices' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Invoices</a>
+                    <a href="{% url 'sales:delivery_notes' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Delivery Notes</a>
                 </div>
             </div>
 
@@ -183,9 +188,31 @@
                 <h3 class="text-2xl font-bold text-green-800 mb-4">Purchase Management</h3>
                 <p class="text-gray-600 mb-6">Suppliers, purchase orders, and bills</p>
                 <div class="space-y-2">
-                    <a href="/purchase/suppliers-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Suppliers</a>
-                    <a href="/purchase/orders-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Purchase Orders</a>
-                    <a href="/purchase/bills-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Bills</a>
+                    <a href="{% url 'purchase:dashboard' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Purchase Dashboard</a>
+                    <a href="{% url 'purchase:suppliers_ui' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Suppliers</a>
+                    <a href="{% url 'purchase:requisitions_ui' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Requisitions</a>
+                    <a href="{% url 'purchase:purchaseorders_ui' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Purchase Orders</a>
+                    <a href="{% url 'purchase:bills_ui' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Bills</a>
+                    <a href="{% url 'purchase:grns_ui' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Goods Receipt</a>
+                </div>
+            </div>
+
+            <!-- Products Module -->
+            <div class="module-card p-8 rounded-2xl hover-lift">
+                <div class="w-16 h-16 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl mb-6 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-green-800 mb-4">Product Management</h3>
+                <p class="text-gray-600 mb-6">Product catalog, categories, and tracking</p>
+                <div class="space-y-2">
+                    <a href="{% url 'products:dashboard' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Products Dashboard</a>
+                    <a href="{% url 'products:list' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ All Products</a>
+                    <a href="{% url 'products:category_list' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Categories</a>
+                    <a href="{% url 'products:tracking_list' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Product Tracking</a>
+                    <a href="{% url 'products:attribute_list' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Attributes</a>
+                    <a href="{% url 'products:performance' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Performance</a>
                 </div>
             </div>
 
@@ -199,9 +226,12 @@
                 <h3 class="text-2xl font-bold text-green-800 mb-4">Inventory Management</h3>
                 <p class="text-gray-600 mb-6">Stock items, warehouses, and movements</p>
                 <div class="space-y-2">
+                    <a href="{% url 'inventory:inventory_dashboard' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Inventory Dashboard</a>
                     <a href="/inventory/stockitems-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Stock Items</a>
                     <a href="/inventory/warehouses-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Warehouses</a>
                     <a href="/inventory/movements-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Stock Movements</a>
+                    <a href="/inventory/transfers-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Stock Transfers</a>
+                    <a href="/inventory/physical-count-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Physical Count</a>
                 </div>
             </div>
 
@@ -213,11 +243,14 @@
                     </svg>
                 </div>
                 <h3 class="text-2xl font-bold text-green-800 mb-4">Accounting</h3>
-                <p class="text-gray-600 mb-6">Chart of accounts, journals, and ledgers</p>
+                <p class="text-gray-600 mb-6">Chart of accounts, journals, and reports</p>
                 <div class="space-y-2">
-                    <a href="/accounting/accounts-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Chart of Accounts</a>
-                    <a href="/accounting/journals-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Journal Entries</a>
-                    <a href="/accounting/reports-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Reports</a>
+                    <a href="{% url 'accounting:dashboard' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Accounting Dashboard</a>
+                    <a href="{% url 'accounting:accounts' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Chart of Accounts</a>
+                    <a href="{% url 'accounting:dynamic_journal_entries' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Journal Entries</a>
+                    <a href="{% url 'accounting:general_ledger' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ General Ledger</a>
+                    <a href="{% url 'accounting:reports' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Financial Reports</a>
+                    <a href="{% url 'accounting:balance_sheet' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Balance Sheet</a>
                 </div>
             </div>
 
@@ -231,9 +264,30 @@
                 <h3 class="text-2xl font-bold text-green-800 mb-4">Human Resources</h3>
                 <p class="text-gray-600 mb-6">Employees, attendance, and payroll</p>
                 <div class="space-y-2">
-                    <a href="/hr/employees-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Employees</a>
-                    <a href="/hr/attendance-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Attendance</a>
-                    <a href="/hr/payroll-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Payroll</a>
+                    <a href="{% url 'hr:dashboard' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ HR Dashboard</a>
+                    <a href="{% url 'hr:employees_ui' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Employees</a>
+                    <a href="{% url 'hr:attendance_ui' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Attendance</a>
+                    <a href="{% url 'hr:leaves_ui' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Leave Management</a>
+                    <a href="{% url 'hr:payroll_ui' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Payroll</a>
+                    <a href="{% url 'hr:recruitment_ui' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Recruitment</a>
+                </div>
+            </div>
+
+            <!-- Manufacturing -->
+            <div class="module-card p-8 rounded-2xl hover-lift">
+                <div class="w-16 h-16 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-xl mb-6 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-green-800 mb-4">Manufacturing</h3>
+                <p class="text-gray-600 mb-6">BOM, work orders, and production planning</p>
+                <div class="space-y-2">
+                    <a href="{% url 'manufacturing:dashboard' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Manufacturing Dashboard</a>
+                    <a href="{% url 'manufacturing:boms_ui' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Bill of Materials</a>
+                    <a href="{% url 'manufacturing:work_orders_ui' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Work Orders</a>
+                    <a href="{% url 'manufacturing:production_plans_ui' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Production Planning</a>
                 </div>
             </div>
 
@@ -247,26 +301,31 @@
                 <h3 class="text-2xl font-bold text-green-800 mb-4">Project Management</h3>
                 <p class="text-gray-600 mb-6">Projects, tasks, and time tracking</p>
                 <div class="space-y-2">
-                    <a href="/project_mgmt/projects-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Projects</a>
-                    <a href="/project_mgmt/tasks-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Tasks</a>
-                    <a href="/project_mgmt/timesheets-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Time Entries</a>
+                    <a href="{% url 'project_mgmt:project_dashboard' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Projects Dashboard</a>
+                    <a href="{% url 'project_mgmt:projects_ui' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Projects</a>
+                    <a href="{% url 'project_mgmt:tasks_ui' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Tasks</a>
+                    <a href="{% url 'project_mgmt:milestones_ui' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Milestones</a>
+                    <a href="{% url 'project_mgmt:timetracking_ui' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Time Tracking</a>
+                    <a href="{% url 'project_mgmt:team_ui' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Team Management</a>
                 </div>
             </div>
 
-            <!-- Manufacturing -->
+            <!-- Analytics Module -->
             <div class="module-card p-8 rounded-2xl hover-lift">
-                <div class="w-16 h-16 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-xl mb-6 flex items-center justify-center">
+                <div class="w-16 h-16 bg-gradient-to-r from-pink-500 to-rose-600 rounded-xl mb-6 flex items-center justify-center">
                     <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                     </svg>
                 </div>
-                <h3 class="text-2xl font-bold text-green-800 mb-4">Manufacturing</h3>
-                <p class="text-gray-600 mb-6">BOM, work orders, and production</p>
+                <h3 class="text-2xl font-bold text-green-800 mb-4">Analytics & Reports</h3>
+                <p class="text-gray-600 mb-6">Business intelligence and analytics</p>
                 <div class="space-y-2">
-                    <a href="/manufacturing/boms-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Bill of Materials</a>
-                    <a href="/manufacturing/workorders-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Work Orders</a>
-                    <a href="/manufacturing/production-ui/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Production</a>
+                    <a href="{% url 'analytics:dashboard' %}" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Analytics Dashboard</a>
+                    <a href="/analytics/sales-analytics/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Sales Analytics</a>
+                    <a href="/analytics/customer-analytics/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Customer Analytics</a>
+                    <a href="/analytics/financial-overview/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Financial Overview</a>
+                    <a href="/analytics/inventory-turnover/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Inventory Analytics</a>
+                    <a href="/analytics/profitability/" class="module-link block text-green-600 hover:text-green-800 font-medium">→ Profitability</a>
                 </div>
             </div>
         </div>
@@ -281,29 +340,43 @@
             <p class="text-xl text-gray-600">Frequently used functions at your fingertips</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <button class="quick-action-btn text-white p-6 rounded-2xl text-center" onclick="window.location.href='/crm/customers-ui/'">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+            <button class="quick-action-btn text-white p-6 rounded-2xl text-center" onclick="window.location.href='{% url 'crm:customer_list' %}'">
                 <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
                 </svg>
                 <h3 class="text-lg font-bold">Add Customer</h3>
             </button>
 
-            <button class="quick-action-btn text-white p-6 rounded-2xl text-center" onclick="window.location.href='/sales/products-ui/'">
+            <button class="quick-action-btn text-white p-6 rounded-2xl text-center" onclick="window.location.href='{% url 'products:list' %}'">
                 <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                 </svg>
-                <h3 class="text-lg font-bold">Manage Inventory</h3>
+                <h3 class="text-lg font-bold">Manage Products</h3>
             </button>
 
-            <button class="quick-action-btn text-white p-6 rounded-2xl text-center" onclick="window.location.href='/sales/orders-ui/'">
+            <button class="quick-action-btn text-white p-6 rounded-2xl text-center" onclick="window.location.href='{% url 'sales:sales_orders' %}'">
                 <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                 </svg>
                 <h3 class="text-lg font-bold">Create Order</h3>
             </button>
 
-            <button class="quick-action-btn text-white p-6 rounded-2xl text-center" onclick="window.location.href='/accounting/reports-ui/'">
+            <button class="quick-action-btn text-white p-6 rounded-2xl text-center" onclick="window.location.href='{% url 'purchase:purchaseorders_ui' %}'">
+                <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17M17 13v4a2 2 0 01-2 2H9a2 2 0 01-2-2v-4m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
+                </svg>
+                <h3 class="text-lg font-bold">Purchase Order</h3>
+            </button>
+
+            <button class="quick-action-btn text-white p-6 rounded-2xl text-center" onclick="window.location.href='/inventory/stockitems-ui/'">
+                <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                </svg>
+                <h3 class="text-lg font-bold">Check Inventory</h3>
+            </button>
+
+            <button class="quick-action-btn text-white p-6 rounded-2xl text-center" onclick="window.location.href='{% url 'accounting:reports' %}'">
                 <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                 </svg>
@@ -316,7 +389,50 @@
 <!-- Recent Activities -->
 <section class="py-12 bg-gradient-to-br from-green-50 to-emerald-50">
     <div class="max-w-7xl mx-auto px-6">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Recent Activities -->
+            <div class="bg-white rounded-2xl p-8 shadow-lg">
+                <h3 class="text-2xl font-bold text-green-800 mb-6">Recent Activities</h3>
+                <div class="space-y-4">
+                    {% for sale in recent_sales %}
+                    <div class="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                        <div>
+                            <span class="font-medium text-blue-800">Sales Order</span>
+                            <p class="text-sm text-blue-600">{{ sale.customer.name|default:"N/A" }} - ${{ sale.total|default:0 }}</p>
+                        </div>
+                        <span class="text-blue-600 text-sm">{{ sale.created_at|date:"M d" }}</span>
+                    </div>
+                    {% empty %}
+                    <div class="p-4 bg-gray-50 rounded-lg text-center">
+                        <p class="text-gray-500">No recent sales orders</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="bg-white rounded-2xl p-8 shadow-lg">
+                <h3 class="text-2xl font-bold text-green-800 mb-6">Quick Stats</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+                        <span class="font-medium text-green-800">Total Revenue</span>
+                        <span class="text-green-600 font-bold">${{ total_revenue|default:0 }}</span>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-orange-50 rounded-lg">
+                        <span class="font-medium text-orange-800">Pending Orders</span>
+                        <span class="text-orange-600 font-bold">{{ pending_orders|default:0 }}</span>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-red-50 rounded-lg">
+                        <span class="font-medium text-red-800">Low Stock Items</span>
+                        <span class="text-red-600 font-bold">{{ low_stock_items|default:0 }}</span>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
+                        <span class="font-medium text-purple-800">Total Products</span>
+                        <span class="text-purple-600 font-bold">{{ stat_products|default:0 }}</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- System Status -->
             <div class="bg-white rounded-2xl p-8 shadow-lg">
                 <h3 class="text-2xl font-bold text-green-800 mb-6">System Status</h3>
@@ -333,25 +449,62 @@
                         <span class="font-medium text-green-800">Backup Status</span>
                         <span class="text-green-600">✓ Updated</span>
                     </div>
-                </div>
-            </div>
-
-            <!-- Quick Info -->
-            <div class="bg-white rounded-2xl p-8 shadow-lg">
-                <h3 class="text-2xl font-bold text-green-800 mb-6">System Information</h3>
-                <div class="space-y-4">
-                    <div class="border-b pb-3">
+                    <div class="border-t pt-4 mt-4">
                         <p class="text-sm text-gray-600">Version</p>
                         <p class="font-semibold text-gray-800">FutureERP v1.0.0</p>
                     </div>
-                    <div class="border-b pb-3">
-                        <p class="text-sm text-gray-600">Last Login</p>
-                        <p class="font-semibold text-gray-800">{{ user.last_login|date:"F d, Y g:i A"|default:"First time login" }}</p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-600">User Role</p>
-                        <p class="font-semibold text-gray-800">{{ user.role.name|default:"Administrator" }}</p>
-                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Module Shortcuts -->
+<section class="py-12 bg-white">
+    <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-12">
+            <h2 class="text-4xl font-bold text-green-800 mb-4">Module Shortcuts</h2>
+            <p class="text-xl text-gray-600">Quick access to frequently used functions</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- CRM Shortcuts -->
+            <div class="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl">
+                <h4 class="font-bold text-green-800 mb-4">CRM</h4>
+                <div class="space-y-2 text-sm">
+                    <a href="{% url 'crm:customer_list' %}" class="block text-green-600 hover:text-green-800">• Add New Customer</a>
+                    <a href="{% url 'crm:lead_list' %}" class="block text-green-600 hover:text-green-800">• Create Lead</a>
+                    <a href="{% url 'crm:opportunity_list' %}" class="block text-green-600 hover:text-green-800">• Track Opportunities</a>
+                </div>
+            </div>
+
+            <!-- Sales Shortcuts -->
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl">
+                <h4 class="font-bold text-blue-800 mb-4">Sales</h4>
+                <div class="space-y-2 text-sm">
+                    <a href="{% url 'sales:quotations' %}" class="block text-blue-600 hover:text-blue-800">• Create Quotation</a>
+                    <a href="{% url 'sales:sales_orders' %}" class="block text-blue-600 hover:text-blue-800">• New Sales Order</a>
+                    <a href="{% url 'sales:invoices' %}" class="block text-blue-600 hover:text-blue-800">• Generate Invoice</a>
+                </div>
+            </div>
+
+            <!-- Purchase Shortcuts -->
+            <div class="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-xl">
+                <h4 class="font-bold text-purple-800 mb-4">Purchase</h4>
+                <div class="space-y-2 text-sm">
+                    <a href="{% url 'purchase:requisitions_ui' %}" class="block text-purple-600 hover:text-purple-800">• Create Requisition</a>
+                    <a href="{% url 'purchase:purchaseorders_ui' %}" class="block text-purple-600 hover:text-purple-800">• Purchase Order</a>
+                    <a href="{% url 'purchase:suppliers_ui' %}" class="block text-purple-600 hover:text-purple-800">• Manage Suppliers</a>
+                </div>
+            </div>
+
+            <!-- Inventory Shortcuts -->
+            <div class="bg-gradient-to-br from-orange-50 to-red-50 p-6 rounded-xl">
+                <h4 class="font-bold text-orange-800 mb-4">Inventory</h4>
+                <div class="space-y-2 text-sm">
+                    <a href="/inventory/stockitems-ui/" class="block text-orange-600 hover:text-orange-800">• Add Stock Item</a>
+                    <a href="/inventory/movements-ui/" class="block text-orange-600 hover:text-orange-800">• Stock Movement</a>
+                    <a href="/inventory/physical-count-ui/" class="block text-orange-600 hover:text-orange-800">• Physical Count</a>
                 </div>
             </div>
         </div>

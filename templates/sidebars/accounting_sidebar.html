@@ -1,45 +1,24 @@
 {% load static %}
 <style>
+/* Accounting-specific styles - submenu styles are now centralized in base.html */
+.sidebar-item:hover .fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+/* Mobile submenu override */
+@media (max-width: 768px) {
     .sidebar-submenu {
-        transition: all 0.3s ease;
-        opacity: 0;
-        visibility: hidden;
-        transform: translateX(-10px);
+        position: relative !important;
+        left: 0 !important;
+        top: 0 !important;
+        margin-left: 0 !important;
+        width: 100% !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: none !important;
+        border-radius: 0.5rem !important;
+        margin-top: 0.5rem;
     }
-    
-    .group:hover .sidebar-submenu {
-        opacity: 1;
-        visibility: visible;
-        transform: translateX(0);
-    }
-    
-    .sidebar.collapsed .sidebar-submenu {
-        left: 4rem !important;
-        top: 0;
-    }
-    
-    .sidebar.collapsed .group .sidebar-item .fa-chevron-down {
-        display: none;
-    }
-    
-    /* Mobile submenu */
-    @media (max-width: 768px) {
-        .sidebar-submenu {
-            position: relative;
-            left: 0 !important;
-            top: 0 !important;
-            margin-left: 0 !important;
-            width: 100% !important;
-            background: rgba(255, 255, 255, 0.05) !important;
-            border: none !important;
-            border-radius: 0.5rem !important;
-            margin-top: 0.5rem;
-        }
-        
-        .group:hover .sidebar-submenu {
-            display: block;
-        }
-    }
+}
 </style>
 
 <!-- Accounting Module Sidebar -->
@@ -68,11 +47,12 @@
             <span class="sidebar-text">Chart of Accounts</span>
         </a>
 
-        <!-- Journal Entries -->
-        <a href="{% url 'accounting:journal_entries' %}" class="sidebar-item {% if 'journal' in request.resolver_match.url_name %}active{% endif %}">
+        <!-- Journal Entries with Submenu -->
+        <a href="{% url 'accounting:dynamic_journal_entries' %}" class="sidebar-item {% if 'journal' in request.resolver_match.url_name %}active{% endif %}">
             <i class="fas fa-book sidebar-icon"></i>
             <span class="sidebar-text">Journal Entries</span>
         </a>
+
 
         <!-- General Ledger -->
         <a href="{% url 'accounting:general_ledger' %}" class="sidebar-item {% if 'ledger' in request.resolver_match.url_name %}active{% endif %}">
@@ -80,12 +60,34 @@
             <span class="sidebar-text">General Ledger</span>
         </a>
 
-        <!-- Financial Reports -->
-        <a href="{% url 'accounting:reports' %}" class="sidebar-item {% if 'report' in request.resolver_match.url_name %}active{% endif %}">
-            <i class="fas fa-chart-line sidebar-icon"></i>
+         <a href="{% url 'accounting:reports' %}" class="sidebar-item {% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
+            <i class="fas fa-tachometer-alt sidebar-icon"></i>
             <span class="sidebar-text">Financial Reports</span>
         </a>
 
+        <!-- Balance Sheet -->
+        <a href="{% url 'accounting:balance_sheet' %}" class="sidebar-item {% if 'balance_sheet' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-calculator sidebar-icon"></i>
+            <span class="sidebar-text">Balance Sheet</span>
+        </a>
+
+        <!-- Profit & Loss -->
+        <a href="{% url 'accounting:profit_loss' %}" class="sidebar-item {% if 'profit_loss' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-chart-pie sidebar-icon"></i>
+            <span class="sidebar-text">Profit & Loss</span>
+        </a>
+
+        <!-- Cash Flow Statement -->
+        <a href="{% url 'accounting:cash_flow' %}" class="sidebar-item {% if 'cash_flow' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-money-bill-wave sidebar-icon"></i>
+            <span class="sidebar-text">Cash Flow Statement</span>
+        </a>
+
+        <!-- Trial Balance -->
+        <a href="{% url 'accounting:trial_balance' %}" class="sidebar-item {% if 'trial_balance' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-balance-scale sidebar-icon"></i>
+            <span class="sidebar-text">Trial Balance</span>
+        </a>
         <!-- Bank Reconciliation -->
         <a href="{% url 'accounting:bank_reconciliation' %}" class="sidebar-item {% if 'bank' in request.resolver_match.url_name %}active{% endif %}">
             <i class="fas fa-university sidebar-icon"></i>

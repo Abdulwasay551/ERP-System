@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load accounting_filters %}
 
 {% block title %}{{ production_plan.name }} - Production Plan Details{% endblock %}
 
@@ -235,7 +236,7 @@
                     <div class="flex justify-between">
                         <span class="text-gray-600">Created By:</span>
                         <span class="font-medium">
-                            {{ production_plan.created_by.get_full_name|default:production_plan.created_by.username }}
+                            {{ production_plan.created_by.get_full_name|default:production_plan.created_by.email }}
                         </span>
                     </div>
                     <div class="flex justify-between">

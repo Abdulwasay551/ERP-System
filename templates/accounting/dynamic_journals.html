@@ -1,0 +1,1233 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Journal Entries - Accounting{% endblock %}
+
+{% block extra_css %}
+<style>
+    .journal-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .journal-card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 20px 40px rgba(59, 130, 246, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .journal-entry {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        background: white;
+        transition: all 0.3s ease;
+    }
+    
+    .journal-entry:hover {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .journal-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        padding: 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .journal-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .journal-date {
+        font-size: 0.875rem;
+        color: #6b7280;
+        font-weight: 600;
+    }
+    
+    .journal-description {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin-top: 0.25rem;
+    }
+    
+    .journal-reference {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-posted {
+        background: #dcfdf7;
+        color: #059669;
+    }
+    
+    .status-draft {
+        background: #fef3c7;
+        color: #d97706;
+    }
+    
+    .status-cancelled {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+    
+    .journal-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .journal-item:last-child {
+        border-bottom: none;
+    }
+    
+    .journal-item.debit {
+        border-left: 4px solid #10b981;
+    }
+    
+    .journal-item.credit {
+        border-left: 4px solid #ef4444;
+    }
+    
+    .account-info {
+        flex: 1;
+    }
+    
+    .account-code {
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.875rem;
+    }
+    
+    .account-name {
+        font-weight: 600;
+        color: #1f2937;
+        margin-top: 0.25rem;
+    }
+    
+    .account-description {
+        color: #6b7280;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    
+    .amount-info {
+        text-align: right;
+        min-width: 120px;
+    }
+    
+    .amount-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+    }
+    
+    .debit-amount {
+        color: #10b981;
+        font-weight: 700;
+        font-size: 1.125rem;
+    }
+    
+    .credit-amount {
+        color: #ef4444;
+        font-weight: 700;
+        font-size: 1.125rem;
+    }
+    
+    .balance-validation {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+    
+    .balance-valid {
+        background: #dcfdf7;
+        color: #059669;
+    }
+    
+    .balance-invalid {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+    
+    .floating-add-btn {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        width: 4rem;
+        height: 4rem;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        border-radius: 50%;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        transition: all 0.3s ease;
+        z-index: 1000;
+    }
+    
+    .floating-add-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 35px rgba(59, 130, 246, 0.4);
+    }
+
+    .loading-spinner {
+        border: 3px solid #f3f4f6;
+        border-top: 3px solid #3b82f6;
+        border-radius: 50%;
+        width: 2rem;
+        height: 2rem;
+        animation: spin 1s linear infinite;
+        margin: 2rem auto;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .template-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .template-card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal.show {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        max-width: 90vw;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">
+                        <i class="fas fa-book text-blue-600 mr-3"></i>
+                        Journal Entries
+                    </h1>
+                    <p class="text-gray-600 mt-2">Manage all your accounting journal entries</p>
+                </div>
+                <div class="flex gap-3">
+                    <a href="{% url 'accounting:dashboard' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to Accounting
+                    </a>
+                    <button onclick="importJournalEntries()" class="btn btn-secondary">
+                        <i class="fas fa-upload"></i>
+                        Import
+                    </button>
+                    <button onclick="exportJournalEntries()" class="btn btn-secondary">
+                        <i class="fas fa-download"></i>
+                        Export
+                    </button>
+                    <a href="{% url 'accounting:journal_templates' %}" class="btn btn-info">
+                        <i class="fas fa-cog"></i>
+                        Manage Templates
+                    </a>
+                    <button onclick="showTemplates()" class="btn btn-success">
+                        <i class="fas fa-copy"></i>
+                        Templates
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Statistics Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 bg-blue-100 rounded-lg">
+                        <i class="fas fa-book text-blue-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <div class="text-2xl font-bold text-gray-900" id="totalEntries">0</div>
+                        <div class="text-sm text-gray-600">Total Entries</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 bg-green-100 rounded-lg">
+                        <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <div class="text-2xl font-bold text-gray-900" id="postedEntries">0</div>
+                        <div class="text-sm text-gray-600">Posted Entries</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 bg-yellow-100 rounded-lg">
+                        <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <div class="text-2xl font-bold text-gray-900" id="draftEntries">0</div>
+                        <div class="text-sm text-gray-600">Draft Entries</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 bg-purple-100 rounded-lg">
+                        <i class="fas fa-dollar-sign text-purple-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <div class="text-2xl font-bold text-gray-900" id="totalAmount">$0</div>
+                        <div class="text-sm text-gray-600">Total Amount</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="bg-white rounded-lg shadow p-6 mb-8">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Filter Journal Entries</h3>
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+                    <input type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" id="fromDate">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">To Date</label>
+                    <input type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" id="toDate">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="draft">Draft</option>
+                        <option value="posted">Posted</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Search by reference or description..." id="searchInput">
+                </div>
+                <div class="flex items-end">
+                    <button onclick="applyFilters()" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-filter mr-2"></i>Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Journal Entries -->
+        <div id="journalEntries">
+            <div id="loadingSpinner" class="text-center">
+                <div class="loading-spinner"></div>
+                <p class="text-gray-600 mt-4">Loading journal entries...</p>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div id="pagination" class="hidden flex justify-center items-center space-x-4 mt-8">
+            <button onclick="previousPage()" id="prevBtn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50" disabled>
+                <i class="fas fa-chevron-left"></i>
+                Previous
+            </button>
+            <span id="pageInfo" class="px-4 py-2 text-gray-700">Page 1 of 1</span>
+            <button onclick="nextPage()" id="nextBtn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50" disabled>
+                Next
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Floating Add Button -->
+    <button class="floating-add-btn" onclick="createJournalEntry()" title="Create New Journal Entry">
+        <i class="fas fa-plus"></i>
+    </button>
+</div>
+
+<!-- Journal Entry Create/Edit Modal -->
+<div id="journalEntryModal" class="modal">
+    <div class="modal-content w-full max-w-4xl">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-900" id="modalTitle">Create Journal Entry</h2>
+            <button onclick="closeJournalModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+
+        <form id="journalEntryForm">
+            <!-- Entry Header -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Entry Date</label>
+                    <input type="date" name="date" id="entryDate" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Reference</label>
+                    <input type="text" name="reference" id="entryReference" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="JE-001">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select name="status" id="entryStatus" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        <option value="draft">Draft</option>
+                        <option value="posted">Posted</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea name="description" id="entryDescription" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Enter journal entry description..."></textarea>
+            </div>
+
+            <!-- Journal Items -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Journal Entry Lines</h3>
+                    <button type="button" onclick="addJournalLine()" class="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700">
+                        <i class="fas fa-plus mr-1"></i>Add Line
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full border border-gray-300">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Account</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Debit</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Credit</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="journalLinesContainer">
+                            <!-- Journal lines will be added here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Balance Check -->
+                <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="flex justify-between items-center">
+                        <div class="text-sm text-gray-600">
+                            <span>Total Debit: $<span id="totalDebit">0.00</span></span>
+                            <span class="ml-4">Total Credit: $<span id="totalCredit">0.00</span></span>
+                        </div>
+                        <div id="balanceStatus" class="text-sm font-medium">
+                            <span class="text-red-600">Out of Balance</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="formError" class="text-red-600 text-sm hidden bg-red-50 p-3 rounded-lg mb-4"></div>
+
+            <div class="flex space-x-3">
+                <button type="submit" class="bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                    <i class="fas fa-save mr-2"></i>Save Journal Entry
+                </button>
+                <button type="button" onclick="closeJournalModal()" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Templates Modal -->
+<div id="templatesModal" class="modal">
+    <div class="modal-content w-full max-w-3xl">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-900">Journal Entry Templates</h2>
+            <button onclick="closeTemplatesModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+
+        <div id="templatesContainer">
+            <div class="text-center">
+                <div class="loading-spinner"></div>
+                <p class="text-gray-600 mt-4">Loading templates...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentPage = 1;
+let totalPages = 1;
+let currentEntryId = null;
+let lineCounter = 0;
+let journalEntries = [];
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default dates
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    document.getElementById('fromDate').value = firstDay.toISOString().split('T')[0];
+    document.getElementById('toDate').value = today.toISOString().split('T')[0];
+    
+    // Load initial data
+    loadJournalEntries();
+    
+    // Initialize form
+    document.getElementById('journalEntryForm').addEventListener('submit', saveJournalEntry);
+});
+
+async function loadJournalEntries() {
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const entriesContainer = document.getElementById('journalEntries');
+    
+    loadingSpinner.style.display = 'block';
+    
+    try {
+        const params = new URLSearchParams({
+            from_date: document.getElementById('fromDate').value,
+            to_date: document.getElementById('toDate').value,
+            status: document.getElementById('statusFilter').value,
+            search: document.getElementById('searchInput').value,
+            page: currentPage
+        });
+        
+        const response = await fetch(`/accounting/api/journal-entries/?${params}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            journalEntries = data.entries;
+            displayJournalEntries(data.entries);
+            updateStatistics(data.entries);
+            updatePagination(data.pagination || { current_page: 1, total_pages: 1 });
+        } else {
+            showNotification('Error loading journal entries: ' + data.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error loading journal entries', 'error');
+    } finally {
+        loadingSpinner.style.display = 'none';
+    }
+}
+
+function displayJournalEntries(entries) {
+    const container = document.getElementById('journalEntries');
+    
+    if (entries.length === 0) {
+        container.innerHTML = `
+            <div class="journal-card text-center">
+                <i class="fas fa-book text-4xl text-blue-500 mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">No Journal Entries Found</h3>
+                <p class="text-gray-600 mb-4">Create your first journal entry to get started</p>
+                <button onclick="createJournalEntry()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
+                    <i class="fas fa-plus mr-2"></i>Create Journal Entry
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    entries.forEach(entry => {
+        const isBalanced = Math.abs(
+            entry.items.reduce((sum, item) => sum + item.debit, 0) - 
+            entry.items.reduce((sum, item) => sum + item.credit, 0)
+        ) < 0.01;
+        
+        html += `
+            <div class="journal-entry">
+                <div class="journal-header">
+                    <div class="journal-meta">
+                        <div>
+                            <div class="journal-date">${new Date(entry.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                            <div class="journal-description">${entry.description}</div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="journal-reference">${entry.reference || 'No Ref'}</span>
+                            <span class="status-badge status-${entry.status}">${entry.status}</span>
+                            <div class="flex gap-2">
+                                <button onclick="viewJournalEntry(${entry.id})" class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600" title="View">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                ${entry.status === 'draft' ? `
+                                    <button onclick="editJournalEntry(${entry.id})" class="bg-green-500 text-white p-2 rounded hover:bg-green-600" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="postJournalEntry(${entry.id})" class="bg-indigo-500 text-white p-2 rounded hover:bg-indigo-600" title="Post">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                ` : ''}
+                                ${entry.status !== 'posted' ? `
+                                    <button onclick="deleteJournalEntry(${entry.id})" class="bg-red-500 text-white p-2 rounded hover:bg-red-600" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="balance-validation ${isBalanced ? 'balance-valid' : 'balance-invalid'}">
+                        <i class="fas ${isBalanced ? 'fa-check-circle' : 'fa-exclamation-triangle'} mr-2"></i>
+                        <span>${isBalanced ? 'Balanced' : 'Out of Balance'}</span>
+                    </div>
+                </div>
+                <div class="journal-body">
+                    ${entry.items.map(item => `
+                        <div class="journal-item ${item.debit > 0 ? 'debit' : 'credit'}">
+                            <div class="account-info">
+                                <div class="account-code">${item.account_code}</div>
+                                <div class="account-name">${item.account_name}</div>
+                                <div class="account-description">${item.description || ''}</div>
+                            </div>
+                            <div class="amount-info">
+                                <div class="amount-label">${item.debit > 0 ? 'Debit' : 'Credit'}</div>
+                                <div class="amount ${item.debit > 0 ? 'debit-amount' : 'credit-amount'}">
+                                    $${(item.debit || item.credit).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function updateStatistics(entries) {
+    const totalEntries = entries.length;
+    const postedEntries = entries.filter(e => e.status === 'posted').length;
+    const draftEntries = entries.filter(e => e.status === 'draft').length;
+    const totalAmount = entries.reduce((sum, e) => sum + e.total_amount, 0);
+    
+    document.getElementById('totalEntries').textContent = totalEntries;
+    document.getElementById('postedEntries').textContent = postedEntries;
+    document.getElementById('draftEntries').textContent = draftEntries;
+    document.getElementById('totalAmount').textContent = '$' + totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2});
+}
+
+function updatePagination(pagination) {
+    currentPage = pagination.current_page;
+    totalPages = pagination.total_pages;
+    
+    document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+    document.getElementById('prevBtn').disabled = currentPage <= 1;
+    document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+    document.getElementById('pagination').classList.remove('hidden');
+}
+
+function applyFilters() {
+    currentPage = 1;
+    loadJournalEntries();
+}
+
+function previousPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        loadJournalEntries();
+    }
+}
+
+function nextPage() {
+    if (currentPage < totalPages) {
+        currentPage++;
+        loadJournalEntries();
+    }
+}
+
+function createJournalEntry() {
+    currentEntryId = null;
+    document.getElementById('modalTitle').textContent = 'Create Journal Entry';
+    document.getElementById('journalEntryForm').reset();
+    document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+    clearJournalLines();
+    addJournalLine();
+    addJournalLine();
+    document.getElementById('journalEntryModal').classList.add('show');
+}
+
+async function editJournalEntry(entryId) {
+    try {
+        const response = await fetch(`/accounting/api/journal-entries/${entryId}/`);
+        const data = await response.json();
+        
+        if (data.success) {
+            currentEntryId = entryId;
+            const entry = data.entry;
+            
+            document.getElementById('modalTitle').textContent = 'Edit Journal Entry';
+            document.getElementById('entryDate').value = entry.date;
+            document.getElementById('entryReference').value = entry.reference || '';
+            document.getElementById('entryDescription').value = entry.description;
+            document.getElementById('entryStatus').value = entry.status;
+            
+            clearJournalLines();
+            entry.items.forEach(item => {
+                addJournalLine(item);
+            });
+            
+            updateTotals();
+            document.getElementById('journalEntryModal').classList.add('show');
+        } else {
+            showNotification('Error loading journal entry: ' + data.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error loading journal entry', 'error');
+    }
+}
+
+async function deleteJournalEntry(entryId) {
+    if (!confirm('Are you sure you want to delete this journal entry? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/accounting/api/journal-entries/${entryId}/delete/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('Journal entry deleted successfully!', 'success');
+            loadJournalEntries();
+        } else {
+            showNotification('Failed to delete journal entry: ' + data.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Failed to delete journal entry', 'error');
+    }
+}
+
+async function postJournalEntry(entryId) {
+    if (!confirm('Are you sure you want to post this journal entry? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/accounting/api/journal-entries/${entryId}/post/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('Journal entry posted successfully!', 'success');
+            loadJournalEntries();
+        } else {
+            showNotification('Failed to post journal entry: ' + data.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Failed to post journal entry', 'error');
+    }
+}
+
+function viewJournalEntry(entryId) {
+    const entry = journalEntries.find(e => e.id === entryId);
+    if (!entry) return;
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal show';
+    modal.innerHTML = `
+        <div class="modal-content w-full max-w-4xl">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold">Journal Entry Details - ${entry.reference || 'No Ref'}</h3>
+                <button onclick="this.closest('.modal').remove()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <h4 class="font-semibold mb-3">Entry Information</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span>Reference:</span><span class="font-medium">${entry.reference || 'N/A'}</span></div>
+                        <div class="flex justify-between"><span>Date:</span><span class="font-medium">${new Date(entry.date).toLocaleDateString()}</span></div>
+                        <div class="flex justify-between"><span>Status:</span><span class="font-medium capitalize ${entry.status === 'posted' ? 'text-green-600' : 'text-yellow-600'}">${entry.status}</span></div>
+                        <div class="flex justify-between"><span>Created By:</span><span>${entry.created_by || 'N/A'}</span></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-3">Entry Totals</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span>Total Debits:</span><span class="text-green-600 font-medium">$${entry.items.reduce((sum, item) => sum + item.debit, 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</span></div>
+                        <div class="flex justify-between"><span>Total Credits:</span><span class="text-red-600 font-medium">$${entry.items.reduce((sum, item) => sum + item.credit, 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</span></div>
+                        <div class="flex justify-between border-t pt-2"><span class="font-semibold">Balance:</span><span class="text-green-600 font-bold">$0.00</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h4 class="font-semibold mb-3">Description</h4>
+                <p class="text-gray-600 text-sm mb-4">${entry.description}</p>
+            </div>
+            
+            <div>
+                <h4 class="font-semibold mb-3">Journal Items</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border border-gray-300 p-2 text-left">Account</th>
+                                <th class="border border-gray-300 p-2 text-left">Description</th>
+                                <th class="border border-gray-300 p-2 text-right">Debit</th>
+                                <th class="border border-gray-300 p-2 text-right">Credit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${entry.items.map(item => `
+                                <tr>
+                                    <td class="border border-gray-300 p-2">${item.account_code} - ${item.account_name}</td>
+                                    <td class="border border-gray-300 p-2">${item.description || ''}</td>
+                                    <td class="border border-gray-300 p-2 text-right">${item.debit > 0 ? '$' + item.debit.toLocaleString('en-US', {minimumFractionDigits: 2}) : ''}</td>
+                                    <td class="border border-gray-300 p-2 text-right">${item.credit > 0 ? '$' + item.credit.toLocaleString('en-US', {minimumFractionDigits: 2}) : ''}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                        <tfoot>
+                            <tr class="font-bold bg-gray-100">
+                                <td colspan="2" class="border border-gray-300 p-2">TOTALS</td>
+                                <td class="border border-gray-300 p-2 text-right">$${entry.items.reduce((sum, item) => sum + item.debit, 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                <td class="border border-gray-300 p-2 text-right">$${entry.items.reduce((sum, item) => sum + item.credit, 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="this.closest('.modal').remove()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Close
+                </button>
+                <button onclick="printJournalEntry(${entryId}); this.closest('.modal').remove();" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Print Entry
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+let accounts = [];
+
+async function loadAccounts() {
+    if (accounts.length === 0) {
+        try {
+            const response = await fetch('/accounting/api/chart-of-accounts/');
+            const data = await response.json();
+            if (data.success) {
+                accounts = data.accounts.filter(account => account.is_active);
+            }
+        } catch (error) {
+            console.error('Error loading accounts:', error);
+        }
+    }
+    return accounts;
+}
+
+async function addJournalLine(item = null) {
+    await loadAccounts();
+    
+    lineCounter++;
+    const container = document.getElementById('journalLinesContainer');
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td class="border border-gray-300 p-2">
+            <select class="w-full px-2 py-1 border border-gray-300 rounded account-select" required>
+                <option value="">Select Account</option>
+                ${accounts.map(account => `
+                    <option value="${account.id}" ${item && item.account_id === account.id ? 'selected' : ''}>
+                        ${account.code} - ${account.name}
+                    </option>
+                `).join('')}
+            </select>
+        </td>
+        <td class="border border-gray-300 p-2">
+            <input type="text" class="w-full px-2 py-1 border border-gray-300 rounded" placeholder="Description" value="${item?.description || ''}">
+        </td>
+        <td class="border border-gray-300 p-2">
+            <input type="number" class="w-full px-2 py-1 border border-gray-300 rounded debit-input" placeholder="0.00" step="0.01" min="0" value="${item?.debit || ''}" oninput="updateTotals()">
+        </td>
+        <td class="border border-gray-300 p-2">
+            <input type="number" class="w-full px-2 py-1 border border-gray-300 rounded credit-input" placeholder="0.00" step="0.01" min="0" value="${item?.credit || ''}" oninput="updateTotals()">
+        </td>
+        <td class="border border-gray-300 p-2 text-center">
+            <button type="button" onclick="removeJournalLine(this)" class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    container.appendChild(row);
+    updateTotals();
+}
+
+function removeJournalLine(button) {
+    button.closest('tr').remove();
+    updateTotals();
+}
+
+function clearJournalLines() {
+    document.getElementById('journalLinesContainer').innerHTML = '';
+    lineCounter = 0;
+}
+
+function updateTotals() {
+    const rows = document.querySelectorAll('#journalLinesContainer tr');
+    let totalDebit = 0;
+    let totalCredit = 0;
+    
+    rows.forEach(row => {
+        const debitInput = row.querySelector('.debit-input');
+        const creditInput = row.querySelector('.credit-input');
+        
+        totalDebit += parseFloat(debitInput.value) || 0;
+        totalCredit += parseFloat(creditInput.value) || 0;
+    });
+    
+    document.getElementById('totalDebit').textContent = totalDebit.toFixed(2);
+    document.getElementById('totalCredit').textContent = totalCredit.toFixed(2);
+    
+    const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01;
+    const balanceStatus = document.getElementById('balanceStatus');
+    
+    if (isBalanced) {
+        balanceStatus.innerHTML = '<span class="text-green-600">Balanced ✓</span>';
+    } else {
+        const difference = Math.abs(totalDebit - totalCredit);
+        balanceStatus.innerHTML = `<span class="text-red-600">Out of balance: $${difference.toFixed(2)}</span>`;
+    }
+}
+
+async function saveJournalEntry(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const rows = document.querySelectorAll('#journalLinesContainer tr');
+    
+    const items = [];
+    rows.forEach(row => {
+        const accountSelect = row.querySelector('.account-select');
+        const descriptionInput = row.querySelector('input[placeholder="Description"]');
+        const debitInput = row.querySelector('.debit-input');
+        const creditInput = row.querySelector('.credit-input');
+        
+        if (accountSelect.value) {
+            const debit = parseFloat(debitInput.value) || 0;
+            const credit = parseFloat(creditInput.value) || 0;
+            
+            if (debit > 0 || credit > 0) {
+                items.push({
+                    account_id: parseInt(accountSelect.value),
+                    description: descriptionInput.value,
+                    debit: debit,
+                    credit: credit
+                });
+            }
+        }
+    });
+    
+    if (items.length === 0) {
+        showFormError('Please add at least one journal line with an account and amount.');
+        return;
+    }
+    
+    const entryData = {
+        date: formData.get('date'),
+        reference: formData.get('reference'),
+        description: formData.get('description'),
+        status: formData.get('status'),
+        items: items
+    };
+    
+    try {
+        const url = currentEntryId 
+            ? `/accounting/api/journal-entries/${currentEntryId}/update/`
+            : '/accounting/api/journal-entries/create/';
+        
+        const method = currentEntryId ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken')
+            },
+            body: JSON.stringify(entryData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification(`Journal entry ${currentEntryId ? 'updated' : 'created'} successfully!`, 'success');
+            closeJournalModal();
+            loadJournalEntries();
+        } else {
+            showFormError(data.error || 'Error saving journal entry');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showFormError('Error saving journal entry');
+    }
+}
+
+function showFormError(message) {
+    const errorDiv = document.getElementById('formError');
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
+}
+
+function closeJournalModal() {
+    document.getElementById('journalEntryModal').classList.remove('show');
+    document.getElementById('formError').classList.add('hidden');
+}
+
+// Template functions
+async function showTemplates() {
+    document.getElementById('templatesModal').classList.add('show');
+    
+    try {
+        const response = await fetch('/accounting/api/journal-templates/');
+        const data = await response.json();
+        
+        if (data.success) {
+            displayTemplates(data.templates);
+        } else {
+            document.getElementById('templatesContainer').innerHTML = `
+                <div class="text-center text-red-600">
+                    Error loading templates: ${data.error}
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('templatesContainer').innerHTML = `
+            <div class="text-center text-red-600">
+                Error loading templates
+            </div>
+        `;
+    }
+}
+
+function displayTemplates(templates) {
+    const container = document.getElementById('templatesContainer');
+    
+    if (templates.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-gray-600 py-8">
+                <i class="fas fa-copy text-4xl text-gray-300 mb-4"></i>
+                <h3 class="text-lg font-semibold mb-2">No Templates Available</h3>
+                <p class="mb-4">Create journal templates to speed up data entry</p>
+                <a href="/accounting/journal-templates/" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                    Manage Templates
+                </a>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ${templates.map(template => `
+                <div class="template-card bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer" onclick="useTemplate(${template.id})">
+                    <div class="flex justify-between items-start mb-3">
+                        <h4 class="font-semibold text-gray-900">${template.name}</h4>
+                        <span class="text-xs text-gray-500">${template.items ? template.items.length : 0} items</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-3">${template.description || 'No description'}</p>
+                    <div class="space-y-1">
+                        ${template.items ? template.items.slice(0, 3).map(item => `
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-600">${item.account_code} - ${item.account_name}</span>
+                                <span class="${item.debit_amount ? 'text-green-600' : 'text-red-600'} font-medium">
+                                    ${item.debit_amount ? 'DR' : 'CR'} ${item.is_amount_variable ? 'Variable' : '$' + (item.debit_amount || item.credit_amount)}
+                                </span>
+                            </div>
+                        `).join('') : ''}
+                        ${template.items && template.items.length > 3 ? `
+                            <div class="text-xs text-gray-500 text-center">... and ${template.items.length - 3} more</div>
+                        ` : ''}
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-gray-100">
+                        <button class="w-full bg-blue-50 text-blue-600 py-2 rounded hover:bg-blue-100 transition-colors text-sm font-medium">
+                            Use Template
+                        </button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+        
+        <div class="mt-6 text-center">
+            <a href="/accounting/journal-templates/" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                <i class="fas fa-cog mr-1"></i>Manage All Templates
+            </a>
+        </div>
+    `;
+}
+
+function useTemplate(templateId) {
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
+    
+    // Close templates modal first
+    closeTemplatesModal();
+    
+    // Open the journal entry modal with template data
+    createJournalEntry();
+    
+    // Populate the form with template data
+    document.getElementById('entryDescription').value = template.name + ' - ' + (template.description || '');
+    
+    // Clear existing lines and add template lines
+    clearJournalLines();
+    
+    if (template.items && template.items.length > 0) {
+        template.items.forEach(item => {
+            addJournalLine({
+                account_id: item.account_id,
+                description: item.description || '',
+                debit: item.debit_amount || '',
+                credit: item.credit_amount || ''
+            });
+        });
+    } else {
+        // Add default empty lines if no items
+        addJournalLine();
+        addJournalLine();
+    }
+    
+    updateTotals();
+    showNotification(`Applied template: ${template.name}`, 'success');
+}
+
+function closeTemplatesModal() {
+    document.getElementById('templatesModal').classList.remove('show');
+}
+
+// Utility functions
+function exportJournalEntries() {
+    const params = new URLSearchParams({
+        from_date: document.getElementById('fromDate').value,
+        to_date: document.getElementById('toDate').value,
+        status: document.getElementById('statusFilter').value,
+        format: 'excel'
+    });
+    
+    window.open(`/accounting/api/journal-entries/export/?${params}`, '_blank');
+    showNotification('Journal entries export started', 'info');
+}
+
+function importJournalEntries() {
+    showNotification('Import functionality would be implemented here', 'info');
+}
+
+function printJournalEntry(entryId) {
+    window.open(`/accounting/journal-entries/${entryId}/print/`, '_blank');
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+    notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
+<!-- Add CSRF token -->
+{% csrf_token %}
+{% endblock %}

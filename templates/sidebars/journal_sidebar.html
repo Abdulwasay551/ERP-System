@@ -1,45 +1,24 @@
 {% load static %}
 <style>
+/* Journal-specific styles - submenu styles are now centralized in base.html */
+.sidebar-item:hover .fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+/* Mobile submenu override */
+@media (max-width: 768px) {
     .sidebar-submenu {
-        transition: all 0.3s ease;
-        opacity: 0;
-        visibility: hidden;
-        transform: translateX(-10px);
+        position: relative !important;
+        left: 0 !important;
+        top: 0 !important;
+        margin-left: 0 !important;
+        width: 100% !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: none !important;
+        border-radius: 0.5rem !important;
+        margin-top: 0.5rem;
     }
-    
-    .group:hover .sidebar-submenu {
-        opacity: 1;
-        visibility: visible;
-        transform: translateX(0);
-    }
-    
-    .sidebar.collapsed .sidebar-submenu {
-        left: 4rem !important;
-        top: 0;
-    }
-    
-    .sidebar.collapsed .group .sidebar-item .fa-chevron-down {
-        display: none;
-    }
-    
-    /* Mobile submenu */
-    @media (max-width: 768px) {
-        .sidebar-submenu {
-            position: relative;
-            left: 0 !important;
-            top: 0 !important;
-            margin-left: 0 !important;
-            width: 100% !important;
-            background: rgba(255, 255, 255, 0.05) !important;
-            border: none !important;
-            border-radius: 0.5rem !important;
-            margin-top: 0.5rem;
-        }
-        
-        .group:hover .sidebar-submenu {
-            display: block;
-        }
-    }
+}
 </style>
 
 <!-- Journal Entries Sidebar -->
@@ -57,143 +36,30 @@
     <!-- Navigation Items -->
     <nav class="sidebar-nav flex-1 py-4 space-y-2 mt-2">
         <!-- Dashboard -->
-        <a href="{% url 'accounting:journal_entries' %}" class="sidebar-item {% if request.resolver_match.url_name == 'journal_entries' %}active{% endif %}">
+        <a href="{% url 'accounting:dynamic_journal_entries' %}" class="sidebar-item {% if request.resolver_match.url_name == 'dynamic_journal_entries' %}active{% endif %}">
             <i class="fas fa-tachometer-alt sidebar-icon"></i>
             <span class="sidebar-text">Journal Dashboard</span>
         </a>
 
-        <!-- Create Entry -->
-        <a href="{% url 'accounting:journal_entry_create' %}" class="sidebar-item {% if 'journal_entry_create' in request.resolver_match.url_name %}active{% endif %}">
-            <i class="fas fa-plus-circle sidebar-icon"></i>
-            <span class="sidebar-text">Create Entry</span>
+        <!-- Journal Templates -->
+        <a href="{% url 'accounting:journal_templates' %}" class="sidebar-item">
+            <i class="fas fa-copy sidebar-icon text-blue-400"></i>
+            <span class="sidebar-text">Manage Templates</span>
         </a>
 
-        <!-- All Entries -->
-        <a href="{% url 'accounting:journal_entries' %}" class="sidebar-item {% if 'journal_entries' in request.resolver_match.url_name and 'create' not in request.resolver_match.url_name %}active{% endif %}">
-            <i class="fas fa-list sidebar-icon"></i>
-            <span class="sidebar-text">All Entries</span>
+        <!-- Financial Reports -->
+        <a href="{% url 'accounting:financial_reports' %}" class="sidebar-item {% if 'financial_reports' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-chart-line sidebar-icon text-green-400"></i>
+            <span class="sidebar-text">Financial Reports</span>
         </a>
 
-        <!-- Divider -->
-        <div class="my-4 border-t border-white/20"></div>
-
-        <!-- Entry Types -->
-        <div class="px-2 mb-2">
-            <h6 class="text-xs font-semibold text-white/70 uppercase tracking-wide sidebar-text">Entry Types</h6>
+        <!-- Back to Accounting -->
+        <div class="mt-6 pt-4 border-t border-white/20">
+            <a href="{% url 'accounting:dashboard' %}" class="sidebar-item">
+                <i class="fas fa-arrow-left sidebar-icon text-gray-400"></i>
+                <span class="sidebar-text">Back to Accounting</span>
+            </a>
         </div>
 
-        <!-- Manual Entries -->
-        <a href="{% url 'accounting:journal_entries' %}?type=manual" class="sidebar-item">
-            <i class="fas fa-edit sidebar-icon"></i>
-            <span class="sidebar-text">Manual Entries</span>
-        </a>
-
-        <!-- Auto Entries -->
-        <a href="{% url 'accounting:auto_entries' %}" class="sidebar-item {% if 'auto_entries' in request.resolver_match.url_name %}active{% endif %}">
-            <i class="fas fa-magic sidebar-icon"></i>
-            <span class="sidebar-text">Auto Entries</span>
-        </a>
-
-        <!-- Recurring Entries -->
-        <a href="#" class="sidebar-item">
-            <i class="fas fa-sync-alt sidebar-icon"></i>
-            <span class="sidebar-text">Recurring Entries</span>
-        </a>
-
-        <!-- Adjustment Entries -->
-        <a href="{% url 'accounting:journal_entries' %}?type=adjustment" class="sidebar-item">
-            <i class="fas fa-balance-scale sidebar-icon"></i>
-            <span class="sidebar-text">Adjustments</span>
-        </a>
-
-        <!-- Divider -->
-        <div class="my-4 border-t border-white/20"></div>
-
-        <!-- Journal Books -->
-        <div class="px-2 mb-2">
-            <h6 class="text-xs font-semibold text-white/70 uppercase tracking-wide sidebar-text">Journal Books</h6>
-        </div>
-
-        <!-- General Journal -->
-        <a href="{% url 'accounting:journal' %}" class="sidebar-item {% if request.resolver_match.url_name == 'journal' %}active{% endif %}">
-            <i class="fas fa-book-open sidebar-icon"></i>
-            <span class="sidebar-text">General Journal</span>
-        </a>
-
-        <!-- Sales Journal -->
-        <a href="#" class="sidebar-item">
-            <i class="fas fa-shopping-cart sidebar-icon"></i>
-            <span class="sidebar-text">Sales Journal</span>
-        </a>
-
-        <!-- Purchase Journal -->
-        <a href="#" class="sidebar-item">
-            <i class="fas fa-shopping-bag sidebar-icon"></i>
-            <span class="sidebar-text">Purchase Journal</span>
-        </a>
-
-        <!-- Cash Journal -->
-        <a href="#" class="sidebar-item">
-            <i class="fas fa-money-bill-wave sidebar-icon"></i>
-            <span class="sidebar-text">Cash Journal</span>
-        </a>
-
-        <!-- Divider -->
-        <div class="my-4 border-t border-white/20"></div>
-
-        <!-- Entry Status -->
-        <div class="px-2 mb-2">
-            <h6 class="text-xs font-semibold text-white/70 uppercase tracking-wide sidebar-text">Entry Status</h6>
-        </div>
-
-        <!-- Draft Entries -->
-        <a href="{% url 'accounting:journal_entries' %}?status=draft" class="sidebar-item">
-            <i class="fas fa-file-alt sidebar-icon"></i>
-            <span class="sidebar-text">Draft Entries</span>
-        </a>
-
-        <!-- Posted Entries -->
-        <a href="{% url 'accounting:journal_entries' %}?status=posted" class="sidebar-item">
-            <i class="fas fa-check-circle sidebar-icon"></i>
-            <span class="sidebar-text">Posted Entries</span>
-        </a>
-
-        <!-- Reversed Entries -->
-        <a href="{% url 'accounting:journal_entries' %}?status=reversed" class="sidebar-item">
-            <i class="fas fa-undo sidebar-icon"></i>
-            <span class="sidebar-text">Reversed Entries</span>
-        </a>
-
-        <!-- Divider -->
-        <div class="my-4 border-t border-white/20"></div>
-
-        <!-- Tools & Reports -->
-        <div class="px-2 mb-2">
-            <h6 class="text-xs font-semibold text-white/70 uppercase tracking-wide sidebar-text">Tools</h6>
-        </div>
-
-        <!-- Batch Processing -->
-        <a href="#" class="sidebar-item">
-            <i class="fas fa-layer-group sidebar-icon"></i>
-            <span class="sidebar-text">Batch Processing</span>
-        </a>
-
-        <!-- Entry Templates -->
-        <a href="#" class="sidebar-item">
-            <i class="fas fa-copy sidebar-icon"></i>
-            <span class="sidebar-text">Entry Templates</span>
-        </a>
-
-        <!-- Audit Trail -->
-        <a href="#" class="sidebar-item">
-            <i class="fas fa-history sidebar-icon"></i>
-            <span class="sidebar-text">Audit Trail</span>
-        </a>
-
-        <!-- Import/Export -->
-        <a href="#" class="sidebar-item">
-            <i class="fas fa-exchange-alt sidebar-icon"></i>
-            <span class="sidebar-text">Import/Export</span>
-        </a>
     </nav>
 </div>

@@ -2,28 +2,48 @@
 {% block title %}Home | ERP System{% endblock %}
 {% block content %}
     <!-- Hero Section -->
-    <section class="gradient-bg min-h-screen flex items-center justify-center relative overflow-hidden pt-20">
+    <section class="gradient-bg min-h-screen flex  items-center justify-center relative overflow-hidden pt-20">
+        <div class="">
         <div class="absolute inset-0 opacity-10">
             <div class="absolute top-20 left-20 w-32 h-32 bg-white rounded-full floating"></div>
             <div class="absolute top-40 right-32 w-24 h-24 bg-green-300 rounded-full floating" style="animation-delay: -2s;"></div>
             <div class="absolute bottom-32 left-1/3 w-40 h-40 bg-white rounded-full floating" style="animation-delay: -4s;"></div>
         </div>
         
-        <div class="max-w-6xl mx-auto px-6 text-center relative z-10">
+        <div class="max-w-6xl mx-auto px-6 text-center relative z-10 ">
             <h1 class="text-6xl md:text-8xl font-bold text-white mb-6 leading-tight">
                 Future <span class="text-green-200">ERP</span>
             </h1>
             <p class="text-xl md:text-2xl text-green-100 mb-12 max-w-3xl mx-auto">
-                Revolutionary Business Management System with Advanced Accounting Integration
+                Complete Business Management System with 12 Integrated Modules & Real-Time Accounting
             </p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12 text-green-100">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-white">12+</div>
+                    <div class="text-sm">Modules</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-white">Real-Time</div>
+                    <div class="text-sm">Integration</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-white">Multi</div>
+                    <div class="text-sm">Currency</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-white">Cloud</div>
+                    <div class="text-sm">Ready</div>
+                </div>
+            </div>
             <div class="flex flex-col md:flex-row gap-6 justify-center items-center">
-                <button class="bg-white text-green-800 px-8 py-4 rounded-full font-bold text-lg hover:shadow-2xl hover-lift green-glow">
-                    Start Free Trial
+                <button class="bg-white text-green-800 px-8 py-4 rounded-full font-bold text-lg hover:shadow-2xl hover-lift green-glow" onclick="window.location.href='{% url 'login' %}'">
+                    Access Dashboard
                 </button>
-                <button class="border-2 border-white text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white hover:text-green-800 transition-all">
-                    Watch Demo
+                <button class="border-2 border-white text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white hover:text-green-800 transition-all" onclick="window.location.href='#modules'">
+                    Explore Features
                 </button>
             </div>
+        </div>
         </div>
     </section>
 
@@ -97,41 +117,41 @@
     </section>
 
     <!-- ERP Modules Section -->
-    <section class="py-20 bg-gradient-to-br from-green-50 to-emerald-50">
+    <section id="modules" class="py-20 bg-gradient-to-br from-green-50 to-emerald-50">
         <div class="max-w-7xl mx-auto px-6">
             <div class="text-center mb-16">
-                <h2 class="text-5xl font-bold text-green-800 mb-6">Integrated ERP Modules</h2>
+                <h2 class="text-5xl font-bold text-green-800 mb-6">Complete ERP Suite</h2>
                 <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    Seamlessly connected modules with real-time accounting synchronization
+                    12 Integrated Modules with Real-Time Accounting Synchronization
                 </p>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- Sales Module -->
+                <!-- CRM Module -->
                 <div class="module-card p-8 rounded-2xl hover-lift">
                     <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl mb-6 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-green-800 mb-4">Customer Relationship</h3>
+                    <p class="text-gray-600 mb-6">Customers, Leads, Opportunities, Partners, Campaigns & Communications</p>
+                    <div class="text-sm text-green-600 font-medium">
+                        ↗ Customer Data → Sales Revenue & Receivables
+                    </div>
+                </div>
+
+                <!-- Sales Module -->
+                <div class="module-card p-8 rounded-2xl hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl mb-6 flex items-center justify-center">
                         <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                         </svg>
                     </div>
                     <h3 class="text-2xl font-bold text-green-800 mb-4">Sales Management</h3>
-                    <p class="text-gray-600 mb-6">Complete sales cycle from quotation to invoice with automatic revenue recognition</p>
+                    <p class="text-gray-600 mb-6">Quotations, Orders, Invoices, Delivery Notes, Payments & Price Lists</p>
                     <div class="text-sm text-green-600 font-medium">
                         ↗ Auto-posts to Income & Accounts Receivable
-                    </div>
-                </div>
-
-                <!-- Warehouse Module -->
-                <div class="module-card p-8 rounded-2xl hover-lift">
-                    <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-xl mb-6 flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-2xl font-bold text-green-800 mb-4">Warehouse</h3>
-                    <p class="text-gray-600 mb-6">Inventory management with real-time stock valuation and movement tracking</p>
-                    <div class="text-sm text-green-600 font-medium">
-                        ↗ Updates Inventory Assets & COGS
                     </div>
                 </div>
 
@@ -142,38 +162,81 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17M17 13v4a2 2 0 01-2 2H9a2 2 0 01-2-2v-4m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
                         </svg>
                     </div>
-                    <h3 class="text-2xl font-bold text-green-800 mb-4">Purchase</h3>
-                    <p class="text-gray-600 mb-6">Procurement process with vendor management and cost allocation</p>
+                    <h3 class="text-2xl font-bold text-green-800 mb-4">Purchase Management</h3>
+                    <p class="text-gray-600 mb-6">Requisitions, RFQs, Purchase Orders, Bills, Goods Receipt & Quality Assurance</p>
                     <div class="text-sm text-green-600 font-medium">
                         ↗ Records Expenses & Accounts Payable
                     </div>
                 </div>
 
-                <!-- Manufacturing Module -->
+                <!-- Products Module -->
+                <div class="module-card p-8 rounded-2xl hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl mb-6 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-green-800 mb-4">Product Management</h3>
+                    <p class="text-gray-600 mb-6">Product Catalog, Categories, Variants, Tracking, Attributes & Performance</p>
+                    <div class="text-sm text-green-600 font-medium">
+                        ↗ Updates Product Assets & Inventory Valuation
+                    </div>
+                </div>
+
+                <!-- Inventory Module -->
                 <div class="module-card p-8 rounded-2xl hover-lift">
                     <div class="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl mb-6 flex items-center justify-center">
                         <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                         </svg>
                     </div>
-                    <h3 class="text-2xl font-bold text-green-800 mb-4">Manufacturing</h3>
-                    <p class="text-gray-600 mb-6">Production planning with work-in-progress and finished goods costing</p>
+                    <h3 class="text-2xl font-bold text-green-800 mb-4">Inventory Management</h3>
+                    <p class="text-gray-600 mb-6">Stock Items, Warehouses, Movements, Transfers, Physical Count & Lot Tracking</p>
                     <div class="text-sm text-green-600 font-medium">
-                        ↗ Manages WIP & Manufacturing Costs
+                        ↗ Updates Inventory Assets & COGS
+                    </div>
+                </div>
+
+                <!-- Accounting Module -->
+                <div class="module-card p-8 rounded-2xl hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl mb-6 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-green-800 mb-4">Accounting Core</h3>
+                    <p class="text-gray-600 mb-6">Chart of Accounts, Journal Entries, General Ledger, Balance Sheet & P&L</p>
+                    <div class="text-sm text-green-600 font-medium">
+                        ↗ Central Hub for All Financial Data
                     </div>
                 </div>
 
                 <!-- HR Module -->
                 <div class="module-card p-8 rounded-2xl hover-lift">
-                    <div class="w-16 h-16 bg-gradient-to-r from-teal-500 to-green-600 rounded-xl mb-6 flex items-center justify-center">
+                    <div class="w-16 h-16 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl mb-6 flex items-center justify-center">
                         <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                         </svg>
                     </div>
                     <h3 class="text-2xl font-bold text-green-800 mb-4">Human Resources</h3>
-                    <p class="text-gray-600 mb-6">Payroll, benefits, and employee cost allocation across departments</p>
+                    <p class="text-gray-600 mb-6">Employees, Attendance, Leave, Payroll, Performance & Recruitment</p>
                     <div class="text-sm text-green-600 font-medium">
                         ↗ Allocates Labor Costs & Benefits
+                    </div>
+                </div>
+
+                <!-- Manufacturing Module -->
+                <div class="module-card p-8 rounded-2xl hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-xl mb-6 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-green-800 mb-4">Manufacturing</h3>
+                    <p class="text-gray-600 mb-6">Bill of Materials, Work Orders, Production Planning & MRP</p>
+                    <div class="text-sm text-green-600 font-medium">
+                        ↗ Manages WIP & Manufacturing Costs
                     </div>
                 </div>
 
@@ -181,32 +244,101 @@
                 <div class="module-card p-8 rounded-2xl hover-lift">
                     <div class="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl mb-6 flex items-center justify-center">
                         <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
                         </svg>
                     </div>
                     <h3 class="text-2xl font-bold text-green-800 mb-4">Project Management</h3>
-                    <p class="text-gray-600 mb-6">Project costing, budgeting, and profitability analysis in real-time</p>
+                    <p class="text-gray-600 mb-6">Projects, Tasks, Milestones, Time Tracking, Team & Documents</p>
                     <div class="text-sm text-green-600 font-medium">
-                        ↗ Tracks Project P&L & Assets
+                        ↗ Tracks Project P&L & Asset Allocation
                     </div>
                 </div>
 
-                <!-- CRM Module -->
-                <div class="module-card p-8 rounded-2xl hover-lift col-span-full lg:col-span-3">
-                    <div class="flex items-center justify-center mb-8">
-                        <div class="w-20 h-20 bg-gradient-to-r from-pink-500 to-rose-600 rounded-xl flex items-center justify-center mr-8">
-                            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                            </svg>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="text-3xl font-bold text-green-800 mb-4">Customer Relationship Management</h3>
-                            <p class="text-gray-600 mb-6">Complete customer lifecycle management with revenue forecasting and customer profitability analysis</p>
-                            <div class="text-sm text-green-600 font-medium">
-                                ↗ Integrates Customer Data with Sales Revenue & Receivables
-                            </div>
-                        </div>
+                <!-- Analytics Module -->
+                <div class="module-card p-8 rounded-2xl hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-r from-pink-500 to-rose-600 rounded-xl mb-6 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
                     </div>
+                    <h3 class="text-2xl font-bold text-green-800 mb-4">Analytics & Reports</h3>
+                    <p class="text-gray-600 mb-6">Sales Analytics, Customer Analytics, Financial Overview & Business Intelligence</p>
+                    <div class="text-sm text-green-600 font-medium">
+                        ↗ Real-time Business Intelligence & KPIs
+                    </div>
+                </div>
+
+                <!-- Settings Module -->
+                <div class="module-card p-8 rounded-2xl hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-r from-gray-500 to-slate-600 rounded-xl mb-6 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-green-800 mb-4">System Settings</h3>
+                    <p class="text-gray-600 mb-6">Company Settings, User Management, Configurations & System Administration</p>
+                    <div class="text-sm text-green-600 font-medium">
+                        ↗ Central Configuration & Security
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Key Features Section -->
+    <section class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-5xl font-bold text-green-800 mb-6">Advanced Features</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Enterprise-grade capabilities designed for modern businesses
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Real-time Integration -->
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl mx-auto mb-6 flex items-center justify-center">
+                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-green-800 mb-3">Real-time Integration</h3>
+                    <p class="text-gray-600">All modules automatically sync with accounting in real-time</p>
+                </div>
+
+                <!-- Multi-currency Support -->
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl mx-auto mb-6 flex items-center justify-center">
+                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-green-800 mb-3">Multi-currency</h3>
+                    <p class="text-gray-600">Handle multiple currencies with automatic exchange rate updates</p>
+                </div>
+
+                <!-- Advanced Reporting -->
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl mx-auto mb-6 flex items-center justify-center">
+                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-green-800 mb-3">Advanced Reporting</h3>
+                    <p class="text-gray-600">Comprehensive financial reports with drill-down capabilities</p>
+                </div>
+
+                <!-- Mobile Ready -->
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl mx-auto mb-6 flex items-center justify-center">
+                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-green-800 mb-3">Mobile Ready</h3>
+                    <p class="text-gray-600">Responsive design works perfectly on all devices</p>
                 </div>
             </div>
         </div>
@@ -218,12 +350,12 @@
             <div class="text-center mb-16">
                 <h2 class="text-5xl font-bold text-green-800 mb-6">Real-Time Financial Dashboard</h2>
                 <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    Live financial insights with automated journal entries from all modules
+                    Live financial insights with automated journal entries from all business modules
                 </p>
             </div>
             
             <div class="glass-effect rounded-3xl p-8 green-glow">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
                     <div class="text-center">
                         <div class="text-4xl font-bold text-green-600 mb-2">₨ 2.4M</div>
                         <div class="text-gray-600">Total Assets</div>
@@ -236,9 +368,13 @@
                         <div class="text-4xl font-bold text-purple-600 mb-2">24%</div>
                         <div class="text-gray-600">Profit Margin</div>
                     </div>
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-orange-600 mb-2">156</div>
+                        <div class="text-gray-600">Active Projects</div>
+                    </div>
                 </div>
                 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div class="bg-white rounded-2xl p-6">
                         <h4 class="text-xl font-bold text-green-800 mb-4">Balance Sheet Summary</h4>
                         <div class="space-y-3">
@@ -282,6 +418,34 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="bg-white rounded-2xl p-6">
+                        <h4 class="text-xl font-bold text-green-800 mb-4">Key Metrics</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Active Customers</span>
+                                <span class="font-semibold text-green-600">1,245</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Inventory Items</span>
+                                <span class="font-semibold text-blue-600">3,567</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Employees</span>
+                                <span class="font-semibold text-purple-600">89</span>
+                            </div>
+                            <div class="flex justify-between border-t pt-3">
+                                <span class="text-gray-800 font-bold">System Uptime</span>
+                                <span class="font-bold text-green-600">99.9%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 text-center">
+                    <button class="bg-green-600 text-white px-8 py-3 rounded-full font-bold hover:bg-green-700 transition-all" onclick="window.location.href='{% url 'login' %}'">
+                        Access Your Dashboard
+                    </button>
                 </div>
             </div>
         </div>

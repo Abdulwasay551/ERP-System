@@ -267,7 +267,7 @@
                     {% if payroll.approved_by %}
                     <div class="col-md-3">
                         <strong>Approved By:</strong><br>
-                        {{ payroll.approved_by.get_full_name|default:payroll.approved_by.username }}
+                        {{ payroll.approved_by.get_full_name|default:payroll.approved_by.email }}
                     </div>
                     {% endif %}
                     <div class="col-md-3">
