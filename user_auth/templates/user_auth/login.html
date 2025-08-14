@@ -1,27 +1,620 @@
 {% extends "base.html" %}
-{% block title %}Login | ERP System{% endblock %}
+{% block title %}Access Portal | Future ERP{% endblock %}
 {% block content %}
-<div class="flex items-center justify-center min-h-[60vh]">
-    <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
-        <h2 class="text-2xl font-bold text-blue-900 mb-6 text-center">Sign in to ERP System</h2>
-        <form method="post" class="space-y-4">
+<style>
+    :root {
+        --primary-green: #10b981;
+        --secondary-green: #065f46;
+        --accent-green: #34d399;
+    }
+    body {
+            font-family: 'Inter', sans-serif;
+            background: black;
+            overflow-x: hidden;
+        }
+    /* Futuristic Login Portal */
+    .login-portal-container {
+        min-height: 100vh;
+        background: black;
+        background-image: 
+            radial-gradient(circle at bottom left, rgba(21, 196, 129, 0.57) 0%, rgba(0, 0, 0, 0) 40%),
+            radial-gradient(circle at center, rgba(21, 196, 129, 0.25) 0%, rgba(0, 0, 0, 0) 60%),
+            radial-gradient(circle at 80%, rgba(21, 196, 129, 0.25) 0%, rgba(0, 0, 0, 0) 30%);
+        background-blend-mode: screen;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    /* Animated Background Grid */
+    .portal-bg-grid {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: 
+            linear-gradient(rgba(16, 185, 129, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(16, 185, 129, 0.1) 1px, transparent 1px);
+        background-size: 50px 50px;
+        opacity: 0.3;
+        animation: gridPulse 4s ease-in-out infinite;
+    }
+
+    @keyframes gridPulse {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 0.6; }
+    }
+
+    /* Floating Particles */
+    .neural-particles {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    .particle {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background: var(--primary-green);
+        border-radius: 50%;
+        animation: float 8s ease-in-out infinite;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    }
+
+    .particle:nth-child(1) { left: 10%; animation-delay: -0.5s; animation-duration: 6s; }
+    .particle:nth-child(2) { left: 20%; animation-delay: -1s; animation-duration: 7s; }
+    .particle:nth-child(3) { left: 30%; animation-delay: -1.5s; animation-duration: 8s; }
+    .particle:nth-child(4) { left: 40%; animation-delay: -2s; animation-duration: 6.5s; }
+    .particle:nth-child(5) { left: 50%; animation-delay: -2.5s; animation-duration: 7.5s; }
+    .particle:nth-child(6) { left: 60%; animation-delay: -3s; animation-duration: 6.2s; }
+    .particle:nth-child(7) { left: 70%; animation-delay: -3.5s; animation-duration: 8.2s; }
+    .particle:nth-child(8) { left: 80%; animation-delay: -4s; animation-duration: 7.8s; }
+    .particle:nth-child(9) { left: 90%; animation-delay: -4.5s; animation-duration: 6.8s; }
+
+    @keyframes float {
+        0%, 100% { 
+            transform: translateY(100vh) scale(0) rotate(0deg);
+            opacity: 0;
+        }
+        10% { 
+            transform: translateY(90vh) scale(1) rotate(180deg);
+            opacity: 1;
+        }
+        90% { 
+            transform: translateY(-10vh) scale(1) rotate(360deg);
+            opacity: 1;
+        }
+        100% { 
+            transform: translateY(-20vh) scale(0) rotate(540deg);
+            opacity: 0;
+        }
+    }
+
+    /* Main Portal Interface */
+    .access-portal {
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        border-radius: 24px;
+        padding: 3rem;
+        width: 100%;
+        max-width: 480px;
+        position: relative;
+        box-shadow: 
+            0 25px 60px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(16, 185, 129, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        animation: portalEntry 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        z-index: 10;
+    }
+
+    @keyframes portalEntry {
+        0% {
+            opacity: 0;
+            transform: scale(0.7) translateY(80px) rotateX(20deg);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1) translateY(0) rotateX(0deg);
+        }
+    }
+
+    /* Animated Border Glow */
+    .access-portal::before {
+        content: '';
+        position: absolute;
+        top: -3px;
+        left: -3px;
+        right: -3px;
+        bottom: -3px;
+
+        border-radius: 27px;
+        z-index: -1;
+        animation: borderGlow 6s ease infinite;
+    }
+
+    @keyframes borderGlow {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+    }
+
+    /* Portal Header */
+    .portal-header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+
+    .portal-logo {
+        width: 90px;
+        height: 90px;
+        background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
+        border-radius: 50%;
+        margin: 0 auto 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: white;
+        box-shadow: 
+            0 15px 35px rgba(16, 185, 129, 0.4),
+            inset 0 2px 4px rgba(255, 255, 255, 0.2);
+        animation: logoFloat 4s ease-in-out infinite;
+        position: relative;
+    }
+
+    .portal-logo::after {
+        content: '';
+        position: absolute;
+        top: -5px;
+        left: -5px;
+        right: -5px;
+        bottom: -5px;
+        border: 2px solid var(--primary-green);
+        border-radius: 50%;
+        opacity: 0.3;
+        animation: logoRing 3s linear infinite;
+    }
+
+    @keyframes logoFloat {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-10px) rotate(180deg); }
+    }
+
+    @keyframes logoRing {
+        0% { transform: scale(1) rotate(0deg); opacity: 0.3; }
+        50% { transform: scale(1.1) rotate(180deg); opacity: 0.1; }
+        100% { transform: scale(1) rotate(360deg); opacity: 0.3; }
+    }
+
+    .portal-title {
+        font-size: 2.25rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #ffffff, var(--primary-green), var(--accent-green));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .portal-subtitle {
+        color: #a1a1aa;
+        font-size: 0.875rem;
+        font-weight: 600;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        opacity: 0.8;
+    }
+
+    /* Neural Form Styling */
+    .neural-form {
+        margin-bottom: 2rem;
+    }
+
+    .neural-input-group {
+        position: relative;
+        margin-bottom: 2rem;
+    }
+
+    .neural-input {
+        width: 100%;
+        padding: 1.25rem 1.5rem 1.25rem 3.5rem;
+        background: rgba(255, 255, 255, 0.12);
+        border: 2px solid rgba(16, 185, 129, 0.3);
+        border-radius: 16px;
+        font-size: 1rem;
+        color: #ffffff;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        outline: none;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .neural-input:focus {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: var(--primary-green);
+        box-shadow: 
+            0 0 0 4px rgba(16, 185, 129, 0.2),
+            0 8px 25px rgba(16, 185, 129, 0.25);
+        transform: translateY(-2px);
+    }
+
+    .neural-input::placeholder {
+        color: #a1a1aa;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .neural-input:focus::placeholder {
+        color: transparent;
+        transform: translateY(-20px);
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 1.25rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--primary-green);
+        font-size: 1.25rem;
+        transition: all 0.3s ease;
+        z-index: 2;
+    }
+
+    .neural-input:focus + .input-icon {
+        color: var(--secondary-green);
+        transform: translateY(-50%) scale(1.1);
+    }
+
+    /* Neural Button */
+    .neural-button {
+        width: 100%;
+        padding: 1.25rem 2rem;
+        background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
+        border: none;
+        border-radius: 16px;
+        color: white;
+        font-weight: 700;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-family: 'Inter', sans-serif;
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+    }
+
+    .neural-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        transition: left 0.6s ease;
+    }
+
+    .neural-button:hover::before {
+        left: 100%;
+    }
+
+    .neural-button:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 40px rgba(16, 185, 129, 0.5);
+    }
+
+    .neural-button:active {
+        transform: translateY(-2px);
+    }
+
+    /* Status Messages */
+    .status-messages {
+        margin: 1.5rem 0;
+        text-align: center;
+    }
+
+    .error-message {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #dc2626;
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        animation: slideInUp 0.4s ease;
+    }
+
+    .success-message {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        color: var(--secondary-green);
+        padding: 1rem;
+        border-radius: 12px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        animation: slideInUp 0.4s ease;
+    }
+
+    @keyframes slideInUp {
+        0% {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Footer Section */
+    .portal-footer {
+        text-align: center;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(16, 185, 129, 0.1);
+    }
+
+    .security-badge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        color: #a1a1aa;
+        font-size: 0.75rem;
+        gap: 0.5rem;
+    }
+
+    .security-icon {
+        color: var(--primary-green);
+        animation: securityPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes securityPulse {
+        0%, 100% { opacity: 0.7; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.1); }
+    }
+
+    .footer-text {
+        color: #a1a1aa;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .footer-text a {
+        color: var(--primary-green);
+        text-decoration: none;
+        font-weight: 700;
+        transition: color 0.3s ease;
+    }
+
+    .footer-text a:hover {
+        color: var(--secondary-green);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 640px) {
+        .access-portal {
+            margin: 1rem;
+            padding: 2rem;
+            max-width: none;
+        }
+        
+        .portal-title {
+            font-size: 1.75rem;
+        }
+        
+        .portal-logo {
+            width: 70px;
+            height: 70px;
+            font-size: 2rem;
+        }
+
+        .neural-input {
+            padding: 1rem 1.25rem 1rem 3rem;
+        }
+
+        .input-icon {
+            left: 1rem;
+        }
+    }
+
+    /* Loading Animation */
+    .loading {
+        opacity: 0.7;
+        pointer-events: none;
+    }
+
+    .loading .neural-button {
+        background: linear-gradient(135deg, #9ca3af, #6b7280);
+    }
+</style>
+
+<div class="login-portal-container">
+    <!-- Animated Background -->
+    <div class="portal-bg-grid"></div>
+    
+    <!-- Neural Particles -->
+    <div class="neural-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <!-- Main Access Portal -->
+    <div class="access-portal">
+        <div class="portal-header">
+            <div class="portal-logo">
+                <i class="fas fa-microchip"></i>
+            </div>
+            <h1 class="portal-title">Access Portal</h1>
+            <p class="portal-subtitle">Future ERP System</p>
+        </div>
+
+        <form method="post" class="neural-form" id="loginForm">
             {% csrf_token %}
-            <input type="email" name="email" placeholder="Email" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" required>
-            <input type="password" name="password" placeholder="Password" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" required>
-            <button type="submit" class="w-full bg-blue-800 text-white py-2 rounded hover:bg-blue-700 font-semibold">Login</button>
+            
+            <div class="neural-input-group">
+                <input 
+                    type="email" 
+                    name="email" 
+                    placeholder="Email" 
+                    class="neural-input" 
+                    required
+                    autocomplete="email"
+                >
+                <i class="input-icon fas fa-user-astronaut"></i>
+            </div>
+
+            <div class="neural-input-group">
+                <input 
+                    type="password" 
+                    name="password" 
+                    placeholder="Password" 
+                    class="neural-input" 
+                    required
+                    autocomplete="current-password"
+                >
+                <i class="input-icon fas fa-key"></i>
+            </div>
+
+            <button type="submit" class="neural-button">
+                <i class="fas fa-rocket" style="margin-right: 0.5rem;"></i>
+                Login
+            </button>
         </form>
+
         {% if messages %}
-        <ul class="mt-4 text-red-600">
+        <div class="status-messages">
             {% for message in messages %}
-                <li>{{ message }}</li>
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle" style="margin-right: 0.5rem;"></i>
+                    {{ message }}
+                </div>
             {% endfor %}
-        </ul>
-        {% endif %}
-        {% if user.is_authenticated %}
-        <div class="mt-4 text-green-700 text-center">
-            You are already logged in. <a href="/" class="underline text-blue-700">Go to Dashboard</a>
         </div>
         {% endif %}
+
+        {% if user.is_authenticated %}
+        <div class="status-messages">
+            <div class="success-message">
+                <i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i>
+                Already logged in. <a href="/">Access the Dashboard</a>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="portal-footer">
+            <div class="security-badge">
+                <i class="security-icon fas fa-shield-alt"></i>
+            </div>
+            <p class="footer-text">
+                Powered by <a href="/">Future ERP</a> • Next-Generation Business Intelligence
+            </p>
+        </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Enhanced form interactions
+    const inputs = document.querySelectorAll('.neural-input');
+    const form = document.getElementById('loginForm');
+    const button = document.querySelector('.neural-button');
+
+    // Add glow effect on input focus
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.parentElement.style.transform = 'scale(1.02)';
+            this.parentElement.style.transition = 'transform 0.3s ease';
+        });
+        
+        input.addEventListener('blur', function() {
+            this.parentElement.style.transform = 'scale(1)';
+        });
+
+        // Typing effect
+        input.addEventListener('input', function() {
+            if (this.value.length > 0) {
+                this.style.fontWeight = '600';
+            } else {
+                this.style.fontWeight = '400';
+            }
+        });
+    });
+
+    // Form submission with loading state
+    form.addEventListener('submit', function(e) {
+        button.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 0.5rem;"></i>Establishing Connection...';
+        form.classList.add('loading');
+    });
+
+    // Button ripple effect
+    button.addEventListener('click', function(e) {
+        const ripple = document.createElement('span');
+        const rect = this.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        const x = e.clientX - rect.left - size / 2;
+        const y = e.clientY - rect.top - size / 2;
+        
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = x + 'px';
+        ripple.style.top = y + 'px';
+        ripple.style.position = 'absolute';
+        ripple.style.background = 'rgba(255,255,255,0.4)';
+        ripple.style.borderRadius = '50%';
+        ripple.style.transform = 'scale(0)';
+        ripple.style.animation = 'ripple 0.6s linear';
+        ripple.style.pointerEvents = 'none';
+        
+        this.appendChild(ripple);
+        
+        setTimeout(() => {
+            ripple.remove();
+        }, 600);
+    });
+
+    // Keyboard navigation enhancement
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.target.classList.contains('neural-input')) {
+            const inputs = Array.from(document.querySelectorAll('.neural-input'));
+            const currentIndex = inputs.indexOf(e.target);
+            if (currentIndex < inputs.length - 1) {
+                e.preventDefault();
+                inputs[currentIndex + 1].focus();
+            }
+        }
+    });
+});
+
+// Add ripple animation CSS
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes ripple {
+        to {
+            transform: scale(4);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+</script>
 {% endblock %} 

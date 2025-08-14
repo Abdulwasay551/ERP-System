@@ -8,6 +8,7 @@
     <title>FutureERP - Advanced Business Management System</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -528,33 +529,35 @@
     <div id="sidebar-overlay" class="sidebar-overlay fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
     {% endif %}
     <!-- Header Navigation -->
-    <nav class="relative {% if public %} nav-gradient-bg{%else%}bg-white{%endif%} w-full z-20 px-6 py-4">
+    <nav class="relative {% if public %}bg-gradient-to-r from-green-900/20 to-black/20 backdrop-blur-sm{%else%}bg-white{%endif%} w-full z-20 px-6 py-4">
         <div class="max-w-7xl mx-auto flex items-center justify-between">
             <!-- Logo and Title -->
             <div class="flex items-center space-x-4">
                 <!-- Mobile Menu Button -->
-                <button id="mobile-menu-toggle" class="md:hidden text-green-800 hover:text-green-600 p-2 rounded-lg">
+                <button id="mobile-menu-toggle" class="md:hidden text-green-800 hover:text-green-600 p-2 rounded-lg transition-all">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
                 
-                <a href='/' class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-gradient-to-r from-green-500/10 to-emerald-600/10 rounded-full outset-0 flex items-center justify-center">
-                        <img src="{% static 'logo.png' %}" alt="FutureERP Logo" class="w-10 h-10 mask-radial-at-bottom" style="filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.5));border-radius: 50%;">
+                <a href='/' class="flex items-center space-x-3 group">
+                    <div class="w-10 h-10 bg-gradient-to-r from-green-500/20 to-emerald-600/20 rounded-full flex items-center justify-center relative overflow-hidden group-hover:scale-110 transition-all duration-300">
+                        <!-- Holographic glow effect -->
+                        <div class="absolute inset-0 bg-gradient-to-r from-green-400/30 to-emerald-500/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <img src="{% static 'logo.png' %}" alt="FutureERP Logo" class="w-10 h-10 relative z-10" style="filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.5));border-radius: 50%;">
                     </div>
-                    <span class="text-2xl font-bold text-green-800">FutureERP</span>
+                    <span class="text-2xl font-bold text-green-800 font-['Inter'] tracking-tight group-hover:text-green-600 transition-colors">Future<span class="text-green-600">ERP</span></span>
                 </a>
             </div>
         
             
             {% if user.is_authenticated %}
             <div class="flex items-center space-x-4">
-                <span class="text-green-800 font-medium">Welcome, {{ user.get_full_name|default:user.email }}</span>
-                <a href="{% url 'logout' %}" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-2 rounded-full hover:shadow-lg transition-all">
+                <span class="text-green-800 font-medium font-['Inter']">Welcome, {{ user.get_full_name|default:user.email }}</span>
+                <a href="{% url 'logout' %}" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-2 rounded-full hover:shadow-lg hover:shadow-green-500/30 transition-all duration-300 hover:scale-105 font-['Inter'] font-medium">
                     Logout
                 </a>
             </div>
             {% else %}
-            <a href="{% url 'login' %}" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-2 rounded-full hover:shadow-lg transition-all">
+            <a href="{% url 'login' %}" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-2 rounded-full hover:shadow-lg hover:shadow-green-500/30 transition-all duration-300 hover:scale-105 font-['Inter'] font-medium">
                 Login
             </a>
             {% endif %}
@@ -565,50 +568,56 @@
     <div id="{% if user.is_authenticated %}main-content{% endif %}" class="{% if user.is_authenticated %}main-content{% else %}min-h-screen bg-gray-50 transition-all duration-300{% endif %}">
         {% block content %}{% endblock %}
     </div>    <!-- Footer -->
-    <footer class="bg-green-900 text-white py-12">
-        <div class="max-w-7xl mx-auto px-6">
+    <footer class="bg-gradient-to-br from-green-900 via-green-800 to-emerald-900 text-white py-12 relative overflow-hidden">
+        <!-- Subtle grid pattern overlay -->
+        <div class="absolute inset-0 opacity-10" style="background-image: linear-gradient(rgba(16, 185, 129, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.3) 1px, transparent 1px); background-size: 20px 20px;"></div>
+        
+        <div class="max-w-7xl mx-auto px-6 relative z-10">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <div>
-                    <div class="flex items-center space-x-3 mb-6">
-                        <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center">
-                            <span class="text-green-800 font-bold text-xl">F</span>
+                    <div class="flex items-center space-x-3 mb-6 group">
+                        <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center group-hover:scale-110 transition-all duration-300 relative overflow-hidden">
+                            <div class="absolute inset-0 bg-gradient-to-r from-green-400/20 to-emerald-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            <span class="text-green-800 font-bold text-xl relative z-10">F</span>
                         </div>
-                        <span class="text-2xl font-bold">FutureERP</span>
+                        <span class="text-2xl font-bold font-['Inter'] tracking-tight">Future<span class="text-green-300">ERP</span></span>
                     </div>
-                    <p class="text-green-200">
-                        Next-generation ERP system built for Pakistani businesses with comprehensive accounting integration.
+                    <p class="text-green-200 font-['Inter'] leading-relaxed">
+                        Next-generation ERP system built for Pakistani businesses with comprehensive accounting integration and futuristic technology.
                     </p>
                 </div>
                 <div>
-                    <h4 class="text-lg font-bold mb-4">Modules</h4>
-                    <ul class="space-y-2 text-green-200">
-                        <li>Sales Management</li>
-                        <li>Warehouse</li>
-                        <li>Manufacturing</li>
-                        <li>Human Resources</li>
+                    <h4 class="text-lg font-bold mb-4 font-['Inter'] text-green-100">Modules</h4>
+                    <ul class="space-y-2 text-green-200 font-['Inter']">
+                        <li class="hover:text-green-100 transition-colors cursor-pointer">Sales Management</li>
+                        <li class="hover:text-green-100 transition-colors cursor-pointer">Warehouse</li>
+                        <li class="hover:text-green-100 transition-colors cursor-pointer">Manufacturing</li>
+                        <li class="hover:text-green-100 transition-colors cursor-pointer">Human Resources</li>
                     </ul>
                 </div>
                 <div>
-                    <h4 class="text-lg font-bold mb-4">Accounting</h4>
-                    <ul class="space-y-2 text-green-200">
-                        <li>Assets Management</li>
-                        <li>Liabilities Tracking</li>
-                        <li>Income Recognition</li>
-                        <li>Expense Control</li>
+                    <h4 class="text-lg font-bold mb-4 font-['Inter'] text-green-100">Accounting</h4>
+                    <ul class="space-y-2 text-green-200 font-['Inter']">
+                        <li class="hover:text-green-100 transition-colors cursor-pointer">Assets Management</li>
+                        <li class="hover:text-green-100 transition-colors cursor-pointer">Liabilities Tracking</li>
+                        <li class="hover:text-green-100 transition-colors cursor-pointer">Income Recognition</li>
+                        <li class="hover:text-green-100 transition-colors cursor-pointer">Expense Control</li>
                     </ul>
                 </div>
                 <div>
-                    <h4 class="text-lg font-bold mb-4">Support</h4>
-                    <ul class="space-y-2 text-green-200">
-                        <li>Documentation</li>
-                        <li>Training</li>
-                        <li>24/7 Support</li>
-                        <li>Implementation</li>
+                    <h4 class="text-lg font-bold mb-4 font-['Inter'] text-green-100">Support</h4>
+                    <ul class="space-y-2 text-green-200 font-['Inter']">
+                        <li class="hover:text-green-100 transition-colors cursor-pointer">Documentation</li>
+                        <li class="hover:text-green-100 transition-colors cursor-pointer">Training</li>
+                        <li class="hover:text-green-100 transition-colors cursor-pointer">24/7 Support</li>
+                        <li class="hover:text-green-100 transition-colors cursor-pointer">Implementation</li>
                     </ul>
                 </div>
             </div>
-            <div class="border-t border-green-800 mt-8 pt-8 text-center">
-                <p class="text-green-200">
+            <div class="border-t border-green-700/50 mt-8 pt-8 text-center relative">
+                <!-- Subtle glow line above copyright -->
+                <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-px bg-gradient-to-r from-transparent via-green-400 to-transparent opacity-50"></div>
+                <p class="text-green-200 font-['Inter']">
                     &copy; 2025 FutureERP. Built with pride in Pakistan. All rights reserved.
                 </p>
             </div>

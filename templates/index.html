@@ -1,648 +1,2533 @@
 {%extends 'base.html'%}
-{% block title %}Home | ERP System{% endblock %}
+{% block title %}Future ERP | Next-Gen Business Management{% endblock %}
 {% block content %}
-    <!-- Hero Section -->
-    <section class="gradient-bg min-h-screen flex  items-center justify-center relative overflow-hidden pt-20">
-        <div class="">
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-20 left-20 w-32 h-32 bg-white rounded-full floating"></div>
-            <div class="absolute top-40 right-32 w-24 h-24 bg-green-300 rounded-full floating" style="animation-delay: -2s;"></div>
-            <div class="absolute bottom-32 left-1/3 w-40 h-40 bg-white rounded-full floating" style="animation-delay: -4s;"></div>
+    <!-- Futuristic Hero Section -->
+    <section class="hero-section relative min-h-screen overflow-hidden">
+        <!-- Holographic Grid Background -->
+        <div class="holographic-grid absolute inset-0"></div>
+        
+        <!-- Particle Nebula -->
+        <div id="particle-nebula" class="absolute inset-0"></div>
+        
+        <!-- Floating Data Nodes -->
+        <div class="data-nodes absolute inset-0">
+            <div class="data-node node-1" data-module="CRM"></div>
+            <div class="data-node node-2" data-module="Sales"></div>
+            <div class="data-node node-3" data-module="Inventory"></div>
+            <div class="data-node node-4" data-module="Finance"></div>
         </div>
         
-        <div class="max-w-6xl mx-auto px-6 text-center relative z-10 ">
-            <h1 class="text-6xl md:text-8xl font-bold text-white mb-6 leading-tight">
-                Future <span class="text-green-200">ERP</span>
-            </h1>
-            <p class="text-xl md:text-2xl text-green-100 mb-12 max-w-3xl mx-auto">
-                Complete Business Management System with 12 Integrated Modules & Real-Time Accounting
-            </p>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12 text-green-100">
-                <div class="text-center">
-                    <div class="text-2xl font-bold text-white">12+</div>
-                    <div class="text-sm">Modules</div>
+        <!-- Central Interface -->
+        <div class="hero-interface absolute inset-0 flex items-center justify-center">
+            <div class="max-w-6xl mx-auto px-6 text-center relative z-10">
+                <!-- Main Title with Glitch Effect -->
+                <div class="hero-title-container mb-8">
+                    <h1 class="hero-main-title text-7xl md:text-9xl font-black text-white mb-4">
+                        <span class="title-word" data-word="FUTURE">FUTURE</span>
+                    </h1>
+                    <h2 class="hero-sub-title text-4xl md:text-6xl font-bold text-green-400 holographic-text">
+                        ERP SYSTEM
+                    </h2>
                 </div>
-                <div class="text-center">
-                    <div class="text-2xl font-bold text-white">Real-Time</div>
-                    <div class="text-sm">Integration</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-2xl font-bold text-white">Multi</div>
-                    <div class="text-sm">Currency</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-2xl font-bold text-white">Cloud</div>
-                    <div class="text-sm">Ready</div>
-                </div>
-            </div>
-            <div class="flex flex-col md:flex-row gap-6 justify-center items-center">
-                <button class="bg-white text-green-800 px-8 py-4 rounded-full font-bold text-lg hover:shadow-2xl hover-lift green-glow" onclick="window.location.href='{% url 'login' %}'">
-                    Access Dashboard
-                </button>
-                <button class="border-2 border-white text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white hover:text-green-800 transition-all" onclick="window.location.href='#modules'">
-                    Explore Features
-                </button>
-            </div>
-        </div>
-        </div>
-    </section>
-
-    <!-- Accounting Core Section -->
-    <section class="py-20 bg-white relative">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="text-center mb-16">
-                <h2 class="text-5xl font-bold accounting-highlight mb-6">Advanced Accounting Core</h2>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    Complete financial management with real-time integration across all business modules
+                
+                <!-- Mission Statement -->
+                <p class="hero-mission text-xl md:text-2xl text-green-100 mb-12 max-w-4xl mx-auto opacity-0">
+                    Complete Business Ecosystem with 12 Integrated Modules, Real-Time Intelligence & Future-Ready Architecture
                 </p>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
-                <!-- Assets -->
-                <div class="module-card p-8 rounded-2xl text-center hover-lift">
-                    <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl mx-auto mb-6 flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                        </svg>
+                
+                <!-- System Status Display -->
+                <div class="system-status grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+                    <div class="status-panel">
+                        <div class="status-value counter" data-target="12">0</div>
+                        <div class="status-label">Active Modules</div>
+                        <div class="status-bar"></div>
                     </div>
-                    <h3 class="text-xl font-bold text-green-800 mb-3">Assets</h3>
-                    <p class="text-gray-600">Fixed & Current Assets Management</p>
-                </div>
-
-                <!-- Liabilities -->
-                <div class="module-card p-8 rounded-2xl text-center hover-lift">
-                    <div class="w-16 h-16 bg-gradient-to-r from-red-500 to-pink-600 rounded-xl mx-auto mb-6 flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                        </svg>
+                    <div class="status-panel">
+                        <div class="status-value">∞</div>
+                        <div class="status-label">Data Streams</div>
+                        <div class="status-bar"></div>
                     </div>
-                    <h3 class="text-xl font-bold text-green-800 mb-3">Liabilities</h3>
-                    <p class="text-gray-600">Debt & Obligations Tracking</p>
-                </div>
-
-                <!-- Expenses -->
-                <div class="module-card p-8 rounded-2xl text-center hover-lift">
-                    <div class="w-16 h-16 bg-gradient-to-r from-orange-500 to-yellow-600 rounded-xl mx-auto mb-6 flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                        </svg>
+                    <div class="status-panel">
+                        <div class="status-value">100%</div>
+                        <div class="status-label">Integration</div>
+                        <div class="status-bar"></div>
                     </div>
-                    <h3 class="text-xl font-bold text-green-800 mb-3">Expenses</h3>
-                    <p class="text-gray-600">Cost Management & Control</p>
-                </div>
-
-                <!-- Income -->
-                <div class="module-card p-8 rounded-2xl text-center hover-lift">
-                    <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl mx-auto mb-6 flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-bold text-green-800 mb-3">Income</h3>
-                    <p class="text-gray-600">Revenue Stream Analysis</p>
-                </div>
-
-                <!-- Equity -->
-                <div class="module-card p-8 rounded-2xl text-center hover-lift">
-                    <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl mx-auto mb-6 flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-bold text-green-800 mb-3">Equity</h3>
-                    <p class="text-gray-600">Owner's Capital & Reserves</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ERP Modules Section -->
-    <section id="modules" class="py-20 bg-gradient-to-br from-green-50 to-emerald-50">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="text-center mb-16">
-                <h2 class="text-5xl font-bold text-green-800 mb-6">Complete ERP Suite</h2>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    12 Integrated Modules with Real-Time Accounting Synchronization
-                </p>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- CRM Module -->
-                <div class="module-card p-8 rounded-2xl hover-lift">
-                    <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl mb-6 flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-2xl font-bold text-green-800 mb-4">Customer Relationship</h3>
-                    <p class="text-gray-600 mb-6">Customers, Leads, Opportunities, Partners, Campaigns & Communications</p>
-                    <div class="text-sm text-green-600 font-medium">
-                        ↗ Customer Data → Sales Revenue & Receivables
-                    </div>
-                </div>
-
-                <!-- Sales Module -->
-                <div class="module-card p-8 rounded-2xl hover-lift">
-                    <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl mb-6 flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-2xl font-bold text-green-800 mb-4">Sales Management</h3>
-                    <p class="text-gray-600 mb-6">Quotations, Orders, Invoices, Delivery Notes, Payments & Price Lists</p>
-                    <div class="text-sm text-green-600 font-medium">
-                        ↗ Auto-posts to Income & Accounts Receivable
-                    </div>
-                </div>
-
-                <!-- Purchase Module -->
-                <div class="module-card p-8 rounded-2xl hover-lift">
-                    <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl mb-6 flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17M17 13v4a2 2 0 01-2 2H9a2 2 0 01-2-2v-4m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-2xl font-bold text-green-800 mb-4">Purchase Management</h3>
-                    <p class="text-gray-600 mb-6">Requisitions, RFQs, Purchase Orders, Bills, Goods Receipt & Quality Assurance</p>
-                    <div class="text-sm text-green-600 font-medium">
-                        ↗ Records Expenses & Accounts Payable
-                    </div>
-                </div>
-
-                <!-- Products Module -->
-                <div class="module-card p-8 rounded-2xl hover-lift">
-                    <div class="w-16 h-16 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl mb-6 flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-2xl font-bold text-green-800 mb-4">Product Management</h3>
-                    <p class="text-gray-600 mb-6">Product Catalog, Categories, Variants, Tracking, Attributes & Performance</p>
-                    <div class="text-sm text-green-600 font-medium">
-                        ↗ Updates Product Assets & Inventory Valuation
-                    </div>
-                </div>
-
-                <!-- Inventory Module -->
-                <div class="module-card p-8 rounded-2xl hover-lift">
-                    <div class="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl mb-6 flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-2xl font-bold text-green-800 mb-4">Inventory Management</h3>
-                    <p class="text-gray-600 mb-6">Stock Items, Warehouses, Movements, Transfers, Physical Count & Lot Tracking</p>
-                    <div class="text-sm text-green-600 font-medium">
-                        ↗ Updates Inventory Assets & COGS
-                    </div>
-                </div>
-
-                <!-- Accounting Module -->
-                <div class="module-card p-8 rounded-2xl hover-lift">
-                    <div class="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl mb-6 flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-2xl font-bold text-green-800 mb-4">Accounting Core</h3>
-                    <p class="text-gray-600 mb-6">Chart of Accounts, Journal Entries, General Ledger, Balance Sheet & P&L</p>
-                    <div class="text-sm text-green-600 font-medium">
-                        ↗ Central Hub for All Financial Data
-                    </div>
-                </div>
-
-                <!-- HR Module -->
-                <div class="module-card p-8 rounded-2xl hover-lift">
-                    <div class="w-16 h-16 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl mb-6 flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-2xl font-bold text-green-800 mb-4">Human Resources</h3>
-                    <p class="text-gray-600 mb-6">Employees, Attendance, Leave, Payroll, Performance & Recruitment</p>
-                    <div class="text-sm text-green-600 font-medium">
-                        ↗ Allocates Labor Costs & Benefits
-                    </div>
-                </div>
-
-                <!-- Manufacturing Module -->
-                <div class="module-card p-8 rounded-2xl hover-lift">
-                    <div class="w-16 h-16 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-xl mb-6 flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-2xl font-bold text-green-800 mb-4">Manufacturing</h3>
-                    <p class="text-gray-600 mb-6">Bill of Materials, Work Orders, Production Planning & MRP</p>
-                    <div class="text-sm text-green-600 font-medium">
-                        ↗ Manages WIP & Manufacturing Costs
-                    </div>
-                </div>
-
-                <!-- Project Management Module -->
-                <div class="module-card p-8 rounded-2xl hover-lift">
-                    <div class="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl mb-6 flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-2xl font-bold text-green-800 mb-4">Project Management</h3>
-                    <p class="text-gray-600 mb-6">Projects, Tasks, Milestones, Time Tracking, Team & Documents</p>
-                    <div class="text-sm text-green-600 font-medium">
-                        ↗ Tracks Project P&L & Asset Allocation
-                    </div>
-                </div>
-
-                <!-- Analytics Module -->
-                <div class="module-card p-8 rounded-2xl hover-lift">
-                    <div class="w-16 h-16 bg-gradient-to-r from-pink-500 to-rose-600 rounded-xl mb-6 flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-2xl font-bold text-green-800 mb-4">Analytics & Reports</h3>
-                    <p class="text-gray-600 mb-6">Sales Analytics, Customer Analytics, Financial Overview & Business Intelligence</p>
-                    <div class="text-sm text-green-600 font-medium">
-                        ↗ Real-time Business Intelligence & KPIs
-                    </div>
-                </div>
-
-                <!-- Settings Module -->
-                <div class="module-card p-8 rounded-2xl hover-lift">
-                    <div class="w-16 h-16 bg-gradient-to-r from-gray-500 to-slate-600 rounded-xl mb-6 flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-2xl font-bold text-green-800 mb-4">System Settings</h3>
-                    <p class="text-gray-600 mb-6">Company Settings, User Management, Configurations & System Administration</p>
-                    <div class="text-sm text-green-600 font-medium">
-                        ↗ Central Configuration & Security
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Key Features Section -->
-    <section class="py-20 bg-white">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="text-center mb-16">
-                <h2 class="text-5xl font-bold text-green-800 mb-6">Advanced Features</h2>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    Enterprise-grade capabilities designed for modern businesses
-                </p>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <!-- Real-time Integration -->
-                <div class="text-center">
-                    <div class="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl mx-auto mb-6 flex items-center justify-center">
-                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-bold text-green-800 mb-3">Real-time Integration</h3>
-                    <p class="text-gray-600">All modules automatically sync with accounting in real-time</p>
-                </div>
-
-                <!-- Multi-currency Support -->
-                <div class="text-center">
-                    <div class="w-20 h-20 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl mx-auto mb-6 flex items-center justify-center">
-                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-bold text-green-800 mb-3">Multi-currency</h3>
-                    <p class="text-gray-600">Handle multiple currencies with automatic exchange rate updates</p>
-                </div>
-
-                <!-- Advanced Reporting -->
-                <div class="text-center">
-                    <div class="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl mx-auto mb-6 flex items-center justify-center">
-                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-bold text-green-800 mb-3">Advanced Reporting</h3>
-                    <p class="text-gray-600">Comprehensive financial reports with drill-down capabilities</p>
-                </div>
-
-                <!-- Mobile Ready -->
-                <div class="text-center">
-                    <div class="w-20 h-20 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl mx-auto mb-6 flex items-center justify-center">
-                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-bold text-green-800 mb-3">Mobile Ready</h3>
-                    <p class="text-gray-600">Responsive design works perfectly on all devices</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Financial Dashboard Preview -->
-    <section class="py-20 bg-white">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="text-center mb-16">
-                <h2 class="text-5xl font-bold text-green-800 mb-6">Real-Time Financial Dashboard</h2>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    Live financial insights with automated journal entries from all business modules
-                </p>
-            </div>
-            
-            <div class="glass-effect rounded-3xl p-8 green-glow">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-                    <div class="text-center">
-                        <div class="text-4xl font-bold text-green-600 mb-2">₨ 2.4M</div>
-                        <div class="text-gray-600">Total Assets</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-4xl font-bold text-blue-600 mb-2">₨ 1.8M</div>
-                        <div class="text-gray-600">Monthly Revenue</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-4xl font-bold text-purple-600 mb-2">24%</div>
-                        <div class="text-gray-600">Profit Margin</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-4xl font-bold text-orange-600 mb-2">156</div>
-                        <div class="text-gray-600">Active Projects</div>
+                    <div class="status-panel">
+                        <div class="status-value">AI</div>
+                        <div class="status-label">Powered</div>
+                        <div class="status-bar"></div>
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div class="bg-white rounded-2xl p-6">
-                        <h4 class="text-xl font-bold text-green-800 mb-4">Balance Sheet Summary</h4>
-                        <div class="space-y-3">
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Current Assets</span>
-                                <span class="font-semibold">₨ 1,200,000</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Fixed Assets</span>
-                                <span class="font-semibold">₨ 1,200,000</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Current Liabilities</span>
-                                <span class="font-semibold">₨ 800,000</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Owner's Equity</span>
-                                <span class="font-semibold">₨ 1,600,000</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white rounded-2xl p-6">
-                        <h4 class="text-xl font-bold text-green-800 mb-4">P&L Overview</h4>
-                        <div class="space-y-3">
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Sales Revenue</span>
-                                <span class="font-semibold text-green-600">₨ 1,800,000</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Cost of Goods Sold</span>
-                                <span class="font-semibold text-red-600">₨ 900,000</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Operating Expenses</span>
-                                <span class="font-semibold text-red-600">₨ 468,000</span>
-                            </div>
-                            <div class="flex justify-between border-t pt-3">
-                                <span class="text-gray-800 font-bold">Net Profit</span>
-                                <span class="font-bold text-green-600">₨ 432,000</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-2xl p-6">
-                        <h4 class="text-xl font-bold text-green-800 mb-4">Key Metrics</h4>
-                        <div class="space-y-3">
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Active Customers</span>
-                                <span class="font-semibold text-green-600">1,245</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Inventory Items</span>
-                                <span class="font-semibold text-blue-600">3,567</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Employees</span>
-                                <span class="font-semibold text-purple-600">89</span>
-                            </div>
-                            <div class="flex justify-between border-t pt-3">
-                                <span class="text-gray-800 font-bold">System Uptime</span>
-                                <span class="font-bold text-green-600">99.9%</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="mt-8 text-center">
-                    <button class="bg-green-600 text-white px-8 py-3 rounded-full font-bold hover:bg-green-700 transition-all" onclick="window.location.href='{% url 'login' %}'">
-                        Access Your Dashboard
+                <!-- Action Interface -->
+                <div class="action-interface flex flex-col md:flex-row gap-6 justify-center items-center">
+                    <button class="neural-btn primary-neural" data-action="dashboard">
+                        <span class="btn-text">Initialize Dashboard</span>
+                        <div class="btn-energy"></div>
+                    </button>
+                    <button class="neural-btn secondary-neural" data-action="explore">
+                        <span class="btn-text">Explore Architecture</span>
+                        <div class="btn-energy"></div>
                     </button>
                 </div>
             </div>
         </div>
+
+        <!-- Scroll Indicator -->
+        <div class="scroll-indicator absolute bottom-8 left-1/2 transform -translate-x-1/2">
+            <div class="scroll-arrow"></div>
+            <span class="scroll-text text-green-400 text-sm">Discover Our Ecosystem</span>
+        </div>
+    </section>
+
+    <!-- ERP Universe Overview -->
+    <section class="universe-section relative py-32 overflow-hidden bg-gray-50">
+        <div class="universe-bg absolute inset-0"></div>
+        
+        <div class="max-w-7xl mx-auto px-6 relative z-10">
+            <div class="text-center mb-20">
+                <h2 class="universe-title text-4xl md:text-6xl font-bold text-white mb-6">
+                    The <span class="accounting-highlight">ERP</span> Universe
+                </h2>
+                <p class="universe-subtitle text-xl text-gray-400 max-w-3xl mx-auto">
+                    Explore interconnected business modules that power your enterprise
+                </p>
+            </div>
+
+            <!-- Central Hub Visualization -->
+            <div class="erp-galaxy relative h-[80vh]  overflow-hidden">
+                <div class="central-hub absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <div class="hub-core">
+                        <span class="hub-label">CORE</span>
+                    </div>
+                </div>
+                
+                <!-- Orbiting Modules - All Core Apps -->
+                <div class="module-orbit orbit-1" data-orbit="1">
+                    <div class="orbit-module" data-module="accounting">
+                        <i class="fas fa-calculator"></i>
+                        <span>Accounting</span>
+                    </div>
+                </div>
+                <div class="module-orbit orbit-2" data-orbit="2">
+                    <div class="orbit-module" data-module="products">
+                        <i class="fas fa-cube"></i>
+                        <span>Products</span>
+                    </div>
+                </div>
+                <div class="module-orbit orbit-3" data-orbit="3">
+                    <div class="orbit-module" data-module="sales">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Sales</span>
+                    </div>
+                </div>
+                
+                <div class="module-orbit orbit-4" data-orbit="4">
+                    <div class="orbit-module" data-module="inventory">
+                        <i class="fas fa-boxes"></i>
+                        <span>Inventory</span>
+                    </div>
+                </div>
+                
+                <div class="module-orbit orbit-5" data-orbit="5">
+                    <div class="orbit-module" data-module="crm">
+                        <i class="fas fa-users"></i>
+                        <span>CRM</span>
+                    </div>
+                </div>
+
+                <div class="module-orbit orbit-6" data-orbit="6">
+                    <div class="orbit-module" data-module="hr">
+                        <i class="fas fa-user-tie"></i>
+                        <span>HR</span>
+                    </div>
+                </div>
+
+                <div class="module-orbit orbit-7" data-orbit="7">
+                    <div class="orbit-module" data-module="manufacturing">
+                        <i class="fas fa-industry"></i>
+                        <span>Manufacturing</span>
+                    </div>
+                </div>
+                <div class="module-orbit orbit-8" data-orbit="8">
+                    <div class="orbit-module" data-module="purchase">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Purchase</span>
+                    </div>
+                </div>
+
+                <div class="module-orbit orbit-9" data-orbit="9">
+                    <div class="orbit-module" data-module="project_mgmt">
+                        <i class="fas fa-project-diagram"></i>
+                        <span>Projects</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modules Matrix -->
+    <section class="modules-matrix-section relative py-32 overflow-hidden bg-black">
+        <div class="matrix-bg absolute inset-0"></div>
+        
+        <div class="max-w-7xl mx-auto px-6 relative z-10">
+            <div class="text-center mb-20">
+                <h2 class="matrix-title text-4xl md:text-6xl font-bold text-white mb-6">
+                    Business <span class="accounting-highlight">Matrix</span>
+                </h2>
+                <p class="matrix-subtitle text-xl text-gray-400 max-w-3xl mx-auto">
+                    12 Interconnected Modules Working in Perfect Harmony
+                </p>
+            </div>
+
+            <!-- 3D Module Grid -->
+            <div class="modules-grid-3d">
+                <!-- Row 1: Core Business -->
+                <div class="module-row" data-row="1">
+                    <div class="module-cube" data-module="crm" data-category="business">
+                        <div class="cube-face front">
+                            <div class="module-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h3>Customer Relations</h3>
+                            <div class="data-flow">
+                                <span>→ Sales Revenue</span>
+                                <span>→ Receivables</span>
+                            </div>
+                        </div>
+                        <div class="cube-face back">
+                            <div class="module-details">
+                                <p>Leads • Opportunities • Partners</p>
+                                <p>Campaigns • Communications</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="module-cube" data-module="sales" data-category="business">
+                        <div class="cube-face front">
+                            <div class="module-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h3>Sales Engine</h3>
+                            <div class="data-flow">
+                                <span>→ Income Accounts</span>
+                                <span>→ Inventory Updates</span>
+                            </div>
+                        </div>
+                        <div class="cube-face back">
+                            <div class="module-details">
+                                <p>Quotations • Orders • Invoices</p>
+                                <p>Delivery • Payments • Analytics</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="module-cube" data-module="purchase" data-category="business">
+                        <div class="cube-face front">
+                            <div class="module-icon">
+                                <i class="fas fa-truck"></i>
+                            </div>
+                            <h3>Purchase Control</h3>
+                            <div class="data-flow">
+                                <span>→ Expense Accounts</span>
+                                <span>→ Payables</span>
+                            </div>
+                        </div>
+                        <div class="cube-face back">
+                            <div class="module-details">
+                                <p>RFQs • Purchase Orders • Bills</p>
+                                <p>Quality Assurance • Receipts</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="module-cube" data-module="inventory" data-category="business">
+                        <div class="cube-face front">
+                            <div class="module-icon">
+                                <i class="fas fa-boxes"></i>
+                            </div>
+                            <h3>Smart Inventory</h3>
+                            <div class="data-flow">
+                                <span>→ Asset Values</span>
+                                <span>→ COGS Updates</span>
+                            </div>
+                        </div>
+                        <div class="cube-face back">
+                            <div class="module-details">
+                                <p>Stock • Warehouses • Movements</p>
+                                <p>Lot Tracking • Physical Count</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 2: Operations -->
+                <div class="module-row" data-row="2">
+                    <div class="module-cube" data-module="manufacturing" data-category="operations">
+                        <div class="cube-face front">
+                            <div class="module-icon">
+                                <i class="fas fa-industry"></i>
+                            </div>
+                            <h3>Manufacturing</h3>
+                            <div class="data-flow">
+                                <span>→ Work-in-Progress</span>
+                                <span>→ Labor Costs</span>
+                            </div>
+                        </div>
+                        <div class="cube-face back">
+                            <div class="module-details">
+                                <p>BOMs • Work Orders • Quality</p>
+                                <p>Resource Planning • Routing</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="module-cube" data-module="accounting" data-category="operations">
+                        <div class="cube-face front">
+                            <div class="module-icon">
+                                <i class="fas fa-calculator"></i>
+                            </div>
+                            <h3>Accounting Core</h3>
+                            <div class="data-flow">
+                                <span>→ Financial Hub</span>
+                                <span>→ All Transactions</span>
+                            </div>
+                        </div>
+                        <div class="cube-face back">
+                            <div class="module-details">
+                                <p>Chart of Accounts • Journals</p>
+                                <p>Balance Sheet • P&L • Reports</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="module-cube" data-module="hr" data-category="operations">
+                        <div class="cube-face front">
+                            <div class="module-icon">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <h3>Human Resources</h3>
+                            <div class="data-flow">
+                                <span>→ Payroll Expenses</span>
+                                <span>→ Benefits</span>
+                            </div>
+                        </div>
+                        <div class="cube-face back">
+                            <div class="module-details">
+                                <p>Employees • Payroll • Attendance</p>
+                                <p>Performance • Training</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="module-cube" data-module="projects" data-category="operations">
+                        <div class="cube-face front">
+                            <div class="module-icon">
+                                <i class="fas fa-project-diagram"></i>
+                            </div>
+                            <h3>Project Management</h3>
+                            <div class="data-flow">
+                                <span>→ Project Costs</span>
+                                <span>→ Revenue Recognition</span>
+                            </div>
+                        </div>
+                        <div class="cube-face back">
+                            <div class="module-details">
+                                <p>Tasks • Timesheets • Budgets</p>
+                                <p>Milestones • Resources</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 3: Intelligence -->
+                <div class="module-row" data-row="3">
+                    <div class="module-cube" data-module="analytics" data-category="intelligence">
+                        <div class="cube-face front">
+                            <div class="module-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <h3>Business Intelligence</h3>
+                            <div class="data-flow">
+                                <span>→ Real-time Insights</span>
+                                <span>→ Predictive Analytics</span>
+                            </div>
+                        </div>
+                        <div class="cube-face back">
+                            <div class="module-details">
+                                <p>KPIs • Dashboards • Reports</p>
+                                <p>Forecasting • Trends</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="module-cube" data-module="quality" data-category="intelligence">
+                        <div class="cube-face front">
+                            <div class="module-icon">
+                                <i class="fas fa-award"></i>
+                            </div>
+                            <h3>Quality Assurance</h3>
+                            <div class="data-flow">
+                                <span>→ Quality Costs</span>
+                                <span>→ Compliance</span>
+                            </div>
+                        </div>
+                        <div class="cube-face back">
+                            <div class="module-details">
+                                <p>Standards • Inspections • Audits</p>
+                                <p>Certifications • NCRs</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="module-cube" data-module="compliance" data-category="intelligence">
+                        <div class="cube-face front">
+                            <div class="module-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <h3>Compliance Engine</h3>
+                            <div class="data-flow">
+                                <span>→ Regulatory Reports</span>
+                                <span>→ Tax Calculations</span>
+                            </div>
+                        </div>
+                        <div class="cube-face back">
+                            <div class="module-details">
+                                <p>Regulations • Audits • Reports</p>
+                                <p>Tax Management • Documentation</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="module-cube" data-module="warehouse" data-category="intelligence">
+                        <div class="cube-face front">
+                            <div class="module-icon">
+                                <i class="fas fa-warehouse"></i>
+                            </div>
+                            <h3>Warehouse Management</h3>
+                            <div class="data-flow">
+                                <span>→ Location Tracking</span>
+                                <span>→ Optimization</span>
+                            </div>
+                        </div>
+                        <div class="cube-face back">
+                            <div class="module-details">
+                                <p>Locations • Picking • Packing</p>
+                                <p>Shipping • Receiving • Cycle Count</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Flow Visualization -->
+            <div class="data-flows mt-20">
+                <div class="flow-title text-center mb-12">
+                    <h3 class="text-3xl font-bold text-white mb-4">Interactive Data <span class="accounting-highlight">Flow Chart</span></h3>
+                    <p class="text-gray-400 max-w-2xl mx-auto">Explore real-time data synchronization between modules in your ERP ecosystem.</p>
+                </div>
+                
+                <!-- Interactive Drag & Drop Flow Chart -->
+                <div class="interactive-chart-container bg-white rounded-2xl shadow-lg border border-green-100 overflow-hidden">
+                    <div class="chart-background"></div>
+                    <svg id="erpFlowChart" viewBox="0 0 1200 600" style="width: 100%; height: 600px;">
+                        <defs>
+                            <linearGradient id="centralGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#065f46;stop-opacity:1" />
+                            </linearGradient>
+                            
+                            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                                <feMerge> 
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        
+                        <!-- Connections will be drawn here -->
+                        <g id="connections"></g>
+                        
+                        <!-- Pulse rings for central node -->
+                        <g id="pulseRings">
+                            <circle class="pulse-ring" cx="600" cy="300" r="40">
+                                <animate attributeName="r" values="40;80;40" dur="3s" repeatCount="indefinite"/>
+                                <animate attributeName="opacity" values="0.6;0;0.6" dur="3s" repeatCount="indefinite"/>
+                            </circle>
+                            <circle class="pulse-ring" cx="600" cy="300" r="40">
+                                <animate attributeName="r" values="40;80;40" dur="3s" begin="1.5s" repeatCount="indefinite"/>
+                                <animate attributeName="opacity" values="0.6;0;0.6" dur="3s" begin="1.5s" repeatCount="indefinite"/>
+                            </circle>
+                        </g>
+                        
+                        <!-- Nodes -->
+                        <g id="nodes"></g>
+                    </svg>
+                    
+                    <!-- Interactive Controls -->
+                    <div class="chart-controls p-6 bg-gray-50 border-t border-green-100">
+                        <div class="flex flex-wrap justify-center gap-4">
+                            <button class="control-btn" onclick="resetPositions()">
+                                <i class="fas fa-undo mr-2"></i>
+                                Reset Layout
+                            </button>
+                            <button class="control-btn" onclick="toggleAnimations()">
+                                <i class="fas fa-play mr-2"></i>
+                                Toggle Animations
+                            </button>
+                            <button class="control-btn" onclick="randomizeLayout()">
+                                <i class="fas fa-random mr-2"></i>
+                                Randomize
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                {% comment %} <!-- Enhanced Flow Information -->
+                <div class="flow-info mt-8">
+                    <div class="info-cards grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="info-card bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
+                            <div class="flex items-center mb-3">
+                                <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-mouse-pointer text-white text-sm"></i>
+                                </div>
+                                <h4 class="font-bold text-gray-900">Interactive Drag & Drop</h4>
+                            </div>
+                            <p class="text-gray-600 text-sm">Drag any node to see real-time connection updates and explore data flow patterns.</p>
+                        </div>
+                        
+                        <div class="info-card bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
+                            <div class="flex items-center mb-3">
+                                <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-project-diagram text-white text-sm"></i>
+                                </div>
+                                <h4 class="font-bold text-gray-900">Curved Connectors</h4>
+                            </div>
+                            <p class="text-gray-600 text-sm">Beautiful curved connections show data flow relationships with smooth animations.</p>
+                        </div>
+                        
+                        <div class="info-card bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-200">
+                            <div class="flex items-center mb-3">
+                                <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-sync-alt text-white text-sm"></i>
+                                </div>
+                                <h4 class="font-bold text-gray-900">Real-Time Updates</h4>
+                            </div>
+                            <p class="text-gray-600 text-sm">Connections automatically update as you move nodes, demonstrating live data synchronization.</p>
+                        </div>
+                    </div> {% endcomment %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Financial Architecture -->
+    <section class="financial-architecture-section relative py-32 overflow-hidden">
+        <div class="architecture-bg absolute inset-0"></div>
+        
+        <div class="max-w-7xl mx-auto px-6 relative z-10">
+            <div class="text-center mb-20">
+                <h2 class="architecture-title text-4xl md:text-6xl font-bold text-white mb-6">
+                    Financial <span class="accounting-highlight">Architecture</span>
+                </h2>
+                <p class="architecture-subtitle text-xl text-gray-400 max-w-3xl mx-auto">
+                    Complete Chart of Accounts with Real-Time Integration
+                </p>
+            </div>
+
+            <!-- Financial Pyramid -->
+            <div class="financial-pyramid">
+                <!-- Assets -->
+                <div class="pyramid-level level-1" data-category="assets">
+                    <div class="level-header">
+                        <h3>ASSETS</h3>
+                        <div class="level-indicator"></div>
+                    </div>
+                    <div class="account-types">
+                        <div class="account-type" data-type="current-assets">
+                            <i class="fas fa-coins"></i>
+                            <span>Current Assets</span>
+                        </div>
+                        
+                        <div class="account-type" data-type="fixed-assets">
+                            <i class="fas fa-building"></i>
+                            <span>Fixed Assets</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Liabilities -->
+                <div class="pyramid-level level-2" data-category="liabilities">
+                    <div class="level-header">
+                        <h3>LIABILITIES</h3>
+                        <div class="level-indicator"></div>
+                    </div>
+                    <div class="account-types">
+                        <div class="account-type" data-type="current-liabilities">
+                            <i class="fas fa-credit-card"></i>
+                            <span>Current Liabilities</span>
+                        </div>
+                        <div class="account-type" data-type="long-term-liabilities">
+                            <i class="fas fa-file-contract"></i>
+                            <span>Long-term Liabilities</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Equity -->
+                <div class="pyramid-level level-3" data-category="equity">
+                    <div class="level-header">
+                        <h3>EQUITY</h3>
+                        <div class="level-indicator"></div>
+                    </div>
+                    <div class="account-types">
+                        <div class="account-type" data-type="capital">
+                            <i class="fas fa-balance-scale"></i>
+                            <span>Owner's Capital</span>
+                        </div>
+                        <div class="account-type" data-type="retained-earnings">
+                            <i class="fas fa-piggy-bank"></i>
+                            <span>Retained Earnings</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Income -->
+                <div class="pyramid-level level-4" data-category="income">
+                    <div class="level-header">
+                        <h3>INCOME</h3>
+                        <div class="level-indicator"></div>
+                    </div>
+                    <div class="account-types">
+                        <div class="account-type" data-type="revenue">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Revenue Streams</span>
+                        </div>
+                        <div class="account-type" data-type="other-income">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Other Income</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expenses -->
+                <div class="pyramid-level level-5" data-category="expenses">
+                    <div class="level-header">
+                        <h3>EXPENSES</h3>
+                        <div class="level-indicator"></div>
+                    </div>
+                    <div class="account-types">
+                        <div class="account-type" data-type="operating-expenses">
+                            <i class="fas fa-cogs"></i>
+                            <span>Operating Expenses</span>
+                        </div>
+                        <div class="account-type" data-type="cost-of-sales">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span>Cost of Sales</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="cta-section relative py-32 overflow-hidden bg-green-50">
+        <div class="cta-bg absolute inset-0"></div>
+        
+        <div class="max-w-4xl mx-auto px-6 text-center relative z-10">
+            <h2 class="cta-title text-4xl md:text-6xl font-bold text-gray-900 mb-8">
+                Ready to <span class="accounting-highlight">Transform</span> Your Business?
+            </h2>
+            <p class="cta-subtitle text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
+                Join the future of enterprise management with our next-generation ERP system
+            </p>
+            
+            <div class="cta-actions flex flex-col md:flex-row gap-6 justify-center items-center">
+                <button class="neural-btn cta-primary">
+                    <span class="btn-text">Start Your Journey</span>
+                    <div class="btn-energy"></div>
+                </button>
+                <button class="neural-btn cta-secondary">
+                    <span class="btn-text">Schedule Demo</span>
+                    <div class="btn-energy"></div>
+                </button>
+            </div>
+        </div>
     </section>
 {% endblock %}
-   
-{% block scripts %}
-    <script>
-        // Add smooth scrolling and interactive effects
-        document.addEventListener('DOMContentLoaded', function() {
-            // Animate elements on scroll
-            const observerOptions = {
-                threshold: 0.1,
-                rootMargin: '0px 0px -50px 0px'
-            };
-
-            const observer = new IntersectionObserver(function(entries) {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.style.opacity = '1';
-                        entry.target.style.transform = 'translateY(0)';
-                    }
-                });
-            }, observerOptions);
-
-            // Observe all module cards
-            document.querySelectorAll('.module-card').forEach(card => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(30px)';
-                card.style.transition = 'all 0.6s ease-out';
-                observer.observe(card);
-            });
-
-            // Add click effects to buttons
-            document.querySelectorAll('button').forEach(button => {
-                button.addEventListener('click', function(e) {
-                    // Create ripple effect
-                    const ripple = document.createElement('span');
-                    const rect = this.getBoundingClientRect();
-                    const size = Math.max(rect.width, rect.height);
-                    const x = e.clientX - rect.left - size / 2;
-                    const y = e.clientY - rect.top - size / 2;
-                    
-                    ripple.style.width = ripple.style.height = size + 'px';
-                    ripple.style.left = x + 'px';
-                    ripple.style.top = y + 'px';
-                    ripple.classList.add('ripple');
-                    
-                    this.appendChild(ripple);
-                    
-                    setTimeout(() => {
-                        ripple.remove();
-                    }, 600);
-                });
-            });
-
-            // Add parallax effect to hero section
-            window.addEventListener('scroll', function() {
-                const scrolled = window.pageYOffset;
-                const rate = scrolled * -0.5;
-                
-                const heroFloatingElements = document.querySelectorAll('.floating');
-                heroFloatingElements.forEach((element, index) => {
-                    const speed = 0.2 + (index * 0.1);
-                    element.style.transform = `translateY(${rate * speed}px)`;
-                });
-            });
-
-            // Add dynamic counter animation for financial metrics
-            function animateCounters() {
-                const counters = document.querySelectorAll('.text-4xl');
-                counters.forEach(counter => {
-                    const target = counter.textContent;
-                    const numericValue = parseFloat(target.replace(/[^\d.]/g, ''));
-                    
-                    if (numericValue) {
-                        let current = 0;
-                        const increment = numericValue / 100;
-                        const timer = setInterval(() => {
-                            current += increment;
-                            if (current >= numericValue) {
-                                current = numericValue;
-                                clearInterval(timer);
-                            }
-                            
-                            if (target.includes('₨')) {
-                                counter.textContent = `₨ ${current.toFixed(1)}M`;
-                            } else if (target.includes('%')) {
-                                counter.textContent = `${Math.round(current)}%`;
-                            }
-                        }, 20);
-                    }
-                });
-            }
-
-            // Trigger counter animation when dashboard comes into view
-            const dashboardObserver = new IntersectionObserver(function(entries) {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        animateCounters();
-                        dashboardObserver.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.5 });
-
-            const dashboard = document.querySelector('.glass-effect');
-            if (dashboard) {
-                dashboardObserver.observe(dashboard);
-            }
-
-            // Add hover effects for module cards
-            document.querySelectorAll('.module-card').forEach(card => {
-                card.addEventListener('mouseenter', function() {
-                    this.style.boxShadow = '0 25px 50px rgba(16, 185, 129, 0.15)';
-                });
-                
-                card.addEventListener('mouseleave', function() {
-                    this.style.boxShadow = '';
-                });
-            });
-
-            // Smooth navigation
-            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const target = document.querySelector(this.getAttribute('href'));
-                    if (target) {
-                        target.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'start'
-                        });
-                    }
-                });
-            });
-        });
-    </script>
-{% endblock %}    
 {% block extra_css %}
     <style>
-        .ripple {
-            position: absolute;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.6);
-            transform: scale(0);
-            animation: ripple-animation 0.6s linear;
+        /* Import Futuristic Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;700&display=swap');
+        
+        /* Global Variables - Matching FutureERP Theme */
+        :root {
+            --primary-green: #10b981;
+            --secondary-green: #065f46;
+            --accent-green: #34d399;
+            --light-green: #6ee7b7;
+            --dark-bg: #000000;
+            --darker-bg: #050505;
+            --grid-color: rgba(16, 185, 129, 0.1);
+            --glow-primary: 0 0 20px rgba(16, 185, 129, 0.5);
+            --glow-secondary: 0 0 20px rgba(16, 185, 129, 0.3);
+        }
+
+        /* Base Styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            overflow-x: hidden;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            background: black;
+            background-image: 
+                radial-gradient(circle at bottom left, rgba(21, 196, 129, 0.57) 0%, rgba(0, 0, 0, 0) 40%),
+                radial-gradient(circle at center, rgba(21, 196, 129, 0.25) 0%, rgba(0, 0, 0, 0) 60%),
+                radial-gradient(circle at 80%, rgba(21, 196, 129, 0.25) 0%, rgba(0, 0, 0, 0) 30%);
+            background-blend-mode: screen;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .holographic-grid {
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.3;
+            animation: gridPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes gridPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Particle Nebula */
+        #particle-nebula {
             pointer-events: none;
         }
 
-        @keyframes ripple-animation {
-            to {
-                transform: scale(4);
+        .particle {
+            position: absolute;
+            background: var(--primary-green);
+            border-radius: 50%;
+            opacity: 0.8;
+            filter: blur(1px);
+        }
+
+        /* Data Nodes */
+        .data-nodes {
+            pointer-events: none;
+        }
+
+        .data-node {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border: 2px solid var(--primary-green);
+            border-radius: 50%;
+            background: rgba(16, 185, 129, 0.1);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--primary-green);
+            font-size: 12px;
+            animation: nodeFloat 6s ease-in-out infinite;
+        }
+
+        .data-node::before {
+            content: attr(data-module);
+        }
+
+        .node-1 { top: 15%; left: 10%; animation-delay: 0s; }
+        .node-2 { top: 25%; right: 15%; animation-delay: 1s; }
+        .node-3 { bottom: 30%; left: 20%; animation-delay: 2s; }
+        .node-4 { bottom: 20%; right: 25%; animation-delay: 3s; }
+        .node-5 { top: 45%; left: 50%; animation-delay: 4s; }
+
+        @keyframes nodeFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-20px) rotate(120deg); }
+            66% { transform: translateY(10px) rotate(240deg); }
+        }
+
+        /* Hero Typography */
+        .hero-main-title {
+            font-family: 'Inter', sans-serif;
+            font-weight: 900;
+            text-shadow: var(--glow-primary);
+            opacity: 0;
+        }
+
+        .title-word {
+            display: inline-block;
+        }
+
+        .hero-sub-title {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            opacity: 0;
+        }
+
+        .holographic-text {
+            background: linear-gradient(45deg, 
+                var(--primary-green), 
+                var(--accent-green), 
+                var(--light-green),
+                var(--primary-green));
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: holographicShift 3s ease-in-out infinite;
+        }
+
+        @keyframes holographicShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .hero-mission {
+            transition: opacity 0.8s ease;
+        }
+
+        /* System Status Panels */
+        .system-status {
+            opacity: 0;
+        }
+
+        .status-panel {
+            background: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary-green), transparent);
+            animation: statusScan 3s linear infinite;
+        }
+
+        .status-value {
+            font-family: 'Inter', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--primary-green);
+            text-shadow: var(--glow-primary);
+        }
+
+        .status-label {
+            color: #a0a0a0;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-bar {
+            height: 3px;
+            background: rgba(16, 185, 129, 0.2);
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .status-bar::after {
+            content: '';
+            display: block;
+            height: 100%;
+            background: var(--primary-green);
+            width: 0%;
+            border-radius: 2px;
+            animation: statusProgress 2s ease-out forwards;
+        }
+
+        @keyframes statusScan {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        @keyframes statusProgress {
+            to { width: 100%; }
+        }
+
+        /* Neural Buttons */
+        .neural-btn {
+            position: relative;
+            padding: 16px 32px;
+            background: transparent;
+            border: 2px solid var(--primary-green);
+            border-radius: 50px;
+            color: var(--primary-green);
+            font-weight: bold;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+
+        .neural-btn:hover {
+            color: #000;
+            box-shadow: var(--glow-primary);
+            transform: translateY(-2px);
+        }
+
+        .btn-energy {
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, var(--primary-green), transparent);
+            transition: left 0.5s;
+        }
+
+        .neural-btn:hover .btn-energy {
+            left: 100%;
+        }
+
+        .btn-text {
+            position: relative;
+            z-index: 2;
+        }
+
+        .primary-neural {
+            background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
+            color: #fff;
+            border: none;
+        }
+
+        .primary-neural:hover {
+            background: transparent;
+            border: 2px solid var(--primary-green);
+            color: var(--primary-green);
+        }
+
+        /* Scroll Indicator */
+        .scroll-indicator {
+            opacity: 0;
+            animation: fadeInUp 1s ease 3s forwards;
+        }
+
+        .scroll-arrow {
+            width: 20px;
+            height: 20px;
+            border-right: 2px solid var(--primary-green);
+            border-bottom: 2px solid var(--primary-green);
+            transform: rotate(45deg);
+            margin: 0 auto 10px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0) rotate(45deg); }
+            40% { transform: translateY(-10px) rotate(45deg); }
+            60% { transform: translateY(-5px) rotate(45deg); }
+        }
+
+        .scroll-text {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Universe Section */
+        .universe-section {
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+        }
+
+        .universe-bg {
+            background-color: rgba(0, 0, 0);
+            background-image: 
+                radial-gradient(circle at 20% 10%, rgba(10, 70, 47, 0.57) 0%, rgba(0, 0, 0, 0) 40%),
+                radial-gradient(circle at 20% 80%, rgba(7, 82, 53, 0.25) 0%, rgba(0, 0, 0, 0) 60%),
+                radial-gradient(circle at 40% 60%, rgba(6, 29, 20, 0.57) 0%, rgba(0, 0, 0, 0) 40%);
+        }
+
+        .universe-title, .universe-subtitle {
+            opacity: 0;
+        }
+
+        /* ERP Galaxy */
+        .erp-galaxy {
+            position: relative;
+            perspective: 1000px;
+            max-width: 100%;
+            overflow: visible;
+        }
+
+        .central-hub {
+            width: 120px;
+            height: 120px;
+            z-index: 10;
+        }
+
+        .hub-core {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, var(--primary-green) 0%, var(--secondary-green) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 900;
+            font-family: 'Inter', sans-serif;
+            animation: hubPulse 3s ease-in-out infinite;
+            box-shadow: 0 0 40px var(--primary-green);
+        }
+
+        @keyframes hubPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .module-orbit {
+            position: absolute;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 50%;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+        }
+
+        .orbit-1 {
+            width: 200px;
+            height: 200px;
+            top: 50%;
+            left: 50%;
+            margin: -100px 0 0 -100px;
+            animation: orbit 20s linear infinite;
+        }
+
+        .orbit-2 {
+            width: 280px;
+            height: 280px;
+            top: 50%;
+            left: 50%;
+            margin: -140px 0 0 -140px;
+            animation: orbit 30s linear infinite reverse;
+        }
+
+        .orbit-3 {
+            width: 360px;
+            height: 360px;
+            top: 50%;
+            left: 50%;
+            margin: -180px 0 0 -180px;
+            animation: orbit 40s linear infinite;
+        }
+
+        .orbit-4 {
+            width: 440px;
+            height: 440px;
+            top: 50%;
+            left: 50%;
+            margin: -220px 0 0 -220px;
+            animation: orbit 50s linear infinite reverse;
+        }
+
+        .orbit-5 {
+            width: 520px;
+            height: 520px;
+            top: 50%;
+            left: 50%;
+            margin: -260px 0 0 -260px;
+            animation: orbit 60s linear infinite;
+        }
+
+        .orbit-6 {
+            width: 600px;
+            height: 600px;
+            top: 50%;
+            left: 50%;
+            margin: -300px 0 0 -300px;
+            animation: orbit 70s linear infinite reverse;
+        }
+
+        .orbit-7 {
+            width: 680px;
+            height: 680px;
+            top: 50%;
+            left: 50%;
+            margin: -340px 0 0 -340px;
+            animation: orbit 80s linear infinite;
+        }
+
+        .orbit-8 {
+            width: 760px;
+            height: 760px;
+            top: 50%;
+            left: 50%;
+            margin: -380px 0 0 -380px;
+            animation: orbit 90s linear infinite reverse;
+        }
+
+        .orbit-9 {
+            width: 840px;
+            height: 840px;
+            top: 50%;
+            left: 50%;
+            margin: -420px 0 0 -420px;
+            animation: orbit 100s linear infinite;
+        }
+
+        .orbit-10 {
+            width: 920px;
+            height: 920px;
+            top: 50%;
+            left: 50%;
+            margin: -460px 0 0 -460px;
+            animation: orbit 110s linear infinite reverse;
+        }
+
+        .orbit-11 {
+            width: 1000px;
+            height: 1000px;
+            top: 50%;
+            left: 50%;
+            margin: -500px 0 0 -500px;
+            animation: orbit 120s linear infinite;
+        }
+
+        .orbit-12 {
+            width: 1080px;
+            height: 1080px;
+            top: 50%;
+            left: 50%;
+            margin: -540px 0 0 -540px;
+            animation: orbit 130s linear infinite reverse;
+        }
+
+        @keyframes orbit {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .orbit-module {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            margin-left: -30px;
+            width: 60px;
+            height: 60px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 2px solid var(--primary-green);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-green);
+            font-size: 0.7rem;
+            font-weight: bold;
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .orbit-module:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 20px var(--primary-green);
+        }
+
+        .orbit-module i {
+            font-size: 1.2rem;
+            margin-bottom: 2px;
+        }
+
+        /* Responsive orbit scaling */
+        @media (max-width: 1024px) {
+            .orbit-5, .orbit-6, .orbit-7, .orbit-8, .orbit-9, .orbit-10, .orbit-11, .orbit-12 {
+                display: none; /* Hide outer orbits on smaller screens */
+            }
+        }
+
+        @media (max-width: 768px) {
+            .erp-galaxy {
+                height: 400px !important;
+            }
+            
+            .central-hub {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .hub-core {
+                font-size: 0.7rem;
+            }
+            
+            .orbit-3, .orbit-4 {
+                display: none; /* Show only first 2 orbits on mobile */
+            }
+            
+            .orbit-1 {
+                width: 160px;
+                height: 160px;
+                margin: -80px 0 0 -80px;
+            }
+            
+            .orbit-2 {
+                width: 220px;
+                height: 220px;
+                margin: -110px 0 0 -110px;
+            }
+            
+            .orbit-module {
+                width: 50px;
+                height: 50px;
+                top: -25px;
+                margin-left: -25px;
+                font-size: 0.6rem;
+            }
+            
+            .orbit-module i {
+                font-size: 1rem;
+            }
+        }
+
+        /* Modules Matrix Section */
+        .modules-matrix-section {
+            background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+        }
+
+        .matrix-bg {
+            background-color: black;
+            background-image: 
+                radial-gradient(circle at bottom left, rgba(21, 196, 129, 0.57) 0%, rgba(0, 0, 0, 0) 40%),
+                radial-gradient(circle at center, rgba(21, 196, 129, 0.25) 0%, rgba(0, 0, 0, 0) 60%),
+                radial-gradient(circle at 80%, rgba(21, 196, 129, 0.25) 0%, rgba(0, 0, 0, 0) 30%);
+      
+           
+        }
+
+        @keyframes matrixMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(20px, 20px); }
+        }
+
+        .matrix-title, .matrix-subtitle {
+            opacity: 0;
+        }
+
+        /* 3D Module Grid */
+        .modules-grid-3d {
+            perspective: 1200px;
+            transform-style: preserve-3d;
+        }
+
+        .module-row {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 40px;
+            opacity: 0;
+        }
+
+        .module-cube {
+            width: 280px;
+            height: 200px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+        }
+
+        .module-cube:hover {
+            transform: rotateY(180deg);
+        }
+
+        .cube-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            backface-visibility: hidden;
+        }
+
+        .cube-face.front {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(240, 253, 244, 1));
+            border: 1px solid rgba(16, 185, 129, 0.1);
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .cube-face.front:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 35px rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .cube-face.back {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(129, 255, 166, 0.9));
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.1);
+            transform: rotateY(180deg);
+        }
+
+        .module-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, var(--primary-green), var(--accent-green));
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+        }
+
+        .module-icon i {
+            font-size: 2rem;
+            color: #fff;
+        }
+
+        .cube-face h3 {
+            color: #1f2937;
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .data-flow {
+            margin-top: 15px;
+        }
+
+        .data-flow span {
+            display: block;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .data-flow span {
+            display: block;
+            color: #a0a0a0;
+            font-size: 0.8rem;
+            margin: 2px 0;
+            animation: dataFlicker 2s ease-in-out infinite;
+        }
+
+        @keyframes dataFlicker {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        .module-details p {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin: 5px 0;
+        }
+
+        /* Interactive Flow Chart Styles */
+        .interactive-chart-container {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            pointer-events: none;
+        }
+
+        #erpFlowChart {
+            cursor: grab;
+            border-radius: 15px;
+        }
+
+        .node {
+            cursor: move;
+            transition: all 0.2s ease;
+        }
+
+        .node:hover {
+            filter: drop-shadow(0 8px 16px rgba(16, 185, 129, 0.3));
+        }
+
+        .node.dragging {
+            cursor: grabbing;
+            filter: drop-shadow(0 12px 24px rgba(16, 185, 129, 0.4));
+        }
+
+        .node-circle {
+            fill: white;
+            stroke: #10b981;
+            stroke-width: 3;
+        }
+
+        .central-node .node-circle {
+            fill: url(#centralGradient);
+            stroke: #065f46;
+            stroke-width: 4;
+        }
+
+        .node-icon {
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            text-anchor: middle;
+            dominant-baseline: central;
+            fill: #10b981;
+            font-size: 24px;
+        }
+
+        .central-node .node-icon {
+            fill: white;
+            font-size: 28px;
+        }
+
+        .node-label {
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            text-anchor: middle;
+            dominant-baseline: central;
+            fill: #374151;
+            font-size: 12px;
+        }
+
+        .central-node .node-label {
+            fill: white;
+            font-size: 14px;
+        }
+
+        .connection {
+            fill: none;
+            stroke: #10b981;
+            stroke-width: 2;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .connection-animated {
+            stroke-dasharray: 5,5;
+            animation: flowAnimation 3s linear infinite;
+        }
+
+        @keyframes flowAnimation {
+            0% { stroke-dashoffset: 0; }
+            100% { stroke-dashoffset: 20; }
+        }
+
+        .pulse-ring {
+            fill: none;
+            stroke: #10b981;
+            stroke-width: 2;
+            opacity: 0.6;
+            animation: pulseRing 2s ease-out infinite;
+        }
+
+        @keyframes pulseRing {
+            0% {
+                r: 40;
+                opacity: 0.6;
+            }
+            100% {
+                r: 80;
                 opacity: 0;
             }
         }
 
-        /* Additional responsive improvements */
+        .chart-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            background: linear-gradient(135deg, #10b981, #065f46);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .info-cards {
+            margin-top: 32px;
+        }
+
+        .info-card {
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Responsive adjustments */
         @media (max-width: 768px) {
-            .text-6xl {
+            .flow-network {
+                height: 500px;
+            }
+            
+            .hub-circle {
+                width: 80px;
+                height: 80px;
+                font-size: 0.7rem;
+            }
+            
+            .hub-circle i {
+                font-size: 1.5rem;
+                margin-bottom: 4px;
+            }
+            
+            .flow-node {
+                width: 60px;
+                height: 60px;
+                font-size: 0.6rem;
+            }
+            
+            .node-icon i {
+                font-size: 1rem;
+            }
+            
+            .info-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Financial Architecture */
+        .financial-architecture-section {
+            background: radial-gradient(circle at 25% 25%, #000000ff 0%, rgba(8, 32, 24, 1) 100%);
+        }
+
+        .architecture-bg {
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(16, 185, 129, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(52, 211, 153, 0.05) 0%, transparent 50%);
+        }
+
+        .architecture-title, .architecture-subtitle {
+            opacity: 0;
+        }
+
+        /* Financial Pyramid */
+        .financial-pyramid {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .pyramid-level {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(20px);
+            opacity: 0;
+            transform: translateY(50px);
+        }
+
+        .level-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+
+        .level-header h3 {
+            font-family: 'Inter', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--primary-green);
+            text-shadow: var(--glow-primary);
+        }
+
+        .level-indicator {
+            width: 10px;
+            height: 10px;
+            background: var(--primary-green);
+            border-radius: 50%;
+            animation: levelPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes levelPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.5); }
+        }
+
+        .account-types {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .account-type {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 15px;
+            min-width: 150px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .account-type:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+        }
+
+        .account-type i {
+            font-size: 2rem;
+            color: var(--primary-green);
+            margin-bottom: 10px;
+        }
+
+        .account-type span {
+            color: #a0a0a0;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* Initial hidden states for scroll animations */
+        .matrix-title,
+        .matrix-subtitle,
+        .module-row,
+        .module-cube,
+        .architecture-title,
+        .architecture-subtitle,
+        .pyramid-level,
+        .account-type,
+        .flow-title h3,
+        .flow-title p,
+        .interactive-chart-container,
+        .info-card {
+            opacity: 0;
+        }
+
+        .matrix-title {
+            transform: scale(0.8);
+        }
+
+        .matrix-subtitle {
+            transform: translateY(30px);
+        }
+
+        .module-row {
+            transform: translateY(100px) rotateX(15deg);
+        }
+
+        .module-cube {
+            transform: scale(0.8) rotateY(45deg);
+        }
+
+        .architecture-title {
+            transform: rotateY(90deg);
+        }
+
+        .architecture-subtitle {
+            transform: translateX(-50px);
+        }
+
+        .pyramid-level {
+            transform: translateY(50px) scale(0.9);
+        }
+
+        .account-type {
+            transform: translateX(-30px);
+        }
+
+        .flow-title h3 {
+            transform: translateY(30px);
+        }
+
+        .flow-title p {
+            transform: translateY(20px);
+        }
+
+        .interactive-chart-container {
+            transform: scale(0.95);
+        }
+
+        .info-card {
+            transform: translateY(30px);
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        }
+
+        .cta-bg {
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.1) 0%, transparent 70%);
+        }
+
+        .cta-title, .cta-subtitle {
+            opacity: 0;
+        }
+
+        .cta-actions {
+            opacity: 0;
+        }
+
+        .cta-primary {
+            background: linear-gradient(45deg, var(--primary-green), var(--accent-green));
+            color: #fff;
+            border: none;
+        }
+
+        .cta-secondary {
+            border-color: var(--primary-green);
+            color: var(--primary-green);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero-main-title {
                 font-size: 3rem;
             }
             
-            .text-8xl {
-                font-size: 4rem;
+            .hero-sub-title {
+                font-size: 2rem;
             }
             
-            .module-card {
-                padding: 1.5rem;
+            .module-row {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .modules-grid-3d {
+                perspective: 800px;
+            }
+            
+            .module-cube {
+                width: 100%;
+                max-width: 300px;
             }
         }
 
-        /* Enhanced green glow effect for Pakistan theme */
-        .green-glow:hover {
-            box-shadow: 0 0 40px rgba(16, 185, 129, 0.4);
+        /* Utility Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        /* Star field background for hero */
-        .gradient-bg::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: 
-                radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.3), transparent),
-                radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.2), transparent),
-                radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.4), transparent),
-                radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.3), transparent),
-                radial-gradient(2px 2px at 160px 30px, rgba(255,255,255,0.2), transparent);
-            background-repeat: repeat;
-            background-size: 200px 100px;
-            animation: sparkle 20s linear infinite;
-        }
-
-        @keyframes sparkle {
-            from { transform: translateX(0); }
-            to { transform: translateX(200px); }
+        .fade-in-up {
+            animation: fadeInUp 0.8s ease forwards;
         }
     </style>
+{% endblock %}
+
+{% block extra_js %}
+    <!-- Prevent base template sidebar errors -->
+    <script>
+        // Override base template functions before they load
+        window.addEventListener('DOMContentLoaded', function() {
+            // Prevent sidebar-related errors by providing safe implementations
+            if (!document.getElementById('sidebar')) {
+                window.updateSidebarState = function() { return; };
+                window.toggleSidebar = function() { return; };
+                window.handleResize = function() { return; };
+            }
+        });
+    </script>
+
+    <!-- Anime.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script>
+        // Comprehensive error prevention
+        window.addEventListener('error', function(e) {
+            if (e.message && (
+                e.message.includes('sidebar') || 
+                e.message.includes('classList') || 
+                e.message.includes('Cannot read properties of null') ||
+                e.message.includes('updateSidebarState') ||
+                e.message.includes('handleResize')
+            )) {
+                console.warn('Prevented base template error:', e.message);
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                // Add safety checks to prevent errors
+                if (typeof anime === 'undefined') {
+                    console.warn('Anime.js not loaded');
+                    return;
+                }
+            
+            // Create particle nebula
+            function createParticleNebula() {
+                const nebula = document.getElementById('particle-nebula');
+                if (!nebula) return;
+                
+                for (let i = 0; i < 100; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.top = Math.random() * 100 + '%';
+                    particle.style.width = Math.random() * 4 + 2 + 'px';
+                    particle.style.height = particle.style.width;
+                    particle.style.animationDelay = Math.random() * 10 + 's';
+                    particle.style.animationDuration = (Math.random() * 20 + 10) + 's';
+                    nebula.appendChild(particle);
+                    
+                    // Animate particles
+                    anime({
+                        targets: particle,
+                        translateX: () => anime.random(-100, 100),
+                        translateY: () => anime.random(-100, 100),
+                        scale: [0, 1, 0],
+                        opacity: [0, 1, 0],
+                        duration: () => anime.random(3000, 8000),
+                        delay: () => anime.random(0, 5000),
+                        loop: true,
+                        easing: 'easeInOutSine'
+                    });
+                }
+            }
+
+            // Hero section animations
+            function initHeroAnimations() {
+                // Title words animation
+                anime.timeline()
+                    .add({
+                        targets: '.hero-main-title',
+                        opacity: [0, 1],
+                        duration: 1000,
+                        easing: 'easeOutQuad'
+                    })
+                    .add({
+                        targets: '.title-word',
+                        translateY: [100, 0],
+                        rotateZ: [10, 0],
+                        opacity: [0, 1],
+                        duration: 800,
+                        delay: anime.stagger(200),
+                        easing: 'easeOutElastic(1, .8)'
+                    }, '-=500')
+                    .add({
+                        targets: '.hero-sub-title',
+                        opacity: [0, 1],
+                        scale: [0.8, 1],
+                        duration: 1000,
+                        easing: 'easeOutElastic(1, .6)'
+                    }, '-=400')
+                    .add({
+                        targets: '.hero-mission',
+                        opacity: [0, 1],
+                        translateY: [30, 0],
+                        duration: 800,
+                        easing: 'easeOutQuad'
+                    }, '-=200')
+                    .add({
+                        targets: '.system-status',
+                        opacity: [0, 1],
+                        translateY: [50, 0],
+                        duration: 1000,
+                        easing: 'easeOutBack'
+                    }, '-=400')
+                    .add({
+                        targets: '.neural-btn',
+                        opacity: [0, 1],
+                        scale: [0.8, 1],
+                        duration: 600,
+                        delay: anime.stagger(200),
+                        easing: 'easeOutBack'
+                    }, '-=200');
+
+                // Counter animation
+                const counters = document.querySelectorAll('.counter');
+                counters.forEach(counter => {
+                    const target = parseInt(counter.getAttribute('data-target'));
+                    anime({
+                        targets: { count: 0 },
+                        count: target,
+                        duration: 2000,
+                        delay: 2000,
+                        round: 1,
+                        easing: 'easeOutExpo',
+                        update: function(anim) {
+                            counter.textContent = Math.round(anim.animatables[0].target.count);
+                        }
+                    });
+                });
+            }
+
+            // Scroll-triggered animations (animate only once)
+            function initScrollAnimations() {
+                // Universe section
+                const universeObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            anime.timeline()
+                                .add({
+                                    targets: '.universe-title',
+                                    opacity: [0, 1],
+                                    translateY: [50, 0],
+                                    duration: 1000,
+                                    easing: 'easeOutQuad'
+                                })
+                                .add({
+                                    targets: '.universe-subtitle',
+                                    opacity: [0, 1],
+                                    translateY: [30, 0],
+                                    duration: 800,
+                                    easing: 'easeOutQuad'
+                                }, '-=500');
+                            
+                            // Disconnect observer after first animation
+                            universeObserver.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.3 });
+
+                // Business Matrix section (animate only once)
+                const matrixObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            anime.timeline()
+                                .add({
+                                    targets: '.matrix-title',
+                                    opacity: [0, 1],
+                                    scale: [0.8, 1],
+                                    duration: 1000,
+                                    easing: 'easeOutElastic(1, .8)'
+                                })
+                                .add({
+                                    targets: '.matrix-subtitle',
+                                    opacity: [0, 1],
+                                    translateY: [30, 0],
+                                    duration: 800,
+                                    easing: 'easeOutQuad'
+                                }, '-=500')
+                                .add({
+                                    targets: '.module-row',
+                                    opacity: [0, 1],
+                                    translateY: [100, 0],
+                                    rotateX: [15, 0],
+                                    duration: 1200,
+                                    delay: anime.stagger(300),
+                                    easing: 'easeOutElastic(1, .6)'
+                                }, '-=200')
+                                .add({
+                                    targets: '.module-cube',
+                                    opacity: [0, 1],
+                                    scale: [0.8, 1],
+                                    rotateY: [45, 0],
+                                    duration: 800,
+                                    delay: anime.stagger(100, {start: 500}),
+                                    easing: 'easeOutBack'
+                                }, '-=800');
+                            
+                            // Disconnect observer after first animation
+                            matrixObserver.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.2 });
+
+                // Financial Architecture section (animate only once)
+                const financeObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            anime.timeline()
+                                .add({
+                                    targets: '.architecture-title',
+                                    opacity: [0, 1],
+                                    rotateY: [90, 0],
+                                    duration: 1000,
+                                    easing: 'easeOutElastic(1, .8)'
+                                })
+                                .add({
+                                    targets: '.architecture-subtitle',
+                                    opacity: [0, 1],
+                                    translateX: [-50, 0],
+                                    duration: 800,
+                                    easing: 'easeOutQuad'
+                                }, '-=500')
+                                .add({
+                                    targets: '.pyramid-level',
+                                    opacity: [0, 1],
+                                    translateY: [50, 0],
+                                    scale: [0.9, 1],
+                                    duration: 800,
+                                    delay: anime.stagger(200),
+                                    easing: 'easeOutBack'
+                                }, '-=200')
+                                .add({
+                                    targets: '.account-type',
+                                    opacity: [0, 1],
+                                    translateX: [-30, 0],
+                                    duration: 600,
+                                    delay: anime.stagger(50, {start: 800}),
+                                    easing: 'easeOutQuad'
+                                }, '-=400');
+                            
+                            // Disconnect observer after first animation
+                            financeObserver.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.3 });
+
+                // Data Flow section (animate only once)
+                const dataFlowObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            anime.timeline()
+                                .add({
+                                    targets: '.flow-title h3',
+                                    opacity: [0, 1],
+                                    translateY: [30, 0],
+                                    duration: 800,
+                                    easing: 'easeOutQuad'
+                                })
+                                .add({
+                                    targets: '.flow-title p',
+                                    opacity: [0, 1],
+                                    translateY: [20, 0],
+                                    duration: 600,
+                                    easing: 'easeOutQuad'
+                                }, '-=400')
+                                .add({
+                                    targets: '.interactive-chart-container',
+                                    opacity: [0, 1],
+                                    scale: [0.95, 1],
+                                    duration: 1000,
+                                    easing: 'easeOutBack'
+                                }, '-=200')
+                                .add({
+                                    targets: '.info-card',
+                                    opacity: [0, 1],
+                                    translateY: [30, 0],
+                                    duration: 600,
+                                    delay: anime.stagger(150),
+                                    easing: 'easeOutQuad'
+                                }, '-=500');
+                            
+                            // Disconnect observer after first animation
+                            dataFlowObserver.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.2 });
+
+                // CTA section
+                const ctaObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            anime.timeline()
+                                .add({
+                                    targets: '.cta-title',
+                                    opacity: [0, 1],
+                                    scale: [0.8, 1],
+                                    duration: 1000,
+                                    easing: 'easeOutElastic(1, .8)'
+                                })
+                                .add({
+                                    targets: '.cta-subtitle',
+                                    opacity: [0, 1],
+                                    translateY: [30, 0],
+                                    duration: 800,
+                                    easing: 'easeOutQuad'
+                                }, '-=500')
+                                .add({
+                                    targets: '.cta-actions',
+                                    opacity: [0, 1],
+                                    translateY: [50, 0],
+                                    duration: 1000,
+                                    easing: 'easeOutBack'
+                                }, '-=400');
+                            
+                            // Disconnect observer after first animation
+                            ctaObserver.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.5 });
+
+                // Observe sections
+                const universeSection = document.querySelector('.universe-section');
+                const matrixSection = document.querySelector('.modules-matrix-section');
+                const financeSection = document.querySelector('.financial-architecture-section');
+                const dataFlowSection = document.querySelector('.data-flows');
+                const ctaSection = document.querySelector('.cta-section');
+
+                if (universeSection) universeObserver.observe(universeSection);
+                if (matrixSection) matrixObserver.observe(matrixSection);
+                if (financeSection) financeObserver.observe(financeSection);
+                if (dataFlowSection) dataFlowObserver.observe(dataFlowSection);
+                if (ctaSection) ctaObserver.observe(ctaSection);
+            }
+
+            // Interactive elements
+            function initInteractions() {
+                // Neural button effects
+                document.querySelectorAll('.neural-btn').forEach(btn => {
+                    btn.addEventListener('mouseenter', () => {
+                        anime({
+                            targets: btn,
+                            scale: 1.05,
+                            duration: 300,
+                            easing: 'easeOutQuad'
+                        });
+                    });
+
+                    btn.addEventListener('mouseleave', () => {
+                        anime({
+                            targets: btn,
+                            scale: 1,
+                            duration: 300,
+                            easing: 'easeOutQuad'
+                        });
+                    });
+                });
+
+                // Module cube interactions
+                document.querySelectorAll('.module-cube').forEach(cube => {
+                    cube.addEventListener('mouseenter', () => {
+                        anime({
+                            targets: cube,
+                            scale: 1.05,
+                            rotateY: 10,
+                            duration: 300,
+                            easing: 'easeOutQuad'
+                        });
+                    });
+
+                    cube.addEventListener('mouseleave', () => {
+                        anime({
+                            targets: cube,
+                            scale: 1,
+                            rotateY: 0,
+                            duration: 300,
+                            easing: 'easeOutQuad'
+                        });
+                    });
+                });
+
+                // Data node hover effects
+                document.querySelectorAll('.data-node').forEach(node => {
+                    node.addEventListener('mouseenter', () => {
+                        anime({
+                            targets: node,
+                            scale: 1.2,
+                            rotateZ: 180,
+                            duration: 400,
+                            easing: 'easeOutElastic(1, .6)'
+                        });
+                    });
+
+                    node.addEventListener('mouseleave', () => {
+                        anime({
+                            targets: node,
+                            scale: 1,
+                            rotateZ: 0,
+                            duration: 400,
+                            easing: 'easeOutElastic(1, .6)'
+                        });
+                    });
+                });
+            }
+
+            // Initialize all functions
+            createParticleNebula();
+            initHeroAnimations();
+            initScrollAnimations();
+            initInteractions();
+
+            // Performance optimization - reduce animations on smaller screens
+            const mediaQuery = window.matchMedia('(max-width: 768px)');
+            if (mediaQuery.matches) {
+                // Disable some heavy animations on mobile
+                if (anime.speed) anime.speed = 1.5; // Speed up animations
+            }
+
+            // Prevent sidebar errors from base template
+            window.addEventListener('error', function(e) {
+                if (e.message && (e.message.includes('sidebar') || e.message.includes('classList') || e.message.includes('style'))) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+
+            // Override problematic base template functions
+            window.updateSidebarState = function() {
+                // Safe implementation for index page
+                return;
+            };
+
+            window.handleResize = function() {
+                // Safe implementation for index page
+                return;
+            };
+
+            window.toggleSidebar = function() {
+                // Safe implementation for index page
+                return;
+            };
+
+            // Override any problematic variables
+            window.sidebar = null;
+            window.sidebarToggle = null;
+            window.mainContent = null;
+            window.sidebarOverlay = null;
+            window.isCollapsed = false;
+
+            // Prevent base template sidebar initialization
+            if (typeof toggleSidebar !== 'undefined') {
+                window.toggleSidebar = function() { return; };
+            }
+
+            // Initialize Interactive Flow Chart
+            initInteractiveFlowChart();
+
+            } catch (error) {
+                console.warn('Index page script error caught and handled:', error);
+            }
+        });
+
+        // Interactive Flow Chart Implementation
+        function initInteractiveFlowChart() {
+            // Node data configuration for ERP modules
+            const nodeData = [
+                { id: 'central', x: 600, y: 300, icon: '\uf1c0', label: 'Central DB', isCentral: true },
+                { id: 'sales', x: 200, y: 100, icon: '\uf201', label: 'Sales' },
+                { id: 'inventory', x: 1000, y: 100, icon: '\uf466', label: 'Inventory' },
+                { id: 'accounting', x: 600, y: 500, icon: '\uf1ec', label: 'Accounting' },
+                { id: 'crm', x: 100, y: 300, icon: '\uf0c0', label: 'CRM' },
+                { id: 'purchase', x: 1100, y: 300, icon: '\uf07a', label: 'Purchase' },
+                { id: 'hr', x: 600, y: 100, icon: '\uf508', label: 'HR' },
+                { id: 'manufacturing', x: 300, y: 200, icon: '\uf275', label: 'Manufacturing' },
+                { id: 'projects', x: 900, y: 400, icon: '\uf542', label: 'Projects' }
+            ];
+
+            let isDragging = false;
+            let dragNode = null;
+            let animationsEnabled = true;
+            let nodes = [];
+
+            // Initialize the flowchart
+            function initFlowChart() {
+                const nodesGroup = document.getElementById('nodes');
+                const connectionsGroup = document.getElementById('connections');
+                
+                if (!nodesGroup || !connectionsGroup) return;
+                
+                // Create nodes
+                nodeData.forEach(nodeInfo => {
+                    const node = createNode(nodeInfo);
+                    nodesGroup.appendChild(node);
+                    nodes.push({
+                        element: node,
+                        data: nodeInfo
+                    });
+                });
+
+                // Create connections
+                updateConnections();
+
+                // Add event listeners
+                addEventListeners();
+            }
+
+            // Create a node element
+            function createNode(nodeInfo) {
+                const node = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                node.classList.add('node');
+                if (nodeInfo.isCentral) {
+                    node.classList.add('central-node');
+                }
+                node.setAttribute('data-id', nodeInfo.id);
+                
+                const radius = nodeInfo.isCentral ? 50 : 40;
+                
+                // Node circle
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.classList.add('node-circle');
+                circle.setAttribute('cx', nodeInfo.x);
+                circle.setAttribute('cy', nodeInfo.y);
+                circle.setAttribute('r', radius);
+                
+                if (nodeInfo.isCentral) {
+                    circle.setAttribute('fill', 'url(#centralGradient)');
+                }
+                
+                // Node icon
+                const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                icon.classList.add('node-icon');
+                icon.setAttribute('x', nodeInfo.x);
+                icon.setAttribute('y', nodeInfo.y - 5);
+                icon.textContent = nodeInfo.icon;
+                
+                // Node label
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.classList.add('node-label');
+                label.setAttribute('x', nodeInfo.x);
+                label.setAttribute('y', nodeInfo.y + radius + 20);
+                label.textContent = nodeInfo.label;
+                
+                node.appendChild(circle);
+                node.appendChild(icon);
+                node.appendChild(label);
+                
+                return node;
+            }
+
+            // Create curved path between two points
+            function createCurvedPath(x1, y1, x2, y2) {
+                const midX = (x1 + x2) / 2;
+                const midY = (y1 + y2) / 2;
+                
+                // Calculate control points for smooth curves
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Adjust curve intensity based on distance
+                const curvature = Math.min(distance * 0.3, 100);
+                
+                // Control points perpendicular to the line
+                const controlX = midX + dy * curvature / distance;
+                const controlY = midY - dx * curvature / distance;
+                
+                return `M ${x1} ${y1} Q ${controlX} ${controlY} ${x2} ${y2}`;
+            }
+
+            // Update all connections
+            function updateConnections() {
+                const connectionsGroup = document.getElementById('connections');
+                if (!connectionsGroup) return;
+                
+                connectionsGroup.innerHTML = '';
+                
+                const centralNode = nodes.find(n => n.data.isCentral);
+                if (!centralNode) return;
+                
+                const centralX = parseFloat(centralNode.element.querySelector('circle').getAttribute('cx'));
+                const centralY = parseFloat(centralNode.element.querySelector('circle').getAttribute('cy'));
+                
+                nodes.forEach(node => {
+                    if (node.data.isCentral) return;
+                    
+                    const nodeX = parseFloat(node.element.querySelector('circle').getAttribute('cx'));
+                    const nodeY = parseFloat(node.element.querySelector('circle').getAttribute('cy'));
+                    
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.classList.add('connection');
+                    if (animationsEnabled) {
+                        path.classList.add('connection-animated');
+                    }
+                    path.setAttribute('d', createCurvedPath(centralX, centralY, nodeX, nodeY));
+                    
+                    connectionsGroup.appendChild(path);
+                });
+            }
+
+            // Add event listeners for drag functionality
+            function addEventListeners() {
+                const svg = document.getElementById('erpFlowChart');
+                if (!svg) return;
+                
+                svg.addEventListener('mousedown', startDrag);
+                svg.addEventListener('mousemove', drag);
+                svg.addEventListener('mouseup', endDrag);
+                svg.addEventListener('mouseleave', endDrag);
+                
+                // Touch events for mobile
+                svg.addEventListener('touchstart', startDrag);
+                svg.addEventListener('touchmove', drag);
+                svg.addEventListener('touchend', endDrag);
+            }
+
+            // Start dragging
+            function startDrag(e) {
+                e.preventDefault();
+                const target = e.target.closest('.node');
+                if (!target) return;
+                
+                isDragging = true;
+                dragNode = target;
+                target.classList.add('dragging');
+                
+                // Bring dragged node to front
+                target.parentNode.appendChild(target);
+            }
+
+            // Handle dragging
+            function drag(e) {
+                if (!isDragging || !dragNode) return;
+                
+                e.preventDefault();
+                
+                const svg = document.getElementById('erpFlowChart');
+                const rect = svg.getBoundingClientRect();
+                const svgX = svg.viewBox.baseVal.width;
+                const svgY = svg.viewBox.baseVal.height;
+                
+                let clientX, clientY;
+                if (e.type === 'touchmove') {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                } else {
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                }
+                
+                const x = ((clientX - rect.left) / rect.width) * svgX;
+                const y = ((clientY - rect.top) / rect.height) * svgY;
+                
+                // Constrain to SVG bounds
+                const constrainedX = Math.max(50, Math.min(svgX - 50, x));
+                const constrainedY = Math.max(50, Math.min(svgY - 50, y));
+                
+                // Update node position
+                const circle = dragNode.querySelector('circle');
+                const icon = dragNode.querySelector('.node-icon');
+                const label = dragNode.querySelector('.node-label');
+                
+                circle.setAttribute('cx', constrainedX);
+                circle.setAttribute('cy', constrainedY);
+                icon.setAttribute('x', constrainedX);
+                icon.setAttribute('y', constrainedY - 5);
+                label.setAttribute('x', constrainedX);
+                
+                const radius = circle.getAttribute('r');
+                label.setAttribute('y', constrainedY + parseFloat(radius) + 20);
+                
+                // Update connections in real-time
+                updateConnections();
+            }
+
+            // End dragging
+            function endDrag(e) {
+                if (dragNode) {
+                    dragNode.classList.remove('dragging');
+                    dragNode = null;
+                }
+                isDragging = false;
+            }
+
+            // Global functions for controls
+            window.resetPositions = function() {
+                nodes.forEach(node => {
+                    const originalData = nodeData.find(d => d.id === node.data.id);
+                    const circle = node.element.querySelector('circle');
+                    const icon = node.element.querySelector('.node-icon');
+                    const label = node.element.querySelector('.node-label');
+                    
+                    circle.setAttribute('cx', originalData.x);
+                    circle.setAttribute('cy', originalData.y);
+                    icon.setAttribute('x', originalData.x);
+                    icon.setAttribute('y', originalData.y - 5);
+                    label.setAttribute('x', originalData.x);
+                    
+                    const radius = circle.getAttribute('r');
+                    label.setAttribute('y', originalData.y + parseFloat(radius) + 20);
+                });
+                
+                updateConnections();
+            };
+
+            window.toggleAnimations = function() {
+                animationsEnabled = !animationsEnabled;
+                const connections = document.querySelectorAll('.connection');
+                
+                connections.forEach(connection => {
+                    if (animationsEnabled) {
+                        connection.classList.add('connection-animated');
+                    } else {
+                        connection.classList.remove('connection-animated');
+                    }
+                });
+                
+                const btn = event.target.closest('.control-btn');
+                const icon = btn.querySelector('i');
+                icon.className = animationsEnabled ? 'fas fa-pause mr-2' : 'fas fa-play mr-2';
+            };
+
+            window.randomizeLayout = function() {
+                const svg = document.getElementById('erpFlowChart');
+                const width = svg.viewBox.baseVal.width;
+                const height = svg.viewBox.baseVal.height;
+                
+                nodes.forEach(node => {
+                    if (node.data.isCentral) return; // Keep central node in place
+                    
+                    const randomX = Math.random() * (width - 100) + 50;
+                    const randomY = Math.random() * (height - 100) + 50;
+                    
+                    const circle = node.element.querySelector('circle');
+                    const icon = node.element.querySelector('.node-icon');
+                    const label = node.element.querySelector('.node-label');
+                    
+                    // Update positions
+                    circle.setAttribute('cx', randomX);
+                    circle.setAttribute('cy', randomY);
+                    icon.setAttribute('x', randomX);
+                    icon.setAttribute('y', randomY - 5);
+                    label.setAttribute('x', randomX);
+                    
+                    const radius = circle.getAttribute('r');
+                    label.setAttribute('y', randomY + parseFloat(radius) + 20);
+                });
+                
+                updateConnections();
+            };
+
+            // Initialize the chart
+            initFlowChart();
+        }
+    </script>
 {% endblock %}
