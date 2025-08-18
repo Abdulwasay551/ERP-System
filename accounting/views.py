@@ -163,15 +163,14 @@ def accounts_add(request):
             balance_side = request.POST.get('balance_side', 'debit')
             is_active = request.POST.get('is_active') == 'on'
             
-            if not code or not name or not type_:
-                return JsonResponse({'success': False, 'error': 'Code, name, and type are required.'}, status=400)
+            if not all([code, name, type_, group_id]):
+                return JsonResponse({'success': False, 'error': 'Code, name, type, and group are required.'}, status=400)
             
-            # Get group if specified
-            group = None
-            if group_id:
-                group = AccountGroup.objects.filter(company=company, id=group_id).first()
-                if not group:
-                    return JsonResponse({'success': False, 'error': 'Group not found.'}, status=400)
+            # Get and validate group
+            try:
+                group = AccountGroup.objects.get(company=company, id=group_id, is_active=True)
+            except (ValueError, AccountGroup.DoesNotExist):
+                return JsonResponse({'success': False, 'error': 'Please select a valid account group.'}, status=400)
             
             # Check for duplicate code
             if Account.objects.filter(company=company, code=code).exists():
@@ -184,7 +183,7 @@ def accounts_add(request):
                 type=type_,
                 group=group,
                 description=description,
-                account_type=account_type,
+                account_type=type_,
                 balance_side=balance_side,
                 is_active=is_active
             )

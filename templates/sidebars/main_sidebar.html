@@ -2,9 +2,9 @@
 <!-- Main Dashboard Sidebar -->
 <div class="sidebar-content">
     <!-- Logo Section -->
-    <div class="sidebar-logo p-4 border-b border-white/20">
-        <div class="flex items-center space-x-3 min-h-[3rem]">
-            <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center flex-shrink-0 border border-white/30">
+    <div class="sidebar-logo p-3 border-b border-white/20 ">
+        <div class="flex items-center justify-center justify-self-center space-x-3 min-h-[3rem]">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 border border-white/30">
                 <img src="{% static 'logo.png' %}" alt="FutureERP Logo" class="w-10 h-10 rounded-full object-cover">
             </div>
             <span class="text-xl font-bold sidebar-text whitespace-nowrap text-white">FutureERP</span>
@@ -12,7 +12,7 @@
     </div>
 
     <!-- Navigation Items -->
-    <nav class="sidebar-nav flex-1 py-4 space-y-2 mt-2">
+    <nav class="sidebar-nav flex-1 py-4 space-y-2">
         <!-- Home -->
         <a href="/" class="sidebar-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
             <i class="fas fa-home sidebar-icon"></i>
