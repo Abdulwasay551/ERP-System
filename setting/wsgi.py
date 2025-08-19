@@ -18,7 +18,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'setting.settings')
 
 # Check if we're in a Vercel environment and static files need to be collected
-if os.environ.get('VERCEL') == True:
+if os.environ.get('VERCEL'):
     try:
         # Get the project directory
         project_dir = Path(__file__).parent.parent
