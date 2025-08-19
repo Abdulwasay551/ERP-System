@@ -515,6 +515,12 @@
             --emerald-800: #065f46;
             --emerald-900: #064e3b;
         }
+        .footer-bg{
+            background-image: linear-gradient(rgba(16, 185, 129, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.3) 1px, transparent 1px); background-size: 20px 20px;
+        }
+        .dark .footer-bg {
+            background-image: linear-gradient(rgba(0, 0, 0, 1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0, 0.5) 1px, transparent 1px);
+        }
     </style>
     {% block extra_css %}{% endblock %}
 
@@ -567,7 +573,7 @@
     <div id="sidebar-overlay" class="sidebar-overlay fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
     {% endif %}
     <!-- Header Navigation -->
-    <nav class="relative {% if public %}bg-gradient-to-r from-green-900/20 to-black/20 backdrop-blur-sm{%else%}gradient-bg-main{%endif%} w-full z-20 px-6 py-4">
+    <nav class="relative {% if public %}bg-gradient-to-r from-green-900 to-black backdrop-blur-sm{%else%}gradient-bg-main{%endif%} w-full z-20 px-6 py-4">
         <div class="max-w-7xl mx-auto flex items-center justify-between">
             <!-- Logo and Title -->
             <div class="flex items-center space-x-4">
@@ -610,10 +616,10 @@
     <div id="{% if user.is_authenticated %}main-content{% endif %}" class="{% if user.is_authenticated %}main-content{% else %}min-h-screen bg-gray-50 transition-all duration-300{% endif %}">
         {% block content %}{% endblock %}
     </div>    <!-- Footer -->
-    <footer class="bg-gradient-to-br from-green-900 via-green-800 to-emerald-900 text-white py-12 relative overflow-hidden">
+    <footer class="bg-gradient-to-br from-green-900 via-green-800 to-emerald-900 dark:bg-gradient-to-br dark:from-black dark:via-green-900/20 dark:to-green-900/20 text-white py-12 relative overflow-hidden">
         <!-- Subtle grid pattern overlay -->
-        <div class="absolute inset-0 opacity-10" style="background-image: linear-gradient(rgba(16, 185, 129, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.3) 1px, transparent 1px); background-size: 20px 20px;"></div>
-        
+        <div class="absolute inset-0 opacity-10 footer-bg"></div>
+
         <div class="max-w-7xl mx-auto px-6 relative z-10">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <div>
