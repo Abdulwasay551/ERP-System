@@ -2,29 +2,7 @@
 {% block title %}Purchase Dashboard | FutureERP{% endblock %}
 
 {% block extra_css %}
-<style>
-    .metric-card {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
-        border: 1px solid rgba(59, 130, 246, 0.2);
-        transition: all 0.3s ease;
-    }
-    .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
-    }
-    .activity-card {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 95, 70, 0.1));
-        border: 1px solid rgba(16, 185, 129, 0.2);
-    }
-    .quick-action-btn {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        transition: all 0.3s ease;
-    }
-    .quick-action-btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-    }
-</style>
+
 {% endblock %}
 
 {% block content %}
@@ -34,7 +12,7 @@
         <div class="flex justify-between items-center mb-8">
             <div>
                 <h1 class="text-4xl font-bold accounting-highlight mb-2">Purchase Dashboard</h1>
-                <p class="text-gray-600">Overview of purchase operations and key metrics</p>
+                <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400">Overview of purchase operations and key metrics</p>
             </div>
             <div class="flex gap-4">
                 <a href="{% url 'purchase:rfq_add' %}" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
@@ -43,13 +21,13 @@
                     </svg>
                     Create RFQ
                 </a>
-                <a href="{% url 'purchase:quotation_add' %}" class="action-btn bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                <a href="{% url 'purchase:quotation_add' %}" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                     Add Quotation
                 </a>
-                <a href="{% url 'purchase:purchaseorders_ui' %}" class="action-btn bg-gradient-to-r from-purple-500 to-pink-600 text-white px-6 py-3 rounded-2xl hover-lift">
+                <a href="{% url 'purchase:purchaseorders_ui' %}" class="quick-action-btn text-white px-6 py-3 rounded-2xl hover-lift">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                     </svg>
@@ -60,10 +38,10 @@
 
         <!-- Key Metrics -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="metric-card rounded-2xl p-6">
+            <div class="bg-green-100 dark:bg-green-900/20 rounded-2xl p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-600">Active Suppliers</p>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Active Suppliers</p>
                         <p class="text-3xl font-bold text-blue-600">{{ total_suppliers }}</p>
                     </div>
                     <div class="p-3 bg-blue-100 rounded-full">
@@ -74,10 +52,10 @@
                 </div>
             </div>
 
-            <div class="metric-card rounded-2xl p-6">
+            <div class="bg-green-100 dark:bg-green-900/20 rounded-2xl p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-600">Pending Requisitions</p>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Pending Requisitions</p>
                         <p class="text-3xl font-bold text-orange-600">{{ pending_requisitions }}</p>
                     </div>
                     <div class="p-3 bg-orange-100 rounded-full">
@@ -88,10 +66,10 @@
                 </div>
             </div>
 
-            <div class="metric-card rounded-2xl p-6">
+            <div class="bg-green-100 dark:bg-green-900/20 rounded-2xl p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-600">Pending Orders</p>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Pending Orders</p>
                         <p class="text-3xl font-bold text-purple-600">{{ pending_orders }}</p>
                     </div>
                     <div class="p-3 bg-purple-100 rounded-full">
@@ -102,10 +80,10 @@
                 </div>
             </div>
 
-            <div class="metric-card rounded-2xl p-6">
+            <div class="bg-green-100 dark:bg-green-900/20 rounded-2xl p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-600">Pending Invoices</p>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Pending Invoices</p>
                         <p class="text-3xl font-bold text-red-600">{{ pending_bills }}</p>
                     </div>
                     <div class="p-3 bg-red-100 rounded-full">
@@ -118,7 +96,7 @@
         </div>
 
         <!-- Monthly Statistics -->
-        <div class="activity-card rounded-2xl p-6 mb-8">
+        <div class="bg-green-100 dark:bg-green-900/10 rounded-2xl p-6 mb-8">
             <div class="flex items-center mb-4">
                 <svg class="w-6 h-6 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
@@ -135,23 +113,23 @@
             <!-- Recent Requisitions -->
             <div class="card-modern">
                 <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-xl font-semibold">Recent Requisitions</h3>
-                    <a href="{% url 'purchase:requisitions_ui' %}" class="text-blue-600 hover:text-blue-800 text-sm">View All →</a>
+                    <h3 class="text-xl font-semibold dark:text-white">Recent Requisitions</h3>
+                    <a href="{% url 'purchase:requisitions_ui' %}" class="text-green-600  text-sm dark:text-green-400 hover:text-green-800 dark:hover:text-green-300">View All →</a>
                 </div>
                 <div class="space-y-4">
                     {% for requisition in recent_requisitions %}
-                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-800/30 rounded-lg">
                         <div>
-                            <p class="font-medium">{{ requisition.pr_number }}</p>
-                            <p class="text-sm text-gray-600">{{ requisition.department|default:"No Department" }}</p>
+                            <p class="font-medium dark:text-white text-black">{{  requisition.pr_number }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ requisition.department|default:"No Department" }}</p>
                         </div>
                         <div class="text-right">
                             <span class="status-badge status-{{ requisition.status }}">{{ requisition.get_status_display }}</span>
-                            <p class="text-xs text-gray-500 mt-1">{{ requisition.created_at|date:"M d" }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-300 mt-1">{{ requisition.created_at|date:"M d" }}</p>
                         </div>
                     </div>
                     {% empty %}
-                    <p class="text-gray-500 text-center py-4">No recent requisitions</p>
+                    <p class="text-gray-500 dark:text-gray-300 text-center py-4">No recent requisitions</p>
                     {% endfor %}
                 </div>
             </div>
@@ -159,23 +137,23 @@
             <!-- Recent Purchase Orders -->
             <div class="card-modern">
                 <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-xl font-semibold">Recent Purchase Orders</h3>
-                    <a href="{% url 'purchase:purchaseorders_ui' %}" class="text-blue-600 hover:text-blue-800 text-sm">View All →</a>
+                    <h3 class="text-xl font-semibold dark:text-white">Recent Purchase Orders</h3>
+                    <a href="{% url 'purchase:purchaseorders_ui' %}" class="text-green-600 text-sm dark:text-green-400 hover:text-green-800 dark:hover:text-green-300">View All →</a>
                 </div>
                 <div class="space-y-4">
                     {% for order in recent_orders %}
-                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-800/30 rounded-lg">
                         <div>
-                            <p class="font-medium">{{ order.po_number }}</p>
-                            <p class="text-sm text-gray-600">{{ order.supplier.name }}</p>
+                            <p class="font-medium dark:text-white text-black">{{ order.po_number }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ order.supplier.name }}</p>
                         </div>
                         <div class="text-right">
                             <span class="status-badge status-{{ order.status }}">{{ order.get_status_display }}</span>
-                            <p class="text-xs text-gray-500 mt-1">${{ order.total_amount|floatformat:2 }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-300 mt-1">${{ order.total_amount|floatformat:2 }}</p>
                         </div>
                     </div>
                     {% empty %}
-                    <p class="text-gray-500 text-center py-4">No recent purchase orders</p>
+                    <p class="text-gray-500 dark:text-gray-300 text-center py-4">No recent purchase orders</p>
                     {% endfor %}
                 </div>
             </div>
@@ -183,23 +161,23 @@
             <!-- Recent Invoices -->
             <div class="card-modern">
                 <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-xl font-semibold">Recent Invoices</h3>
-                    <a href="{% url 'purchase:bills_ui' %}" class="text-blue-600 hover:text-blue-800 text-sm">View All →</a>
+                    <h3 class="text-xl font-semibold dark:text-white">Recent Invoices</h3>
+                    <a href="{% url 'purchase:bills_ui' %}" class="text-green-600 hover:text-green-800 text-sm dark:text-green-400 dark:hover:text-green-300">View All →</a>
                 </div>
                 <div class="space-y-4">
                     {% for bill in recent_bills %}
-                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-800/30 rounded-lg">
                         <div>
-                            <p class="font-medium">{{ bill.bill_number }}</p>
-                            <p class="text-sm text-gray-600">{{ bill.supplier.name }}</p>
+                            <p class="font-medium dark:text-white text-black ">{{ bill.bill_number }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ bill.supplier.name }}</p>
                         </div>
                         <div class="text-right">
-                            <span class="status-badge status-{{ bill.status }}">{{ bill.get_status_display }}</span>
-                            <p class="text-xs text-gray-500 mt-1">${{ bill.total_amount|floatformat:2 }}</p>
+                            <span class="status-badge text-black dark:text-white status-{{ bill.status }}">{{ bill.get_status_display }}</span>
+                            <p class="text-xs text-gray-500 dark:text-gray-300 mt-1">${{ bill.total_amount|floatformat:2 }}</p>
                         </div>
                     </div>
                     {% empty %}
-                    <p class="text-gray-500 text-center py-4">No recent invoices</p>
+                    <p class="text-gray-500 dark:text-gray-300 text-center py-4">No recent invoices</p>
                     {% endfor %}
                 </div>
             </div>
@@ -208,41 +186,41 @@
         <!-- Quick Actions -->
         <div class="mt-8 text-center">
             <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
-                <a href="{% url 'purchase:rfq_ui' %}" class="p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
-                    <svg class="w-8 h-8 text-indigo-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <a href="{% url 'purchase:rfq_ui' %}" class="p-4 bg-indigo-100 dark:bg-indigo-800/20 rounded-lg hover:bg-indigo-50 transition-colors">
+                    <svg class="w-8 h-8 text-indigo-600 dark:text-indigo-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    <p class="text-sm font-medium text-indigo-700">RFQ</p>
+                    <p class="text-sm font-medium text-indigo-700 dark:text-indigo-400">RFQ</p>
                 </a>
-                <a href="{% url 'purchase:quotations_ui' %}" class="p-4 bg-cyan-50 rounded-lg hover:bg-cyan-100 transition-colors">
-                    <svg class="w-8 h-8 text-cyan-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <a href="{% url 'purchase:quotations_ui' %}" class="p-4 bg-cyan-100 dark:bg-cyan-800/20 rounded-lg hover:bg-cyan-50 transition-colors">
+                    <svg class="w-8 h-8 text-cyan-600 dark:text-cyan-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
-                    <p class="text-sm font-medium text-cyan-700">Quotations</p>
+                    <p class="text-sm font-medium text-cyan-700 dark:text-cyan-400">Quotations</p>
                 </a>
-                <a href="{% url 'purchase:suppliers_ui' %}" class="p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                    <svg class="w-8 h-8 text-blue-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <a href="{% url 'purchase:suppliers_ui' %}" class="p-4 bg-blue-100 dark:bg-blue-800/20 rounded-lg hover:bg-blue-50 transition-colors">
+                    <svg class="w-8 h-8 text-blue-600  dark:text-blue-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                     </svg>
-                    <p class="text-sm font-medium text-blue-700">Suppliers</p>
+                    <p class="text-sm font-medium text-blue-700 dark:text-blue-400">Suppliers</p>
                 </a>
-                <a href="{% url 'purchase:grns_ui' %}" class="p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                <a href="{% url 'purchase:grns_ui' %}" class="p-4 bg-green-100 dark:bg-green-800/20 rounded-lg hover:bg-green-50 transition-colors">
                     <svg class="w-8 h-8 text-green-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
                     </svg>
-                    <p class="text-sm font-medium text-green-700">Goods Receipt</p>
+                    <p class="text-sm font-medium text-green-700 dark:text-green-400">Goods Receipt</p>
                 </a>
-                <a href="{% url 'purchase:bills_ui' %}" class="p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                <a href="{% url 'purchase:bills_ui' %}" class="p-4 bg-purple-100 dark:bg-purple-800/20 rounded-lg hover:bg-purple-50 transition-colors">
                     <svg class="w-8 h-8 text-purple-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
-                    <p class="text-sm font-medium text-purple-700">Invoices</p>
+                    <p class="text-sm font-medium text-purple-700 dark:text-purple-400">Invoices</p>
                 </a>
-                <a href="{% url 'purchase:payments_ui' %}" class="p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors">
+                <a href="{% url 'purchase:payments_ui' %}" class="p-4 bg-orange-100 dark:bg-orange-800/20 rounded-lg hover:bg-orange-50 transition-colors">
                     <svg class="w-8 h-8 text-orange-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
                     </svg>
-                    <p class="text-sm font-medium text-orange-700">Payments</p>
+                    <p class="text-sm font-medium text-orange-700 dark:text-orange-400">Payments</p>
                 </a>
             </div>
         </div>

@@ -40,30 +40,70 @@
     }
     .gradient-bg-main-2{
         background-color:white;
-        background-image: linear-gradient(135deg, #10b981, #065f46);
-        background-blend-mode: multiply;
+        background-image:
+        radial-gradient(circle at top left,rgb(55, 136, 105) 0%, rgba(255, 255, 255, 0) 40%),
+        radial-gradient(circle at bottom left, rgb(21, 196, 129) 0%, rgba(255, 255, 255, 0) 40%),
+        radial-gradient(circle at center, rgb(9, 151, 97) 0%, rgba(255, 255, 255, 0) 60%),
+        radial-gradient(circle at 80%, rgb(21, 196, 129) 0%, rgba(255, 255, 255, 0) 30%);
+        background-blend-mode:multiply;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <!-- Dashboard Header -->
-<section class="pt-24 pb-8 flex  gradient-bg-main-2 gradient-bg-main  items-center relative justify-center">
-    <div class="max-w-7xl pt-16 mt-24 min-h-[50vh] mx-auto px-6 ">
+<section class="pt-24 pb-8 flex min-h-[80vh]  gradient-bg-main-2 gradient-bg-main  items-center relative justify-center">
+    <div class="max-w-7xl p-16 my-24  mx-auto backdrop-blur-2xl bg-white/40 dark:bg-transparent rotate-[-1deg] dark:rotate-[0deg] dark:backdrop-blur-[0px] rounded-2xl shadow-sm dark:rounded-[0] dark:shadow-[0_0_0_0_rgba(0,0,0,0)] ">
         <div class="text-center text-white">
-            <h1 class="text-4xl md:text-5xl font-bold mb-4">
-                Welcome to <span class="text-green-200">FutureERP</span>
+            <h1 class="text-4xl md:text-5xl font-bold mb-6 text-black/70 dark:text-white">
+                Welcome to <span class="dark:text-green-200 text-green-900">FutureERP</span>
             </h1>
-            <p class="text-xl text-green-100 mb-2">
+            <p class="text-xl text-green-900 mb-2 dark:text-green-100">
                 {% if user.company %}
                 {{ user.company.name }} - {{ user.first_name }} {{ user.last_name }}
                 {% else %}
                 Complete Business Management Dashboard
                 {% endif %}
             </p>
-            <p class="text-green-200">
+            <p class="text-green-900 dark:text-green-200">
                 {% now "l, F d, Y" %} | {% now "g:i A" %}
             </p>
+        </div>
+    </div>
+</section>
+
+<!-- Analytics & Graphs -->
+<section class="py-12 bg-gradient-to-br from-green-50 to-emerald-50 dark:bg-gradient-to-br dark:from-emerald-900/10 dark:to-emerald-800/5">
+    <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-12">
+            <h2 class="text-4xl font-bold accounting-highlight mb-4">Insights</h2>
+            <p class="text-xl text-gray-600 dark:text-gray-400">Interactive trends powered by your live data</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Sales by Month -->
+            <div class="rounded-2xl p-6 bg-white dark:bg-emerald-900/10 shadow-md">
+                <h3 class="text-lg font-semibold text-green-800 dark:text-green-100 mb-4">Sales Orders by Month</h3>
+                <div class="h-64">
+                    <canvas id="salesByMonthChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Headcount vs Customers vs Accounts -->
+            <div class="rounded-2xl p-6 bg-white dark:bg-emerald-900/10 shadow-md">
+                <h3 class="text-lg font-semibold text-green-800 dark:text-green-100 mb-4">Organization Snapshot</h3>
+                <div class="h-64">
+                    <canvas id="orgSnapshotChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Inventory vs Sales (counts) -->
+            <div class="rounded-2xl p-6 bg-white dark:bg-emerald-900/10 shadow-md">
+                <h3 class="text-lg font-semibold text-green-800 dark:text-green-100 mb-4">Sales vs Inventory</h3>
+                <div class="h-64">
+                    <canvas id="salesVsInventoryChart"></canvas>
+                </div>
+            </div>
         </div>
     </div>
 </section>
@@ -518,10 +558,114 @@
 
 {% block extra_js %}
 <script>
-    // Dashboard auto-refresh functionality
-    setTimeout(() => {
-        // Auto-refresh stats if needed
-        console.log('Dashboard loaded successfully');
-    }, 1000);
+    // Fetch analytics data and render charts
+    document.addEventListener('DOMContentLoaded', async () => {
+        const endpoint = "{% url 'analytics:analytics_dashboard' %}";
+        try {
+            const res = await fetch(endpoint, { headers: { 'Accept': 'application/json' } });
+            const data = await res.json();
+
+            // Prepare datasets
+            const monthLabels = (data.sales_by_month || []).map(x => {
+                try {
+                    const d = new Date(x.month);
+                    return d.toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
+                } catch { return x.month; }
+            });
+            const monthCounts = (data.sales_by_month || []).map(x => x.count || 0);
+
+            // Colors aligned with emerald theme
+            const emerald = 'rgba(16, 185, 129, 1)';
+            const emeraldBg = 'rgba(16, 185, 129, 0.15)';
+            const blue = 'rgba(59, 130, 246, 1)';
+            const blueBg = 'rgba(59, 130, 246, 0.15)';
+
+            // Sales by Month (Line)
+            const salesCtx = document.getElementById('salesByMonthChart').getContext('2d');
+            const salesChart = new Chart(salesCtx, {
+                type: 'line',
+                data: {
+                    labels: monthLabels,
+                    datasets: [{
+                        label: 'Sales Orders',
+                        data: monthCounts,
+                        borderColor: emerald,
+                        backgroundColor: emeraldBg,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 3,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Organization Snapshot (Doughnut)
+            const orgCtx = document.getElementById('orgSnapshotChart').getContext('2d');
+            const orgChart = new Chart(orgCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Employees', 'Customers', 'Accounts'],
+                    datasets: [{
+                        data: [data.total_employees || 0, data.total_customers || 0, data.total_accounts || 0],
+                        backgroundColor: [emerald, blue, 'rgba(99,102,241,1)'],
+                        borderWidth: 0,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%'
+                }
+            });
+
+            // Sales vs Inventory (Bar)
+            const barCtx = document.getElementById('salesVsInventoryChart').getContext('2d');
+            const barChart = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Sales Orders', 'Inventory Items'],
+                    datasets: [{
+                        label: 'Count',
+                        data: [data.total_sales || 0, data.total_inventory || 0],
+                        backgroundColor: [emeraldBg, blueBg],
+                        borderColor: [emerald, blue],
+                        borderWidth: 1.5,
+                        borderRadius: 8,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Subtle Anime.js entrance animations
+            if (window.anime) {
+                anime({ targets: '.rounded-2xl.p-6.bg-white, .dark\\:bg-emerald-900\/10', opacity: [0, 1], translateY: [8, 0], easing: 'easeOutQuad', duration: 600, delay: anime.stagger(120) });
+            }
+        } catch (e) {
+            console.warn('Analytics data unavailable', e);
+        }
+
+        // Lightweight page-ready log
+        setTimeout(() => console.log('Dashboard graphs initialized'), 300);
+    });
 </script>
 {% endblock %}

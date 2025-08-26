@@ -122,7 +122,7 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-
+        
         /* Dynamic Sidebar Styles - Matching Index Page Design */
         .sidebar {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -137,7 +137,9 @@
             overflow: visible;
             box-shadow: 0 10px 40px rgba(16, 185, 129, 0.3);
         }
-        
+        .dark .sidebar{
+            box-shadow: 0 0 0 rgba(16, 185, 129, 0.3);
+        }
         .sidebar.collapsed {
             width: 4rem;
         }
@@ -149,14 +151,12 @@
             padding-bottom: 4rem; /* Add space for toggle button */
             position: relative;
             overflow: visible;
-            background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px);
         }
         
         .sidebar-logo {
             flex-shrink: 0;
             overflow: hidden;
-            background: rgba(255, 255, 255, 0.15);
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
         
@@ -170,8 +170,9 @@
         .sidebar-item {
             display: flex;
             align-items: center;
+            border: 2px solid rgba(255, 255, 255, 0.2);
             padding: 0.75rem 1rem;
-            color: rgba(255, 255, 255, 0.9);
+            color: rgba(255, 255, 255);
             text-decoration: none;
             border-radius: 0.75rem;
             transition: all 0.3s ease;
@@ -204,7 +205,26 @@
             width: 4px;
             background: #ffffff;
             border-radius: 0 4px 4px 0;
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+
+        /* Dark mode overrides for sidebar items */
+        .dark .sidebar-item {
+            color: rgba(255, 255, 255, 0.9);
+        }
+        .dark .sidebar-item:hover {
+            background: rgba(255, 255, 255, 0.12) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.18) !important;
+        }
+        .dark .sidebar-item.active {
+            background: rgba(255, 255, 255, 0.18) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 16px rgba(255, 255, 255, 0.25) !important;
+        }
+        .dark .sidebar-item.active::before {
+            background: #ffffff !important;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.45) !important;
         }
         
         .sidebar-icon {
@@ -217,7 +237,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: rgba(255, 255, 255, 0.9);
+            color: rgba(255,255,255, 0.9); /* light mode icon */
+        }
+        .dark .sidebar-icon {
+            color: rgba(255, 255, 255, 0.9); /* dark mode icon */
         }
         
         .sidebar-text {
@@ -390,6 +413,10 @@
             background: linear-gradient(135deg, #10b981, #065f46);
             transition: all 0.3s ease;
         }
+        .dark .quick-action-btn {
+            background: linear-gradient(135deg,rgba(16, 185, 129, 0.36), #065f46);
+            transition: all 0.3s ease;
+        }
         
         .quick-action-btn:hover {
             transform: scale(1.05);
@@ -407,6 +434,14 @@
         /* Card styling for purchase module */
         .card-modern {
             background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(240, 253, 244, 0.8));
+            border: 1px solid rgba(16, 185, 129, 0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        .dark .card-modern {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(240, 253, 244, 0.08));
             border: 1px solid rgba(16, 185, 129, 0.1);
             border-radius: 1rem;
             padding: 1.5rem;
@@ -525,12 +560,12 @@
     {% block extra_css %}{% endblock %}
 
 </head>
-<body class="gradient-bg-main overflow-x-hidden transition-colors duration-300" id="body-root">
+<body class=" gradient-bg-main   overflow-x-hidden transition-colors duration-300" id="body-root">
     <!-- Theme Toggle Button -->
     
     <!-- Dynamic Sidebar -->
     {% if user.is_authenticated %}
-    <div id="sidebar" class="sidebar bg-green-900">
+    <div id="sidebar" class="sidebar dark:bg-gradient-to-tr dark:from-green-900 dark:to-black bg-green-900/90 backdrop-blur-sm border-r border-emerald-500/10 dark:border-white/10 text-gray-800 dark:text-white">
         {% load static %}
         
         {% if '/purchase/' in request.path %}
@@ -573,12 +608,13 @@
     <div id="sidebar-overlay" class="sidebar-overlay fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
     {% endif %}
     <!-- Header Navigation -->
-    <nav class="relative {% if public %}bg-gradient-to-r from-green-900 to-black backdrop-blur-sm{%else%}gradient-bg-main{%endif%} w-full z-20 px-6 py-4">
+    <nav class="relative dark:bg-gradient-to-bl dark:from-green-900 dark:to-black bg-green-900/90  backdrop-blur-2xl  w-full z-20 px-6 py-4 text-green-900 dark:text-green-100">
         <div class="max-w-7xl mx-auto flex items-center justify-between">
             <!-- Logo and Title -->
             <div class="flex items-center space-x-4">
                 <!-- Mobile Menu Button -->
-                <button id="mobile-menu-toggle" class="md:hidden text-green-800 hover:text-green-600 p-2 rounded-lg transition-all">
+                <button id="mobile-menu-toggle" class="md:hidden text-green-800 dark:text-green-200 hover:text-green-600 dark:hover:text-green-400 p-2 rounded-lg transition-all">
+
                     <i class="fas fa-bars text-xl"></i>
                 </button>
                 
@@ -588,14 +624,15 @@
                         <div class="absolute inset-0 bg-gradient-to-r from-green-400/30 to-emerald-500/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         <img src="{% static 'logo.png' %}" alt="FutureERP Logo" class="w-10 h-10 relative z-10" style="filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.5));border-radius: 50%;">
                     </div>
-                    <span class="text-2xl font-bold text-green-800 font-['Inter'] tracking-tight group-hover:text-green-600 transition-colors">Future<span class="text-green-600">ERP</span></span>
+                    <span class="text-2xl font-bold text-green-100 dark:text-green-100 font-['Inter'] tracking-tight group-hover:text-green-300 dark:group-hover:text-green-400 transition-colors">Future<span class="text-green-300 dark:text-green-400">ERP</span></span>
                 </a>
             </div>
         
             
             {% if user.is_authenticated %}
             <div class="flex items-center space-x-4">
-                <span class="text-green-800 font-medium font-['Inter']">Welcome, {{ user.get_full_name|default:user.email }}</span>
+                <span class="text-green-50 dark:text-green-100 font-medium font-['Inter']">Welcome, {{ user.get_full_name|default:user.email }}</span>
+
                 <a href="{% url 'logout' %}" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-2 rounded-full hover:shadow-lg hover:shadow-green-500/30 transition-all duration-300 hover:scale-105 font-['Inter'] font-medium">
                     Logout
                 </a>
@@ -613,7 +650,7 @@
     </nav>
 
     <!-- Main Content -->
-    <div id="{% if user.is_authenticated %}main-content{% endif %}" class="{% if user.is_authenticated %}main-content{% else %}min-h-screen bg-gray-50 transition-all duration-300{% endif %}">
+    <div id="{% if user.is_authenticated %}main-content{% endif %}" class="{% if user.is_authenticated %}main-content{% else %}min-h-screen bg-gray-50 transition-all duration-300{% endif %} min-h-screen">
         {% block content %}{% endblock %}
     </div>    <!-- Footer -->
     <footer class="bg-gradient-to-br from-green-900 via-green-800 to-emerald-900 dark:bg-gradient-to-br dark:from-black dark:via-green-900/20 dark:to-green-900/20 text-white py-12 relative overflow-hidden">
