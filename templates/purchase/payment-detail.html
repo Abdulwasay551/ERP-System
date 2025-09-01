@@ -591,7 +591,7 @@
                 <div class="timeline-item">
                     <div class="timeline-date">{{ payment.completed_at|date:"M d, Y H:i" }}</div>
                     <div class="timeline-content">
-                        Payment completed by <span class="timeline-user">{{ payment.completed_by.get_full_name|default:payment.completed_by.email }}</span>
+                        Payment completed by <span class="timeline-user">{{ payment.completed_by.get_full_name|default:'N/A'}}</span>
                     </div>
                 </div>
             {% endif %}

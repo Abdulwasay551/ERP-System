@@ -51,6 +51,7 @@ urlpatterns = [
     path('attributes/create/', views.AttributeCreateView.as_view(), name='attribute_create'),
     path('attributes/<int:pk>/', views.AttributeDetailView.as_view(), name='attribute_detail'),
     path('attributes/<int:pk>/edit/', views.AttributeUpdateView.as_view(), name='attribute_update'),
+    path('attributes/<int:pk>/delete/', views.AttributeDeleteView.as_view(), name='attribute_delete'),
     
     # Reports and Analytics
     path('performance/', views.product_performance_view, name='performance'),

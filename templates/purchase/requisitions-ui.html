@@ -56,7 +56,7 @@
     }
 
     .search-input {
-        border-radius: 9999px;
+        border-radius: 12px;
         padding-left: 3rem;
     }
 
@@ -64,17 +64,19 @@
         background: white;
         border: 1px solid #e2e8f0;
         border-radius: 1rem;
-        padding: 1.5rem;
+        padding: 1rem;
         transition: all 0.3s ease;
     }
-
+    .dark .req-card {
+        background:rgba(0, 0, 0, 0.5);
+        border-color:rgba(38, 163, 43, 0.1);
+    }
     .req-card:hover {
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         transform: translateY(-2px);
     }
 
     .btn-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border: none;
         border-radius: 0.75rem;
         color: white;
@@ -85,7 +87,7 @@
 
     .btn-primary:hover {
         transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 10px 25px rgba(102, 234, 135, 0.4);
     }
 
     .pagination-modern .page-link {
@@ -105,7 +107,7 @@
     }
 
     .pagination-modern .page-item.active .page-link {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg,rgb(63, 150, 71,0.7) 0%,rgb(75, 162, 82) 100%);
         color: white;
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     }
@@ -116,7 +118,7 @@
 <div class="mx-auto px-6 py-8">
     <div class="mx-auto">
         <!-- Header Section -->
-        <div class="bg-gradient-to-r from-green-900 to-green-800 rounded-2xl shadow-xl p-8 mb-8 text-white">
+        <div class="bg-gradient-to-tl from-green-700 to-green-800/90 dark:from-green-800/5 dark:to-green-600/10 rounded-2xl shadow-xl p-8 mb-8 text-white">
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-3xl font-bold mb-2">Purchase Requisitions</h1>
@@ -124,7 +126,7 @@
                 </div>
                 <div class="flex items-center space-x-4">
                     <a href="{% url 'purchase:requisition_add' %}" 
-                       class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-6 py-3 rounded-xl transition-all hover-lift font-semibold">
+                       class="bg-white bg-opacity-20 dark:bg-green-800/80 hover:bg-opacity-30 text-white px-6 py-3 rounded-xl transition-all hover-lift font-semibold">
                         <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                         </svg>
@@ -132,134 +134,131 @@
                     </a>
                 </div>
             </div>
-        </div>
+        
 
-        <!-- Statistics Cards -->
-        {% if statistics %}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-            <div class="stat-card hover-lift">
-                <div class="text-3xl font-bold">{{ statistics.total_count|default:0 }}</div>
-                <div class="text-sm opacity-90">Total Requisitions</div>
+            <!-- Statistics Cards -->
+            {% if statistics %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mt-8">
+                <div class="stat-card hover-lift">
+                    <div class="text-3xl font-bold">{{ statistics.total_count|default:0 }}</div>
+                    <div class="text-sm opacity-90">Total Requisitions</div>
+                </div>
+                <div class="stat-card hover-lift" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                    <div class="text-3xl font-bold">{{ statistics.pending_count|default:0 }}</div>
+                    <div class="text-sm opacity-90">Pending Approval</div>
+                </div>
+                <div class="stat-card hover-lift" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <div class="text-3xl font-bold">{{ statistics.approved_count|default:0 }}</div>
+                    <div class="text-sm opacity-90">Approved</div>
+                </div>
+                <div class="stat-card hover-lift" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                    <div class="text-3xl font-bold">{{ statistics.rejected_count|default:0 }}</div>
+                    <div class="text-sm opacity-90">Rejected</div>
+                </div>
+                <div class="stat-card hover-lift" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);">
+                    <div class="text-3xl font-bold">{{ statistics.draft_count|default:0 }}</div>
+                    <div class="text-sm opacity-90">Drafts</div>
+                </div>
             </div>
-            <div class="stat-card hover-lift" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
-                <div class="text-3xl font-bold">{{ statistics.pending_count|default:0 }}</div>
-                <div class="text-sm opacity-90">Pending Approval</div>
-            </div>
-            <div class="stat-card hover-lift" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-                <div class="text-3xl font-bold">{{ statistics.approved_count|default:0 }}</div>
-                <div class="text-sm opacity-90">Approved</div>
-            </div>
-            <div class="stat-card hover-lift" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
-                <div class="text-3xl font-bold">{{ statistics.rejected_count|default:0 }}</div>
-                <div class="text-sm opacity-90">Rejected</div>
-            </div>
-            <div class="stat-card hover-lift" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);">
-                <div class="text-3xl font-bold">{{ statistics.draft_count|default:0 }}</div>
-                <div class="text-sm opacity-90">Drafts</div>
-            </div>
-        </div>
-        {% endif %}
+            {% endif %}
 
-        <!-- Filters and Search -->
-        <div class="bg-gray-50 dark:bg-green-800/20 rounded-2xl p-6 shadow-2xl mb-2">
-            <form method="get" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-                    <!-- Search -->
-                    <div class="lg:col-span-2 relative">
-                        <svg class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                        <input type="text" 
-                               name="search" 
-                               value="{{ request.GET.search }}"
-                               placeholder="Search by PR number, purpose, or requester..."
-                               class="w-full py-3 search-input border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <!-- Filters and Search -->
+            <div class="rounded-2xl p-4 mb-2 mt-8">
+                <form method="get" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <!-- Search -->
+                        <div class="lg:col-span-2 relative">
+                            <svg class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            <input type="text" 
+                                name="search" 
+                                value="{{ request.GET.search }}"
+                                placeholder="Search by PR number, purpose, or requester..."
+                                class="w-full py-3 search-input dark:text-white/80 dark:bg-black/30 text-black border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+
+                        <!-- Status Filter -->
+                        <div>
+                            <select name="status" class="w-full p-3 dark:text-white/80 dark:bg-black/30 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="">All Statuses</option>
+                                <option value="draft" {% if request.GET.status == 'draft' %}selected{% endif %}>Draft</option>
+                                <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>Approved</option>
+                                <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                                <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            </select>
+                        </div>
+
+                        <!-- Department Filter -->
+                        <div>
+                            <select name="department" class="w-full p-3 dark:text-white/80 dark:bg-black/30 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                <option class="bg-green-900 text-white hover:bg-green-800" value="">All Departments</option>
+                                <option class="bg-green-900 text-white hover:bg-green-800" value="IT" {% if request.GET.department == 'IT' %}selected{% endif %}>IT</option>
+                                <option class="bg-green-900 text-white hover:bg-green-800" value="HR" {% if request.GET.department == 'HR' %}selected{% endif %}>HR</option>
+                                <option class="bg-green-900 text-white hover:bg-green-800" value="Finance" {% if request.GET.department == 'Finance' %}selected{% endif %}>Finance</option>
+                                <option class="bg-green-900 text-white hover:bg-green-800" value="Operations" {% if request.GET.department == 'Operations' %}selected{% endif %}>Operations</option>
+                                <option class="bg-green-900 text-white hover:bg-green-800" value="Marketing" {% if request.GET.department == 'Marketing' %}selected{% endif %}>Marketing</option>
+                                <option class="bg-green-900 text-white hover:bg-green-800" value="Production" {% if request.GET.department == 'Production' %}selected{% endif %}>Production</option>
+                            </select>
+                        </div>
+
+                        <!-- Priority Filter -->
+                        <div>
+                            <select name="priority" class="w-full p-3 dark:text-white/80 dark:bg-black/30 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="">All Priorities</option>
+                                <option value="low" {% if request.GET.priority == 'low' %}selected{% endif %}>Low</option>
+                                <option value="medium" {% if request.GET.priority == 'medium' %}selected{% endif %}>Medium</option>
+                                <option value="high" {% if request.GET.priority == 'high' %}selected{% endif %}>High</option>
+                                <option value="urgent" {% if request.GET.priority == 'urgent' %}selected{% endif %}>Urgent</option>
+                            </select>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        
                     </div>
 
-                    <!-- Status Filter -->
-                    <div>
-                        <select name="status" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                            <option value="">All Statuses</option>
-                            <option value="draft" {% if request.GET.status == 'draft' %}selected{% endif %}>Draft</option>
-                            <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
-                            <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>Approved</option>
-                            <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>
-                            <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
-                        </select>
+                    <!-- Date Range Filters -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm dark:text-white/80 font-medium text-black mb-1">Date From</label>
+                            <input type="date" 
+                                name="date_from" 
+                                value="{{ request.GET.date_from }}"
+                                class="w-full p-3 dark:text-white/80 dark:bg-black/30 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm dark:text-white/80 font-medium text-black mb-1">Date To</label>
+                            <input type="date" 
+                                name="date_to" 
+                                value="{{ request.GET.date_to }}"
+                                class="w-full p-3 dark:text-white/80 dark:bg-black/30 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm dark:text-white/80 font-medium text-black mb-1">Required Date From</label>
+                            <input type="date" 
+                                name="required_from" 
+                                value="{{ request.GET.required_from }}"
+                                class="w-full p-3 dark:text-white/80 dark:bg-black/30 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm dark:text-white/80 font-medium text-black mb-1">Required Date To</label>
+                            <input type="date" 
+                                name="required_to" 
+                                value="{{ request.GET.required_to }}"
+                                class="w-full p-3 dark:text-white/80 dark:bg-black/30 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
                     </div>
-
-                    <!-- Department Filter -->
-                    <div>
-                        <select name="department" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                            <option value="">All Departments</option>
-                            <option value="IT" {% if request.GET.department == 'IT' %}selected{% endif %}>IT</option>
-                            <option value="HR" {% if request.GET.department == 'HR' %}selected{% endif %}>HR</option>
-                            <option value="Finance" {% if request.GET.department == 'Finance' %}selected{% endif %}>Finance</option>
-                            <option value="Operations" {% if request.GET.department == 'Operations' %}selected{% endif %}>Operations</option>
-                            <option value="Marketing" {% if request.GET.department == 'Marketing' %}selected{% endif %}>Marketing</option>
-                            <option value="Production" {% if request.GET.department == 'Production' %}selected{% endif %}>Production</option>
-                        </select>
-                    </div>
-
-                    <!-- Priority Filter -->
-                    <div>
-                        <select name="priority" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                            <option value="">All Priorities</option>
-                            <option value="low" {% if request.GET.priority == 'low' %}selected{% endif %}>Low</option>
-                            <option value="medium" {% if request.GET.priority == 'medium' %}selected{% endif %}>Medium</option>
-                            <option value="high" {% if request.GET.priority == 'high' %}selected{% endif %}>High</option>
-                            <option value="urgent" {% if request.GET.priority == 'urgent' %}selected{% endif %}>Urgent</option>
-                        </select>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="flex space-x-2">
-                        <button type="submit" class="btn-primary flex-1">
-                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex flex-row-reverse space-x-2">
+                        <button type="submit" class="btn-primary dark:bg-green-800/80 flex-1 max-w-36 h-12">
+                            <svg    class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"></path>
                             </svg>
                             Filter
                         </button>
-                        <a href="{% url 'purchase:requisitions_ui' %}" class="bg-gray-500 text-white px-4 py-3 rounded-lg hover:bg-gray-600 transition-colors">
-                            <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                            </svg>
-                        </a>
                     </div>
-                </div>
-
-                <!-- Date Range Filters -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Date From</label>
-                        <input type="date" 
-                               name="date_from" 
-                               value="{{ request.GET.date_from }}"
-                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Date To</label>
-                        <input type="date" 
-                               name="date_to" 
-                               value="{{ request.GET.date_to }}"
-                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Required Date From</label>
-                        <input type="date" 
-                               name="required_from" 
-                               value="{{ request.GET.required_from }}"
-                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Required Date To</label>
-                        <input type="date" 
-                               name="required_to" 
-                               value="{{ request.GET.required_to }}"
-                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                    </div>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
 
         <!-- Requisitions List -->
@@ -271,13 +270,13 @@
                     <div class="flex-1 space-y-3">
                         <div class="flex items-start justify-between">
                             <div>
-                                <h3 class="text-lg font-bold text-gray-900 mb-1">
+                                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-1">
                                     <a href="{% url 'purchase:requisition_detail' requisition.id %}" 
                                        class="hover:text-purple-600 transition-colors">
                                         {{ requisition.pr_number }}
                                     </a>
                                 </h3>
-                                <p class="text-gray-600">{{ requisition.purpose|default:"No purpose specified" }}</p>
+                                <p class="text-gray-600 dark:text-white/70">{{ requisition.purpose|default:"No purpose specified" }}</p>
                             </div>
                             <div class="flex space-x-2">
                                 <span class="status-badge status-{{ requisition.status }}">
@@ -291,7 +290,7 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600 dark:text-white/70">
                             <div>
                                 <strong>Requester:</strong><br>
                                 {{ requisition.requested_by.get_full_name|default:requisition.requested_by.email }}
@@ -313,7 +312,7 @@
                         </div>
 
                         {% if requisition.justification %}
-                        <div class="text-sm text-gray-600">
+                        <div class="text-sm text-gray-600 dark:text-white/70">
                             <strong>Justification:</strong>
                             <p class="mt-1">{{ requisition.justification|truncatechars:150 }}</p>
                         </div>
@@ -321,7 +320,7 @@
 
                         {% if requisition.estimated_budget %}
                         <div class="text-sm">
-                            <strong class="text-gray-700">Estimated Budget:</strong>
+                            <strong class="text-black">Estimated Budget:</strong>
                             <span class="text-green-600 font-semibold">${{ requisition.estimated_budget|floatformat:2 }}</span>
                         </div>
                         {% endif %}
@@ -330,7 +329,7 @@
                     <!-- Right Side - Actions -->
                     <div class="flex flex-col lg:flex-row lg:items-center space-y-2 lg:space-y-0 lg:space-x-3">
                         <a href="{% url 'purchase:requisition_detail' requisition.id %}" 
-                           class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-center">
+                           class="btn-primary dark:bg-green-800/80 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-center">
                             <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -372,8 +371,8 @@
                 <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">No Purchase Requisitions Found</h3>
-                <p class="text-gray-600 mb-4">{% if request.GET %}No requisitions match your current filters.{% else %}Get started by creating your first purchase requisition.{% endif %}</p>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No Purchase Requisitions Found</h3>
+                <p class="text-gray-600 dark:text-white/70 mb-4">{% if request.GET %}No requisitions match your current filters.{% else %}Get started by creating your first purchase requisition.{% endif %}</p>
                 <a href="{% url 'purchase:requisition_add' %}" 
                    class="btn-primary inline-block">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -431,7 +430,7 @@
             </nav>
         </div>
 
-        <div class="text-center text-gray-600 mt-4">
+        <div class="text-center text-gray-600 dark:text-white/70 mt-4">
             Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} requisitions
         </div>
         {% endif %}
@@ -448,6 +447,7 @@ function approveRequisition(requisitionId) {
             method: 'POST',
             headers: {
                 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest',
                 'Content-Type': 'application/json',
             },
         })

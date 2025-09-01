@@ -11,7 +11,10 @@
         border-radius: 1rem;
         transition: all 0.3s ease;
     }
-
+    .dark .detail-card {
+        background: linear-gradient(135deg,rgb(32, 59, 30,0.2) 0%,rgb(59, 152, 82,0.2) 100%);
+        border: 1px solid rgb(32, 59, 30);
+    }
     .detail-card:hover {
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
     }
@@ -107,7 +110,7 @@
 <div class="container mx-auto px-4 py-8">
     <div class="max-w-7xl mx-auto">
         <!-- Header Section -->
-        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl shadow-xl p-8 mb-8 text-white">
+        <div class="bg-gradient-to-br from-green-700 to-green-800 dark:from-green-800/20 dark:to-dark/30 rounded-2xl shadow-xl p-8 mb-8 text-white">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-4">
                     <button onclick="history.back()" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 rounded-lg transition-all">
@@ -143,7 +146,7 @@
             <div class="flex space-x-4">
                 {% if requisition.status == 'draft' or user == requisition.requested_by %}
                 <a href="{% url 'purchase:requisition_edit' requisition.id %}" 
-                   class="bg-yellow-600 text-white px-6 py-3 rounded-xl hover-lift font-semibold">
+                   class="bg-yellow-600 dark:bg-yellow-500/10 border-yellow-600 border dark:border-yellow-400 text-white px-6 py-3 rounded-xl hover-lift font-semibold hover:dark:bg-yellow-500">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                     </svg>
@@ -153,14 +156,14 @@
 
                 {% if perms.purchase.approve_purchaserequisition and requisition.status == 'pending' %}
                 <button onclick="approveRequisition()" 
-                        class="bg-green-600 text-white px-6 py-3 rounded-xl hover-lift font-semibold">
+                        class="bg-green-600 dark:bg-green-500/10 border-green-600 border dark:border-green-500 text-white px-6 py-3 rounded-xl hover-lift font-semibold hover:dark:bg-green-500">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
                     Approve
                 </button>
                 <button onclick="rejectRequisition()" 
-                        class="bg-red-600 text-white px-6 py-3 rounded-xl hover-lift font-semibold">
+                        class="bg-red-600 dark:bg-red-500/10 border-red-600 border dark:border-red-500 text-white px-6 py-3 rounded-xl hover-lift font-semibold hover:dark:bg-red-500">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
@@ -170,13 +173,13 @@
             </div>
 
             <div class="flex space-x-2">
-                <button onclick="window.print()" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                <button onclick="window.print()" class="bg-gray-600 dark:bg-gray-500/10 border border-gray-600 dark:border-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors hover:dark:bg-gray-500">
                     <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
                     </svg>
                     Print
                 </button>
-                <button onclick="exportPDF()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+                <button onclick="exportPDF()" class="bg-indigo-600 dark:bg-indigo-500/10 border border-indigo-600 dark:border-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors hover:dark:bg-indigo-500">
                     <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
@@ -190,44 +193,44 @@
             <div class="lg:col-span-2 space-y-8">
                 <!-- Basic Information -->
                 <div class="detail-card p-6">
-                    <h3 class="text-xl font-bold text-gray-900 mb-6 border-b border-gray-200 pb-3">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6 border-b border-gray-200 pb-3">
                         Requisition Information
                     </h3>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Requested By</label>
-                            <p class="text-gray-900 font-medium">{{ requisition.requested_by.get_full_name|default:requisition.requested_by.email }}</p>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-white/80 mb-1">Requested By</label>
+                            <p class="text-gray-900 dark:text-white font-medium">{{ requisition.requested_by.get_full_name|default:requisition.requested_by.email }}</p>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                            <p class="text-gray-900">{{ requisition.department|default:"Not specified" }}</p>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-white/80 mb-1">Department</label>
+                            <p class="text-gray-900 dark:text-white">{{ requisition.department|default:"Not specified" }}</p>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Required Date</label>
-                            <p class="text-gray-900 {% if requisition.required_date < today %}text-red-600 font-semibold{% elif requisition.required_date <= urgent_date %}text-orange-600 font-semibold{% endif %}">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-white/80 mb-1">Required Date</label>
+                            <p class="text-gray-900 dark:text-white {% if requisition.required_date < today %}text-red-600 font-semibold{% elif requisition.required_date <= urgent_date %}text-orange-600 font-semibold{% endif %}">
                                 {{ requisition.required_date|date:"F d, Y" }}
                             </p>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Request Date</label>
-                            <p class="text-gray-900">{{ requisition.created_at|date:"F d, Y" }}</p>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-white/80 mb-1">Request Date</label>
+                            <p class="text-gray-900 dark:text-white">{{ requisition.created_at|date:"F d, Y" }}</p>
                         </div>
                         {% if requisition.warehouse %}
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Warehouse</label>
-                            <p class="text-gray-900">{{ requisition.warehouse.name }}</p>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-white/80 mb-1">Delivery Warehouse</label>
+                            <p class="text-gray-900 dark:text-white">{{ requisition.warehouse.name }}</p>
                         </div>
                         {% endif %}
                         {% if requisition.project_code %}
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Project/Cost Center</label>
-                            <p class="text-gray-900">{{ requisition.project_code }}</p>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-white/80 mb-1">Project/Cost Center</label>
+                            <p class="text-gray-900 dark:text-white">{{ requisition.project_code }}</p>
                         </div>
                         {% endif %}
                         {% if requisition.estimated_budget %}
                         <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Estimated Budget</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-white/80 mb-1">Estimated Budget</label>
                             <p class="text-green-600 font-bold text-xl">${{ requisition.estimated_budget|floatformat:2 }}</p>
                         </div>
                         {% endif %}
@@ -235,29 +238,29 @@
 
                     {% if requisition.purpose %}
                     <div class="mt-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Purpose</label>
-                        <p class="text-gray-900 bg-gray-50 p-3 rounded-lg">{{ requisition.purpose }}</p>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-white/80 mb-2">Purpose</label>
+                        <p class="text-gray-900 dark:text-white bg-gray-50 dark:bg-green-600/20 p-3 rounded-lg">{{ requisition.purpose }}</p>
                     </div>
                     {% endif %}
 
                     {% if requisition.justification %}
                     <div class="mt-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Business Justification</label>
-                        <p class="text-gray-900 bg-gray-50 p-3 rounded-lg">{{ requisition.justification }}</p>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-white/80 mb-2">Business Justification</label>
+                        <p class="text-gray-900 dark:text-white bg-gray-50 p-3 rounded-lg">{{ requisition.justification }}</p>
                     </div>
                     {% endif %}
 
                     {% if requisition.urgency_reason %}
                     <div class="mt-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Urgency Reason</label>
-                        <p class="text-gray-900 bg-red-50 p-3 rounded-lg border-l-4 border-red-500">{{ requisition.urgency_reason }}</p>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-white/80 mb-2">Urgency Reason</label>
+                        <p class="text-gray-900 dark:text-white bg-red-50 p-3 rounded-lg border-l-4 border-red-500">{{ requisition.urgency_reason }}</p>
                     </div>
                     {% endif %}
                 </div>
 
                 <!-- Items List -->
                 <div class="detail-card p-6">
-                    <h3 class="text-xl font-bold text-gray-900 mb-6 border-b border-gray-200 pb-3">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6 border-b border-gray-200 pb-3">
                         Requested Items
                     </h3>
                     
@@ -267,24 +270,24 @@
                         <div class="item-row">
                             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div class="md:col-span-2">
-                                    <h4 class="font-medium text-gray-900">{{ item.description }}</h4>
+                                    <h4 class="font-medium text-gray-900 dark:text-white">{{ item.description }}</h4>
                                     {% if item.specifications %}
-                                    <p class="text-sm text-gray-600 mt-1">{{ item.specifications }}</p>
+                                    <p class="text-sm text-gray-600 dark:text-white/70 mt-1">{{ item.specifications }}</p>
                                     {% endif %}
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-500 mb-1">Quantity</label>
-                                    <p class="text-gray-900">{{ item.quantity }} {% if item.unit_of_measure %}{{ item.unit_of_measure.abbreviation }}{% endif %}</p>
+                                    <label class="block text-xs font-medium text-gray-500 dark:text-white/70 mb-1">Quantity</label>
+                                    <p class="text-gray-900 dark:text-white">{{ item.quantity }} {% if item.unit_of_measure %}{{ item.unit_of_measure.abbreviation }}{% endif %}</p>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-500 mb-1">Estimated Cost</label>
-                                    <p class="text-gray-900">${{ item.estimated_cost|floatformat:2|default:"N/A" }}</p>
-                                </div>
+                                    <label class="block text-xs font-medium text-gray-500 dark:text-white/70 mb-1">Estimated Cost</label>
+                                    <p class="text-gray-900 dark:text-white">${{ item.estimated_cost|floatformat:2|default:"N/A" }}</p>
+                           </div>
                             </div>
                             {% if item.preferred_supplier %}
                             <div class="mt-2">
-                                <label class="block text-xs font-medium text-gray-500 mb-1">Preferred Supplier</label>
-                                <p class="text-gray-700">{{ item.preferred_supplier.name }}</p>
+                                <label class="block text-xs font-medium text-gray-500 dark:text-white/70 mb-1">Preferred Supplier</label>
+                                <p class="text-gray-700 dark:text-white/80">{{ item.preferred_supplier.name }}</p>
                             </div>
                             {% endif %}
                         </div>
@@ -295,7 +298,7 @@
                         <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414a1 1 0 00-.707-.293H4"></path>
                         </svg>
-                        <p class="text-gray-500">No items added to this requisition yet.</p>
+                        <p class="text-gray-500 dark:text-white/70">No items added to this requisition yet.</p>
                     </div>
                     {% endif %}
                 </div>
@@ -303,7 +306,7 @@
                 <!-- Supporting Documents -->
                 {% if requisition.requisition_document or requisition.technical_specifications or requisition.budget_approval %}
                 <div class="detail-card p-6">
-                    <h3 class="text-xl font-bold text-gray-900 mb-6 border-b border-gray-200 pb-3">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6 border-b border-gray-200 pb-3">
                         Supporting Documents
                     </h3>
                     
@@ -314,7 +317,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                             </svg>
                             <div>
-                                <h4 class="font-medium text-gray-900">Quotations/Price Lists</h4>
+                                <h4 class="font-medium text-gray-900 dark:text-white">Quotations/Price Lists</h4>
                                 <a href="{{ requisition.requisition_document.url }}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm">Download</a>
                             </div>
                         </div>
@@ -326,7 +329,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                             </svg>
                             <div>
-                                <h4 class="font-medium text-gray-900">Technical Specifications</h4>
+                                <h4 class="font-medium text-gray-900 dark:text-white">Technical Specifications</h4>
                                 <a href="{{ requisition.technical_specifications.url }}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm">Download</a>
                             </div>
                         </div>
@@ -338,7 +341,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                             </svg>
                             <div>
-                                <h4 class="font-medium text-gray-900">Additional Documents</h4>
+                                <h4 class="font-medium text-gray-900 dark:text-white">Additional Documents</h4>
                                 <a href="{{ requisition.budget_approval.url }}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm">Download</a>
                             </div>
                         </div>
@@ -353,12 +356,12 @@
                 <!-- Approval Section -->
                 {% if perms.purchase.approve_purchaserequisition and requisition.status == 'pending' %}
                 <div class="approval-section">
-                    <h3 class="text-lg font-bold text-gray-900 mb-4">Approval Actions</h3>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Approval Actions</h3>
                     
-                    <form method="post" action="{% url 'purchase:approve_requisition' requisition.id %}" class="space-y-4">
+                    <form method="post" action="{% url 'purchase:requisition_approve' requisition.id %}" class="space-y-4">
                         {% csrf_token %}
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Approval Comments</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-white/80 mb-2">Approval Comments</label>
                             <textarea name="approval_comments" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Add any comments for your approval decision..."></textarea>
                         </div>
                         
@@ -382,15 +385,15 @@
 
                 <!-- Status History/Timeline -->
                 <div class="detail-card p-6">
-                    <h3 class="text-lg font-bold text-gray-900 mb-4">Status Timeline</h3>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Status Timeline</h3>
                     
                     <div class="space-y-4 relative">
                         <div class="timeline-item relative">
                             <div class="timeline-dot bg-blue-500 absolute"></div>
                             <div class="ml-6">
-                                <h4 class="font-medium text-gray-900">Created</h4>
-                                <p class="text-sm text-gray-600">{{ requisition.created_at|date:"M d, Y g:i A" }}</p>
-                                <p class="text-sm text-gray-500">By {{ requisition.requested_by.get_full_name|default:requisition.requested_by.email }}</p>
+                                <h4 class="font-medium text-gray-900 dark:text-white">Created</h4>
+                                <p class="text-sm text-gray-600 dark:text-white/70">{{ requisition.created_at|date:"M d, Y g:i A" }}</p>
+                                <p class="text-sm text-gray-500 dark:text-white/70">By {{ requisition.requested_by.get_full_name|default:requisition.requested_by.email }}</p>
                             </div>
                         </div>
 
@@ -398,8 +401,8 @@
                         <div class="timeline-item relative">
                             <div class="timeline-dot bg-yellow-500 absolute"></div>
                             <div class="ml-6">
-                                <h4 class="font-medium text-gray-900">Submitted for Approval</h4>
-                                <p class="text-sm text-gray-600">{{ requisition.updated_at|date:"M d, Y g:i A" }}</p>
+                                <h4 class="font-medium text-gray-900 dark:text-white">Submitted for Approval</h4>
+                                <p class="text-sm text-gray-600 dark:text-white/70">{{ requisition.updated_at|date:"M d, Y g:i A" }}</p>
                             </div>
                         </div>
                         {% endif %}
@@ -408,10 +411,10 @@
                         <div class="timeline-item relative">
                             <div class="timeline-dot bg-green-500 absolute"></div>
                             <div class="ml-6">
-                                <h4 class="font-medium text-gray-900">Approved</h4>
-                                <p class="text-sm text-gray-600">{{ requisition.updated_at|date:"M d, Y g:i A" }}</p>
+                                <h4 class="font-medium text-gray-900 dark:text-white">Approved</h4>
+                                <p class="text-sm text-gray-600 dark:text-white/70">{{ requisition.updated_at|date:"M d, Y g:i A" }}</p>
                                 {% if requisition.approved_by %}
-                                <p class="text-sm text-gray-500">By {{ requisition.approved_by.get_full_name|default:requisition.approved_by.email }}</p>
+                                <p class="text-sm text-gray-500 dark:text-white/70">By {{ requisition.approved_by.get_full_name|default:requisition.approved_by.email }}</p>
                                 {% endif %}
                             </div>
                         </div>
@@ -419,10 +422,10 @@
                         <div class="timeline-item relative">
                             <div class="timeline-dot bg-red-500 absolute"></div>
                             <div class="ml-6">
-                                <h4 class="font-medium text-gray-900">Rejected</h4>
-                                <p class="text-sm text-gray-600">{{ requisition.updated_at|date:"M d, Y g:i A" }}</p>
+                                <h4 class="font-medium text-gray-900 dark:text-white">Rejected</h4>
+                                <p class="text-sm text-gray-600 dark:text-white/70">{{ requisition.updated_at|date:"M d, Y g:i A" }}</p>
                                 {% if requisition.approved_by %}
-                                <p class="text-sm text-gray-500">By {{ requisition.approved_by.get_full_name|default:requisition.approved_by.email }}</p>
+                                <p class="text-sm text-gray-500 dark:text-white/70">By {{ requisition.approved_by.get_full_name|default:requisition.approved_by.email }}</p>
                                 {% endif %}
                             </div>
                         </div>
@@ -432,26 +435,26 @@
 
                 <!-- Quick Stats -->
                 <div class="detail-card p-6">
-                    <h3 class="text-lg font-bold text-gray-900 mb-4">Quick Information</h3>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Quick Information</h3>
                     
                     <div class="space-y-3">
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Total Items</span>
-                            <span class="font-medium">{{ requisition.items.count }}</span>
+                            <span class="text-gray-600 dark:text-white/70">Total Items</span>
+                            <span class="font-medium dark:text-white">{{ requisition.items.count }}</span>
                         </div>
                         {% if requisition.estimated_budget %}
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Estimated Budget</span>
-                            <span class="font-medium text-green-600">${{ requisition.estimated_budget|floatformat:2 }}</span>
+                            <span class="text-gray-600 dark:text-white/70">Estimated Budget</span>
+                            <span class="font-medium dark:text-white text-green-600">${{ requisition.estimated_budget|floatformat:2 }}</span>
                         </div>
                         {% endif %}
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Days Since Created</span>
-                            <span class="font-medium">{{ days_since_created }}</span>
+                            <span class="text-gray-600 dark:text-white/70">Days Since Created</span>
+                            <span class="font-medium dark:text-white">{{ days_since_created }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Days Until Required</span>
-                            <span class="font-medium {% if days_until_required < 0 %}text-red-600{% elif days_until_required <= 3 %}text-orange-600{% endif %}">
+                            <span class="text-gray-600 dark:text-white/70">Days Until Required</span>
+                            <span class="font-medium dark:text-white {% if days_until_required < 0 %}text-red-600{% elif days_until_required <= 3 %}text-orange-600{% endif %}">
                                 {{ days_until_required }}
                             </span>
                         </div>
@@ -460,7 +463,6 @@
             </div>
         </div>
     </div>
-</div>
 
 <!-- Action Scripts -->
 <script>
@@ -468,7 +470,7 @@ function approveRequisition() {
     if (confirm('Are you sure you want to approve this requisition?')) {
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = '{% url "purchase:approve_requisition" requisition.id %}';
+        form.action = '{% url "purchase:requisition_approve" requisition.id %}';
         
         const csrfToken = document.createElement('input');
         csrfToken.type = 'hidden';
@@ -492,7 +494,7 @@ function rejectRequisition() {
     if (reason && reason.trim()) {
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = '{% url "purchase:approve_requisition" requisition.id %}';
+        form.action = '{% url "purchase:requisition_approve" requisition.id %}';
         
         const csrfToken = document.createElement('input');
         csrfToken.type = 'hidden';
@@ -517,9 +519,9 @@ function rejectRequisition() {
     }
 }
 
-function exportPDF() {
+{% comment %} function exportPDF() {
     window.open('{% url "purchase:requisition_pdf" requisition.id %}', '_blank');
-}
+} {% endcomment %}
 
 // Print functionality
 function printPage() {

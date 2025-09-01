@@ -88,12 +88,13 @@ urlpatterns = [
     
     # Invoice URLs
     path('invoices/', InvoicePageView.as_view(), name='invoices'),
+    path('invoices/<int:pk>/record-payment/', payments_create, name='invoice_record_payment'),
     path('invoices/create/', views.invoice_form, name='invoices_create'),
     path('invoices/add/', invoices_add, name='invoices_add'),
     path('invoices/<int:pk>/', invoice_detail, name='invoice_detail'),
     path('invoices/<int:pk>/edit/', views.invoice_form, name='invoices_edit_form'),
     path('invoices/<int:pk>/update/', invoices_edit, name='invoices_edit'),
-    path('invoices/<int:pk>/delete/', invoices_delete, name='invoices_delete'),
+    path('invoices/<int:pk>/delete/', invoices_delete, name='invoice_delete'),
     path('invoices/<int:pk>/send/', invoices_send, name='invoices_send'),
     path('invoices/<int:pk>/mark-paid/', invoices_mark_paid, name='invoices_mark_paid'),
     

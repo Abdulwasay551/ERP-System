@@ -2626,22 +2626,31 @@ def rfq_add(request):
 @login_required
 def rfq_detail(request, pk):
     """RFQ detail view with quotation comparison"""
+    # Initialize context with default values
+    context = {
+        'rfq': None,
+        'comparison_matrix': None,
+        'recommendations': None,
+        'error': None
+    }
+    
     try:
         rfq = get_object_or_404(RequestForQuotation, pk=pk, company=request.user.company)
+        context['rfq'] = rfq
         
-        # Get quotation comparison
+        # Get quotation comparison if RFQ exists
         comparison = QuotationComparison(rfq)
-        comparison_matrix = comparison.get_comparison_matrix()
-        recommendations = comparison.get_best_quotation_analysis()
+        context['comparison_matrix'] = comparison.get_comparison_matrix()
+        context['recommendations'] = comparison.get_best_quotation_analysis()
         
-        context = {
-            'rfq': rfq,
-            'comparison_matrix': comparison_matrix,
-            'recommendations': recommendations,
-        }
-        return render(request, 'purchase/rfq-detail.html', context)
+    except RequestForQuotation.DoesNotExist:
+        context['error'] = 'The requested RFQ does not exist or you do not have permission to view it.'
     except Exception as e:
-        return render(request, 'purchase/rfq-detail.html', {'error': str(e)})
+        context['error'] = str(e)
+        if 'rfq' in locals():
+            context['rfq'] = rfq  # Include rfq in context if it was defined
+    
+    return render(request, 'purchase/rfq-detail.html', context)
 
 @login_required
 def rfq_edit(request, pk):

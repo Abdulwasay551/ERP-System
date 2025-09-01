@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
-from django.views.generic import ListView, DetailView, CreateView, UpdateView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy, reverse
 from django.http import JsonResponse, HttpResponse
 from django.db.models import Q, Count, Sum, Avg, F
@@ -233,7 +233,7 @@ class ProductDetailView(LoginRequiredMixin, DetailView):
         
         context.update({
             'variants': product.variants.filter(is_active=True),
-            'tracking_units': product.tracking_units.filter(is_active=True).order_by('-created_at'),
+            'tracking_units': product.tracking_units.all().order_by('-created_at'),
             'product_attributes': product.product_attributes.select_related('attribute'),
             **inventory_context,
         })
@@ -792,16 +792,6 @@ class AttributeCreateView(LoginRequiredMixin, CreateView):
         messages.success(self.request, 'Product attribute created successfully!')
         return super().form_valid(form)
 
-    def get_success_url(self):
-        return reverse('products:attribute_detail', kwargs={'pk': self.object.pk})
-
-
-class AttributeUpdateView(LoginRequiredMixin, UpdateView):
-    """Update product attribute"""
-    model = Attribute
-    template_name = 'products/attribute_form.html'
-    fields = ['name', 'data_type', 'is_required', 'is_active']
-
     def get_queryset(self):
         return Attribute.objects.filter(company=self.request.user.company)
 
@@ -811,6 +801,36 @@ class AttributeUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         return reverse('products:attribute_detail', kwargs={'pk': self.object.pk})
+
+
+class AttributeUpdateView(LoginRequiredMixin, UpdateView):
+    model = Attribute
+    template_name = 'products/attribute_form.html'
+    fields = ['name', 'data_type', 'is_required']
+    
+    def get_queryset(self):
+        return Attribute.objects.filter(company=self.request.user.company)
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Product attribute updated successfully!')
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse('products:attribute_detail', kwargs={'pk': self.object.pk})
+
+
+class AttributeDeleteView(LoginRequiredMixin, DeleteView):
+    """Delete a product attribute"""
+    model = Attribute
+    template_name = 'products/attribute_confirm_delete.html'
+    context_object_name = 'attribute'
+    
+    def get_queryset(self):
+        return Attribute.objects.filter(company=self.request.user.company)
+    
+    def get_success_url(self):
+        messages.success(self.request, 'Attribute deleted successfully!')
+        return reverse('products:attribute_list')
 
 
 @login_required
@@ -833,7 +853,7 @@ def product_performance_view(request):
         },
         'tracking_stats': {
             'total_tracked': ProductTracking.objects.filter(product__company=company).count(),
-            'available_items': ProductTracking.objects.filter(product__company=company, is_available=True).count(),
+            'available_items': ProductTracking.objects.filter(product__company=company).count(),
             'serial_tracked': ProductTracking.objects.filter(product__company=company, serial_number__isnull=False).count(),
             'imei_tracked': ProductTracking.objects.filter(product__company=company, imei_number__isnull=False).count(),
             'barcode_tracked': ProductTracking.objects.filter(product__company=company, barcode__isnull=False).count(),
@@ -852,9 +872,11 @@ def inventory_reports_view(request):
     products = Product.objects.filter(company=company, is_stockable=True)
     tracking_summary = ProductTracking.objects.filter(product__company=company).aggregate(
         total_items=Count('id'),
-        available_items=Count('id', filter=Q(is_available=True)),
+        available_items=Count('id', filter=Q(status='available')),
+        in_use_items=Count('id', filter=Q(status='in_use')),
+        maintenance_items=Count('id', filter=Q(status='maintenance'))
     )
-    tracking_summary['unavailable_items'] = tracking_summary['total_items'] - tracking_summary['available_items']
+    tracking_summary['unavailable_items'] = tracking_summary['in_use_items'] + tracking_summary['maintenance_items']
     
     context = {
         'stockable_products': products.count(),
