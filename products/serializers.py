@@ -132,7 +132,8 @@ class ProductListSerializer(serializers.ModelSerializer):
         return obj.variants.count()
 
     def get_tracking_units_count(self, obj):
-        return obj.tracking_units.filter(is_active=True).count()
+        # ProductTracking has no is_active field - 'available' is its equivalent concept.
+        return obj.tracking_units.filter(status='available').count()
 
     def get_flags(self, obj):
         """Return business rule flags as a list"""

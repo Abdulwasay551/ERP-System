@@ -264,6 +264,46 @@ class ProductTrackingViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(tracking_units, many=True)
         return Response(serializer.data)
 
+    @action(detail=False, methods=['get'], url_path='stock-by-vendor')
+    def stock_by_vendor(self, request):
+        """
+        Available (unsold) individually-tracked units grouped by vendor + brand + model +
+        variant - lets the shop see, e.g., how many Galaxy S24 128GB units came from each
+        distributor. Qty-based accessories aren't included here since they aren't tracked
+        per-vendor (StockItem pools all vendors' stock of a product together).
+        """
+        queryset = self.get_queryset().filter(status='available')
+
+        supplier_id = request.query_params.get('supplier_id')
+        if supplier_id:
+            queryset = queryset.filter(supplier_id=supplier_id)
+        brand = request.query_params.get('brand')
+        if brand:
+            queryset = queryset.filter(product__brand__icontains=brand)
+        product_id = request.query_params.get('product_id')
+        if product_id:
+            queryset = queryset.filter(product_id=product_id)
+
+        grouped = queryset.values(
+            'supplier_id', 'supplier__partner__name',
+            'product_id', 'product__brand', 'product__name',
+            'variant_id', 'variant__color', 'variant__size',
+        ).annotate(available_count=Count('id')).order_by('product__brand', 'product__name', 'supplier__partner__name')
+
+        results = [{
+            'supplier_id': row['supplier_id'],
+            'supplier_name': row['supplier__partner__name'],
+            'product_id': row['product_id'],
+            'brand': row['product__brand'],
+            'model': row['product__name'],
+            'variant_id': row['variant_id'],
+            'variant_color': row['variant__color'],
+            'variant_size': row['variant__size'],
+            'available_count': row['available_count'],
+        } for row in grouped]
+
+        return Response(results)
+
     @action(detail=False, methods=['post'])
     def validate_identifier(self, request):
         """Validate if a tracking identifier is unique"""

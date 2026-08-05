@@ -6,12 +6,14 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 from decimal import Decimal
 
+from user_auth.permissions import RoleIn
 from .models import (
     Account, AccountCategory, AccountGroup, Journal, JournalEntry, JournalItem,
-    AccountPayable, AccountReceivable, BankAccount, BankReconciliation, TaxConfig, 
-    Currency, FinancialStatement, AccountingAuditLog, RecurringJournal
+    AccountPayable, AccountReceivable, BankAccount, BankReconciliation, TaxConfig,
+    Currency, FinancialStatement, AccountingAuditLog, RecurringJournal, Expense
 )
 from .serializers import (
+    ExpenseSerializer,
     AccountSerializer, JournalSerializer, JournalEntrySerializer, JournalItemSerializer,
     AccountPayableSerializer, AccountReceivableSerializer, BankAccountSerializer,
     BankReconciliationSerializer, TaxConfigSerializer, CurrencySerializer,
@@ -264,3 +266,37 @@ class RecurringJournalViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     def get_queryset(self):
         return RecurringJournal.objects.filter(journal__company=self.request.user.company)
+
+
+class ManagerOrOwner(RoleIn):
+    allowed_roles = ['Manager']
+
+
+class ExpenseViewSet(viewsets.ModelViewSet):
+    serializer_class = ExpenseSerializer
+    permission_classes = [permissions.IsAuthenticated, ManagerOrOwner]
+
+    def get_queryset(self):
+        queryset = Expense.objects.filter(company=self.request.user.company)
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
+        month = self.request.query_params.get('month')  # YYYY-MM
+        if month:
+            year, mon = month.split('-')
+            queryset = queryset.filter(expense_date__year=year, expense_date__month=mon)
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(company=self.request.user.company, recorded_by=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        """Category-totals breakdown, optionally filtered by ?month=YYYY-MM."""
+        queryset = self.get_queryset()
+        totals = queryset.values('category').annotate(total=Sum('amount')).order_by('-total')
+        grand_total = queryset.aggregate(total=Sum('amount'))['total'] or 0
+        return Response({
+            'by_category': [{'category': row['category'], 'total': str(row['total'])} for row in totals],
+            'grand_total': str(grand_total),
+        })

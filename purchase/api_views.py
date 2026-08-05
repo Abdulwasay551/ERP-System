@@ -1,8 +1,17 @@
-from rest_framework import viewsets, permissions
-from rest_framework.decorators import action
+from decimal import Decimal, InvalidOperation
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
+from django.db import transaction, IntegrityError
 from django.db.models import Q
 from django.utils import timezone
+from user_auth.permissions import RoleIn
+
+
+class ManagerOrWarehouse(RoleIn):
+    allowed_roles = ['Manager', 'Warehouse']
+from products.models import Product, ProductVariant, ProductTracking
+from inventory.models import Warehouse, StockItem
 from .models import (
     Supplier, TaxChargesTemplate, PurchaseRequisition, PurchaseRequisitionItem,
     RequestForQuotation, RFQItem, SupplierQuotation, SupplierQuotationItem,
@@ -16,21 +25,47 @@ from .serializers import (
     SupplierQuotationSerializer, SupplierQuotationItemSerializer, PurchaseOrderSerializer,
     PurchaseOrderItemSerializer, PurchaseOrderTaxChargeSerializer, GoodsReceiptNoteSerializer,
     GRNItemSerializer, BillSerializer, BillItemSerializer, PurchasePaymentSerializer,
-    PurchaseReturnSerializer, PurchaseReturnItemSerializer, PurchaseApprovalSerializer
+    PurchaseReturnSerializer, PurchaseReturnItemSerializer, PurchaseApprovalSerializer,
+    SupplierLedgerSerializer
 )
 
 class SupplierViewSet(viewsets.ModelViewSet):
     serializer_class = SupplierSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    
+    # Vendor management is a purchasing/warehouse concern, not shop-floor sales.
+    permission_classes = [permissions.IsAuthenticated, ManagerOrWarehouse]
+
     def get_queryset(self):
-        return Supplier.objects.filter(company=self.request.user.company)
-    
+        qs = Supplier.objects.filter(company=self.request.user.company).select_related('partner')
+        search = self.request.query_params.get('search')
+        if search:
+            qs = qs.filter(
+                Q(partner__name__icontains=search) |
+                Q(partner__phone__icontains=search) |
+                Q(partner__email__icontains=search) |
+                Q(partner__city__icontains=search)
+            )
+        return qs.order_by('partner__name')
+
+    def perform_create(self, serializer):
+        serializer.save(company=self.request.user.company, created_by=self.request.user)
+
     @action(detail=False, methods=['get'])
     def active_suppliers(self, request):
         suppliers = self.get_queryset().filter(is_active=True)
         serializer = self.get_serializer(suppliers, many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def ledger(self, request, pk=None):
+        supplier = self.get_object()
+        entries = supplier.ledger_entries.all().order_by('-transaction_date', '-created_at')
+        serializer = SupplierLedgerSerializer(entries, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'], url_path='outstanding-balance')
+    def outstanding_balance(self, request, pk=None):
+        supplier = self.get_object()
+        return Response({'supplier_id': supplier.id, 'outstanding_balance': str(supplier.get_outstanding_balance())})
 
 class TaxChargesTemplateViewSet(viewsets.ModelViewSet):
     serializer_class = TaxChargesTemplateSerializer
@@ -178,6 +213,13 @@ class BillViewSet(viewsets.ModelViewSet):
         bill.save()
         return Response({'status': 'matched'})
 
+    @action(detail=False, methods=['get'], url_path='pending-receipt')
+    def pending_receipt(self, request):
+        """Vendor invoices recorded but not yet physically received - for the dashboard."""
+        bills = self.get_queryset().filter(goods_received=False).order_by('-bill_date')
+        serializer = self.get_serializer(bills, many=True)
+        return Response(serializer.data)
+
 class BillItemViewSet(viewsets.ModelViewSet):
     serializer_class = BillItemSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -188,9 +230,12 @@ class BillItemViewSet(viewsets.ModelViewSet):
 class PurchasePaymentViewSet(viewsets.ModelViewSet):
     serializer_class = PurchasePaymentSerializer
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def get_queryset(self):
         return PurchasePayment.objects.filter(company=self.request.user.company)
+
+    def perform_create(self, serializer):
+        serializer.save(company=self.request.user.company, created_by=self.request.user)
 
 class PurchaseReturnViewSet(viewsets.ModelViewSet):
     serializer_class = PurchaseReturnSerializer
@@ -236,4 +281,245 @@ class PurchaseApprovalViewSet(viewsets.ModelViewSet):
         approval.approved_at = timezone.now()
         approval.comments = request.data.get('comments', '')
         approval.save()
-        return Response({'status': 'approved'}) 
+        return Response({'status': 'approved'})
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated, ManagerOrWarehouse])
+def vendor_invoice_create(request):
+    """
+    Record a vendor invoice (manual bill, bypassing RFQ->PO->GRN - same philosophy as the
+    POS quick-sale endpoint bypassing Quotation->SalesOrder). This only records what was
+    invoiced/expected; it does NOT create stock or tracking units, because the vendor's
+    invoice commonly arrives before the physical phones do. The liability is recorded on
+    the supplier ledger immediately (via Bill.save()); physical stock is only created when
+    bill_receive_items() is called against this bill, once the shipment actually arrives.
+    """
+    company = request.user.company
+    data = request.data
+
+    supplier_id = data.get('supplier_id')
+    items_data = data.get('items') or []
+
+    if not supplier_id or not items_data:
+        return Response({'error': 'supplier_id and items are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        supplier = Supplier.objects.get(pk=supplier_id, company=company)
+    except Supplier.DoesNotExist:
+        return Response({'error': f'Supplier {supplier_id} not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    warehouse = None
+    if data.get('warehouse_id'):
+        try:
+            warehouse = Warehouse.objects.get(pk=data['warehouse_id'], company=company)
+        except Warehouse.DoesNotExist:
+            return Response({'error': f"Warehouse {data['warehouse_id']} not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    try:
+        with transaction.atomic():
+            bill = Bill.objects.create(
+                company=company,
+                supplier=supplier,
+                warehouse=warehouse,
+                supplier_invoice_number=data.get('supplier_invoice_number', ''),
+                bill_date=data.get('bill_date') or timezone.now().date(),
+                matching_type='manual',
+                status='approved',
+                goods_received=False,
+                created_by=request.user,
+            )
+
+            item_summaries = []
+            for line in items_data:
+                product_id = line.get('product_id')
+                if not product_id:
+                    raise ValueError('Each item requires a product_id.')
+                try:
+                    product = Product.objects.get(pk=product_id, company=company)
+                except Product.DoesNotExist:
+                    raise ValueError(f'Product {product_id} not found.')
+
+                variant = None
+                if line.get('variant_id'):
+                    try:
+                        variant = ProductVariant.objects.get(pk=line['variant_id'], product=product)
+                    except ProductVariant.DoesNotExist:
+                        raise ValueError(f"Variant {line['variant_id']} not found for product {product_id}.")
+
+                try:
+                    unit_price = Decimal(str(line.get('unit_price', '0')))
+                    quantity = Decimal(str(line.get('expected_quantity', '0')))
+                except InvalidOperation:
+                    raise ValueError(f'Invalid unit_price/expected_quantity for product {product_id}.')
+                if quantity <= 0:
+                    raise ValueError(f'expected_quantity must be > 0 for product {product.name}.')
+
+                bill_item = BillItem.objects.create(
+                    bill=bill, product=product, variant=variant,
+                    quantity=quantity, unit_price=unit_price, item_source='manual'
+                )
+                item_summaries.append({
+                    'bill_item_id': bill_item.id, 'product_id': product.id,
+                    'product_name': product.name, 'expected_quantity': str(quantity),
+                    'tracking_method': product.tracking_method,
+                })
+
+            bill.subtotal = sum(item.line_total for item in bill.items.all())
+            bill.total_amount = bill.subtotal + bill.tax_amount
+            bill.save()
+
+    except ValueError as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response({
+        'bill_id': bill.id,
+        'bill_number': bill.bill_number,
+        'supplier': supplier.name,
+        'total_amount': str(bill.total_amount),
+        'goods_received': bill.goods_received,
+        'items': item_summaries,
+    }, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated, ManagerOrWarehouse])
+def bill_receive_items(request, bill_id):
+    """
+    Scan the physical shipment against a previously-recorded vendor invoice: for each
+    line, either a list of scanned IMEI/serial/barcode `codes` (individually tracked
+    products) or a `quantity` (accessories). Callable multiple times as the user works
+    through the shipment product-by-product ("select mobile model, add bulk, scan, done,
+    add another product"); call bill_confirm_received() once everything has arrived.
+    """
+    company = request.user.company
+    data = request.data
+    items_data = data.get('items') or []
+    warehouse_id = data.get('warehouse_id')
+
+    try:
+        bill = Bill.objects.get(pk=bill_id, company=company)
+    except Bill.DoesNotExist:
+        return Response({'error': f'Bill {bill_id} not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    warehouse = bill.warehouse
+    if warehouse_id:
+        try:
+            warehouse = Warehouse.objects.get(pk=warehouse_id, company=company)
+        except Warehouse.DoesNotExist:
+            return Response({'error': f'Warehouse {warehouse_id} not found.'}, status=status.HTTP_404_NOT_FOUND)
+    if not warehouse:
+        return Response({'error': 'warehouse_id is required (bill has no default warehouse set).'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not items_data:
+        return Response({'error': 'items are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        with transaction.atomic():
+            tracking_units_created = 0
+            line_summaries = []
+
+            for line in items_data:
+                bill_item_id = line.get('bill_item_id')
+                if not bill_item_id:
+                    raise ValueError('Each item requires a bill_item_id.')
+                try:
+                    bill_item = BillItem.objects.get(pk=bill_item_id, bill=bill)
+                except BillItem.DoesNotExist:
+                    raise ValueError(f'Bill item {bill_item_id} not found on bill {bill_id}.')
+
+                product = bill_item.product
+                variant = bill_item.variant
+
+                if product.tracking_method in ('imei', 'serial', 'barcode'):
+                    codes = line.get('codes') or []
+                    if not codes:
+                        raise ValueError(
+                            f'Product {product.name} requires individual codes '
+                            f'({product.get_tracking_method_display()}) - none provided.'
+                        )
+                    tracking_field = product.get_tracking_field_name()
+
+                    for code in codes:
+                        code = str(code).strip()
+                        if not code:
+                            raise ValueError(f'Empty tracking code for product {product.name}.')
+                        if ProductTracking.objects.filter(**{tracking_field: code}).exists():
+                            raise ValueError(f'{product.get_tracking_method_display()} "{code}" already exists in the system.')
+                        ProductTracking.objects.create(
+                            product=product,
+                            variant=variant,
+                            current_warehouse=warehouse,
+                            supplier=bill.supplier,
+                            purchase_price=bill_item.unit_price,
+                            purchase_date=bill.bill_date,
+                            status='available',
+                            created_by=request.user,
+                            **{tracking_field: code}
+                        )
+                        tracking_units_created += 1
+
+                    # Dual-write a StockItem alongside ProductTracking (mirrors the
+                    # existing GRN receiving pattern) - process_inventory_reduction() is
+                    # StockItem-driven, so without this a tracked product sold via POS
+                    # would silently never get its ProductTracking unit marked sold.
+                    stock_item, _ = StockItem.objects.get_or_create(
+                        company=company, product=product, warehouse=warehouse,
+                        defaults={'stock_status': 'available', 'purchase_status': 'ready_for_use'}
+                    )
+                    stock_item.update_average_cost(Decimal(len(codes)), bill_item.unit_price)
+                    stock_item.quantity += len(codes)
+                    stock_item.save()
+
+                    line_summaries.append({'bill_item_id': bill_item.id, 'product_name': product.name, 'units_received': len(codes)})
+                else:
+                    quantity = Decimal(str(line.get('quantity', '0')))
+                    if quantity <= 0:
+                        raise ValueError(f'quantity must be > 0 for product {product.name}.')
+                    stock_item, _ = StockItem.objects.get_or_create(
+                        company=company, product=product, warehouse=warehouse,
+                        defaults={'stock_status': 'available', 'purchase_status': 'ready_for_use'}
+                    )
+                    # update_average_cost() computes the new weighted average from the
+                    # CURRENT (pre-addition) quantity + the incoming quantity, then saves -
+                    # so quantity must only be incremented after that call, not before.
+                    stock_item.update_average_cost(quantity, bill_item.unit_price)
+                    stock_item.quantity += quantity
+                    stock_item.save()
+                    line_summaries.append({'bill_item_id': bill_item.id, 'product_name': product.name, 'quantity_received': str(quantity)})
+
+    except ValueError as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except IntegrityError as e:
+        return Response({'error': f'Database integrity error: {e}'}, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response({
+        'bill_id': bill.id,
+        'tracking_units_created': tracking_units_created,
+        'items': line_summaries,
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated, ManagerOrWarehouse])
+def bill_confirm_received(request, bill_id):
+    """Mark a vendor invoice's goods as fully received, with an optional review note."""
+    company = request.user.company
+    try:
+        bill = Bill.objects.get(pk=bill_id, company=company)
+    except Bill.DoesNotExist:
+        return Response({'error': f'Bill {bill_id} not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    bill.goods_received = True
+    bill.received_at = timezone.now()
+    bill.received_by = request.user
+    bill.receipt_notes = request.data.get('receipt_notes', '')
+    bill.save()
+
+    return Response({
+        'bill_id': bill.id,
+        'bill_number': bill.bill_number,
+        'goods_received': bill.goods_received,
+        'received_at': bill.received_at,
+        'receipt_notes': bill.receipt_notes,
+    }, status=status.HTTP_200_OK) 

@@ -1,4 +1,5 @@
-from django.db import models
+from django.db import models, transaction
+from django.db.models import Sum
 from django.utils import timezone
 from user_auth.models import Company, User
 
@@ -131,7 +132,8 @@ class Customer(models.Model):
     loyalty_points = models.IntegerField(default=0)
     preferred_payment_method = models.CharField(max_length=100, blank=True)
     account = models.ForeignKey('accounting.Account', on_delete=models.SET_NULL, null=True, blank=True, related_name='crm_customers')
-    
+    cnic = models.CharField(max_length=20, blank=True, help_text="National ID (optional)")
+
     # Legacy fields for backward compatibility
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='customers')
     name = models.CharField(max_length=255)
@@ -146,11 +148,106 @@ class Customer(models.Model):
         return self.partner.name if self.partner else self.name
 
     def save(self, *args, **kwargs):
+        # Auto-create a linked Partner if one wasn't provided (e.g. the "Add Customer"
+        # API flow only ever sets Customer fields). ProductTracking.sold_to_customer is
+        # an FK to Partner, not Customer, so without this link a sale to this customer
+        # can never record who bought the unit.
+        if not self.partner_id:
+            self.partner = Partner.objects.create(
+                company=self.company, name=self.name, partner_type='individual',
+                email=self.email, phone=self.phone, is_customer=True, created_by=self.created_by,
+            )
+
         # Ensure partner is marked as customer
         if self.partner:
             self.partner.is_customer = True
             self.partner.save()
+
+        # Auto-generate customer_code if not exists - customer_code is unique but blank
+        # is allowed for form convenience, and Postgres treats '' as a real value for
+        # uniqueness, so creating a second customer without an explicit code collided
+        # with the first (mirrors Supplier.save()'s supplier_code generation pattern).
+        if not self.customer_code:
+            with transaction.atomic():
+                last_customer = Customer.objects.select_for_update().filter(
+                    company=self.company, customer_code__startswith='CUST-'
+                ).order_by('-id').first()
+                if last_customer and last_customer.customer_code:
+                    try:
+                        last_num = int(last_customer.customer_code.split('-')[-1])
+                        new_num = last_num + 1
+                    except (ValueError, IndexError):
+                        new_num = 1
+                else:
+                    new_num = 1
+                self.customer_code = f'CUST-{new_num:06d}'
+
         super().save(*args, **kwargs)
+
+    def get_outstanding_balance(self):
+        """Net amount this customer owes (sum of debits - sum of credits on their ledger)."""
+        totals = self.ledger_entries.aggregate(total_debit=Sum('debit_amount'), total_credit=Sum('credit_amount'))
+        return (totals['total_debit'] or 0) - (totals['total_credit'] or 0)
+
+
+class CustomerLedger(models.Model):
+    """Customer ledger for tracking all financial transactions - mirrors purchase.SupplierLedger's shape."""
+
+    REFERENCE_TYPE_CHOICES = [
+        ('invoice', 'Sales Invoice'),
+        ('payment', 'Payment Received'),
+        ('credit_note', 'Credit Note'),
+        ('debit_note', 'Debit Note'),
+        ('advance', 'Advance Payment'),
+        ('adjustment', 'Manual Adjustment'),
+        ('opening_balance', 'Opening Balance'),
+    ]
+
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='customer_ledgers')
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='ledger_entries')
+
+    transaction_date = models.DateField()
+    reference_type = models.CharField(max_length=50, choices=REFERENCE_TYPE_CHOICES)
+    reference_id = models.IntegerField(help_text="ID of the referenced document")
+    description = models.TextField()
+
+    debit_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0, help_text="Amount owed BY customer (invoice)")
+    credit_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0, help_text="Amount paid BY customer")
+    balance = models.DecimalField(max_digits=15, decimal_places=2, default=0, help_text="Running balance")
+
+    payment_method = models.CharField(max_length=50, blank=True)
+    reference_number = models.CharField(max_length=255, blank=True)
+
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        # Always recalculate the running balance (not just on create) - see
+        # purchase.SupplierLedger for why this can't be create-only.
+        previous_balance = CustomerLedger.objects.filter(
+            customer=self.customer,
+            transaction_date__lte=self.transaction_date
+        ).exclude(pk=self.pk).aggregate(
+            total_debit=Sum('debit_amount'),
+            total_credit=Sum('credit_amount')
+        )
+        total_debit = previous_balance['total_debit'] or 0
+        total_credit = previous_balance['total_credit'] or 0
+        previous_balance_amount = total_debit - total_credit
+
+        self.balance = previous_balance_amount + self.debit_amount - self.credit_amount
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.customer} - {self.transaction_date} - {self.reference_type}"
+
+    class Meta:
+        ordering = ['-transaction_date', '-created_at']
+        indexes = [
+            models.Index(fields=['customer', 'transaction_date']),
+            models.Index(fields=['reference_type', 'reference_id']),
+        ]
 
 class Lead(models.Model):
     """Enhanced Lead model with proper lifecycle management"""

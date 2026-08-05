@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Sum, Q
 from django.core.validators import MinValueValidator
 from user_auth.models import Company, User
@@ -97,17 +97,20 @@ class Supplier(models.Model):
     def save(self, *args, **kwargs):
         # Generate supplier code if not exists
         if not self.supplier_code:
-            last_supplier = Supplier.objects.filter(company=self.company).order_by('-id').first()
-            if last_supplier and last_supplier.supplier_code:
-                try:
-                    last_number = int(last_supplier.supplier_code.split('-')[-1])
-                    new_number = last_number + 1
-                except (ValueError, IndexError):
+            with transaction.atomic():
+                last_supplier = Supplier.objects.select_for_update().filter(
+                    company=self.company
+                ).order_by('-id').first()
+                if last_supplier and last_supplier.supplier_code:
+                    try:
+                        last_number = int(last_supplier.supplier_code.split('-')[-1])
+                        new_number = last_number + 1
+                    except (ValueError, IndexError):
+                        new_number = 1
+                else:
                     new_number = 1
-            else:
-                new_number = 1
-            
-            self.supplier_code = f'SUP-{new_number:06d}'
+
+                self.supplier_code = f'SUP-{new_number:06d}'
         
         # Calculate overall rating
         ratings = [self.quality_rating, self.delivery_rating, self.price_rating, self.service_rating]
@@ -856,21 +859,22 @@ class PurchaseOrder(models.Model):
         # Auto-generate PO number if not provided
         if not self.po_number:
             current_year = timezone.now().year
-            last_po = PurchaseOrder.objects.filter(
-                company=self.company,
-                po_number__startswith=f'PO-{current_year}'
-            ).order_by('-id').first()
-            
-            if last_po and last_po.po_number:
-                try:
-                    last_number = int(last_po.po_number.split('-')[-1])
-                    new_number = last_number + 1
-                except (ValueError, IndexError):
+            with transaction.atomic():
+                last_po = PurchaseOrder.objects.select_for_update().filter(
+                    company=self.company,
+                    po_number__startswith=f'PO-{current_year}'
+                ).order_by('-id').first()
+
+                if last_po and last_po.po_number:
+                    try:
+                        last_number = int(last_po.po_number.split('-')[-1])
+                        new_number = last_number + 1
+                    except (ValueError, IndexError):
+                        new_number = 1
+                else:
                     new_number = 1
-            else:
-                new_number = 1
-            
-            self.po_number = f'PO-{current_year}-{new_number:04d}'
+
+                self.po_number = f'PO-{current_year}-{new_number:04d}'
         
         # Calculate totals
         if self.pk:  # Only calculate if object exists (has items)
@@ -1122,21 +1126,22 @@ class GoodsReceiptNote(models.Model):
         # Auto-generate GRN number if not provided
         if not self.grn_number:
             current_year = timezone.now().year
-            last_grn = GoodsReceiptNote.objects.filter(
-                company=self.company,
-                grn_number__startswith=f'GRN-{current_year}'
-            ).order_by('-id').first()
-            
-            if last_grn and last_grn.grn_number:
-                try:
-                    last_number = int(last_grn.grn_number.split('-')[-1])
-                    new_number = last_number + 1
-                except (ValueError, IndexError):
+            with transaction.atomic():
+                last_grn = GoodsReceiptNote.objects.select_for_update().filter(
+                    company=self.company,
+                    grn_number__startswith=f'GRN-{current_year}'
+                ).order_by('-id').first()
+
+                if last_grn and last_grn.grn_number:
+                    try:
+                        last_number = int(last_grn.grn_number.split('-')[-1])
+                        new_number = last_number + 1
+                    except (ValueError, IndexError):
+                        new_number = 1
+                else:
                     new_number = 1
-            else:
-                new_number = 1
-            
-            self.grn_number = f'GRN-{current_year}-{new_number:04d}'
+
+                self.grn_number = f'GRN-{current_year}-{new_number:04d}'
         
         super().save(*args, **kwargs)
 
@@ -1676,21 +1681,22 @@ class QualityInspection(models.Model):
         # Auto-generate inspection number if not provided
         if not self.inspection_number:
             current_year = timezone.now().year
-            last_inspection = QualityInspection.objects.filter(
-                company=self.company,
-                inspection_number__startswith=f'QI-{current_year}'
-            ).order_by('-id').first()
-            
-            if last_inspection and last_inspection.inspection_number:
-                try:
-                    last_number = int(last_inspection.inspection_number.split('-')[-1])
-                    new_number = last_number + 1
-                except (ValueError, IndexError):
+            with transaction.atomic():
+                last_inspection = QualityInspection.objects.select_for_update().filter(
+                    company=self.company,
+                    inspection_number__startswith=f'QI-{current_year}'
+                ).order_by('-id').first()
+
+                if last_inspection and last_inspection.inspection_number:
+                    try:
+                        last_number = int(last_inspection.inspection_number.split('-')[-1])
+                        new_number = last_number + 1
+                    except (ValueError, IndexError):
+                        new_number = 1
+                else:
                     new_number = 1
-            else:
-                new_number = 1
-            
-            self.inspection_number = f'QI-{current_year}-{new_number:04d}'
+
+                self.inspection_number = f'QI-{current_year}-{new_number:04d}'
         
         super().save(*args, **kwargs)
     
@@ -1774,6 +1780,14 @@ class Bill(models.Model):
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='bills')
     purchase_order = models.ForeignKey(PurchaseOrder, on_delete=models.SET_NULL, null=True, blank=True, related_name='bills')
     grn = models.ForeignKey(GoodsReceiptNote, on_delete=models.SET_NULL, null=True, blank=True, related_name='bills')
+    warehouse = models.ForeignKey('inventory.Warehouse', on_delete=models.SET_NULL, null=True, blank=True, related_name='bills', help_text="Receiving warehouse for manual (no-GRN) bills")
+
+    # Goods-receipt tracking for manual bills where the vendor invoice is recorded before
+    # the physical stock arrives (e.g. distributor invoices ahead of delivery).
+    goods_received = models.BooleanField(default=True, help_text="False = invoice recorded but goods not yet physically received/scanned in")
+    received_at = models.DateTimeField(null=True, blank=True)
+    received_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='received_bills')
+    receipt_notes = models.TextField(blank=True, help_text="Optional note added when confirming goods received")
     supplier_invoice_number = models.CharField(max_length=255, blank=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_bills')
     bill_date = models.DateField()
@@ -1808,24 +1822,60 @@ class Bill(models.Model):
         # Auto-generate bill number if not provided
         if not self.bill_number:
             current_year = timezone.now().year
-            last_bill = Bill.objects.filter(
-                company=self.company,
-                bill_number__startswith=f'BILL-{current_year}'
-            ).order_by('-id').first()
-            
-            if last_bill and last_bill.bill_number:
-                try:
-                    last_number = int(last_bill.bill_number.split('-')[-1])
-                    new_number = last_number + 1
-                except (ValueError, IndexError):
+            with transaction.atomic():
+                last_bill = Bill.objects.select_for_update().filter(
+                    company=self.company,
+                    bill_number__startswith=f'BILL-{current_year}'
+                ).order_by('-id').first()
+
+                if last_bill and last_bill.bill_number:
+                    try:
+                        last_number = int(last_bill.bill_number.split('-')[-1])
+                        new_number = last_number + 1
+                    except (ValueError, IndexError):
+                        new_number = 1
+                else:
                     new_number = 1
-            else:
-                new_number = 1
-            
-            self.bill_number = f'BILL-{current_year}-{new_number:04d}'
+
+                self.bill_number = f'BILL-{current_year}-{new_number:04d}'
         
         self.outstanding_amount = self.total_amount - self.paid_amount
         super().save(*args, **kwargs)
+
+        # Debit the supplier ledger for the amount owed on this bill (liability recorded
+        # at invoice time, independent of physical receipt). Mirrors PurchasePayment's
+        # existing credit-side wiring in update_supplier_ledger().
+        self.update_supplier_ledger_debit()
+
+    def update_supplier_ledger_debit(self):
+        from .models import SupplierLedger  # Avoid circular import
+
+        description = f'Bill {self.bill_number}' + (f' ({self.supplier_invoice_number})' if self.supplier_invoice_number else '')
+        ledger_entry, created = SupplierLedger.objects.get_or_create(
+            company=self.company,
+            supplier=self.supplier,
+            reference_type='bill',
+            reference_id=self.id,
+            defaults={
+                'transaction_date': self.bill_date,
+                'description': description,
+                'debit_amount': self.total_amount,
+                'credit_amount': 0,
+                'reference_number': self.supplier_invoice_number,
+                'created_by': self.created_by,
+            }
+        )
+        if not created:
+            # NOTE: deliberately NOT using update_or_create here - its update path only
+            # writes fields listed in `defaults` to the DB (an update_fields optimization),
+            # so the balance recalculated inside SupplierLedger.save() would be silently
+            # dropped. A full, unrestricted .save() is required to persist it.
+            ledger_entry.transaction_date = self.bill_date
+            ledger_entry.description = description
+            ledger_entry.debit_amount = self.total_amount
+            ledger_entry.credit_amount = 0
+            ledger_entry.reference_number = self.supplier_invoice_number
+            ledger_entry.save()
 
     def __str__(self):
         return f"Bill-{self.bill_number} - {self.supplier.name}"
@@ -2003,6 +2053,7 @@ class BillItem(models.Model):
     
     bill = models.ForeignKey(Bill, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    variant = models.ForeignKey('products.ProductVariant', on_delete=models.SET_NULL, null=True, blank=True)
     quantity = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.00'))])
     line_total = models.DecimalField(max_digits=15, decimal_places=2, default=0)
@@ -2139,6 +2190,7 @@ class BillItemTracking(models.Model):
                 purchase_price=self.bill_item.unit_price,
                 purchase_date=self.bill_item.bill.bill_date,
                 supplier=self.bill_item.bill.supplier,
+                current_warehouse=self.bill_item.bill.warehouse,
                 manufacturing_date=self.manufacturing_date,
                 expiry_date=self.expiry_date,
                 batch_number=self.batch_number,
@@ -2241,25 +2293,26 @@ class PurchasePayment(models.Model):
         # Generate payment number if not exists
         if not self.payment_number:
             current_year = timezone.now().year
-            last_payment = PurchasePayment.objects.filter(
-                company=self.company,
-                payment_number__isnull=False
-            ).order_by('-id').first()
-            
-            if last_payment and last_payment.payment_number:
-                try:
-                    last_number = int(last_payment.payment_number.split('-')[-1])
-                    new_number = last_number + 1
-                except (ValueError, IndexError):
+            with transaction.atomic():
+                last_payment = PurchasePayment.objects.select_for_update().filter(
+                    company=self.company,
+                    payment_number__isnull=False
+                ).order_by('-id').first()
+
+                if last_payment and last_payment.payment_number:
+                    try:
+                        last_number = int(last_payment.payment_number.split('-')[-1])
+                        new_number = last_number + 1
+                    except (ValueError, IndexError):
+                        new_number = 1
+                else:
                     new_number = 1
-            else:
-                new_number = 1
-            
-            self.payment_number = f'PAY-{current_year}-{new_number:06d}'
+
+                self.payment_number = f'PAY-{current_year}-{new_number:06d}'
         
         # Calculate base currency amount
         if self.exchange_rate and self.amount:
-            self.base_currency_amount = self.amount * self.exchange_rate
+            self.base_currency_amount = self.amount * Decimal(str(self.exchange_rate))
         
         super().save(*args, **kwargs)
         
@@ -2346,22 +2399,23 @@ class SupplierLedger(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-        # Calculate running balance before saving
-        if not self.balance and self.id is None:  # New record
-            previous_balance = SupplierLedger.objects.filter(
-                supplier=self.supplier,
-                transaction_date__lte=self.transaction_date
-            ).exclude(id=self.id if self.id else None).aggregate(
-                total_debit=Sum('debit_amount'),
-                total_credit=Sum('credit_amount')
-            )
-            
-            total_debit = previous_balance['total_debit'] or 0
-            total_credit = previous_balance['total_credit'] or 0
-            previous_balance_amount = total_debit - total_credit
-            
-            self.balance = previous_balance_amount + self.debit_amount - self.credit_amount
-        
+        # Always recalculate the running balance (not just on first create) - a bill's
+        # total can be set after the ledger row already exists (items added after the
+        # initial Bill.save()), so this must stay correct across repeated saves too.
+        previous_balance = SupplierLedger.objects.filter(
+            supplier=self.supplier,
+            transaction_date__lte=self.transaction_date
+        ).exclude(pk=self.pk).aggregate(
+            total_debit=Sum('debit_amount'),
+            total_credit=Sum('credit_amount')
+        )
+
+        total_debit = previous_balance['total_debit'] or 0
+        total_credit = previous_balance['total_credit'] or 0
+        previous_balance_amount = total_debit - total_credit
+
+        self.balance = previous_balance_amount + self.debit_amount - self.credit_amount
+
         super().save(*args, **kwargs)
 
     def __str__(self):
