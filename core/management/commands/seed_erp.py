@@ -55,45 +55,38 @@ class Command(BaseCommand):
             }
         )
         
-        # Roles
+        # Shop roles (lower level = more privilege, per DepartmentLevelPermission convention).
+        # Enterprise modules (HR/manufacturing/project_mgmt/finance) are dormant for this shop,
+        # so their demo users are folded into 'Manager' rather than getting their own role.
         admin_role, _ = Role.objects.get_or_create(
-            name='System Administrator',
-            defaults={'description': 'Full system access', 'department': 'IT', 'level': 1, 'is_active': True}
+            name='Owner',
+            defaults={'description': 'Full system access', 'department': 'Management', 'level': 1, 'is_active': True}
         )
-        
-        finance_manager_role, _ = Role.objects.get_or_create(
-            name='Finance Manager',
-            defaults={'description': 'Financial operations management', 'department': 'Finance', 'level': 2, 'is_active': True}
+
+        manager_role, _ = Role.objects.get_or_create(
+            name='Manager',
+            defaults={'description': 'Operations management: purchasing, expenses, reports', 'department': 'Operations', 'level': 2, 'is_active': True}
         )
-        
-        purchase_manager_role, _ = Role.objects.get_or_create(
-            name='Purchase Manager',
-            defaults={'description': 'Procurement and purchasing', 'department': 'Purchase', 'level': 2, 'is_active': True}
+        finance_manager_role = manager_role
+        purchase_manager_role = manager_role
+        hr_manager_role = manager_role
+        production_manager_role = manager_role
+        project_manager_role = manager_role
+
+        cashier_role, _ = Role.objects.get_or_create(
+            name='Cashier',
+            defaults={'description': 'POS checkout and invoicing', 'department': 'Sales', 'level': 3, 'is_active': True}
         )
-        
-        sales_manager_role, _ = Role.objects.get_or_create(
-            name='Sales Manager',
-            defaults={'description': 'Sales operations management', 'department': 'Sales', 'level': 2, 'is_active': True}
+        sales_manager_role = cashier_role
+
+        salesman_role, _ = Role.objects.get_or_create(
+            name='Salesman',
+            defaults={'description': 'Floor sales and customer assistance', 'department': 'Sales', 'level': 3, 'is_active': True}
         )
-        
+
         inventory_manager_role, _ = Role.objects.get_or_create(
-            name='Inventory Manager',
-            defaults={'description': 'Inventory and warehouse management', 'department': 'Inventory', 'level': 2, 'is_active': True}
-        )
-        
-        hr_manager_role, _ = Role.objects.get_or_create(
-            name='HR Manager',
-            defaults={'description': 'Human resources management', 'department': 'HR', 'level': 2, 'is_active': True}
-        )
-        
-        production_manager_role, _ = Role.objects.get_or_create(
-            name='Production Manager',
-            defaults={'description': 'Manufacturing operations', 'department': 'Production', 'level': 2, 'is_active': True}
-        )
-        
-        project_manager_role, _ = Role.objects.get_or_create(
-            name='Project Manager',
-            defaults={'description': 'Project management and coordination', 'department': 'Projects', 'level': 2, 'is_active': True}
+            name='Warehouse',
+            defaults={'description': 'Stock, GRN, and inventory management', 'department': 'Inventory', 'level': 3, 'is_active': True}
         )
         
         # Users
@@ -194,7 +187,19 @@ class Command(BaseCommand):
                 'password': make_password('projects123')
             }
         )
-        
+
+        salesman_user, _ = User.objects.get_or_create(
+            email='salesman@techcorp.com',
+            defaults={
+                'first_name': 'Ali',
+                'last_name': 'Khan',
+                'company': company1,
+                'role': salesman_role,
+                'is_active': True,
+                'password': make_password('salesman123')
+            }
+        )
+
         # ===============================
         # 2. CHART OF ACCOUNTS - Use init_coa command
         # ===============================
@@ -326,6 +331,16 @@ class Command(BaseCommand):
             company=company1, name='Services',
             defaults={'code': 'SERV', 'description': 'Service offerings'}
         )
+
+        mobile_phones_cat, _ = ProductCategory.objects.get_or_create(
+            company=company1, name='Mobile Phones',
+            defaults={'code': 'PHONE', 'description': 'IMEI-tracked mobile phones'}
+        )
+
+        accessories_cat, _ = ProductCategory.objects.get_or_create(
+            company=company1, name='Accessories',
+            defaults={'code': 'ACC', 'description': 'Phone accessories (barcode/qty tracked, not individually serialized)'}
+        )
         
         # Product Attributes
         color_attr, _ = Attribute.objects.get_or_create(
@@ -399,6 +414,58 @@ class Command(BaseCommand):
             }
         )
         
+        phone_product, _ = Product.objects.get_or_create(
+            company=company1, sku='PHN-001',
+            defaults={
+                'name': 'Samsung Galaxy S24',
+                'brand': 'Samsung',
+                'description': 'IMEI-tracked smartphone - each unit tracked individually',
+                'product_type': 'product',
+                'category': mobile_phones_cat,
+                'unit_of_measure': 'piece',
+                'cost_price': Decimal('700.00'),
+                'selling_price': Decimal('900.00'),
+                'is_active': True,
+                'is_saleable': True,
+                'is_purchasable': True,
+                'is_manufacturable': False,
+                'is_stockable': True,
+                'valuation_method': 'fifo',
+                'auto_reorder': False,
+                'lead_time_days': 3,
+                'safety_stock': Decimal('2.0'),
+                'requires_quality_inspection': False,
+                'tracking_method': 'imei',
+                'created_by': admin_user
+            }
+        )
+
+        accessory_product, _ = Product.objects.get_or_create(
+            company=company1, sku='ACC-001',
+            defaults={
+                'name': 'Wireless Earbuds',
+                'barcode': '8901234567890',
+                'description': 'Quantity-tracked accessory, identified by barcode (not individually serialized)',
+                'product_type': 'product',
+                'category': accessories_cat,
+                'unit_of_measure': 'piece',
+                'cost_price': Decimal('25.00'),
+                'selling_price': Decimal('35.00'),
+                'is_active': True,
+                'is_saleable': True,
+                'is_purchasable': True,
+                'is_manufacturable': False,
+                'is_stockable': True,
+                'valuation_method': 'weighted_avg',
+                'auto_reorder': True,
+                'lead_time_days': 5,
+                'safety_stock': Decimal('10.0'),
+                'requires_quality_inspection': False,
+                'tracking_method': 'none',
+                'created_by': admin_user
+            }
+        )
+
         consultation_service, _ = Product.objects.get_or_create(
             company=company1, sku='SERV-001',
             defaults={
@@ -442,31 +509,13 @@ class Command(BaseCommand):
             }
         )
         
-        secondary_warehouse, _ = Warehouse.objects.get_or_create(
-            company=company1, name='Secondary Warehouse',
-            defaults={
-                'code': 'WH-002',
-                'location': '456 Backup Lane, Storage District',
-                'address': '456 Backup Lane, Storage District, Backup City, BC 67890',
-                'warehouse_type': 'distribution',
-                'manager': inventory_user,
-                'is_active': True
-            }
-        )
-        
-        # Raw Material Warehouse
-        raw_material_warehouse, _ = Warehouse.objects.get_or_create(
-            company=company1, name='Raw Materials Warehouse',
-            defaults={
-                'code': 'WH-003',
-                'location': 'Raw Materials Section',
-                'address': '123 Raw Materials Avenue, Component City, CC 11111',
-                'warehouse_type': 'raw_material',
-                'default_for_raw_material': True,
-                'manager': inventory_user,
-                'is_active': True
-            }
-        )
+        # This shop operates out of a single physical location, so the generic enterprise
+        # seed's "Secondary"/"Raw Materials" warehouses are just aliased to the same row
+        # instead of creating separate ones - keeps every downstream reference below
+        # (manufacturing/raw-material demo data, stock transfers) valid without having to
+        # touch that dormant code, while a fresh seed ends up with exactly one Warehouse.
+        secondary_warehouse = main_warehouse
+        raw_material_warehouse = main_warehouse
         
         # Stock Items with Enhanced Tracking
         laptop_stock, _ = StockItem.objects.get_or_create(

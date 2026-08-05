@@ -3,8 +3,9 @@
 # Includes AccountCategory, AccountGroup, and Account models for normalized, hierarchical COA
 # ---
 from django.db import models
+from django.utils import timezone
 from user_auth.models import Company, User
-from purchase.models import Supplier  
+from purchase.models import Supplier
 
 # --- Chart of Accounts (COA) Hierarchy ---
 # Top-level: AccountCategory (e.g., Asset, Liability)
@@ -562,6 +563,52 @@ class COASettings(models.Model):
     class Meta:
         verbose_name = 'COA Settings'
         verbose_name_plural = 'COA Settings'
-    
+
     def __str__(self):
         return f"COA Settings for {self.company.name}"
+
+
+class Expense(models.Model):
+    """
+    Simple shop overhead expense tracking (rent, salary, utilities, etc.) - deliberately
+    NOT wired into the full double-entry GL/JournalEntry machinery, so recording an
+    expense stays a one-step action instead of requiring account/journal setup.
+    """
+    CATEGORY_CHOICES = [
+        ('rent', 'Rent'),
+        ('salary', 'Salary'),
+        ('utilities', 'Utilities'),
+        ('petrol', 'Petrol/Fuel'),
+        ('maintenance', 'Maintenance'),
+        ('supplies', 'Office Supplies'),
+        ('marketing', 'Marketing'),
+        ('other', 'Other'),
+    ]
+    PAYMENT_METHOD_CHOICES = [
+        ('cash', 'Cash'),
+        ('bank_transfer', 'Bank Transfer'),
+        ('cheque', 'Cheque'),
+        ('other', 'Other'),
+    ]
+
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='expenses')
+    category = models.CharField(max_length=30, choices=CATEGORY_CHOICES)
+    description = models.CharField(max_length=255, blank=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    expense_date = models.DateField(default=timezone.now)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cash')
+    receipt = models.FileField(upload_to='expenses/', null=True, blank=True, help_text="Photo/scan of the receipt")
+    recorded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='recorded_expenses')
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.get_category_display()} - {self.amount} ({self.expense_date})"
+
+    class Meta:
+        ordering = ['-expense_date', '-created_at']
+        indexes = [
+            models.Index(fields=['company', 'expense_date']),
+            models.Index(fields=['category']),
+        ]

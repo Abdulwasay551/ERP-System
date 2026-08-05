@@ -1,11 +1,13 @@
 from rest_framework.routers import DefaultRouter
+from django.urls import path
 from .api_views import (
-    SupplierViewSet, TaxChargesTemplateViewSet, PurchaseRequisitionViewSet, 
+    SupplierViewSet, TaxChargesTemplateViewSet, PurchaseRequisitionViewSet,
     PurchaseRequisitionItemViewSet, RequestForQuotationViewSet, RFQItemViewSet,
     SupplierQuotationViewSet, SupplierQuotationItemViewSet, PurchaseOrderViewSet,
     PurchaseOrderItemViewSet, PurchaseOrderTaxChargeViewSet, GoodsReceiptNoteViewSet,
     GRNItemViewSet, BillViewSet, BillItemViewSet, PurchasePaymentViewSet,
-    PurchaseReturnViewSet, PurchaseReturnItemViewSet, PurchaseApprovalViewSet
+    PurchaseReturnViewSet, PurchaseReturnItemViewSet, PurchaseApprovalViewSet,
+    vendor_invoice_create, bill_receive_items, bill_confirm_received
 )
 
 router = DefaultRouter()
@@ -47,4 +49,8 @@ router.register(r'purchase-return-items', PurchaseReturnItemViewSet, basename='p
 # Approvals
 router.register(r'purchase-approvals', PurchaseApprovalViewSet, basename='purchaseapproval')
 
-urlpatterns = router.urls 
+urlpatterns = router.urls + [
+    path('vendor-invoice/', vendor_invoice_create, name='vendor-invoice-create'),
+    path('bills/<int:bill_id>/receive-items/', bill_receive_items, name='bill-receive-items'),
+    path('bills/<int:bill_id>/confirm-received/', bill_confirm_received, name='bill-confirm-received'),
+] 

@@ -1,9 +1,11 @@
 from rest_framework.routers import DefaultRouter
 from .api_views import (
-    AccountViewSet, JournalViewSet, JournalEntryViewSet, JournalItemViewSet, AccountPayableViewSet, AccountReceivableViewSet, BankAccountViewSet, BankReconciliationViewSet, TaxConfigViewSet, CurrencyViewSet, FinancialStatementViewSet, AccountingAuditLogViewSet, RecurringJournalViewSet
+    AccountViewSet, JournalViewSet, JournalEntryViewSet, JournalItemViewSet, AccountPayableViewSet, AccountReceivableViewSet, BankAccountViewSet, BankReconciliationViewSet, TaxConfigViewSet, CurrencyViewSet, FinancialStatementViewSet, AccountingAuditLogViewSet, RecurringJournalViewSet,
+    ExpenseViewSet
 )
 
 router = DefaultRouter()
+router.register(r'expenses', ExpenseViewSet, basename='expense')
 router.register(r'accounts', AccountViewSet, basename='account')
 router.register(r'journals', JournalViewSet, basename='journal')
 router.register(r'journalentries', JournalEntryViewSet, basename='journalentry')

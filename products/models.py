@@ -57,6 +57,7 @@ class Product(models.Model):
     # Basic Information
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='products')
     name = models.CharField(max_length=255)
+    brand = models.CharField(max_length=100, blank=True, help_text="e.g. Samsung, Apple - same brand/model is shared across vendors, not duplicated per-vendor")
     sku = models.CharField(max_length=100, unique=True, help_text="Stock Keeping Unit")
     barcode = models.CharField(max_length=100, blank=True, null=True)
     description = models.TextField(blank=True)
@@ -301,11 +302,26 @@ class ProductTracking(models.Model):
     # Warranty and service
     warranty_expiry = models.DateField(null=True, blank=True)
     service_history = models.TextField(blank=True, help_text="Service and maintenance history")
-    
+
+    # Phone-shop specific attributes (used when product is a mobile phone)
+    storage_capacity = models.CharField(max_length=20, blank=True, help_text="e.g. 128GB, 256GB")
+    pta_status = models.CharField(max_length=20, choices=[
+        ('approved', 'PTA Approved'),
+        ('non_approved', 'Non-PTA'),
+        ('unknown', 'Unknown'),
+    ], default='unknown', blank=True)
+    battery_health = models.PositiveIntegerField(null=True, blank=True, help_text="Battery health percentage")
+    selling_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Per-unit price override (falls back to Product.selling_price if unset)")
+
+    # Sale tracking - who this specific unit was sold to
+    sold_to_customer = models.ForeignKey('crm.Partner', on_delete=models.SET_NULL, null=True, blank=True, related_name='purchased_tracking_units')
+    sold_date = models.DateTimeField(null=True, blank=True)
+    sold_invoice = models.ForeignKey('sales.Invoice', on_delete=models.SET_NULL, null=True, blank=True, related_name='sold_tracking_units')
+
     # Additional tracking info
     notes = models.TextField(blank=True)
     custom_fields = models.JSONField(default=dict, blank=True, help_text="Additional custom tracking fields")
-    
+
     # Audit fields
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_tracking_units')
     created_at = models.DateTimeField(auto_now_add=True)

@@ -3,12 +3,16 @@ Module Integration Services and Signals
 These handle automatic journal entry creation when transactions occur in other modules.
 """
 
+import logging
+
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from decimal import Decimal
 from .models import Account, Journal, JournalEntry, JournalItem, ModuleAccountMapping, AutoJournalEntry
 from user_auth.models import Company
+
+logger = logging.getLogger(__name__)
 
 
 class AccountingIntegrationService:
@@ -90,8 +94,12 @@ class AccountingIntegrationService:
             # No mapping configured - skip automatic entry
             return None
         except Exception as e:
-            # Log error but don't raise to avoid breaking module operations
-            print(f"Error creating automatic journal entry: {e}")
+            # This integration is known-broken (JournalEntry no longer has the
+            # description/posted fields this call passes, and no default Journal is
+            # resolved) - the full GL/accounting module is out of scope for now, so this
+            # just logs quietly instead of raising or spamming stdout on every
+            # Invoice/Bill save.
+            logger.debug("Skipped automatic journal entry (%s): %s", transaction_type, e)
             return None
     
     @staticmethod

@@ -1,10 +1,19 @@
 from rest_framework import serializers
 from .models import (
-    Account, AccountCategory, AccountGroup, Journal, JournalEntry, JournalItem, 
-    AccountPayable, AccountReceivable, BankAccount, BankReconciliation, TaxConfig, 
-    Currency, FinancialStatement, AccountingAuditLog, RecurringJournal
+    Account, AccountCategory, AccountGroup, Journal, JournalEntry, JournalItem,
+    AccountPayable, AccountReceivable, BankAccount, BankReconciliation, TaxConfig,
+    Currency, FinancialStatement, AccountingAuditLog, RecurringJournal, Expense
 )
 from .integration import ModuleAccountMapping, AutoJournalEntry
+
+
+class ExpenseSerializer(serializers.ModelSerializer):
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
+
+    class Meta:
+        model = Expense
+        fields = '__all__'
+        read_only_fields = ('company', 'recorded_by', 'created_at', 'updated_at')
 
 
 class AccountCategorySerializer(serializers.ModelSerializer):

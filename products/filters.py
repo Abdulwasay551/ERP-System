@@ -134,13 +134,14 @@ class ProductFilter:
         elif has_variants == 'false':
             queryset = queryset.filter(variants__isnull=True)
         
+        # ProductTracking has no is_active field - 'available' is its equivalent concept.
         has_tracking = self.data.get('has_tracking')
         if has_tracking == 'true':
-            queryset = queryset.filter(tracking_units__isnull=False, tracking_units__is_active=True).distinct()
+            queryset = queryset.filter(tracking_units__isnull=False, tracking_units__status='available').distinct()
         elif has_tracking == 'false':
             queryset = queryset.filter(
-                Q(tracking_units__isnull=True) | 
-                Q(tracking_units__is_active=False)
+                Q(tracking_units__isnull=True) |
+                ~Q(tracking_units__status='available')
             ).distinct()
         
         low_stock = self.data.get('low_stock')

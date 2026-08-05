@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Sum
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from decimal import Decimal
@@ -176,17 +177,19 @@ class Quotation(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.quotation_number:
-            # Generate quotation number
-            last_quotation = Quotation.objects.filter(company=self.company).order_by('-id').first()
-            if last_quotation and last_quotation.quotation_number:
-                try:
-                    last_num = int(last_quotation.quotation_number.split('-')[-1])
-                    new_num = last_num + 1
-                except (ValueError, IndexError):
+            with transaction.atomic():
+                last_quotation = Quotation.objects.select_for_update().filter(
+                    company=self.company
+                ).order_by('-id').first()
+                if last_quotation and last_quotation.quotation_number:
+                    try:
+                        last_num = int(last_quotation.quotation_number.split('-')[-1])
+                        new_num = last_num + 1
+                    except (ValueError, IndexError):
+                        new_num = 1
+                else:
                     new_num = 1
-            else:
-                new_num = 1
-            self.quotation_number = f"QUO-{new_num:06d}"
+                self.quotation_number = f"QUO-{new_num:06d}"
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -271,17 +274,19 @@ class SalesOrder(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.order_number:
-            # Generate order number
-            last_order = SalesOrder.objects.filter(company=self.company).order_by('-id').first()
-            if last_order and last_order.order_number:
-                try:
-                    last_num = int(last_order.order_number.split('-')[-1])
-                    new_num = last_num + 1
-                except (ValueError, IndexError):
+            with transaction.atomic():
+                last_order = SalesOrder.objects.select_for_update().filter(
+                    company=self.company
+                ).order_by('-id').first()
+                if last_order and last_order.order_number:
+                    try:
+                        last_num = int(last_order.order_number.split('-')[-1])
+                        new_num = last_num + 1
+                    except (ValueError, IndexError):
+                        new_num = 1
+                else:
                     new_num = 1
-            else:
-                new_num = 1
-            self.order_number = f"SO-{new_num:06d}"
+                self.order_number = f"SO-{new_num:06d}"
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -341,11 +346,12 @@ class SalesOrderItem(models.Model):
             self.tracking_required = self.product.has_tracking
         
         # Calculate discount amount based on type
+        discount_value = Decimal(str(self.discount_value or 0))
         if self.discount_type == 'percent':
             subtotal = self.quantity * self.unit_price
-            self.discount_amount = subtotal * (self.discount_value / 100)
+            self.discount_amount = subtotal * (discount_value / Decimal('100'))
         else:  # amount
-            self.discount_amount = self.discount_value
+            self.discount_amount = discount_value
         
         # Calculate line total
         subtotal = self.quantity * self.unit_price
@@ -435,17 +441,19 @@ class DeliveryNote(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.delivery_number:
-            # Generate delivery number
-            last_delivery = DeliveryNote.objects.filter(company=self.company).order_by('-id').first()
-            if last_delivery and last_delivery.delivery_number:
-                try:
-                    last_num = int(last_delivery.delivery_number.split('-')[-1])
-                    new_num = last_num + 1
-                except (ValueError, IndexError):
+            with transaction.atomic():
+                last_delivery = DeliveryNote.objects.select_for_update().filter(
+                    company=self.company
+                ).order_by('-id').first()
+                if last_delivery and last_delivery.delivery_number:
+                    try:
+                        last_num = int(last_delivery.delivery_number.split('-')[-1])
+                        new_num = last_num + 1
+                    except (ValueError, IndexError):
+                        new_num = 1
+                else:
                     new_num = 1
-            else:
-                new_num = 1
-            self.delivery_number = f"DN-{new_num:06d}"
+                self.delivery_number = f"DN-{new_num:06d}"
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -529,23 +537,59 @@ class Invoice(models.Model):
             old_status = Invoice.objects.get(pk=self.pk).status
             
         if not self.invoice_number:
-            # Generate invoice number
-            last_invoice = Invoice.objects.filter(company=self.company).order_by('-id').first()
-            if last_invoice and last_invoice.invoice_number:
-                try:
-                    last_num = int(last_invoice.invoice_number.split('-')[-1])
-                    new_num = last_num + 1
-                except (ValueError, IndexError):
+            # select_for_update() serializes concurrent invoice-number generation so two
+            # simultaneous POS checkouts can't read the same "last invoice" and collide on
+            # the same generated number (previously a plain read-then-write race).
+            with transaction.atomic():
+                last_invoice = Invoice.objects.select_for_update().filter(
+                    company=self.company
+                ).order_by('-id').first()
+                if last_invoice and last_invoice.invoice_number:
+                    try:
+                        last_num = int(last_invoice.invoice_number.split('-')[-1])
+                        new_num = last_num + 1
+                    except (ValueError, IndexError):
+                        new_num = 1
+                else:
                     new_num = 1
-            else:
-                new_num = 1
-            self.invoice_number = f"INV-{new_num:06d}"
-        
+                self.invoice_number = f"INV-{new_num:06d}"
+
         super().save(*args, **kwargs)
-        
-        # Process inventory reduction when invoice is confirmed (status changed from draft to sent/paid)
-        if old_status == 'draft' and self.status in ['sent', 'paid']:
+
+        # Process inventory reduction when invoice is confirmed (status changed from draft
+        # to sent/paid/partially_paid - goods physically leave the store even on a partial
+        # payment, e.g. a POS credit sale, so partially_paid must trigger this too).
+        if old_status == 'draft' and self.status in ['sent', 'paid', 'partially_paid']:
             self.process_inventory_reduction()
+            self.update_customer_ledger_debit()
+
+    def update_customer_ledger_debit(self):
+        """Debit the customer ledger for this invoice's total (liability recorded on confirm)."""
+        from crm.models import CustomerLedger  # Avoid circular import
+
+        description = f'Invoice {self.invoice_number}'
+        ledger_entry, created = CustomerLedger.objects.get_or_create(
+            company=self.company,
+            customer=self.customer,
+            reference_type='invoice',
+            reference_id=self.id,
+            defaults={
+                'transaction_date': self.invoice_date,
+                'description': description,
+                'debit_amount': self.total,
+                'credit_amount': 0,
+                'created_by': self.created_by,
+            }
+        )
+        if not created:
+            # Deliberately not update_or_create() - its update path only writes fields
+            # listed in defaults, so the balance recalculated in CustomerLedger.save()
+            # would be silently dropped. A full .save() is required to persist it.
+            ledger_entry.transaction_date = self.invoice_date
+            ledger_entry.description = description
+            ledger_entry.debit_amount = self.total
+            ledger_entry.credit_amount = 0
+            ledger_entry.save()
     
     def can_create_items_from_sales_order(self):
         """Check if we can create invoice items from sales order"""
@@ -644,11 +688,11 @@ class Invoice(models.Model):
                     quantity_to_reduce = min(remaining_quantity, stock_item.available_quantity)
                     
                     if quantity_to_reduce > 0:
-                        # Update stock quantities
-                        stock_item.quantity -= quantity_to_reduce
-                        stock_item.available_quantity -= quantity_to_reduce
-                        stock_item.save()
-                        
+                        # NOTE: don't mutate/save stock_item's quantity here -
+                        # StockMovement.save() (movement_type='sale') already applies this
+                        # exact reduction via update_stock_quantities(). Doing both was a
+                        # real bug: every sale silently deducted stock TWICE.
+
                         # Create stock movement record
                         StockMovement.objects.create(
                             company=self.company,
@@ -677,21 +721,36 @@ class Invoice(models.Model):
     
     def create_tracking_movements(self, invoice_item, stock_item, quantity):
         """Create tracking movements for products with tracking requirements"""
-        from inventory.models import StockSerial, StockLot
-        
+        from inventory.models import StockLot
+        from products.models import ProductTracking
+
         if invoice_item.product.tracking_method in ['serial', 'imei']:
-            # For serial/IMEI tracking, move individual items
-            serial_items = StockSerial.objects.filter(
-                stock_item=stock_item,
-                status='in_stock'
-            )[:int(quantity)]
-            
-            for serial_item in serial_items:
-                serial_item.status = 'sold'
-                serial_item.customer = self.customer.partner if hasattr(self.customer, 'partner') else None
-                serial_item.sold_date = timezone.now()
-                serial_item.save()
-        
+            # For serial/IMEI tracking, sell individual ProductTracking units.
+            # ProductTracking is the canonical source of truth for individually-tracked
+            # units - it's the model actually populated by GRN/Bill receiving.
+            if invoice_item.tracking_unit_id:
+                # Explicit selection (e.g. POS: cashier scanned this exact IMEI) - sell
+                # that unit specifically rather than letting FIFO pick a different one.
+                tracked_units = ProductTracking.objects.filter(
+                    pk=invoice_item.tracking_unit_id,
+                    product=invoice_item.product,
+                    status='available'
+                )
+            else:
+                tracked_units = ProductTracking.objects.filter(
+                    product=invoice_item.product,
+                    current_warehouse=stock_item.warehouse,
+                    status='available'
+                ).order_by('created_at')[:int(quantity)]
+
+            customer_partner = self.customer.partner if hasattr(self.customer, 'partner') else None
+            for unit in tracked_units:
+                unit.status = 'sold'
+                unit.sold_to_customer = customer_partner
+                unit.sold_date = timezone.now()
+                unit.sold_invoice = self
+                unit.save()
+
         elif invoice_item.product.tracking_method in ['batch', 'expiry']:
             # For batch/expiry tracking, update lot quantities
             lot_items = StockLot.objects.filter(
@@ -716,7 +775,8 @@ class Invoice(models.Model):
         
     def reverse_inventory_movements(self):
         """Reverse inventory movements when invoice is cancelled or returned"""
-        from inventory.models import StockItem, StockMovement, StockSerial, StockLot
+        from inventory.models import StockItem, StockMovement
+        from products.models import ProductTracking
         
         with transaction.atomic():
             # Find all stock movements related to this invoice
@@ -728,12 +788,12 @@ class Invoice(models.Model):
             )
             
             for movement in movements:
-                # Restore stock quantities
+                # NOTE: don't mutate/save stock_item's quantity here - StockMovement.save()
+                # (movement_type='sales_return') already restores it via
+                # update_stock_quantities(). See the matching note in
+                # process_inventory_reduction() for why doing both double-counts.
                 stock_item = movement.stock_item
-                stock_item.quantity += movement.quantity
-                stock_item.available_quantity += movement.quantity
-                stock_item.save()
-                
+
                 # Create reverse movement
                 StockMovement.objects.create(
                     company=self.company,
@@ -750,16 +810,17 @@ class Invoice(models.Model):
                     performed_by=self.created_by
                 )
                 
-                # Restore serial/lot tracking
+                # Restore serial/IMEI tracking units sold from this invoice
                 if stock_item.product.tracking_method in ['serial', 'imei']:
-                    StockSerial.objects.filter(
-                        customer=self.customer.partner if hasattr(self.customer, 'partner') else None,
-                        stock_item=stock_item,
+                    ProductTracking.objects.filter(
+                        sold_invoice=self,
+                        product=stock_item.product,
                         status='sold'
                     ).update(
-                        status='in_stock',
-                        customer=None,
-                        sold_date=None
+                        status='available',
+                        sold_to_customer=None,
+                        sold_date=None,
+                        sold_invoice=None
                     )
                 
                 elif stock_item.product.tracking_method in ['batch', 'expiry']:
@@ -790,6 +851,12 @@ class InvoiceItem(models.Model):
     """Enhanced Items in an invoice with tracking and UOM support"""
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    tracking_unit = models.ForeignKey(
+        'products.ProductTracking', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='invoice_items',
+        help_text="Specific IMEI/serial unit sold on this line (POS explicit selection) - "
+                  "when set, this exact unit is sold instead of FIFO-picking any available unit."
+    )
     description = models.TextField(blank=True, help_text='Override product description if needed')
     
     # Quantity and UOM
@@ -835,11 +902,12 @@ class InvoiceItem(models.Model):
             self.tracking_required = self.product.has_tracking
         
         # Calculate discount amount based on type
+        discount_value = Decimal(str(self.discount_value or 0))
         if self.discount_type == 'percent':
             subtotal = self.quantity * self.unit_price
-            self.discount_amount = subtotal * (self.discount_value / 100)
+            self.discount_amount = subtotal * (discount_value / Decimal('100'))
         else:  # amount
-            self.discount_amount = self.discount_value
+            self.discount_amount = discount_value
         
         # Calculate line total
         subtotal = self.quantity * self.unit_price
@@ -928,18 +996,66 @@ class Payment(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.payment_number:
-            # Generate payment number
-            last_payment = Payment.objects.filter(company=self.company).order_by('-id').first()
-            if last_payment and last_payment.payment_number:
-                try:
-                    last_num = int(last_payment.payment_number.split('-')[-1])
-                    new_num = last_num + 1
-                except (ValueError, IndexError):
+            with transaction.atomic():
+                last_payment = Payment.objects.select_for_update().filter(
+                    company=self.company
+                ).order_by('-id').first()
+                if last_payment and last_payment.payment_number:
+                    try:
+                        last_num = int(last_payment.payment_number.split('-')[-1])
+                        new_num = last_num + 1
+                    except (ValueError, IndexError):
+                        new_num = 1
+                else:
                     new_num = 1
-            else:
-                new_num = 1
-            self.payment_number = f"PAY-{new_num:06d}"
+                self.payment_number = f"PAY-{new_num:06d}"
         super().save(*args, **kwargs)
+
+        if self.customer:
+            self.update_customer_ledger_credit()
+        if self.invoice_id:
+            self.update_invoice_paid_amount()
+
+    def update_invoice_paid_amount(self):
+        """
+        Keep Invoice.paid_amount/status in sync - pos_checkout() sets it once at
+        creation time, but nothing else did, so a payment recorded later (e.g. from the
+        Invoices page against a partially-paid/outstanding invoice) silently never showed
+        up on the invoice itself even though the customer ledger was updated correctly.
+        Recomputed from all payments against this invoice rather than incremented, so
+        edits/deletes of a Payment can't cause it to drift.
+        """
+        total_paid = self.invoice.payments.aggregate(total=Sum('amount'))['total'] or 0
+        self.invoice.paid_amount = total_paid
+        self.invoice.status = 'paid' if total_paid >= self.invoice.total else 'partially_paid'
+        self.invoice.save(update_fields=['paid_amount', 'status'])
+
+    def update_customer_ledger_credit(self):
+        from crm.models import CustomerLedger  # Avoid circular import
+
+        description = f'Payment {self.payment_number}'
+        ledger_entry, created = CustomerLedger.objects.get_or_create(
+            company=self.company,
+            customer=self.customer,
+            reference_type='payment',
+            reference_id=self.id,
+            defaults={
+                'transaction_date': self.payment_date,
+                'description': description,
+                'debit_amount': 0,
+                'credit_amount': self.amount,
+                'payment_method': self.method,
+                'reference_number': self.reference,
+                'created_by': self.received_by,
+            }
+        )
+        if not created:
+            ledger_entry.transaction_date = self.payment_date
+            ledger_entry.description = description
+            ledger_entry.credit_amount = self.amount
+            ledger_entry.payment_method = self.method
+            ledger_entry.reference_number = self.reference
+            ledger_entry.save()
 
     def __str__(self):
         return f"{self.payment_number} - {self.amount} ({self.customer.name})"
@@ -1003,17 +1119,19 @@ class CreditNote(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.credit_number:
-            # Generate credit number
-            last_credit = CreditNote.objects.filter(company=self.company).order_by('-id').first()
-            if last_credit and last_credit.credit_number:
-                try:
-                    last_num = int(last_credit.credit_number.split('-')[-1])
-                    new_num = last_num + 1
-                except (ValueError, IndexError):
+            with transaction.atomic():
+                last_credit = CreditNote.objects.select_for_update().filter(
+                    company=self.company
+                ).order_by('-id').first()
+                if last_credit and last_credit.credit_number:
+                    try:
+                        last_num = int(last_credit.credit_number.split('-')[-1])
+                        new_num = last_num + 1
+                    except (ValueError, IndexError):
+                        new_num = 1
+                else:
                     new_num = 1
-            else:
-                new_num = 1
-            self.credit_number = f"CN-{new_num:06d}"
+                self.credit_number = f"CN-{new_num:06d}"
         super().save(*args, **kwargs)
 
     def __str__(self):

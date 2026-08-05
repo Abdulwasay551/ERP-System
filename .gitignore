@@ -136,6 +136,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# User-uploaded / generated media (invoice PDFs, receipts, etc.) - runtime output, not source
+media/
+
 # Spyder project settings
 .spyderproject
 .spyproject

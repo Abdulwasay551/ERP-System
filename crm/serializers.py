@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import (Customer, Lead, Opportunity, CommunicationLog, Partner, 
+from .models import (Customer, CustomerLedger, Lead, Opportunity, CommunicationLog, Partner,
                     Campaign, CampaignTarget, SupplierRating, CRMConfiguration)
 
 
@@ -16,11 +16,22 @@ class PartnerSerializer(serializers.ModelSerializer):
 class CustomerSerializer(serializers.ModelSerializer):
     """Enhanced Customer serializer with partner relationship"""
     partner_details = PartnerSerializer(source='partner', read_only=True)
-    
+    outstanding_balance = serializers.SerializerMethodField()
+
     class Meta:
         model = Customer
         fields = '__all__'
-        read_only_fields = ('created_at', 'updated_at')
+        read_only_fields = ('company', 'created_by', 'created_at', 'updated_at')
+
+    def get_outstanding_balance(self, obj):
+        return str(obj.get_outstanding_balance())
+
+
+class CustomerLedgerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerLedger
+        fields = '__all__'
+        read_only_fields = ('balance', 'created_at', 'updated_at')
 
 
 class LeadSerializer(serializers.ModelSerializer):

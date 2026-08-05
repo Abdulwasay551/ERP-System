@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from user_auth.views import login_view, logout_view, dashboard,index
 from rest_framework.authtoken.views import obtain_auth_token
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -47,7 +48,12 @@ urlpatterns = [
     path('api/project/', include('project_mgmt.api_urls')),
     path('api/manufacturing/', include('manufacturing.api_urls')),
     path('api/products/', include('products.api_urls')),
-    path('api/token-auth/', obtain_auth_token, name='api_token_auth'),
+    path('api/token-auth/', obtain_auth_token, name='api_token_auth'),  # deprecated - use api/auth/token/ (JWT)
+    path('api/auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/auth/', include('user_auth.api_urls')),
+    path('api/analytics/', include('analytics.api_urls')),
+    path('api/core/', include('core.api_urls')),
     path('analytics/', include('analytics.urls')),
 ]
 
