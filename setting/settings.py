@@ -309,7 +309,13 @@ SIMPLE_JWT = {
 }
 
 # CORS - allow the Next.js web frontend (and any other listed origins) to call this API.
-CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=['http://localhost:3000'])
+# The deployed frontend URL is included as a fallback default so the two Vercel
+# deployments work together even if CORS_ALLOWED_ORIGINS isn't explicitly set in the
+# backend project's environment variables - set it there too to be explicit/override this.
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
+    'http://localhost:3000',
+    'https://erp-system-frontend-eight.vercel.app',
+])
 
 UNFOLD = {
     "SITE_TITLE": "ERP System",
