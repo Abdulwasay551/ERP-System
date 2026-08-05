@@ -11,9 +11,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-from django.templatetags.static import static
-from django.urls import reverse_lazy
-from django.utils.translation import gettext_lazy as _
 import os
 import environ
 from pathlib import Path
@@ -318,10 +315,14 @@ UNFOLD = {
     "SITE_TITLE": "ERP System",
     "SITE_HEADER": "ERP System Admin",
     "SITE_URL": "/",
-    "SITE_ICON": lambda request: static("logo.png"),
+    # Plain precomputed strings, not lambda(request)->static(...) - the latter is
+    # django-unfold's pattern for per-request dynamic theming, which isn't needed here
+    # (single shop, no multi-tenant theming) and isn't JSON-serializable, which broke
+    # Vercel's Django settings introspection during build.
+    "SITE_ICON": STATIC_URL + "logo.png",
     "SITE_LOGO": {
-        "light": lambda request: static("logo.png"),
-        "dark": lambda request: static("logo.png"),
+        "light": STATIC_URL + "logo.png",
+        "dark": STATIC_URL + "logo.png",
     },
     "SITE_SYMBOL": "dashboard",
     "SITE_FAVICONS": [
@@ -329,14 +330,14 @@ UNFOLD = {
             "rel": "icon",
             "sizes": "32x32",
             "type": "image/svg+xml",
-            "href": lambda request: static("logo.png"),
+            "href": STATIC_URL + "logo.png",
         },
     ],
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,
     "SHOW_BACK_BUTTON": True,
     "LOGIN": {
-        "image": lambda request: static("bg.jpg"),
+        "image": STATIC_URL + "bg.jpg",
         "title": "Welcome to ERP System Admin",
         "description": "Please login to access the system",
     },
@@ -392,10 +393,10 @@ UNFOLD = {
                 "icon": "people",
                 "collapsible": True,
                 "items": [
-                    {"title": "Users", "icon": "person", "link": reverse_lazy("admin:user_auth_user_changelist")},
-                    {"title": "Companies", "icon": "business", "link": reverse_lazy("admin:user_auth_company_changelist")},
-                    {"title": "Roles", "icon": "security", "link": reverse_lazy("admin:user_auth_role_changelist")},
-                    {"title": "Activity Logs", "icon": "history", "link": reverse_lazy("admin:user_auth_activitylog_changelist")},
+                    {"title": "Users", "icon": "person", "link": "/admin/user_auth/user/"},
+                    {"title": "Companies", "icon": "business", "link": "/admin/user_auth/company/"},
+                    {"title": "Roles", "icon": "security", "link": "/admin/user_auth/role/"},
+                    {"title": "Activity Logs", "icon": "history", "link": "/admin/user_auth/activitylog/"},
                 ],
             },
             {
@@ -404,36 +405,36 @@ UNFOLD = {
                 "collapsible": True,
                 "items": [
                     # Chart of Accounts
-                    {"title": "Accounts", "icon": "account_tree", "link": reverse_lazy("admin:accounting_account_changelist")},
-                    {"title": "Account Categories", "icon": "category", "link": reverse_lazy("admin:accounting_accountcategory_changelist")},
-                    {"title": "Account Groups", "icon": "group_work", "link": reverse_lazy("admin:accounting_accountgroup_changelist")},
+                    {"title": "Accounts", "icon": "account_tree", "link": "/admin/accounting/account/"},
+                    {"title": "Account Categories", "icon": "category", "link": "/admin/accounting/accountcategory/"},
+                    {"title": "Account Groups", "icon": "group_work", "link": "/admin/accounting/accountgroup/"},
                     {"separator": True},
                     
                     # Journal Management
-                    {"title": "Journals", "icon": "book", "link": reverse_lazy("admin:accounting_journal_changelist")},
-                    {"title": "Journal Entries", "icon": "edit_note", "link": reverse_lazy("admin:accounting_journalentry_changelist")},
-                    {"title": "Journal Items", "icon": "notes", "link": reverse_lazy("admin:accounting_journalitem_changelist")},
-                    {"title": "Recurring Journals", "icon": "repeat", "link": reverse_lazy("admin:accounting_recurringjournal_changelist")},
+                    {"title": "Journals", "icon": "book", "link": "/admin/accounting/journal/"},
+                    {"title": "Journal Entries", "icon": "edit_note", "link": "/admin/accounting/journalentry/"},
+                    {"title": "Journal Items", "icon": "notes", "link": "/admin/accounting/journalitem/"},
+                    {"title": "Recurring Journals", "icon": "repeat", "link": "/admin/accounting/recurringjournal/"},
                     {"separator": True},
                     
                     # Payables & Receivables
-                    {"title": "Payables", "icon": "money_off", "link": reverse_lazy("admin:accounting_accountpayable_changelist")},
-                    {"title": "Receivables", "icon": "attach_money", "link": reverse_lazy("admin:accounting_accountreceivable_changelist")},
+                    {"title": "Payables", "icon": "money_off", "link": "/admin/accounting/accountpayable/"},
+                    {"title": "Receivables", "icon": "attach_money", "link": "/admin/accounting/accountreceivable/"},
                     {"separator": True},
                     
                     # Banking
-                    {"title": "Bank Accounts", "icon": "account_balance_wallet", "link": reverse_lazy("admin:accounting_bankaccount_changelist")},
-                    {"title": "Bank Reconciliations", "icon": "compare_arrows", "link": reverse_lazy("admin:accounting_bankreconciliation_changelist")},
+                    {"title": "Bank Accounts", "icon": "account_balance_wallet", "link": "/admin/accounting/bankaccount/"},
+                    {"title": "Bank Reconciliations", "icon": "compare_arrows", "link": "/admin/accounting/bankreconciliation/"},
                     {"separator": True},
                     
                     # Configuration & Settings
-                    {"title": "Tax Configs", "icon": "percent", "link": reverse_lazy("admin:accounting_taxconfig_changelist")},
-                    {"title": "Currencies", "icon": "currency_exchange", "link": reverse_lazy("admin:accounting_currency_changelist")},
+                    {"title": "Tax Configs", "icon": "percent", "link": "/admin/accounting/taxconfig/"},
+                    {"title": "Currencies", "icon": "currency_exchange", "link": "/admin/accounting/currency/"},
                     {"separator": True},
                     
                     # Reporting & Auditing
-                    {"title": "Financial Statements", "icon": "bar_chart", "link": reverse_lazy("admin:accounting_financialstatement_changelist")},
-                    {"title": "Audit Logs", "icon": "history", "link": reverse_lazy("admin:accounting_accountingauditlog_changelist")},
+                    {"title": "Financial Statements", "icon": "bar_chart", "link": "/admin/accounting/financialstatement/"},
+                    {"title": "Audit Logs", "icon": "history", "link": "/admin/accounting/accountingauditlog/"},
                 ],
             },
             {
@@ -442,17 +443,17 @@ UNFOLD = {
                 "collapsible": True,
                 "items": [
                     # Core Partner Management
-                    {"title": "Partners", "icon": "people", "link": reverse_lazy("admin:crm_partner_changelist")},
+                    {"title": "Partners", "icon": "people", "link": "/admin/crm/partner/"},
                     {"separator": True},
                     
                     # Customer Management
-                    {"title": "Customers", "icon": "person", "link": reverse_lazy("admin:crm_customer_changelist")},
-                    {"title": "Leads", "icon": "emoji_objects", "link": reverse_lazy("admin:crm_lead_changelist")},
-                    {"title": "Opportunities", "icon": "star", "link": reverse_lazy("admin:crm_opportunity_changelist")},
+                    {"title": "Customers", "icon": "person", "link": "/admin/crm/customer/"},
+                    {"title": "Leads", "icon": "emoji_objects", "link": "/admin/crm/lead/"},
+                    {"title": "Opportunities", "icon": "star", "link": "/admin/crm/opportunity/"},
                     {"separator": True},
                     
                     # Communication
-                    {"title": "Communication Logs", "icon": "chat", "link": reverse_lazy("admin:crm_communicationlog_changelist")},
+                    {"title": "Communication Logs", "icon": "chat", "link": "/admin/crm/communicationlog/"},
                 ],
             },
             {
@@ -461,9 +462,9 @@ UNFOLD = {
                 "collapsible": True,
                 "items": [
                     # Product Management
-                    {"title": "Products", "icon": "inventory_2", "link": reverse_lazy("admin:products_product_changelist")},
-                    {"title": "Product Categories", "icon": "category", "link": reverse_lazy("admin:products_productcategory_changelist")},
-                    {"title": "Product Variants", "icon": "tune", "link": reverse_lazy("admin:products_productvariant_changelist")},
+                    {"title": "Products", "icon": "inventory_2", "link": "/admin/products/product/"},
+                    {"title": "Product Categories", "icon": "category", "link": "/admin/products/productcategory/"},
+                    {"title": "Product Variants", "icon": "tune", "link": "/admin/products/productvariant/"},
                 ],
             },
             {
@@ -471,21 +472,21 @@ UNFOLD = {
                 "icon": "shopping_cart",
                 "collapsible": True,
                 "items": [
-                    {"title": "Taxes", "icon": "percent", "link": reverse_lazy("admin:sales_tax_changelist")},
+                    {"title": "Taxes", "icon": "percent", "link": "/admin/sales/tax/"},
                     {
                         "separator": True,
                         "title": "Sales Process",
                     },
-                    {"title": "Quotations", "icon": "description", "link": reverse_lazy("admin:sales_quotation_changelist")},
-                    {"title": "Quotation Items", "icon": "list", "link": reverse_lazy("admin:sales_quotationitem_changelist")},
-                    {"title": "Sales Orders", "icon": "receipt", "link": reverse_lazy("admin:sales_salesorder_changelist")},
-                    {"title": "Sales Order Items", "icon": "format_list_numbered", "link": reverse_lazy("admin:sales_salesorderitem_changelist")},
+                    {"title": "Quotations", "icon": "description", "link": "/admin/sales/quotation/"},
+                    {"title": "Quotation Items", "icon": "list", "link": "/admin/sales/quotationitem/"},
+                    {"title": "Sales Orders", "icon": "receipt", "link": "/admin/sales/salesorder/"},
+                    {"title": "Sales Order Items", "icon": "format_list_numbered", "link": "/admin/sales/salesorderitem/"},
                     {
                         "separator": True,
                         "title": "Invoicing & Payments",
                     },
-                    {"title": "Invoices", "icon": "request_quote", "link": reverse_lazy("admin:sales_invoice_changelist")},
-                    {"title": "Payments", "icon": "payments", "link": reverse_lazy("admin:sales_payment_changelist")},
+                    {"title": "Invoices", "icon": "request_quote", "link": "/admin/sales/invoice/"},
+                    {"title": "Payments", "icon": "payments", "link": "/admin/sales/payment/"},
                 ],
             },
             {
@@ -493,49 +494,49 @@ UNFOLD = {
                 "icon": "shopping_bag",
                 "collapsible": True,
                 "items": [
-                    {"title": "Suppliers", "icon": "local_shipping", "link": reverse_lazy("admin:purchase_supplier_changelist")},
-                    {"title": "Tax & Charges Templates", "icon": "percent", "link": reverse_lazy("admin:purchase_taxchargestemplate_changelist")},
+                    {"title": "Suppliers", "icon": "local_shipping", "link": "/admin/purchase/supplier/"},
+                    {"title": "Tax & Charges Templates", "icon": "percent", "link": "/admin/purchase/taxchargestemplate/"},
                     {
                         "separator": True,
                         "title": "Purchase Requisitions",
                     },
-                    {"title": "Purchase Requisitions", "icon": "assignment", "link": reverse_lazy("admin:purchase_purchaserequisition_changelist")},
-                    {"title": "Requisition Items", "icon": "list_alt", "link": reverse_lazy("admin:purchase_purchaserequisitionitem_changelist")},
+                    {"title": "Purchase Requisitions", "icon": "assignment", "link": "/admin/purchase/purchaserequisition/"},
+                    {"title": "Requisition Items", "icon": "list_alt", "link": "/admin/purchase/purchaserequisitionitem/"},
                     {
                         "separator": True,
                         "title": "RFQ & Quotations",
                     },
-                    {"title": "Request For Quotations", "icon": "help_outline", "link": reverse_lazy("admin:purchase_requestforquotation_changelist")},
-                    {"title": "RFQ Items", "icon": "format_list_bulleted", "link": reverse_lazy("admin:purchase_rfqitem_changelist")},
-                    {"title": "Supplier Quotations", "icon": "request_quote", "link": reverse_lazy("admin:purchase_supplierquotation_changelist")},
-                    {"title": "Quotation Items", "icon": "receipt_long", "link": reverse_lazy("admin:purchase_supplierquotationitem_changelist")},
+                    {"title": "Request For Quotations", "icon": "help_outline", "link": "/admin/purchase/requestforquotation/"},
+                    {"title": "RFQ Items", "icon": "format_list_bulleted", "link": "/admin/purchase/rfqitem/"},
+                    {"title": "Supplier Quotations", "icon": "request_quote", "link": "/admin/purchase/supplierquotation/"},
+                    {"title": "Quotation Items", "icon": "receipt_long", "link": "/admin/purchase/supplierquotationitem/"},
                     {
                         "separator": True,
                         "title": "Purchase Orders",
                     },
-                    {"title": "Purchase Orders", "icon": "shopping_cart", "link": reverse_lazy("admin:purchase_purchaseorder_changelist")},
-                    {"title": "Purchase Order Items", "icon": "list", "link": reverse_lazy("admin:purchase_purchaseorderitem_changelist")},
-                    {"title": "Order Tax & Charges", "icon": "calculate", "link": reverse_lazy("admin:purchase_purchaseordertaxcharge_changelist")},
+                    {"title": "Purchase Orders", "icon": "shopping_cart", "link": "/admin/purchase/purchaseorder/"},
+                    {"title": "Purchase Order Items", "icon": "list", "link": "/admin/purchase/purchaseorderitem/"},
+                    {"title": "Order Tax & Charges", "icon": "calculate", "link": "/admin/purchase/purchaseordertaxcharge/"},
                     {
                         "separator": True,
                         "title": "Goods Receipt",
                     },
-                    {"title": "Goods Receipt Notes", "icon": "inventory", "link": reverse_lazy("admin:purchase_goodsreceiptnote_changelist")},
-                    {"title": "GRN Items", "icon": "checklist", "link": reverse_lazy("admin:purchase_grnitem_changelist")},
+                    {"title": "Goods Receipt Notes", "icon": "inventory", "link": "/admin/purchase/goodsreceiptnote/"},
+                    {"title": "GRN Items", "icon": "checklist", "link": "/admin/purchase/grnitem/"},
                     {
                         "separator": True,
                         "title": "Bills & Payments",
                     },
-                    {"title": "Purchase Bills", "icon": "receipt", "link": reverse_lazy("admin:purchase_bill_changelist")},
-                    {"title": "Bill Items", "icon": "format_list_numbered", "link": reverse_lazy("admin:purchase_billitem_changelist")},
-                    {"title": "Purchase Payments", "icon": "payments", "link": reverse_lazy("admin:purchase_purchasepayment_changelist")},
+                    {"title": "Purchase Bills", "icon": "receipt", "link": "/admin/purchase/bill/"},
+                    {"title": "Bill Items", "icon": "format_list_numbered", "link": "/admin/purchase/billitem/"},
+                    {"title": "Purchase Payments", "icon": "payments", "link": "/admin/purchase/purchasepayment/"},
                     {
                         "separator": True,
                         "title": "Returns & Approvals",
                     },
-                    {"title": "Purchase Returns", "icon": "keyboard_return", "link": reverse_lazy("admin:purchase_purchasereturn_changelist")},
-                    {"title": "Return Items", "icon": "undo", "link": reverse_lazy("admin:purchase_purchasereturnitem_changelist")},
-                    {"title": "Purchase Approvals", "icon": "approval", "link": reverse_lazy("admin:purchase_purchaseapproval_changelist")},
+                    {"title": "Purchase Returns", "icon": "keyboard_return", "link": "/admin/purchase/purchasereturn/"},
+                    {"title": "Return Items", "icon": "undo", "link": "/admin/purchase/purchasereturnitem/"},
+                    {"title": "Purchase Approvals", "icon": "approval", "link": "/admin/purchase/purchaseapproval/"},
                 ],
             },
             {
@@ -544,16 +545,16 @@ UNFOLD = {
                 "collapsible": True,
                 "items": [
                     # Setup & Configuration
-                    {"title": "Warehouses", "icon": "store", "link": reverse_lazy("admin:inventory_warehouse_changelist")},
+                    {"title": "Warehouses", "icon": "store", "link": "/admin/inventory/warehouse/"},
                     {"separator": True},
                     
                     # Stock Management
-                    {"title": "Stock Items", "icon": "inventory_2", "link": reverse_lazy("admin:inventory_stockitem_changelist")},
-                    {"title": "Stock Movements", "icon": "swap_horiz", "link": reverse_lazy("admin:inventory_stockmovement_changelist")},
+                    {"title": "Stock Items", "icon": "inventory_2", "link": "/admin/inventory/stockitem/"},
+                    {"title": "Stock Movements", "icon": "swap_horiz", "link": "/admin/inventory/stockmovement/"},
                     {"separator": True},
                     
                     # Alerts & Monitoring
-                    {"title": "Stock Alerts", "icon": "notification_important", "link": reverse_lazy("admin:inventory_stockalert_changelist")},
+                    {"title": "Stock Alerts", "icon": "notification_important", "link": "/admin/inventory/stockalert/"},
                 ],
             },
             {
@@ -562,22 +563,22 @@ UNFOLD = {
                 "collapsible": True,
                 "items": [
                     # Employee Management
-                    {"title": "Employees", "icon": "person", "link": reverse_lazy("admin:hr_employee_changelist")},
-                    {"title": "Contractors", "icon": "engineering", "link": reverse_lazy("admin:hr_contractor_changelist")},
+                    {"title": "Employees", "icon": "person", "link": "/admin/hr/employee/"},
+                    {"title": "Contractors", "icon": "engineering", "link": "/admin/hr/contractor/"},
                     {"separator": True},
                     
                     # Time & Attendance
-                    {"title": "Attendance", "icon": "event_available", "link": reverse_lazy("admin:hr_attendance_changelist")},
-                    {"title": "Leaves", "icon": "beach_access", "link": reverse_lazy("admin:hr_leave_changelist")},
+                    {"title": "Attendance", "icon": "event_available", "link": "/admin/hr/attendance/"},
+                    {"title": "Leaves", "icon": "beach_access", "link": "/admin/hr/leave/"},
                     {"separator": True},
                     
                     # Payroll
-                    {"title": "Payrolls", "icon": "payments", "link": reverse_lazy("admin:hr_payroll_changelist")},
-                    {"title": "Payslips", "icon": "receipt", "link": reverse_lazy("admin:hr_payslip_changelist")},
+                    {"title": "Payrolls", "icon": "payments", "link": "/admin/hr/payroll/"},
+                    {"title": "Payslips", "icon": "receipt", "link": "/admin/hr/payslip/"},
                     {"separator": True},
                     
                     # Reporting
-                    {"title": "HR Reports", "icon": "bar_chart", "link": reverse_lazy("admin:hr_hrreport_changelist")},
+                    {"title": "HR Reports", "icon": "bar_chart", "link": "/admin/hr/hrreport/"},
                 ],
             },
             {
@@ -586,17 +587,17 @@ UNFOLD = {
                 "collapsible": True,
                 "items": [
                     # Project Setup
-                    {"title": "Projects", "icon": "work", "link": reverse_lazy("admin:project_mgmt_project_changelist")},
-                    {"title": "Project Contractors", "icon": "groups", "link": reverse_lazy("admin:project_mgmt_projectcontractor_changelist")},
+                    {"title": "Projects", "icon": "work", "link": "/admin/project_mgmt/project/"},
+                    {"title": "Project Contractors", "icon": "groups", "link": "/admin/project_mgmt/projectcontractor/"},
                     {"separator": True},
                     
                     # Task Management & Tracking
-                    {"title": "Tasks", "icon": "task", "link": reverse_lazy("admin:project_mgmt_task_changelist")},
-                    {"title": "Time Entries", "icon": "timer", "link": reverse_lazy("admin:project_mgmt_timeentry_changelist")},
+                    {"title": "Tasks", "icon": "task", "link": "/admin/project_mgmt/task/"},
+                    {"title": "Time Entries", "icon": "timer", "link": "/admin/project_mgmt/timeentry/"},
                     {"separator": True},
                     
                     # Reporting
-                    {"title": "Project Reports", "icon": "bar_chart", "link": reverse_lazy("admin:project_mgmt_projectreport_changelist")},
+                    {"title": "Project Reports", "icon": "bar_chart", "link": "/admin/project_mgmt/projectreport/"},
                 ],
             },
             {
@@ -605,18 +606,18 @@ UNFOLD = {
                 "collapsible": True,
                 "items": [
                     # Bill of Materials
-                    {"title": "Bill of Materials", "icon": "layers", "link": reverse_lazy("admin:manufacturing_billofmaterials_changelist")},
-                    {"title": "BOM Items", "icon": "list", "link": reverse_lazy("admin:manufacturing_billofmaterialsitem_changelist")},
+                    {"title": "Bill of Materials", "icon": "layers", "link": "/admin/manufacturing/billofmaterials/"},
+                    {"title": "BOM Items", "icon": "list", "link": "/admin/manufacturing/billofmaterialsitem/"},
                     {"separator": True},
                     
                     # Production Management
-                    {"title": "Work Orders", "icon": "build", "link": reverse_lazy("admin:manufacturing_workorder_changelist")},
-                    {"title": "Production Plans", "icon": "event_note", "link": reverse_lazy("admin:manufacturing_productionplan_changelist")},
+                    {"title": "Work Orders", "icon": "build", "link": "/admin/manufacturing/workorder/"},
+                    {"title": "Production Plans", "icon": "event_note", "link": "/admin/manufacturing/productionplan/"},
                     {"separator": True},
                     
                     # Subcontracting
-                    {"title": "Subcontractors", "icon": "handshake", "link": reverse_lazy("admin:manufacturing_subcontractor_changelist")},
-                    {"title": "Subcontract Work Orders", "icon": "assignment_turned_in", "link": reverse_lazy("admin:manufacturing_subcontractworkorder_changelist")},
+                    {"title": "Subcontractors", "icon": "handshake", "link": "/admin/manufacturing/subcontractor/"},
+                    {"title": "Subcontract Work Orders", "icon": "assignment_turned_in", "link": "/admin/manufacturing/subcontractworkorder/"},
                 ],
             },
         ],
