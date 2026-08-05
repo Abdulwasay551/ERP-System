@@ -1095,10 +1095,10 @@ class CreditNote(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_credit_notes')
     
     credit_number = models.CharField(max_length=50, unique=True, blank=True)
-    credit_date = models.DateField(default=timezone.now)
+    credit_date = models.DateField(default=timezone.localdate)
     
-    # Amounts
-    currency = models.ForeignKey(Currency, on_delete=models.CASCADE, related_name='credit_notes')
+    # Amounts - currency is optional (this shop, like Invoice, doesn't use multi-currency)
+    currency = models.ForeignKey(Currency, on_delete=models.CASCADE, related_name='credit_notes', null=True, blank=True)
     exchange_rate = models.DecimalField(max_digits=10, decimal_places=4, default=1.0000)
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -1136,6 +1136,32 @@ class CreditNote(models.Model):
 
     def __str__(self):
         return f"{self.credit_number} - {self.customer.name}"
+
+
+class CreditNoteItem(models.Model):
+    """
+    One returned line - either a specific tracked unit (IMEI/serial, always qty 1) or a
+    quantity of an untracked product. Links back to the original InvoiceItem so a return
+    can't outlive/exceed what was actually sold on that line.
+    """
+    credit_note = models.ForeignKey(CreditNote, on_delete=models.CASCADE, related_name='items')
+    invoice_item = models.ForeignKey(InvoiceItem, on_delete=models.CASCADE, related_name='return_items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='credit_note_items')
+    tracking_unit = models.ForeignKey(
+        'products.ProductTracking', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='credit_note_items',
+        help_text="Specific IMEI/serial unit being returned - null for untracked/quantity-based items"
+    )
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2)
+    line_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    def save(self, *args, **kwargs):
+        self.line_total = self.quantity * self.unit_price
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.credit_note.credit_number} - {self.product.name} x{self.quantity}"
 
 
 class SalesOrderItemTracking(models.Model):

@@ -184,10 +184,17 @@ class GoodsReceiptNoteViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
+        """
+        Marks the GRN's status only - this legacy RFQ->PO->GRN pipeline predates and
+        isn't wired to inventory. The shop's actual receiving flow is
+        vendor_invoice_create -> bill_receive_items -> bill_confirm_received (see
+        BillViewSet.pending_receipt below), which writes real StockItem/ProductTracking
+        rows. Writing stock here too would create a second, divergent path for stock to
+        enter the system alongside the canonical one.
+        """
         grn = self.get_object()
         grn.status = 'accepted'
         grn.save()
-        # Update inventory here
         return Response({'status': 'accepted'})
 
 class GRNItemViewSet(viewsets.ModelViewSet):
@@ -207,11 +214,16 @@ class BillViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def three_way_match(self, request, pk=None):
         bill = self.get_object()
-        # Implement 3-way matching logic here
-        # Compare PO, GRN, and Invoice
-        bill.three_way_match_status = True
+        matched = bill.validate_three_way_match()
         bill.save()
-        return Response({'status': 'matched'})
+        return Response({
+            'status': 'matched' if matched else 'mismatched',
+            'three_way_match_status': bill.three_way_match_status,
+            'po_match_status': bill.po_match_status,
+            'grn_match_status': bill.grn_match_status,
+            'has_additional_items': bill.has_additional_items,
+            'has_quantity_variances': bill.has_quantity_variances,
+        })
 
     @action(detail=False, methods=['get'], url_path='pending-receipt')
     def pending_receipt(self, request):
