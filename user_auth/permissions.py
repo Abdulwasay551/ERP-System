@@ -4,13 +4,21 @@ class RoleIn(BasePermission):
     """
     Allow access only to users whose role name is in `allowed_roles`. Owner is
     always allowed regardless of `allowed_roles`, since Owner has full access.
+    Django superusers (e.g. an account made via createsuperuser, which has no Role
+    assigned) also always pass - otherwise a role-less superuser gets 403'd on every
+    role-gated endpoint despite is_superuser=True, which reads as "broken permissions"
+    rather than "missing role".
     Usage: set `allowed_roles = ['Manager', 'Cashier']` as a class attribute on the view.
     """
     allowed_roles = []
 
     def has_permission(self, request, view):
         user = request.user
-        if not user.is_authenticated or not getattr(user, 'role', None):
+        if not user.is_authenticated:
+            return False
+        if user.is_superuser:
+            return True
+        if not getattr(user, 'role', None):
             return False
         allowed_roles = getattr(view, 'allowed_roles', self.allowed_roles)
         return user.role.name == 'Owner' or user.role.name in allowed_roles
@@ -25,7 +33,11 @@ class DepartmentLevelPermission(BasePermission):
 
     def has_permission(self, request, view):
         user = request.user
-        if not user.is_authenticated or not hasattr(user, 'role') or not user.role:
+        if not user.is_authenticated:
+            return False
+        if user.is_superuser:
+            return True
+        if not hasattr(user, 'role') or not user.role:
             return False
         if user.role.name == 'Owner':
             return True
