@@ -35,6 +35,17 @@ class InvoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invoice
         fields = '__all__'
+        # Invoices are only ever created via pos_checkout (a raw ORM call, not this
+        # serializer), which fires stock movements + customer ledger entries in the same
+        # transaction as setting these fields. A generic PATCH changing subtotal/total/
+        # status/customer afterwards would desync stock and ledger from what the invoice
+        # says - so only safe metadata stays editable here; line-item corrections go
+        # through the returns/credit-note flow instead, which already updates both.
+        read_only_fields = (
+            'company', 'customer', 'created_by', 'invoice_number', 'invoice_date',
+            'subtotal', 'tax_amount', 'discount_amount', 'shipping_amount', 'total',
+            'paid_amount', 'status', 'pdf_file',
+        )
 
 class PaymentSerializer(serializers.ModelSerializer):
     customer_name = serializers.CharField(source='customer.name', read_only=True)

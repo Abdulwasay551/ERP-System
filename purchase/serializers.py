@@ -24,6 +24,11 @@ class SupplierSerializer(serializers.ModelSerializer):
     email = serializers.CharField(required=False, allow_blank=True)
     phone = serializers.CharField(required=False, allow_blank=True)
     city = serializers.CharField(required=False, allow_blank=True)
+    # write_only: neither is a real Supplier attribute (both live on the linked Partner),
+    # so the default to_representation() would AttributeError trying to read them off the
+    # instance - to_representation() below fills them into the output manually instead.
+    contact_person = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    address = serializers.CharField(required=False, allow_blank=True, write_only=True)
     outstanding_balance = serializers.SerializerMethodField()
 
     class Meta:
@@ -34,33 +39,46 @@ class SupplierSerializer(serializers.ModelSerializer):
     def get_outstanding_balance(self, obj):
         return str(obj.get_outstanding_balance())
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['contact_person'] = instance.partner.contact_person if instance.partner else ''
+        data['address'] = instance.partner.street if instance.partner else ''
+        return data
+
+    _PARTNER_PASSTHROUGH = ('name', 'email', 'phone', 'city', 'contact_person', 'address')
+
     def create(self, validated_data):
         from crm.models import Partner
         name = validated_data.pop('name')
         email = validated_data.pop('email', '')
         phone = validated_data.pop('phone', '')
         city = validated_data.pop('city', '')
+        contact_person = validated_data.pop('contact_person', '')
+        address = validated_data.pop('address', '')
         validated_data['partner'] = Partner.objects.create(
             company=validated_data['company'], name=name, partner_type='company',
-            email=email, phone=phone, city=city, is_supplier=True,
-            created_by=validated_data.get('created_by'),
+            email=email, phone=phone, city=city, contact_person=contact_person, street=address,
+            is_supplier=True, created_by=validated_data.get('created_by'),
         )
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        name = validated_data.pop('name', None)
-        email = validated_data.pop('email', None)
-        phone = validated_data.pop('phone', None)
-        city = validated_data.pop('city', None)
-        if instance.partner and any(v is not None for v in (name, email, phone, city)):
-            if name is not None:
-                instance.partner.name = name
-            if email is not None:
-                instance.partner.email = email
-            if phone is not None:
-                instance.partner.phone = phone
-            if city is not None:
-                instance.partner.city = city
+        partner_fields = {
+            f: validated_data.pop(f, None) for f in self._PARTNER_PASSTHROUGH
+        }
+        if instance.partner and any(v is not None for v in partner_fields.values()):
+            if partner_fields['name'] is not None:
+                instance.partner.name = partner_fields['name']
+            if partner_fields['email'] is not None:
+                instance.partner.email = partner_fields['email']
+            if partner_fields['phone'] is not None:
+                instance.partner.phone = partner_fields['phone']
+            if partner_fields['city'] is not None:
+                instance.partner.city = partner_fields['city']
+            if partner_fields['contact_person'] is not None:
+                instance.partner.contact_person = partner_fields['contact_person']
+            if partner_fields['address'] is not None:
+                instance.partner.street = partner_fields['address']
             instance.partner.save()
         return super().update(instance, validated_data)
 
