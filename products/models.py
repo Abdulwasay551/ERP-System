@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from user_auth.models import Company, User
 from decimal import Decimal
 from django.core.validators import MinValueValidator
@@ -58,7 +58,7 @@ class Product(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='products')
     name = models.CharField(max_length=255)
     brand = models.CharField(max_length=100, blank=True, help_text="e.g. Samsung, Apple - same brand/model is shared across vendors, not duplicated per-vendor")
-    sku = models.CharField(max_length=100, unique=True, help_text="Stock Keeping Unit")
+    sku = models.CharField(max_length=100, unique=True, blank=True, help_text="Stock Keeping Unit - auto-generated if left blank")
     barcode = models.CharField(max_length=100, blank=True, null=True)
     description = models.TextField(blank=True)
     
@@ -200,7 +200,20 @@ class Product(models.Model):
             self.requires_batch_tracking = True
         elif self.tracking_method in ['serial', 'imei', 'barcode']:
             self.requires_individual_tracking = True
-        
+
+        if not self.sku:
+            # sku is globally unique (not just per-company), so the generated value has
+            # to include the company id even though numbering itself is per-company -
+            # matches the PRD-<company>-<sequence> shape rather than colliding across shops.
+            with transaction.atomic():
+                last = Product.objects.select_for_update().filter(company=self.company).order_by('-id').first()
+                next_num = (last.id + 1) if last else 1
+                candidate = f'PRD-{self.company_id}-{next_num:05d}'
+                while Product.objects.filter(sku=candidate).exclude(pk=self.pk).exists():
+                    next_num += 1
+                    candidate = f'PRD-{self.company_id}-{next_num:05d}'
+                self.sku = candidate
+
         super().save(*args, **kwargs)
 
     class Meta:
