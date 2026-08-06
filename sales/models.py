@@ -496,7 +496,7 @@ class Invoice(models.Model):
     
     # Invoice details
     invoice_number = models.CharField(max_length=50, unique=True, blank=True)
-    invoice_date = models.DateField(default=timezone.now)
+    invoice_date = models.DateField(default=timezone.localdate)
     due_date = models.DateField(null=True, blank=True)
     
     # Currency and amounts

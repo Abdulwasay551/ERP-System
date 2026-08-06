@@ -11,7 +11,7 @@ from user_auth.permissions import RoleIn
 from products.models import ProductTracking
 from inventory.models import StockItem, StockMovement
 from crm.models import Customer, CustomerLedger
-from core.pdf_utils import build_invoice_pdf
+from core.pdf_utils import build_invoice_pdf, build_invoice_pdf_a4
 from .models import Product, Tax, Quotation, SalesOrder, SalesOrderItem, Invoice, InvoiceItem, Payment, CreditNote, CreditNoteItem
 from .serializers import (
     ProductSerializer, TaxSerializer, QuotationSerializer, SalesOrderSerializer, SalesOrderItemSerializer,
@@ -93,11 +93,17 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def pdf(self, request, pk=None):
-        """Regenerates the mini-invoice PDF on demand rather than relying on the stored
+        """Regenerates the invoice PDF on demand rather than relying on the stored
         pdf_file - Vercel's serverless filesystem is ephemeral, so a file saved at
-        checkout time may not still be there by the time someone downloads it."""
+        checkout time may not still be there by the time someone downloads it.
+        ?size=a4 for a full-page printer invoice; defaults to the mini billing-machine
+        receipt (?size=mini, or omitted)."""
         invoice = self.get_object()
-        buf = build_invoice_pdf(invoice, invoice.items.select_related('product').all())
+        items = invoice.items.select_related('product').all()
+        if request.query_params.get('size') == 'a4':
+            buf = build_invoice_pdf_a4(invoice, items)
+        else:
+            buf = build_invoice_pdf(invoice, items)
         response = HttpResponse(buf.read(), content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="{invoice.invoice_number}.pdf"'
         return response

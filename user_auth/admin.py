@@ -14,6 +14,10 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
     list_display = ('email', 'first_name', 'last_name', 'company', 'role', 'is_staff', 'is_active')
     search_fields = ('email', 'first_name', 'last_name')
     ordering = ('email',)
+    # date_joined is auto_now_add=True (non-editable) on this model, unlike Django's
+    # default AbstractUser - readonly_fields is how the admin can still display it inside
+    # a fieldset without ModelForm rejecting it as an unknown/non-editable form field.
+    readonly_fields = ('date_joined',)
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         ('Personal info', {'fields': ('first_name', 'last_name', 'company', 'role')}),
