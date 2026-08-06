@@ -5,12 +5,13 @@ from rest_framework.response import Response
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.core.files.base import ContentFile
+from django.http import HttpResponse
 from django.utils import timezone
 from user_auth.permissions import RoleIn
 from products.models import ProductTracking
 from inventory.models import StockItem, StockMovement
 from crm.models import Customer, CustomerLedger
-from core.pdf_utils import render_pdf
+from core.pdf_utils import build_invoice_pdf
 from .models import Product, Tax, Quotation, SalesOrder, SalesOrderItem, Invoice, InvoiceItem, Payment, CreditNote, CreditNoteItem
 from .serializers import (
     ProductSerializer, TaxSerializer, QuotationSerializer, SalesOrderSerializer, SalesOrderItemSerializer,
@@ -89,6 +90,17 @@ class InvoiceViewSet(viewsets.ModelViewSet):
                         'returnable_quantity': str(remaining),
                     })
         return Response(rows)
+
+    @action(detail=True, methods=['get'])
+    def pdf(self, request, pk=None):
+        """Regenerates the mini-invoice PDF on demand rather than relying on the stored
+        pdf_file - Vercel's serverless filesystem is ephemeral, so a file saved at
+        checkout time may not still be there by the time someone downloads it."""
+        invoice = self.get_object()
+        buf = build_invoice_pdf(invoice, invoice.items.select_related('product').all())
+        response = HttpResponse(buf.read(), content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="{invoice.invoice_number}.pdf"'
+        return response
 
 class PaymentViewSet(viewsets.ModelViewSet):
     serializer_class = PaymentSerializer
@@ -268,11 +280,8 @@ def pos_checkout(request):
 
             pdf_error = None
             try:
-                pdf_path = render_pdf('sales/invoice_pdf.html', {
-                    'invoice': invoice, 'items': invoice.items.all(), 'company': company,
-                })
-                with open(pdf_path, 'rb') as f:
-                    invoice.pdf_file.save(f'{invoice.invoice_number}.pdf', ContentFile(f.read()), save=True)
+                buf = build_invoice_pdf(invoice, invoice.items.select_related('product').all())
+                invoice.pdf_file.save(f'{invoice.invoice_number}.pdf', ContentFile(buf.read()), save=True)
             except Exception as e:
                 pdf_error = str(e)
 

@@ -4,8 +4,10 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from django.db import transaction, IntegrityError
 from django.db.models import Q
+from django.http import HttpResponse
 from django.utils import timezone
 from user_auth.permissions import RoleIn
+from core.pdf_utils import build_ledger_pdf, build_receiving_pdf
 
 
 class ManagerOrWarehouse(RoleIn):
@@ -59,8 +61,48 @@ class SupplierViewSet(viewsets.ModelViewSet):
     def ledger(self, request, pk=None):
         supplier = self.get_object()
         entries = supplier.ledger_entries.all().order_by('-transaction_date', '-created_at')
-        serializer = SupplierLedgerSerializer(entries, many=True)
-        return Response(serializer.data)
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        if date_from:
+            entries = entries.filter(transaction_date__gte=date_from)
+        if date_to:
+            entries = entries.filter(transaction_date__lte=date_to)
+
+        try:
+            page = max(int(request.query_params.get('page', 1)), 1)
+            page_size = min(max(int(request.query_params.get('page_size', 25)), 1), 200)
+        except ValueError:
+            page = 1
+            page_size = 25
+
+        count = entries.count()
+        start = (page - 1) * page_size
+        page_entries = entries[start:start + page_size]
+        return Response({
+            'count': count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': (count + page_size - 1) // page_size if count else 1,
+            'results': SupplierLedgerSerializer(page_entries, many=True).data,
+        })
+
+    @action(detail=True, methods=['get'], url_path='ledger/pdf')
+    def ledger_pdf(self, request, pk=None):
+        supplier = self.get_object()
+        entries = supplier.ledger_entries.all().order_by('transaction_date', 'created_at')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        if date_from:
+            entries = entries.filter(transaction_date__gte=date_from)
+        if date_to:
+            entries = entries.filter(transaction_date__lte=date_to)
+        entries = list(entries)
+        closing_balance = entries[-1].balance if entries else supplier.get_outstanding_balance()
+        name = supplier.partner.name
+        buf = build_ledger_pdf(name, 'Supplier', entries, date_from, date_to, closing_balance)
+        response = HttpResponse(buf.read(), content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="{name}-ledger.pdf"'
+        return response
 
     @action(detail=True, methods=['get'], url_path='outstanding-balance')
     def outstanding_balance(self, request, pk=None):
@@ -231,6 +273,15 @@ class BillViewSet(viewsets.ModelViewSet):
         bills = self.get_queryset().filter(goods_received=False).order_by('-bill_date')
         serializer = self.get_serializer(bills, many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def pdf(self, request, pk=None):
+        """Goods-received note for this bill, generated fresh on each request."""
+        bill = self.get_object()
+        buf = build_receiving_pdf(bill, bill.items.select_related('product').all())
+        response = HttpResponse(buf.read(), content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="{bill.bill_number}-receiving.pdf"'
+        return response
 
 class BillItemViewSet(viewsets.ModelViewSet):
     serializer_class = BillItemSerializer
