@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product, Tax, Quotation, SalesOrder, SalesOrderItem, Invoice, Payment, CreditNote, CreditNoteItem
+from .models import Product, Tax, Quotation, SalesOrder, SalesOrderItem, Invoice, InvoiceItem, Payment, CreditNote, CreditNoteItem
 
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
@@ -26,11 +26,30 @@ class SalesOrderItemSerializer(serializers.ModelSerializer):
         model = SalesOrderItem
         fields = '__all__'
 
+class InvoiceItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    tracking_identifier = serializers.SerializerMethodField()
+
+    class Meta:
+        model = InvoiceItem
+        fields = [
+            'id', 'product', 'product_name', 'tracking_unit', 'tracking_identifier',
+            'quantity', 'unit_price', 'discounts', 'discount_amount', 'line_total',
+        ]
+
+    def get_tracking_identifier(self, obj):
+        return obj.tracking_unit.get_tracking_value() if obj.tracking_unit_id else None
+
 class InvoiceSerializer(serializers.ModelSerializer):
     # customer_name/outstanding_amount aren't picked up by fields = '__all__' -
     # customer_name needs the dotted source, outstanding_amount is a @property.
     customer_name = serializers.CharField(source='customer.name', read_only=True)
     outstanding_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    # Read-only nested items so the frontend edit UI can see the current line-up before
+    # calling InvoiceViewSet.edit() with a replacement set - editing itself still goes
+    # through that dedicated action, not a PATCH on this serializer (see read_only_fields
+    # note below for why).
+    items = InvoiceItemSerializer(many=True, read_only=True)
 
     class Meta:
         model = Invoice
