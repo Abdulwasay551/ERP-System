@@ -2076,6 +2076,10 @@ class BillItem(models.Model):
     discounts = models.JSONField(default=list, blank=True, help_text='[{"type": "fixed"|"percent"|"per_unit", "value": "10.00"}, ...]')
     discount_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     line_total = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    received_quantity = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        help_text="How much of this line has actually been scanned/received via bill_receive_items() so far - bill_receive_items() rejects receiving past `quantity`."
+    )
 
     # Source references
     po_item = models.ForeignKey(PurchaseOrderItem, on_delete=models.SET_NULL, null=True, blank=True)
@@ -2339,10 +2343,25 @@ class PurchasePayment(SoftDeleteMixin, models.Model):
             self.base_currency_amount = self.amount * Decimal(str(self.exchange_rate))
         
         super().save(*args, **kwargs)
-        
+
         # Update supplier ledger
         self.update_supplier_ledger()
-    
+
+        if self.bill_id:
+            self.update_bill_paid_amount()
+
+    def update_bill_paid_amount(self):
+        """Recompute Bill.paid_amount/status from this payment's bill's actual payment
+        total - mirrors sales.models.Payment.update_invoice_paid_amount() exactly. Without
+        this, recording a PurchasePayment through the real API never touched Bill.
+        paid_amount/outstanding_amount/status at all (the only code that did this lived in
+        purchase/views.py, which nothing imports - a dead legacy view)."""
+        total_paid = self.bill.payments.aggregate(total=Sum('amount'))['total'] or 0
+        self.bill.paid_amount = total_paid
+        self.bill.status = 'paid' if total_paid >= self.bill.total_amount else 'partially_paid'
+        self.bill.outstanding_amount = self.bill.total_amount - self.bill.paid_amount
+        self.bill.save(update_fields=['paid_amount', 'status', 'outstanding_amount'])
+
     def update_supplier_ledger(self):
         """Update supplier ledger entry for this payment"""
         from .models import SupplierLedger  # Avoid circular import

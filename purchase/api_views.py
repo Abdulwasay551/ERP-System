@@ -514,6 +514,12 @@ def bill_receive_items(request, bill_id):
                             f'Product {product.name} requires individual codes '
                             f'({product.get_tracking_method_display()}) - none provided.'
                         )
+                    if bill_item.received_quantity + len(codes) > bill_item.quantity:
+                        raise ValueError(
+                            f'{product.name}: receiving {len(codes)} more would total '
+                            f'{bill_item.received_quantity + len(codes)}, more than the '
+                            f'{bill_item.quantity} ordered on this line.'
+                        )
                     tracking_field = product.get_tracking_field_name()
 
                     for code in codes:
@@ -548,11 +554,20 @@ def bill_receive_items(request, bill_id):
                     stock_item.quantity += len(codes)
                     stock_item.save()
 
+                    bill_item.received_quantity += len(codes)
+                    bill_item.save(update_fields=['received_quantity'])
+
                     line_summaries.append({'bill_item_id': bill_item.id, 'product_name': product.name, 'units_received': len(codes)})
                 else:
                     quantity = Decimal(str(line.get('quantity', '0')))
                     if quantity <= 0:
                         raise ValueError(f'quantity must be > 0 for product {product.name}.')
+                    if bill_item.received_quantity + quantity > bill_item.quantity:
+                        raise ValueError(
+                            f'{product.name}: receiving {quantity} more would total '
+                            f'{bill_item.received_quantity + quantity}, more than the '
+                            f'{bill_item.quantity} ordered on this line.'
+                        )
                     stock_item, _ = StockItem.objects.get_or_create(
                         company=company, product=product, warehouse=warehouse,
                         defaults={'stock_status': 'available', 'purchase_status': 'ready_for_use'}
@@ -563,6 +578,10 @@ def bill_receive_items(request, bill_id):
                     stock_item.update_average_cost(quantity, bill_item.unit_price)
                     stock_item.quantity += quantity
                     stock_item.save()
+
+                    bill_item.received_quantity += quantity
+                    bill_item.save(update_fields=['received_quantity'])
+
                     line_summaries.append({'bill_item_id': bill_item.id, 'product_name': product.name, 'quantity_received': str(quantity)})
 
     except ValueError as e:
