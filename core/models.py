@@ -60,6 +60,7 @@ class RecordDeletionLog(models.Model):
         ('deleted', 'Deleted'),
         ('restored', 'Restored'),
         ('purged', 'Purged'),
+        ('edited', 'Edited'),
     ]
 
     company = models.ForeignKey('user_auth.Company', on_delete=models.CASCADE, related_name='deletion_logs')

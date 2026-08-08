@@ -12,7 +12,7 @@ from products.models import ProductTracking
 from inventory.models import StockItem, StockMovement
 from crm.models import Customer, CustomerLedger
 from core.pdf_utils import build_invoice_pdf, build_invoice_pdf_a4
-from core.mixins import SoftDeleteViewSetMixin
+from core.mixins import SoftDeleteViewSetMixin, log_deletion
 from .models import Product, Tax, Quotation, SalesOrder, SalesOrderItem, Invoice, InvoiceItem, Payment, CreditNote, CreditNoteItem
 from .serializers import (
     ProductSerializer, TaxSerializer, QuotationSerializer, SalesOrderSerializer, SalesOrderItemSerializer,
@@ -114,6 +114,104 @@ class InvoiceViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
         response = HttpResponse(buf.read(), content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="{invoice.invoice_number}.pdf"'
         return response
+
+    @action(detail=True, methods=['post'])
+    def edit(self, request, pk=None):
+        """
+        Owner/Manager-only correction of an already-posted invoice: header fields plus a
+        full replacement item list (product_id/unit_price/quantity/discounts/tracking_id
+        per line, same shape pos_checkout accepts). Reverse -> replace -> reapply: undo
+        this invoice's current stock/tracking effects (releases any tracked units back to
+        available), swap in the new item set, recompute totals, then reapply stock
+        reduction and ledger/paid-amount - reuses the exact same methods pos_checkout and
+        Invoice.save() already rely on for creation, rather than hand-rolling new delta
+        logic. get_permissions() (core.mixins.SoftDeleteViewSetMixin) gates this to
+        Owner/Manager only.
+        """
+        invoice = self.get_object()
+        data = request.data
+        items_data = data.get('items') or []
+        if not items_data:
+            return Response({'error': 'items are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        company = request.user.company
+        try:
+            with transaction.atomic():
+                for field in ('due_date', 'payment_terms', 'notes', 'invoice_date'):
+                    if field in data:
+                        setattr(invoice, field, data[field])
+                if data.get('customer_id'):
+                    try:
+                        invoice.customer = Customer.objects.get(pk=data['customer_id'], company=company)
+                    except Customer.DoesNotExist:
+                        raise ValueError(f"Customer {data['customer_id']} not found.")
+
+                was_confirmed = invoice.status != 'draft'
+                if was_confirmed:
+                    invoice.reverse_inventory_movements()
+
+                invoice.items.all().delete()
+
+                subtotal = Decimal('0')
+                line_discounts_total = Decimal('0')
+                for line in items_data:
+                    product_id = line.get('product_id')
+                    if not product_id:
+                        raise ValueError('Each item requires a product_id.')
+                    try:
+                        product = Product.objects.get(pk=product_id, company=company)
+                    except Product.DoesNotExist:
+                        raise ValueError(f'Product {product_id} not found.')
+
+                    tracking_id = line.get('tracking_id')
+                    if tracking_id:
+                        if not ProductTracking.objects.filter(pk=tracking_id, product=product, status='available').exists():
+                            raise ValueError(f'Tracking unit {tracking_id} is not available for sale.')
+                        quantity = Decimal('1')
+                    else:
+                        try:
+                            quantity = Decimal(str(line.get('quantity', '1')))
+                        except InvalidOperation:
+                            raise ValueError(f'Invalid quantity for product {product_id}.')
+                        if quantity <= 0:
+                            raise ValueError(f'quantity must be > 0 for product {product.name}.')
+
+                    try:
+                        unit_price = Decimal(str(line['unit_price'])) if line.get('unit_price') else product.selling_price
+                    except InvalidOperation:
+                        raise ValueError(f'Invalid unit_price for product {product_id}.')
+
+                    invoice_item = InvoiceItem.objects.create(
+                        invoice=invoice, product=product, quantity=quantity, unit_price=unit_price,
+                        tracking_unit_id=tracking_id, discounts=line.get('discounts') or [],
+                    )
+                    subtotal += quantity * unit_price
+                    line_discounts_total += invoice_item.discount_amount
+
+                try:
+                    discount_amount = Decimal(str(data.get('discount_amount', invoice.discount_amount)))
+                except InvalidOperation:
+                    raise ValueError('Invalid discount_amount.')
+
+                invoice.subtotal = subtotal
+                invoice.discount_amount = discount_amount
+                invoice.total = subtotal - line_discounts_total - discount_amount
+                invoice.save()
+
+                if was_confirmed:
+                    invoice.process_inventory_reduction()
+                    invoice.update_customer_ledger_debit()
+
+                total_paid = invoice.payments.aggregate(total=Sum('amount'))['total'] or 0
+                invoice.paid_amount = total_paid
+                invoice.status = 'paid' if total_paid >= invoice.total else 'partially_paid'
+                invoice.save(update_fields=['paid_amount', 'status'])
+
+                log_deletion(invoice, request.user, 'edited')
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(InvoiceSerializer(invoice).data)
 
 class PaymentViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = PaymentSerializer

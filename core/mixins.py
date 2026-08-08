@@ -41,7 +41,7 @@ class SoftDeleteViewSetMixin:
     cascade_to = []
 
     def get_permissions(self):
-        if self.action == 'destroy':
+        if self.action in ('destroy', 'edit'):
             return [permissions.IsAuthenticated(), IsOwnerOrManager()]
         return super().get_permissions()
 

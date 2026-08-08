@@ -3,12 +3,12 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from django.db import transaction, IntegrityError
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.http import HttpResponse
 from django.utils import timezone
 from user_auth.permissions import RoleIn
 from core.pdf_utils import build_ledger_pdf, build_receiving_pdf
-from core.mixins import SoftDeleteViewSetMixin
+from core.mixins import SoftDeleteViewSetMixin, log_deletion
 
 
 class ManagerOrWarehouse(RoleIn):
@@ -288,6 +288,143 @@ class BillViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
         response = HttpResponse(buf.read(), content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="{bill.bill_number}-receiving.pdf"'
         return response
+
+    @action(detail=True, methods=['post'])
+    def edit(self, request, pk=None):
+        """
+        Owner/Manager-only correction of a posted bill. Header fields are always
+        editable. Per line: once received_quantity > 0 (bill_receive_items() has
+        scanned/counted any of it), product and quantity lock - unlike invoices, bill
+        receiving has no StockMovement-style audit trail, so there's no safe way to undo
+        units that already landed on a shelf or were sold onward. Price/discount stay
+        editable on every line regardless, cascading into that line's already-created
+        ProductTracking.purchase_price so the average-purchase-price cost warning (see
+        pos_search's avg_purchase_price) stays accurate. StockItem.average_cost is a
+        rolling weighted average with no clean after-the-fact correction formula -
+        deliberately left alone here rather than risking a wrong recompute of it.
+        get_permissions() (core.mixins.SoftDeleteViewSetMixin) gates this to Owner/
+        Manager only.
+        """
+        bill = self.get_object()
+        data = request.data
+        items_data = data.get('items') or []
+        if not items_data:
+            return Response({'error': 'items are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        company = request.user.company
+        try:
+            with transaction.atomic():
+                if data.get('supplier_id'):
+                    try:
+                        bill.supplier = Supplier.objects.get(pk=data['supplier_id'], company=company)
+                    except Supplier.DoesNotExist:
+                        raise ValueError(f"Supplier {data['supplier_id']} not found.")
+                for field in ('bill_date', 'due_date', 'supplier_invoice_number', 'notes'):
+                    if field in data:
+                        setattr(bill, field, data[field])
+
+                existing_items = {item.id: item for item in bill.items.all()}
+                kept_ids = set()
+
+                for line in items_data:
+                    line_id = line.get('id')
+                    try:
+                        unit_price = Decimal(str(line['unit_price'])) if line.get('unit_price') is not None else None
+                    except InvalidOperation:
+                        raise ValueError('Invalid unit_price.')
+                    discounts = line.get('discounts')
+
+                    if line_id:
+                        bill_item = existing_items.get(int(line_id))
+                        if not bill_item:
+                            raise ValueError(f'Bill item {line_id} not found on this bill.')
+                        kept_ids.add(bill_item.id)
+
+                        if bill_item.received_quantity > 0:
+                            new_product_id = line.get('product_id')
+                            new_quantity = line.get('quantity')
+                            if new_product_id and int(new_product_id) != bill_item.product_id:
+                                raise ValueError(
+                                    f"{bill_item.product.name}: product can't be changed - "
+                                    f"{bill_item.received_quantity} unit(s) already received on this line."
+                                )
+                            if new_quantity is not None and Decimal(str(new_quantity)) != bill_item.quantity:
+                                raise ValueError(
+                                    f"{bill_item.product.name}: quantity can't be changed - "
+                                    f"{bill_item.received_quantity} unit(s) already received on this line."
+                                )
+                        else:
+                            if line.get('product_id'):
+                                try:
+                                    bill_item.product = Product.objects.get(pk=line['product_id'], company=company)
+                                except Product.DoesNotExist:
+                                    raise ValueError(f"Product {line['product_id']} not found.")
+                            if line.get('quantity') is not None:
+                                try:
+                                    new_qty = Decimal(str(line['quantity']))
+                                except InvalidOperation:
+                                    raise ValueError(f'Invalid quantity for bill item {line_id}.')
+                                if new_qty <= 0:
+                                    raise ValueError('quantity must be > 0.')
+                                bill_item.quantity = new_qty
+
+                        if unit_price is not None:
+                            bill_item.unit_price = unit_price
+                        if discounts is not None:
+                            bill_item.discounts = discounts
+                        bill_item.save()
+
+                        if unit_price is not None and bill_item.received_quantity > 0:
+                            bill_item.product_tracking_units.update(purchase_price=unit_price)
+                    else:
+                        product_id = line.get('product_id')
+                        if not product_id:
+                            raise ValueError('Each new item requires a product_id.')
+                        try:
+                            product = Product.objects.get(pk=product_id, company=company)
+                        except Product.DoesNotExist:
+                            raise ValueError(f'Product {product_id} not found.')
+                        try:
+                            quantity = Decimal(str(line.get('quantity', '0')))
+                        except InvalidOperation:
+                            raise ValueError(f'Invalid quantity for product {product_id}.')
+                        if quantity <= 0:
+                            raise ValueError(f'quantity must be > 0 for product {product.name}.')
+                        new_item = BillItem.objects.create(
+                            bill=bill, product=product, quantity=quantity,
+                            unit_price=unit_price or Decimal('0'), item_source='manual',
+                            discounts=discounts or [],
+                        )
+                        kept_ids.add(new_item.id)
+
+                for item_id, bill_item in existing_items.items():
+                    if item_id not in kept_ids:
+                        if bill_item.received_quantity > 0:
+                            raise ValueError(
+                                f"{bill_item.product.name}: can't remove this line - "
+                                f"{bill_item.received_quantity} unit(s) already received against it."
+                            )
+                        bill_item.delete()
+
+                try:
+                    bill.discount_amount = Decimal(str(data.get('discount_amount', bill.discount_amount)))
+                except InvalidOperation:
+                    raise ValueError('Invalid discount_amount.')
+                bill.subtotal = sum(item.line_total for item in bill.items.all())
+                bill.total_amount = bill.subtotal + bill.tax_amount - bill.discount_amount
+                bill.save()
+
+                if bill.paid_amount >= bill.total_amount and bill.total_amount > 0:
+                    bill.status = 'paid'
+                elif bill.paid_amount > 0:
+                    bill.status = 'partially_paid'
+                bill.save(update_fields=['status'])
+
+                log_deletion(bill, request.user, 'edited')
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(BillSerializer(bill).data)
 
 class BillItemViewSet(viewsets.ModelViewSet):
     serializer_class = BillItemSerializer
