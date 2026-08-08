@@ -306,6 +306,61 @@ class ProductTrackingViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
 
         return Response(results)
 
+    @action(detail=False, methods=['get'])
+    def lookup(self, request):
+        """
+        Full life-story lookup for a single unit by IMEI/serial/barcode/batch: which bill
+        it was purchased on, which invoice (if any) it was sold on. Exact match first
+        (what a barcode scanner/typed full code should hit), falling back to a partial
+        icontains scan across all four identifier fields for manual lookups.
+        """
+        q = request.query_params.get('q', '').strip()
+        if not q:
+            return Response({'error': 'q query parameter is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        base_qs = self.get_queryset().select_related(
+            'product', 'variant', 'supplier', 'current_warehouse',
+            'bill_item__bill', 'sold_invoice', 'sold_to_customer',
+        )
+        exact = base_qs.filter(
+            Q(serial_number=q) | Q(imei_number=q) | Q(barcode=q) | Q(batch_number=q)
+        )
+        units = list(exact) if exact.exists() else list(base_qs.filter(
+            Q(serial_number__icontains=q) | Q(imei_number__icontains=q) |
+            Q(barcode__icontains=q) | Q(batch_number__icontains=q)
+        )[:20])
+
+        results = []
+        for unit in units:
+            bill = unit.bill_item.bill if unit.bill_item else None
+            sold_item = unit.invoice_items.select_related('invoice').first() if unit.sold_invoice_id else None
+            results.append({
+                'id': unit.id,
+                'identifier': unit.get_tracking_value(),
+                'product_id': unit.product_id,
+                'product_name': unit.product.name,
+                'product_sku': unit.product.sku,
+                'status': unit.status,
+                'status_display': unit.get_status_display(),
+                'current_warehouse': unit.current_warehouse.name if unit.current_warehouse else None,
+                'purchase': {
+                    'bill_id': bill.id if bill else None,
+                    'bill_number': bill.bill_number if bill else None,
+                    'supplier_name': unit.supplier.name if unit.supplier else None,
+                    'purchase_price': str(unit.purchase_price) if unit.purchase_price is not None else None,
+                    'purchase_date': unit.purchase_date.isoformat() if unit.purchase_date else None,
+                } if (bill or unit.supplier or unit.purchase_price is not None) else None,
+                'sale': {
+                    'invoice_id': unit.sold_invoice_id,
+                    'invoice_number': unit.sold_invoice.invoice_number if unit.sold_invoice else None,
+                    'customer_name': unit.sold_to_customer.name if unit.sold_to_customer else None,
+                    'sold_price': str(sold_item.unit_price) if sold_item else None,
+                    'sold_date': unit.sold_date.isoformat() if unit.sold_date else None,
+                } if unit.sold_invoice_id else None,
+            })
+
+        return Response({'results': results, 'count': len(results)})
+
     @action(detail=False, methods=['post'])
     def validate_identifier(self, request):
         """Validate if a tracking identifier is unique"""

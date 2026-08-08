@@ -3,7 +3,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from django.db import transaction
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, Avg
 from django.core.files.base import ContentFile
 from django.http import HttpResponse
 from django.utils import timezone
@@ -132,6 +132,17 @@ class POSStaff(RoleIn):
     allowed_roles = ['Manager', 'Cashier', 'Salesman']
 
 
+def _avg_purchase_price(product):
+    """Historical cost signal for the POS below-cost warning: average purchase_price
+    across all of this product's tracked units (any status - it's a cost reference,
+    not a stock check), falling back to the product's set cost_price when it has no
+    tracked purchase history yet (e.g. an untracked/bulk product)."""
+    avg = ProductTracking.all_objects.filter(
+        product=product, purchase_price__isnull=False
+    ).aggregate(avg=Avg('purchase_price'))['avg']
+    return avg if avg is not None else (product.cost_price or Decimal('0'))
+
+
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated, POSStaff])
 def pos_search(request):
@@ -168,6 +179,7 @@ def pos_search(request):
             'identifier': unit.get_tracking_value(),
             'tracking_method': unit.product.tracking_method,
             'unit_price': str(unit_price),
+            'avg_purchase_price': str(_avg_purchase_price(unit.product)),
             'available_qty': 1,
         })
 
@@ -189,6 +201,7 @@ def pos_search(request):
                 'identifier': product.barcode or product.sku,
                 'tracking_method': 'none',
                 'unit_price': str(product.selling_price),
+                'avg_purchase_price': str(_avg_purchase_price(product)),
                 'available_qty': str(available),
             })
 
@@ -229,6 +242,7 @@ def pos_checkout(request):
             )
 
             subtotal = Decimal('0')
+            line_discounts_total = Decimal('0')
             for line in items_data:
                 product_id = line.get('product_id')
                 if not product_id:
@@ -256,11 +270,12 @@ def pos_checkout(request):
                 except InvalidOperation:
                     raise ValueError(f'Invalid unit_price for product {product_id}.')
 
-                InvoiceItem.objects.create(
+                invoice_item = InvoiceItem.objects.create(
                     invoice=invoice, product=product, quantity=quantity, unit_price=unit_price,
-                    tracking_unit_id=tracking_id
+                    tracking_unit_id=tracking_id, discounts=line.get('discounts') or [],
                 )
                 subtotal += quantity * unit_price
+                line_discounts_total += invoice_item.discount_amount
 
             try:
                 discount_amount = Decimal(str(data.get('discount_amount', '0')))
@@ -269,7 +284,7 @@ def pos_checkout(request):
 
             invoice.subtotal = subtotal
             invoice.discount_amount = discount_amount
-            invoice.total = subtotal - discount_amount
+            invoice.total = subtotal - line_discounts_total - discount_amount
 
             payment_data = data.get('payment') or {}
             try:
@@ -374,6 +389,12 @@ def process_sales_return(request):
 
                 product = invoice_item.product
                 tracking_id = line.get('tracking_id')
+                # Refund at the post-discount per-unit price, not the raw list unit_price,
+                # so a discounted sale doesn't refund more than the customer actually paid.
+                net_unit_price = (
+                    (invoice_item.unit_price * invoice_item.quantity - invoice_item.discount_amount) / invoice_item.quantity
+                    if invoice_item.quantity else invoice_item.unit_price
+                )
 
                 if product.tracking_method in ('serial', 'imei'):
                     if not tracking_id:
@@ -385,7 +406,7 @@ def process_sales_return(request):
                     if tracking_unit.status != 'sold' or tracking_unit.sold_invoice_id != invoice.id:
                         raise ValueError(f'{product.name} ({tracking_id}) is not currently sold on this invoice - it may already have been returned.')
                     quantity = Decimal('1')
-                    unit_price = invoice_item.unit_price
+                    unit_price = net_unit_price
                 else:
                     tracking_unit = None
                     try:
@@ -400,7 +421,7 @@ def process_sales_return(request):
                             f'Cannot return {quantity} of {product.name} - only '
                             f'{invoice_item.quantity - already_returned} left returnable on this invoice.'
                         )
-                    unit_price = invoice_item.unit_price
+                    unit_price = net_unit_price
 
                 CreditNoteItem.objects.create(
                     credit_note=credit_note, invoice_item=invoice_item, product=product,

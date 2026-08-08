@@ -169,8 +169,12 @@ class Customer(SoftDeleteMixin, models.Model):
         # uniqueness, so creating a second customer without an explicit code collided
         # with the first (mirrors Supplier.save()'s supplier_code generation pattern).
         if not self.customer_code:
+            # Uses all_objects (not the soft-delete filtered default manager) - see
+            # Invoice.save() (sales/models.py) for why: otherwise once the highest-id
+            # customer is soft-deleted, numbering restarts and collides with that hidden
+            # row's still-unique-constrained code.
             with transaction.atomic():
-                last_customer = Customer.objects.select_for_update().filter(
+                last_customer = Customer.all_objects.select_for_update().filter(
                     company=self.company, customer_code__startswith='CUST-'
                 ).order_by('-id').first()
                 if last_customer and last_customer.customer_code:

@@ -428,7 +428,8 @@ def vendor_invoice_create(request):
 
                 bill_item = BillItem.objects.create(
                     bill=bill, product=product, variant=variant,
-                    quantity=quantity, unit_price=unit_price, item_source='manual'
+                    quantity=quantity, unit_price=unit_price, item_source='manual',
+                    discounts=line.get('discounts') or [],
                 )
                 item_summaries.append({
                     'bill_item_id': bill_item.id, 'product_id': product.id,
@@ -436,8 +437,12 @@ def vendor_invoice_create(request):
                     'tracking_method': product.tracking_method,
                 })
 
+            try:
+                bill.discount_amount = Decimal(str(data.get('discount_amount', '0')))
+            except InvalidOperation:
+                raise ValueError('Invalid discount_amount.')
             bill.subtotal = sum(item.line_total for item in bill.items.all())
-            bill.total_amount = bill.subtotal + bill.tax_amount
+            bill.total_amount = bill.subtotal + bill.tax_amount - bill.discount_amount
             bill.save()
 
     except ValueError as e:
@@ -522,6 +527,7 @@ def bill_receive_items(request, bill_id):
                             variant=variant,
                             current_warehouse=warehouse,
                             supplier=bill.supplier,
+                            bill_item=bill_item,
                             purchase_price=bill_item.unit_price,
                             purchase_date=bill.bill_date,
                             status='available',

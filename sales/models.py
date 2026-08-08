@@ -535,14 +535,22 @@ class Invoice(SoftDeleteMixin, models.Model):
         old_status = None
         
         if not is_new:
-            old_status = Invoice.objects.get(pk=self.pk).status
+            # all_objects, not the soft-delete filtered default manager: restore() flips
+            # is_deleted=False on this same Python instance then calls save(), which lands
+            # here while the DB row is still is_deleted=True - Invoice.objects.get() would
+            # 404 on its own row and crash every restore of a soft-deleted invoice.
+            old_status = Invoice.all_objects.get(pk=self.pk).status
             
         if not self.invoice_number:
             # select_for_update() serializes concurrent invoice-number generation so two
             # simultaneous POS checkouts can't read the same "last invoice" and collide on
             # the same generated number (previously a plain read-then-write race).
+            # Uses all_objects (not the soft-delete-filtered default manager) - otherwise
+            # once the highest-id invoice is ever soft-deleted, this looks like there are
+            # no invoices at all and restarts numbering at 1, colliding with the real
+            # (still unique-constrained) row that's just hidden, not gone.
             with transaction.atomic():
-                last_invoice = Invoice.objects.select_for_update().filter(
+                last_invoice = Invoice.all_objects.select_for_update().filter(
                     company=self.company
                 ).order_by('-id').first()
                 if last_invoice and last_invoice.invoice_number:
@@ -880,37 +888,40 @@ class InvoiceItem(models.Model):
                   "when set, this exact unit is sold instead of FIFO-picking any available unit."
     )
     description = models.TextField(blank=True, help_text='Override product description if needed')
-    
+
     # Quantity and UOM
     quantity = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.01)])
     uom = models.CharField(max_length=20, default='Pcs', help_text='Unit of Measure')
     unit_price = models.DecimalField(max_digits=12, decimal_places=2)
-    
-    # Enhanced discount management
+
+    # Enhanced discount management - discount_type/discount_value are the legacy
+    # single-discount fields (still written by create_items_from_sales_order()); a line
+    # with any entries in `discounts` uses that instead (see core.pricing.compute_line_discount).
     discount_type = models.CharField(max_length=10, choices=[
         ('percent', 'Percentage'),
         ('amount', 'Amount'),
     ], default='percent')
     discount_value = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    discounts = models.JSONField(default=list, blank=True, help_text='[{"type": "fixed"|"percent"|"per_unit", "value": "10.00"}, ...]')
     discount_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    
+
     # Tax
     tax = models.ForeignKey(Tax, on_delete=models.SET_NULL, null=True, blank=True)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     line_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    
+
     # Tracking Management
     tracking_data = models.JSONField(default=list, blank=True, help_text='Tracking numbers, serial numbers, batch info')
     tracking_required = models.BooleanField(default=False)
     tracking_complete = models.BooleanField(default=False)
-    
+
     # Quality and delivery
     quality_notes = models.TextField(blank=True)
     delivery_notes = models.TextField(blank=True)
-    
+
     # Linked to delivery
     delivery_note_item = models.ForeignKey(DeliveryNoteItem, on_delete=models.SET_NULL, null=True, blank=True)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -918,33 +929,37 @@ class InvoiceItem(models.Model):
         # Update UOM from product if not set
         if not self.uom and self.product:
             self.uom = getattr(self.product, 'uom', 'Pcs')
-        
+
         # Check if tracking is required
         if self.product and hasattr(self.product, 'has_tracking'):
             self.tracking_required = self.product.has_tracking
-        
-        # Calculate discount amount based on type
-        discount_value = Decimal(str(self.discount_value or 0))
-        if self.discount_type == 'percent':
-            subtotal = self.quantity * self.unit_price
-            self.discount_amount = subtotal * (discount_value / Decimal('100'))
-        else:  # amount
-            self.discount_amount = discount_value
-        
-        # Calculate line total
+
+        # Calculate discount amount: `discounts` (multi-type, stackable) takes priority
+        # when set; otherwise fall back to the legacy single discount_type/discount_value.
+        from core.pricing import compute_line_discount
         subtotal = self.quantity * self.unit_price
+        if self.discounts:
+            self.discount_amount = compute_line_discount(subtotal, self.quantity, self.discounts)
+        else:
+            discount_value = Decimal(str(self.discount_value or 0))
+            if self.discount_type == 'percent':
+                self.discount_amount = subtotal * (discount_value / Decimal('100'))
+            else:  # amount
+                self.discount_amount = discount_value
+
+        # Calculate line total
         subtotal_after_discount = subtotal - self.discount_amount
         if self.tax:
             self.tax_amount = subtotal_after_discount * (self.tax.rate / 100)
         self.line_total = subtotal_after_discount + self.tax_amount
-        
+
         # Validate tracking completeness
         if self.tracking_required and self.tracking_data:
             total_tracked_qty = sum(float(item.get('quantity', 0)) for item in self.tracking_data)
             self.tracking_complete = total_tracked_qty >= float(self.quantity)
-        
+
         super().save(*args, **kwargs)
-    
+
     def get_tracking_summary(self):
         """Get summary of tracking information"""
         if not self.tracking_data:
@@ -1018,8 +1033,10 @@ class Payment(SoftDeleteMixin, models.Model):
 
     def save(self, *args, **kwargs):
         if not self.payment_number:
+            # See Invoice.save()'s matching comment - all_objects avoids restarting
+            # numbering at 1 once the highest-id payment has been soft-deleted.
             with transaction.atomic():
-                last_payment = Payment.objects.select_for_update().filter(
+                last_payment = Payment.all_objects.select_for_update().filter(
                     company=self.company
                 ).order_by('-id').first()
                 if last_payment and last_payment.payment_number:

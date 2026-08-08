@@ -206,11 +206,15 @@ class Product(SoftDeleteMixin, models.Model):
             # sku is globally unique (not just per-company), so the generated value has
             # to include the company id even though numbering itself is per-company -
             # matches the PRD-<company>-<sequence> shape rather than colliding across shops.
+            # Uses all_objects (not the soft-delete filtered default manager) in both the
+            # starting point and the collision check below - otherwise a soft-deleted
+            # product can hold a SKU this logic doesn't see, and the still-unique-
+            # constrained sku column rejects the "available" candidate it generates.
             with transaction.atomic():
-                last = Product.objects.select_for_update().filter(company=self.company).order_by('-id').first()
+                last = Product.all_objects.select_for_update().filter(company=self.company).order_by('-id').first()
                 next_num = (last.id + 1) if last else 1
                 candidate = f'PRD-{self.company_id}-{next_num:05d}'
-                while Product.objects.filter(sku=candidate).exclude(pk=self.pk).exists():
+                while Product.all_objects.filter(sku=candidate).exclude(pk=self.pk).exists():
                     next_num += 1
                     candidate = f'PRD-{self.company_id}-{next_num:05d}'
                 self.sku = candidate
@@ -297,12 +301,21 @@ class ProductTracking(SoftDeleteMixin, models.Model):
     
     # Purchase information
     grn_item = models.ForeignKey(
-        'purchase.GRNItem', 
-        on_delete=models.SET_NULL, 
-        null=True, 
+        'purchase.GRNItem',
+        on_delete=models.SET_NULL,
+        null=True,
         blank=True,
         related_name='product_tracking_units',
         help_text="GRN item this tracking unit came from"
+    )
+    bill_item = models.ForeignKey(
+        'purchase.BillItem',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='product_tracking_units',
+        help_text="Bill (vendor invoice) line this unit was received against - set by "
+                  "bill_receive_items(), the manual-bill receiving flow this shop uses."
     )
     purchase_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     purchase_date = models.DateField(null=True, blank=True)

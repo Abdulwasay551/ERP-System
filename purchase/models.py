@@ -98,8 +98,10 @@ class Supplier(SoftDeleteMixin, models.Model):
     def save(self, *args, **kwargs):
         # Generate supplier code if not exists
         if not self.supplier_code:
+            # See Invoice.save() (sales/models.py) for why all_objects, not the soft-delete
+            # filtered default manager, is required here.
             with transaction.atomic():
-                last_supplier = Supplier.objects.select_for_update().filter(
+                last_supplier = Supplier.all_objects.select_for_update().filter(
                     company=self.company
                 ).order_by('-id').first()
                 if last_supplier and last_supplier.supplier_code:
@@ -1795,6 +1797,7 @@ class Bill(SoftDeleteMixin, models.Model):
     due_date = models.DateField(default=timezone.now)
     subtotal = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     tax_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    discount_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0, help_text='Whole-bill quick discount, applied on top of any per-line discounts')
     total_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     paid_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     outstanding_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
@@ -1822,9 +1825,11 @@ class Bill(SoftDeleteMixin, models.Model):
     def save(self, *args, **kwargs):
         # Auto-generate bill number if not provided
         if not self.bill_number:
+            # See Invoice.save() (sales/models.py) for why all_objects, not the soft-delete
+            # filtered default manager, is required here.
             current_year = timezone.now().year
             with transaction.atomic():
-                last_bill = Bill.objects.select_for_update().filter(
+                last_bill = Bill.all_objects.select_for_update().filter(
                     company=self.company,
                     bill_number__startswith=f'BILL-{current_year}'
                 ).order_by('-id').first()
@@ -2068,8 +2073,10 @@ class BillItem(models.Model):
     variant = models.ForeignKey('products.ProductVariant', on_delete=models.SET_NULL, null=True, blank=True)
     quantity = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.00'))])
+    discounts = models.JSONField(default=list, blank=True, help_text='[{"type": "fixed"|"percent"|"per_unit", "value": "10.00"}, ...]')
+    discount_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     line_total = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    
+
     # Source references
     po_item = models.ForeignKey(PurchaseOrderItem, on_delete=models.SET_NULL, null=True, blank=True)
     grn_item = models.ForeignKey(GRNItem, on_delete=models.SET_NULL, null=True, blank=True)
@@ -2090,8 +2097,11 @@ class BillItem(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     def save(self, *args, **kwargs):
-        self.line_total = self.quantity * self.unit_price
-        
+        from core.pricing import compute_line_discount
+        base_amount = self.quantity * self.unit_price
+        self.discount_amount = compute_line_discount(base_amount, self.quantity, self.discounts)
+        self.line_total = base_amount - self.discount_amount
+
         # Auto-determine tracking requirements from product
         if self.product:
             self.tracking_required = self.product.tracking_method != 'none'
@@ -2304,9 +2314,11 @@ class PurchasePayment(SoftDeleteMixin, models.Model):
     def save(self, *args, **kwargs):
         # Generate payment number if not exists
         if not self.payment_number:
+            # See Invoice.save() (sales/models.py) for why all_objects, not the soft-delete
+            # filtered default manager, is required here.
             current_year = timezone.now().year
             with transaction.atomic():
-                last_payment = PurchasePayment.objects.select_for_update().filter(
+                last_payment = PurchasePayment.all_objects.select_for_update().filter(
                     company=self.company,
                     payment_number__isnull=False
                 ).order_by('-id').first()
