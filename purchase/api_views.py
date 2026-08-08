@@ -8,6 +8,7 @@ from django.http import HttpResponse
 from django.utils import timezone
 from user_auth.permissions import RoleIn
 from core.pdf_utils import build_ledger_pdf, build_receiving_pdf
+from core.mixins import SoftDeleteViewSetMixin
 
 
 class ManagerOrWarehouse(RoleIn):
@@ -31,10 +32,12 @@ from .serializers import (
     SupplierLedgerSerializer
 )
 
-class SupplierViewSet(viewsets.ModelViewSet):
+class SupplierViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = SupplierSerializer
     # Vendor management is a purchasing/warehouse concern, not shop-floor sales.
     permission_classes = [permissions.IsAuthenticated, ManagerOrWarehouse]
+    filterset_fields = ['status', 'supplier_type', 'is_active']
+    ordering_fields = ['partner__name', 'created_at', 'overall_rating']
 
     def get_queryset(self):
         qs = Supplier.objects.filter(company=self.request.user.company).select_related('partner')
@@ -246,10 +249,13 @@ class GRNItemViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return GRNItem.objects.filter(grn__company=self.request.user.company)
 
-class BillViewSet(viewsets.ModelViewSet):
+class BillViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = BillSerializer
     permission_classes = [permissions.IsAuthenticated]
-    
+    cascade_to = ['payments']
+    filterset_fields = ['status', 'supplier', 'goods_received']
+    ordering_fields = ['bill_date', 'total_amount', 'created_at']
+
     def get_queryset(self):
         return Bill.objects.filter(company=self.request.user.company)
     
@@ -290,9 +296,11 @@ class BillItemViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return BillItem.objects.filter(bill__company=self.request.user.company)
 
-class PurchasePaymentViewSet(viewsets.ModelViewSet):
+class PurchasePaymentViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = PurchasePaymentSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filterset_fields = ['supplier', 'bill', 'payment_method', 'status']
+    ordering_fields = ['payment_date', 'amount', 'created_at']
 
     def get_queryset(self):
         return PurchasePayment.objects.filter(company=self.request.user.company)

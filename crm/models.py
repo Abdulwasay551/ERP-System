@@ -2,6 +2,7 @@ from django.db import models, transaction
 from django.db.models import Sum
 from django.utils import timezone
 from user_auth.models import Company, User
+from core.models import SoftDeleteMixin
 
 # Create your models here.
 
@@ -124,7 +125,7 @@ class Partner(models.Model):
         ordering = ['name']
 
 
-class Customer(models.Model):
+class Customer(SoftDeleteMixin, models.Model):
     """Extended Customer model that links to Partner"""
     partner = models.OneToOneField(Partner, on_delete=models.CASCADE, related_name='customer_profile',null=True, blank=True)
     customer_code = models.CharField(max_length=50, unique=True, blank=True)

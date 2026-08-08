@@ -13,6 +13,7 @@ from .serializers import (
     ProductAttributeSerializer, ProductListSerializer, ProductDetailSerializer
 )
 from .filters import ProductFilter
+from core.mixins import SoftDeleteViewSetMixin
 
 
 class ProductCategoryViewSet(viewsets.ModelViewSet):
@@ -47,7 +48,7 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class ProductViewSet(viewsets.ModelViewSet):
+class ProductViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     search_fields = ['name', 'sku', 'description']
     ordering_fields = ['name', 'sku', 'created_at', 'selling_price']
@@ -218,10 +219,11 @@ class ProductVariantViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class ProductTrackingViewSet(viewsets.ModelViewSet):
+class ProductTrackingViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = ProductTrackingSerializer
     permission_classes = [permissions.IsAuthenticated]
     search_fields = ['serial_number', 'imei_number', 'barcode']
+    filterset_fields = ['status', 'product']
     ordering_fields = ['created_at']
     ordering = ['-created_at']
 

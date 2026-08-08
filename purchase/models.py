@@ -6,6 +6,7 @@ from crm.models import Partner
 from products.models import Product  # Import centralized Product model
 from decimal import Decimal
 from django.utils import timezone
+from core.models import SoftDeleteMixin
 
 # Create your models here.
 
@@ -42,7 +43,7 @@ class UnitOfMeasure(models.Model):
     def __str__(self):
         return f"{self.name} ({self.abbreviation})"
 
-class Supplier(models.Model):
+class Supplier(SoftDeleteMixin, models.Model):
     """Enhanced Supplier model with supplier-specific features - linked to Partner for basic info"""
     
     SUPPLIER_TYPE_CHOICES = [
@@ -1757,7 +1758,7 @@ class QualityInspectionResult(models.Model):
 # Duplicate model removed - using the one at line 1441
 
 # Purchase Invoice/Bill (Enhanced)
-class Bill(models.Model):
+class Bill(SoftDeleteMixin, models.Model):
     STATUS_CHOICES = [
         ('draft', 'Draft'),
         ('submitted', 'Submitted'),
@@ -1876,6 +1877,17 @@ class Bill(models.Model):
             ledger_entry.credit_amount = 0
             ledger_entry.reference_number = self.supplier_invoice_number
             ledger_entry.save()
+
+    def soft_delete(self, user):
+        """Same pattern as PurchasePayment.soft_delete: save() re-syncs the mirrored
+        SupplierLedger debit row unconditionally (get_or_create, not status-gated), so
+        remove it explicitly after. restore() needs no matching override - its own
+        save() call recreates the row naturally via that same get_or_create."""
+        super().soft_delete(user)
+        from .models import SupplierLedger
+        SupplierLedger.objects.filter(
+            company=self.company, supplier=self.supplier, reference_type='bill', reference_id=self.id,
+        ).delete()
 
     def __str__(self):
         return f"Bill-{self.bill_number} - {self.supplier.name}"
@@ -2204,7 +2216,7 @@ class BillItemTracking(models.Model):
         return f"{self.bill_item.product.name} - {self.tracking_type}: {self.tracking_number}"
 
 # Enhanced Purchase Payment
-class PurchasePayment(models.Model):
+class PurchasePayment(SoftDeleteMixin, models.Model):
     """Enhanced Purchase Payment with supplier ledger management"""
     
     PAYMENT_METHOD_CHOICES = [
@@ -2349,6 +2361,17 @@ class PurchasePayment(models.Model):
             ledger_entry.payment_method = self.payment_method
             ledger_entry.reference_number = self.reference_number
             ledger_entry.save()
+
+    def soft_delete(self, user):
+        """Same fix as sales.Payment.soft_delete: save()'s update_supplier_ledger()
+        always re-syncs the mirrored SupplierLedger row via get_or_create regardless
+        of is_deleted, so remove it explicitly here. restore() recreates it naturally
+        via that same get_or_create when it runs."""
+        super().soft_delete(user)
+        from .models import SupplierLedger
+        SupplierLedger.objects.filter(
+            company=self.company, supplier=self.supplier, reference_type='payment', reference_id=self.id,
+        ).delete()
 
     def __str__(self):
         return f"Payment-{self.payment_number} - {self.supplier.name} - ${self.amount}"

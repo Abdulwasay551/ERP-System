@@ -8,6 +8,7 @@ from user_auth.models import Company, User
 from crm.models import Customer
 from accounting.models import Account
 from products.models import Product  # Import centralized Product model
+from core.models import SoftDeleteMixin
 
 # Create your models here.
 
@@ -486,7 +487,7 @@ class DeliveryNoteItem(models.Model):
     def __str__(self):
         return f"{self.product.name} - {self.quantity_delivered}/{self.quantity_ordered}"
 
-class Invoice(models.Model):
+class Invoice(SoftDeleteMixin, models.Model):
     """Enhanced Sales Invoice model with optional sales order"""
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='invoices')
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='invoices')
@@ -828,6 +829,27 @@ class Invoice(models.Model):
                     # This would need more sophisticated lot tracking implementation
                     pass
 
+    def soft_delete(self, user):
+        """Same ledger-mirror-cleanup pattern as Payment.soft_delete: the CustomerLedger
+        debit entry isn't touched by save() on a plain field-update save (it's only
+        (re)written on the draft->confirmed status transition), so remove it explicitly.
+        Deliberately NOT reversing stock/tracking movements here - reverse_inventory_
+        movements() isn't written to be safely re-appliable on a later restore (no
+        idempotency guard against double-counting), so an invoice's stock effect is left
+        as-is by delete/restore; only its ledger/financial visibility changes. Revisit if
+        stock accuracy after a delete turns out to matter in practice.
+        """
+        super().soft_delete(user)
+        from crm.models import CustomerLedger
+        CustomerLedger.objects.filter(
+            company=self.company, customer=self.customer, reference_type='invoice', reference_id=self.id,
+        ).delete()
+
+    def restore(self):
+        super().restore()
+        if self.status != 'draft':
+            self.update_customer_ledger_debit()
+
     @property
     def outstanding_amount(self):
         """Amount still due"""
@@ -955,7 +977,7 @@ class InvoiceItem(models.Model):
     def __str__(self):
         return f"{self.product.name} x {self.quantity} {self.uom}"
 
-class Payment(models.Model):
+class Payment(SoftDeleteMixin, models.Model):
     """Enhanced Customer Payment model"""
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='payments')
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='payments',null=True, blank=True)
@@ -1029,6 +1051,19 @@ class Payment(models.Model):
         self.invoice.paid_amount = total_paid
         self.invoice.status = 'paid' if total_paid >= self.invoice.total else 'partially_paid'
         self.invoice.save(update_fields=['paid_amount', 'status'])
+
+    def soft_delete(self, user):
+        """save()'s ledger sync (update_customer_ledger_credit) always re-syncs the
+        mirrored CustomerLedger row via get_or_create regardless of is_deleted, so it
+        would otherwise survive a soft-delete unchanged - remove it explicitly here.
+        restore() doesn't need the opposite fix: its own save() call recreates the
+        ledger row via that same get_or_create the moment it runs.
+        """
+        super().soft_delete(user)
+        from crm.models import CustomerLedger
+        CustomerLedger.objects.filter(
+            company=self.company, customer=self.customer, reference_type='payment', reference_id=self.id,
+        ).delete()
 
     def update_customer_ledger_credit(self):
         from crm.models import CustomerLedger  # Avoid circular import

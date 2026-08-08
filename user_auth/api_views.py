@@ -3,11 +3,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from .models import Company, Role, User
 from .serializers import CompanySerializer, RoleSerializer, UserSerializer
-from .permissions import RoleIn
-
-
-class ManagerOrOwner(RoleIn):
-    allowed_roles = ['Manager']
+from .permissions import RoleIn, IsOwnerOrManager
+from core.mixins import SoftDeleteViewSetMixin
 
 
 class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
@@ -27,16 +24,23 @@ class RoleViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Role.objects.filter(is_active=True)
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     """Staff accounts for this company. Only Manager/Owner can list/create/edit users."""
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated, ManagerOrOwner]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrManager]
+    filterset_fields = ['role', 'is_active']
+    ordering_fields = ['email', 'first_name', 'date_joined']
 
     def get_queryset(self):
         return User.objects.filter(company=self.request.user.company)
 
     def perform_create(self, serializer):
         serializer.save(company=self.request.user.company)
+
+    def destroy(self, request, *args, **kwargs):
+        if self.get_object().pk == request.user.pk:
+            return Response({'error': "You can't delete your own account."}, status=400)
+        return super().destroy(request, *args, **kwargs)
 
 
 @api_view(['GET'])

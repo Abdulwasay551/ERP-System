@@ -23,6 +23,16 @@ class RoleIn(BasePermission):
         allowed_roles = getattr(view, 'allowed_roles', self.allowed_roles)
         return user.role.name == 'Owner' or user.role.name in allowed_roles
 
+class IsOwnerOrManager(RoleIn):
+    """
+    Shared "admin only" gate - Owner always passes (via RoleIn), Manager is the only
+    other role allowed. Centralizes what used to be copy-pasted as a locally-defined
+    `ManagerOrOwner(RoleIn): allowed_roles = ['Manager']` in accounting/api_views.py
+    and user_auth/api_views.py. Used for destructive actions (delete/restore/purge)
+    and staff management.
+    """
+    allowed_roles = ['Manager']
+
 class DepartmentLevelPermission(BasePermission):
     """
     Allow access only to users in a specific department and with a minimum level.

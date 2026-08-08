@@ -6,7 +6,8 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from user_auth.permissions import RoleIn
+from user_auth.permissions import RoleIn, IsOwnerOrManager
+from core.mixins import SoftDeleteViewSetMixin
 from .models import (
     Account, AccountCategory, AccountGroup, Journal, JournalEntry, JournalItem,
     AccountPayable, AccountReceivable, BankAccount, BankReconciliation, TaxConfig,
@@ -268,13 +269,10 @@ class RecurringJournalViewSet(viewsets.ModelViewSet):
         return RecurringJournal.objects.filter(journal__company=self.request.user.company)
 
 
-class ManagerOrOwner(RoleIn):
-    allowed_roles = ['Manager']
-
-
-class ExpenseViewSet(viewsets.ModelViewSet):
+class ExpenseViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = ExpenseSerializer
-    permission_classes = [permissions.IsAuthenticated, ManagerOrOwner]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrManager]
+    ordering_fields = ['expense_date', 'amount', 'created_at']
 
     def get_queryset(self):
         queryset = Expense.objects.filter(company=self.request.user.company)

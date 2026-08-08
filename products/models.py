@@ -2,6 +2,7 @@ from django.db import models, transaction
 from user_auth.models import Company, User
 from decimal import Decimal
 from django.core.validators import MinValueValidator
+from core.models import SoftDeleteMixin
 
 
 class ProductCategory(models.Model):
@@ -23,7 +24,7 @@ class ProductCategory(models.Model):
         verbose_name_plural = "Product Categories"
 
 
-class Product(models.Model):
+class Product(SoftDeleteMixin, models.Model):
     """Centralized Product model used across all ERP modules"""
     
     PRODUCT_TYPE_CHOICES = [
@@ -250,7 +251,7 @@ class ProductVariant(models.Model):
         ordering = ['name']
 
 
-class ProductTracking(models.Model):
+class ProductTracking(SoftDeleteMixin, models.Model):
     """Individual tracking for products with serial numbers, IMEI, barcodes, or batch tracking"""
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='tracking_units')
     variant = models.ForeignKey(ProductVariant, on_delete=models.SET_NULL, null=True, blank=True)

@@ -7,19 +7,22 @@ from .models import Customer, CustomerLedger, Lead, Opportunity, CommunicationLo
 from .serializers import CustomerSerializer, CustomerLedgerSerializer, LeadSerializer, OpportunitySerializer, CommunicationLogSerializer
 from user_auth.permissions import RoleIn
 from core.pdf_utils import build_ledger_pdf
+from core.mixins import SoftDeleteViewSetMixin
 
 
 class SalesStaff(RoleIn):
     allowed_roles = ['Manager', 'Cashier', 'Salesman']
 
 
-class CustomerViewSet(viewsets.ModelViewSet):
+class CustomerViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
     # Customers are created/looked up constantly at checkout - any shop-floor role can
     # manage them (the old required_department='Sales', min_level=2 DepartmentLevelPermission
     # blocked Cashier/Salesman entirely, since they're level 3 and department 'Sales' only
     # matched the retired enterprise 'Sales Manager' role).
     permission_classes = [permissions.IsAuthenticated, SalesStaff]
+    filterset_fields = ['customer_group']
+    ordering_fields = ['name', 'customer_code', 'created_at']
 
     def get_queryset(self):
         qs = Customer.objects.filter(company=self.request.user.company)

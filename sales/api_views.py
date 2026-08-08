@@ -12,13 +12,14 @@ from products.models import ProductTracking
 from inventory.models import StockItem, StockMovement
 from crm.models import Customer, CustomerLedger
 from core.pdf_utils import build_invoice_pdf, build_invoice_pdf_a4
+from core.mixins import SoftDeleteViewSetMixin
 from .models import Product, Tax, Quotation, SalesOrder, SalesOrderItem, Invoice, InvoiceItem, Payment, CreditNote, CreditNoteItem
 from .serializers import (
     ProductSerializer, TaxSerializer, QuotationSerializer, SalesOrderSerializer, SalesOrderItemSerializer,
     InvoiceSerializer, PaymentSerializer, CreditNoteSerializer,
 )
 
-class ProductViewSet(viewsets.ModelViewSet):
+class ProductViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = ProductSerializer
     permission_classes = [permissions.IsAuthenticated]
     def get_queryset(self):
@@ -48,9 +49,15 @@ class SalesOrderItemViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return SalesOrderItem.objects.filter(sales_order__company=self.request.user.company)
 
-class InvoiceViewSet(viewsets.ModelViewSet):
+class InvoiceViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = InvoiceSerializer
     permission_classes = [permissions.IsAuthenticated]
+    # InvoiceItem has no independent list view (always accessed nested via invoice.items),
+    # so it doesn't need its own SoftDeleteMixin/visibility - only Payment does, since it's
+    # independently queryable (Invoice.paid_amount aggregates over invoice.payments).
+    cascade_to = ['payments']
+    filterset_fields = ['status', 'customer', 'invoice_date']
+    ordering_fields = ['invoice_date', 'total', 'created_at', 'invoice_number']
     def get_queryset(self):
         return Invoice.objects.filter(company=self.request.user.company)
 
@@ -108,9 +115,11 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         response['Content-Disposition'] = f'inline; filename="{invoice.invoice_number}.pdf"'
         return response
 
-class PaymentViewSet(viewsets.ModelViewSet):
+class PaymentViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = PaymentSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filterset_fields = ['customer', 'invoice', 'method']
+    ordering_fields = ['payment_date', 'amount', 'created_at']
 
     def get_queryset(self):
         return Payment.objects.filter(company=self.request.user.company)

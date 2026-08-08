@@ -6,6 +6,7 @@ from django.db import models
 from django.utils import timezone
 from user_auth.models import Company, User
 from purchase.models import Supplier
+from core.models import SoftDeleteMixin
 
 # --- Chart of Accounts (COA) Hierarchy ---
 # Top-level: AccountCategory (e.g., Asset, Liability)
@@ -568,7 +569,7 @@ class COASettings(models.Model):
         return f"COA Settings for {self.company.name}"
 
 
-class Expense(models.Model):
+class Expense(SoftDeleteMixin, models.Model):
     """
     Simple shop overhead expense tracking (rent, salary, utilities, etc.) - deliberately
     NOT wired into the full double-entry GL/JournalEntry machinery, so recording an
