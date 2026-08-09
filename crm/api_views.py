@@ -8,13 +8,14 @@ from .serializers import CustomerSerializer, CustomerLedgerSerializer, LeadSeria
 from user_auth.permissions import RoleIn
 from core.pdf_utils import build_ledger_pdf
 from core.mixins import SoftDeleteViewSetMixin
+from core.idempotency import IdempotentCreateMixin
 
 
 class SalesStaff(RoleIn):
     allowed_roles = ['Manager', 'Cashier', 'Salesman']
 
 
-class CustomerViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
+class CustomerViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
     # Customers are created/looked up constantly at checkout - any shop-floor role can
     # manage them (the old required_department='Sales', min_level=2 DepartmentLevelPermission

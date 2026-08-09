@@ -13,6 +13,7 @@ from inventory.models import StockItem, StockMovement
 from crm.models import Customer, CustomerLedger
 from core.pdf_utils import build_invoice_pdf, build_invoice_pdf_a4
 from core.mixins import SoftDeleteViewSetMixin, log_deletion
+from core.idempotency import idempotent, IdempotentCreateMixin
 from .models import Product, Tax, Quotation, SalesOrder, SalesOrderItem, Invoice, InvoiceItem, Payment, CreditNote, CreditNoteItem
 from .serializers import (
     ProductSerializer, TaxSerializer, QuotationSerializer, SalesOrderSerializer, SalesOrderItemSerializer,
@@ -213,7 +214,7 @@ class InvoiceViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
 
         return Response(InvoiceSerializer(invoice).data)
 
-class PaymentViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
+class PaymentViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = PaymentSerializer
     permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['customer', 'invoice', 'method']
@@ -308,6 +309,7 @@ def pos_search(request):
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated, POSStaff])
+@idempotent
 def pos_checkout(request):
     """
     One-call POS checkout: cart of items -> Invoice + InvoiceItems -> stock reduction

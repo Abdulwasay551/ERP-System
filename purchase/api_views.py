@@ -9,6 +9,7 @@ from django.utils import timezone
 from user_auth.permissions import RoleIn
 from core.pdf_utils import build_ledger_pdf, build_receiving_pdf
 from core.mixins import SoftDeleteViewSetMixin, log_deletion
+from core.idempotency import idempotent, IdempotentCreateMixin
 
 
 class ManagerOrWarehouse(RoleIn):
@@ -32,7 +33,7 @@ from .serializers import (
     SupplierLedgerSerializer
 )
 
-class SupplierViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
+class SupplierViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = SupplierSerializer
     # Vendor management is a purchasing/warehouse concern, not shop-floor sales.
     permission_classes = [permissions.IsAuthenticated, ManagerOrWarehouse]
@@ -433,7 +434,7 @@ class BillItemViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return BillItem.objects.filter(bill__company=self.request.user.company)
 
-class PurchasePaymentViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
+class PurchasePaymentViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = PurchasePaymentSerializer
     permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['supplier', 'bill', 'payment_method', 'status']
@@ -494,6 +495,7 @@ class PurchaseApprovalViewSet(viewsets.ModelViewSet):
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated, ManagerOrWarehouse])
+@idempotent
 def vendor_invoice_create(request):
     """
     Record a vendor invoice (manual bill, bypassing RFQ->PO->GRN - same philosophy as the

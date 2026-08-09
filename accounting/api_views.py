@@ -8,6 +8,7 @@ from decimal import Decimal
 
 from user_auth.permissions import RoleIn, IsOwnerOrManager
 from core.mixins import SoftDeleteViewSetMixin
+from core.idempotency import IdempotentCreateMixin
 from .models import (
     Account, AccountCategory, AccountGroup, Journal, JournalEntry, JournalItem,
     AccountPayable, AccountReceivable, BankAccount, BankReconciliation, TaxConfig,
@@ -269,7 +270,7 @@ class RecurringJournalViewSet(viewsets.ModelViewSet):
         return RecurringJournal.objects.filter(journal__company=self.request.user.company)
 
 
-class ExpenseViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
+class ExpenseViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = ExpenseSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrManager]
     ordering_fields = ['expense_date', 'amount', 'created_at']
