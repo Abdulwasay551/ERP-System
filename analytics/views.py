@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Sum, F, Q
+from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from datetime import datetime, timedelta
 from django.core.paginator import Paginator
@@ -83,7 +84,7 @@ def analytics_dashboard(request):
             try:
                 sales_by_month = list(
                     SalesOrder.objects.filter(company=company)
-                    .extra({'month': "DATE_TRUNC('month', created_at)"})
+                    .annotate(month=TruncMonth('created_at'))
                     .values('month')
                     .annotate(count=Count('id'))
                     .order_by('month')

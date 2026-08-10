@@ -9,6 +9,7 @@ from crm.models import Customer
 from accounting.models import Account
 from products.models import Product  # Import centralized Product model
 from core.models import SoftDeleteMixin
+from core.numbering import next_number
 
 # Create your models here.
 
@@ -178,19 +179,9 @@ class Quotation(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.quotation_number:
-            with transaction.atomic():
-                last_quotation = Quotation.objects.select_for_update().filter(
-                    company=self.company
-                ).order_by('-id').first()
-                if last_quotation and last_quotation.quotation_number:
-                    try:
-                        last_num = int(last_quotation.quotation_number.split('-')[-1])
-                        new_num = last_num + 1
-                    except (ValueError, IndexError):
-                        new_num = 1
-                else:
-                    new_num = 1
-                self.quotation_number = f"QUO-{new_num:06d}"
+            self.quotation_number = next_number(
+                self.company, 'quotation', 'QUO', 6, Quotation, 'quotation_number', 'objects',
+            )
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -275,19 +266,9 @@ class SalesOrder(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.order_number:
-            with transaction.atomic():
-                last_order = SalesOrder.objects.select_for_update().filter(
-                    company=self.company
-                ).order_by('-id').first()
-                if last_order and last_order.order_number:
-                    try:
-                        last_num = int(last_order.order_number.split('-')[-1])
-                        new_num = last_num + 1
-                    except (ValueError, IndexError):
-                        new_num = 1
-                else:
-                    new_num = 1
-                self.order_number = f"SO-{new_num:06d}"
+            self.order_number = next_number(
+                self.company, 'sales_order', 'SO', 6, SalesOrder, 'order_number', 'objects',
+            )
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -442,19 +423,9 @@ class DeliveryNote(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.delivery_number:
-            with transaction.atomic():
-                last_delivery = DeliveryNote.objects.select_for_update().filter(
-                    company=self.company
-                ).order_by('-id').first()
-                if last_delivery and last_delivery.delivery_number:
-                    try:
-                        last_num = int(last_delivery.delivery_number.split('-')[-1])
-                        new_num = last_num + 1
-                    except (ValueError, IndexError):
-                        new_num = 1
-                else:
-                    new_num = 1
-                self.delivery_number = f"DN-{new_num:06d}"
+            self.delivery_number = next_number(
+                self.company, 'delivery_note', 'DN', 6, DeliveryNote, 'delivery_number', 'objects',
+            )
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -542,26 +513,14 @@ class Invoice(SoftDeleteMixin, models.Model):
             old_status = Invoice.all_objects.get(pk=self.pk).status
             
         if not self.invoice_number:
-            # select_for_update() serializes concurrent invoice-number generation so two
-            # simultaneous POS checkouts can't read the same "last invoice" and collide on
-            # the same generated number (previously a plain read-then-write race).
-            # Uses all_objects (not the soft-delete-filtered default manager) - otherwise
-            # once the highest-id invoice is ever soft-deleted, this looks like there are
-            # no invoices at all and restarts numbering at 1, colliding with the real
-            # (still unique-constrained) row that's just hidden, not gone.
-            with transaction.atomic():
-                last_invoice = Invoice.all_objects.select_for_update().filter(
-                    company=self.company
-                ).order_by('-id').first()
-                if last_invoice and last_invoice.invoice_number:
-                    try:
-                        last_num = int(last_invoice.invoice_number.split('-')[-1])
-                        new_num = last_num + 1
-                    except (ValueError, IndexError):
-                        new_num = 1
-                else:
-                    new_num = 1
-                self.invoice_number = f"INV-{new_num:06d}"
+            # next_number()'s shared counter serializes concurrent invoice-number
+            # generation so two simultaneous POS checkouts can't collide on the same
+            # generated number, and (via lease_range() sharing the same counter) so a
+            # desktop app spending a leased offline batch can't collide with a number the
+            # cloud generates directly at the same time either.
+            self.invoice_number = next_number(
+                self.company, 'invoice', 'INV', 6, Invoice, 'invoice_number', 'all_objects',
+            )
 
         super().save(*args, **kwargs)
 
@@ -1033,21 +992,9 @@ class Payment(SoftDeleteMixin, models.Model):
 
     def save(self, *args, **kwargs):
         if not self.payment_number:
-            # See Invoice.save()'s matching comment - all_objects avoids restarting
-            # numbering at 1 once the highest-id payment has been soft-deleted.
-            with transaction.atomic():
-                last_payment = Payment.all_objects.select_for_update().filter(
-                    company=self.company
-                ).order_by('-id').first()
-                if last_payment and last_payment.payment_number:
-                    try:
-                        last_num = int(last_payment.payment_number.split('-')[-1])
-                        new_num = last_num + 1
-                    except (ValueError, IndexError):
-                        new_num = 1
-                else:
-                    new_num = 1
-                self.payment_number = f"PAY-{new_num:06d}"
+            self.payment_number = next_number(
+                self.company, 'payment', 'PAY', 6, Payment, 'payment_number', 'all_objects',
+            )
         super().save(*args, **kwargs)
 
         if self.customer:
@@ -1171,19 +1118,9 @@ class CreditNote(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.credit_number:
-            with transaction.atomic():
-                last_credit = CreditNote.objects.select_for_update().filter(
-                    company=self.company
-                ).order_by('-id').first()
-                if last_credit and last_credit.credit_number:
-                    try:
-                        last_num = int(last_credit.credit_number.split('-')[-1])
-                        new_num = last_num + 1
-                    except (ValueError, IndexError):
-                        new_num = 1
-                else:
-                    new_num = 1
-                self.credit_number = f"CN-{new_num:06d}"
+            self.credit_number = next_number(
+                self.company, 'credit_note', 'CN', 6, CreditNote, 'credit_number', 'objects',
+            )
         super().save(*args, **kwargs)
 
     def __str__(self):

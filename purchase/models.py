@@ -1,4 +1,4 @@
-from django.db import models, transaction
+from django.db import models
 from django.db.models import Sum, Q
 from django.core.validators import MinValueValidator
 from user_auth.models import Company, User
@@ -7,6 +7,7 @@ from products.models import Product  # Import centralized Product model
 from decimal import Decimal
 from django.utils import timezone
 from core.models import SoftDeleteMixin
+from core.numbering import next_number
 
 # Create your models here.
 
@@ -98,23 +99,10 @@ class Supplier(SoftDeleteMixin, models.Model):
     def save(self, *args, **kwargs):
         # Generate supplier code if not exists
         if not self.supplier_code:
-            # See Invoice.save() (sales/models.py) for why all_objects, not the soft-delete
-            # filtered default manager, is required here.
-            with transaction.atomic():
-                last_supplier = Supplier.all_objects.select_for_update().filter(
-                    company=self.company
-                ).order_by('-id').first()
-                if last_supplier and last_supplier.supplier_code:
-                    try:
-                        last_number = int(last_supplier.supplier_code.split('-')[-1])
-                        new_number = last_number + 1
-                    except (ValueError, IndexError):
-                        new_number = 1
-                else:
-                    new_number = 1
+            self.supplier_code = next_number(
+                self.company, 'supplier', 'SUP', 6, Supplier, 'supplier_code', 'all_objects',
+            )
 
-                self.supplier_code = f'SUP-{new_number:06d}'
-        
         # Calculate overall rating
         ratings = [self.quality_rating, self.delivery_rating, self.price_rating, self.service_rating]
         valid_ratings = [r for r in ratings if r > 0]
@@ -861,23 +849,9 @@ class PurchaseOrder(models.Model):
     def save(self, *args, **kwargs):
         # Auto-generate PO number if not provided
         if not self.po_number:
-            current_year = timezone.now().year
-            with transaction.atomic():
-                last_po = PurchaseOrder.objects.select_for_update().filter(
-                    company=self.company,
-                    po_number__startswith=f'PO-{current_year}'
-                ).order_by('-id').first()
-
-                if last_po and last_po.po_number:
-                    try:
-                        last_number = int(last_po.po_number.split('-')[-1])
-                        new_number = last_number + 1
-                    except (ValueError, IndexError):
-                        new_number = 1
-                else:
-                    new_number = 1
-
-                self.po_number = f'PO-{current_year}-{new_number:04d}'
+            self.po_number = next_number(
+                self.company, 'purchase_order', 'PO', 4, PurchaseOrder, 'po_number', 'objects', year_scoped=True,
+            )
         
         # Calculate totals
         if self.pk:  # Only calculate if object exists (has items)
@@ -1128,23 +1102,9 @@ class GoodsReceiptNote(models.Model):
     def save(self, *args, **kwargs):
         # Auto-generate GRN number if not provided
         if not self.grn_number:
-            current_year = timezone.now().year
-            with transaction.atomic():
-                last_grn = GoodsReceiptNote.objects.select_for_update().filter(
-                    company=self.company,
-                    grn_number__startswith=f'GRN-{current_year}'
-                ).order_by('-id').first()
-
-                if last_grn and last_grn.grn_number:
-                    try:
-                        last_number = int(last_grn.grn_number.split('-')[-1])
-                        new_number = last_number + 1
-                    except (ValueError, IndexError):
-                        new_number = 1
-                else:
-                    new_number = 1
-
-                self.grn_number = f'GRN-{current_year}-{new_number:04d}'
+            self.grn_number = next_number(
+                self.company, 'grn', 'GRN', 4, GoodsReceiptNote, 'grn_number', 'objects', year_scoped=True,
+            )
         
         super().save(*args, **kwargs)
 
@@ -1683,23 +1643,9 @@ class QualityInspection(models.Model):
     def save(self, *args, **kwargs):
         # Auto-generate inspection number if not provided
         if not self.inspection_number:
-            current_year = timezone.now().year
-            with transaction.atomic():
-                last_inspection = QualityInspection.objects.select_for_update().filter(
-                    company=self.company,
-                    inspection_number__startswith=f'QI-{current_year}'
-                ).order_by('-id').first()
-
-                if last_inspection and last_inspection.inspection_number:
-                    try:
-                        last_number = int(last_inspection.inspection_number.split('-')[-1])
-                        new_number = last_number + 1
-                    except (ValueError, IndexError):
-                        new_number = 1
-                else:
-                    new_number = 1
-
-                self.inspection_number = f'QI-{current_year}-{new_number:04d}'
+            self.inspection_number = next_number(
+                self.company, 'quality_inspection', 'QI', 4, QualityInspection, 'inspection_number', 'objects', year_scoped=True,
+            )
         
         super().save(*args, **kwargs)
     
@@ -1825,26 +1771,10 @@ class Bill(SoftDeleteMixin, models.Model):
     def save(self, *args, **kwargs):
         # Auto-generate bill number if not provided
         if not self.bill_number:
-            # See Invoice.save() (sales/models.py) for why all_objects, not the soft-delete
-            # filtered default manager, is required here.
-            current_year = timezone.now().year
-            with transaction.atomic():
-                last_bill = Bill.all_objects.select_for_update().filter(
-                    company=self.company,
-                    bill_number__startswith=f'BILL-{current_year}'
-                ).order_by('-id').first()
+            self.bill_number = next_number(
+                self.company, 'bill', 'BILL', 4, Bill, 'bill_number', 'all_objects', year_scoped=True,
+            )
 
-                if last_bill and last_bill.bill_number:
-                    try:
-                        last_number = int(last_bill.bill_number.split('-')[-1])
-                        new_number = last_number + 1
-                    except (ValueError, IndexError):
-                        new_number = 1
-                else:
-                    new_number = 1
-
-                self.bill_number = f'BILL-{current_year}-{new_number:04d}'
-        
         self.outstanding_amount = self.total_amount - self.paid_amount
         super().save(*args, **kwargs)
 
@@ -2318,25 +2248,15 @@ class PurchasePayment(SoftDeleteMixin, models.Model):
     def save(self, *args, **kwargs):
         # Generate payment number if not exists
         if not self.payment_number:
-            # See Invoice.save() (sales/models.py) for why all_objects, not the soft-delete
-            # filtered default manager, is required here.
-            current_year = timezone.now().year
-            with transaction.atomic():
-                last_payment = PurchasePayment.all_objects.select_for_update().filter(
-                    company=self.company,
-                    payment_number__isnull=False
-                ).order_by('-id').first()
-
-                if last_payment and last_payment.payment_number:
-                    try:
-                        last_number = int(last_payment.payment_number.split('-')[-1])
-                        new_number = last_number + 1
-                    except (ValueError, IndexError):
-                        new_number = 1
-                else:
-                    new_number = 1
-
-                self.payment_number = f'PAY-{current_year}-{new_number:06d}'
+            # label_year=True, year_scoped=False: the number shows the current year but
+            # the counter itself never resets annually - matches this model's original
+            # behavior exactly (its old "last row" lookup only filtered
+            # payment_number__isnull=False, never scoped by year, unlike
+            # PurchaseOrder/GRN/QualityInspection/Bill which do reset each year).
+            self.payment_number = next_number(
+                self.company, 'purchase_payment', 'PAY', 6, PurchasePayment, 'payment_number', 'all_objects',
+                label_year=True,
+            )
         
         # Calculate base currency amount
         if self.exchange_rate and self.amount:

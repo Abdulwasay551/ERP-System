@@ -1,8 +1,9 @@
-from django.db import models, transaction
+from django.db import models
 from django.db.models import Sum
 from django.utils import timezone
 from user_auth.models import Company, User
 from core.models import SoftDeleteMixin
+from core.numbering import next_number
 
 # Create your models here.
 
@@ -169,23 +170,9 @@ class Customer(SoftDeleteMixin, models.Model):
         # uniqueness, so creating a second customer without an explicit code collided
         # with the first (mirrors Supplier.save()'s supplier_code generation pattern).
         if not self.customer_code:
-            # Uses all_objects (not the soft-delete filtered default manager) - see
-            # Invoice.save() (sales/models.py) for why: otherwise once the highest-id
-            # customer is soft-deleted, numbering restarts and collides with that hidden
-            # row's still-unique-constrained code.
-            with transaction.atomic():
-                last_customer = Customer.all_objects.select_for_update().filter(
-                    company=self.company, customer_code__startswith='CUST-'
-                ).order_by('-id').first()
-                if last_customer and last_customer.customer_code:
-                    try:
-                        last_num = int(last_customer.customer_code.split('-')[-1])
-                        new_num = last_num + 1
-                    except (ValueError, IndexError):
-                        new_num = 1
-                else:
-                    new_num = 1
-                self.customer_code = f'CUST-{new_num:06d}'
+            self.customer_code = next_number(
+                self.company, 'customer', 'CUST', 6, Customer, 'customer_code', 'all_objects',
+            )
 
         super().save(*args, **kwargs)
 

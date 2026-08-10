@@ -2,12 +2,61 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from core.numbering import SEQUENCES, format_number, lease_range, resolve_model
+
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def health(request):
     """Trivial reachability check for mobile/web clients - no auth required."""
     return Response({'status': 'ok'})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def lease_numbers(request):
+    """
+    Reserves a contiguous block of document numbers (invoice/bill/quotation/etc.) for
+    this company, for the desktop app to spend offline without colliding with numbers
+    the cloud (or another synced device) generates independently in the meantime - see
+    core.numbering's module docstring for why this has to share the same atomic counter
+    as normal single-document creation, not just peek at the last row.
+
+    Body: {"sequence_key": "invoice", "count": 50}
+    Response: {"sequence_key", "prefix", "digits", "range_start", "range_end", "year",
+               "numbers": [...]} - `numbers` is the fully-formatted list (e.g.
+    ["INV-000401", ..., "INV-000450"]) so the caller doesn't have to re-derive the
+    zero-padding/year-prefixing format itself.
+    """
+    sequence_key = request.data.get('sequence_key')
+    count = request.data.get('count')
+    config = SEQUENCES.get(sequence_key)
+    if not config:
+        return Response({'error': f"Unknown sequence_key '{sequence_key}'."}, status=400)
+    try:
+        count = int(count)
+    except (TypeError, ValueError):
+        return Response({'error': 'count must be an integer.'}, status=400)
+    if not (0 < count <= 1000):
+        return Response({'error': 'count must be between 1 and 1000.'}, status=400)
+
+    company = request.user.company
+    model_cls = resolve_model(config['model_label'])
+    range_start, range_end, year = lease_range(
+        company, sequence_key, config['prefix'], config['digits'], count,
+        model_cls, config['field_name'], config['manager_name'], config['year_scoped'],
+        config.get('label_year', False),
+    )
+    numbers = [format_number(config['prefix'], config['digits'], v, year) for v in range(range_start, range_end + 1)]
+    return Response({
+        'sequence_key': sequence_key,
+        'prefix': config['prefix'],
+        'digits': config['digits'],
+        'range_start': range_start,
+        'range_end': range_end,
+        'year': year,
+        'numbers': numbers,
+    })
 
 
 @api_view(['GET'])
