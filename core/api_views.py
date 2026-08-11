@@ -1,8 +1,11 @@
+from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from core.numbering import SEQUENCES, format_number, lease_range, resolve_model
+from core.snapshot import export_snapshot
+from user_auth.permissions import IsOwnerOrManager
 
 
 @api_view(['GET'])
@@ -10,6 +13,30 @@ from core.numbering import SEQUENCES, format_number, lease_range, resolve_model
 def health(request):
     """Trivial reachability check for mobile/web clients - no auth required."""
     return Response({'status': 'ok'})
+
+
+@api_view(['GET'])
+@permission_classes([IsOwnerOrManager])
+def export_company_snapshot(request):
+    """
+    Full company-data export for the desktop app's first-run pairing (Phase 3 of the
+    desktop app plan) - everything the local SQLite copy needs to become a complete,
+    PK-preserving mirror of this company's data. Owner/Manager only: this includes User
+    rows (with hashed passwords) and every business record the company has, not
+    something a Cashier/Salesman-level account should be able to pull down wholesale.
+
+    Response: {"exported_at": <iso timestamp>, "company_id": ..., "objects": [...]} -
+    `objects` is in django.core.serializers 'python'-format-then-JSON-safe shape, fed
+    directly into core.snapshot.import_snapshot_data() (or the `import_snapshot`
+    management command) on the receiving end.
+    """
+    company = request.user.company
+    objects = export_snapshot(company)
+    return Response({
+        'exported_at': timezone.now().isoformat(),
+        'company_id': company.id,
+        'objects': objects,
+    })
 
 
 @api_view(['POST'])

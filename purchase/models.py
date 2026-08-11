@@ -2402,6 +2402,97 @@ class SupplierLedger(models.Model):
             models.Index(fields=['reference_type', 'reference_id']),
         ]
 
+
+ADJUSTMENT_ENTRY_TYPE_CHOICES = [
+    ('debit', 'Debit'),
+    ('credit', 'Credit'),
+]
+
+ADJUSTMENT_PAYMENT_METHOD_CHOICES = [
+    ('cash', 'Cash'),
+    ('bank_transfer', 'Bank Transfer'),
+    ('cheque', 'Cheque'),
+    ('credit_card', 'Credit Card'),
+    ('online', 'Online Payment'),
+    ('other', 'Other'),
+]
+
+
+class SupplierLedgerAdjustment(SoftDeleteMixin, models.Model):
+    """Manual debit or credit against a supplier's ledger, not tied to any bill or
+    payment - mirrors crm.CustomerLedgerAdjustment's shape exactly (see that model's
+    docstring for why this is a real SoftDeleteMixin document rather than a raw
+    SupplierLedger row created directly)."""
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='supplier_ledger_adjustments')
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='ledger_adjustments')
+
+    adjustment_number = models.CharField(max_length=50, unique=True, blank=True)
+    entry_type = models.CharField(max_length=10, choices=ADJUSTMENT_ENTRY_TYPE_CHOICES)
+    amount = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    # See crm.CustomerLedgerAdjustment's matching comment - timezone.localdate (a date),
+    # not timezone.now (a datetime DRF's DateField serializer refuses to coerce).
+    transaction_date = models.DateField(default=timezone.localdate)
+
+    payment_method = models.CharField(max_length=50, choices=ADJUSTMENT_PAYMENT_METHOD_CHOICES, default='cash')
+    reference = models.CharField(max_length=100, blank=True, help_text='Bank transfer ID, cheque number, etc.')
+    description = models.TextField(help_text='Reason for this adjustment')
+
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.adjustment_number:
+            prefix = 'DR' if self.entry_type == 'debit' else 'CR'
+            self.adjustment_number = next_number(
+                self.company, f'supplier_ledger_{self.entry_type}', prefix, 6,
+                SupplierLedgerAdjustment, 'adjustment_number', 'all_objects',
+            )
+        super().save(*args, **kwargs)
+        self.update_supplier_ledger()
+
+    def update_supplier_ledger(self):
+        debit = self.amount if self.entry_type == 'debit' else 0
+        credit = self.amount if self.entry_type == 'credit' else 0
+        ledger_entry, created = SupplierLedger.objects.get_or_create(
+            company=self.company,
+            supplier=self.supplier,
+            reference_type='adjustment',
+            reference_id=self.id,
+            defaults={
+                'transaction_date': self.transaction_date,
+                'description': self.description,
+                'debit_amount': debit,
+                'credit_amount': credit,
+                'payment_method': self.payment_method,
+                'reference_number': self.reference or self.adjustment_number,
+                'created_by': self.created_by,
+            }
+        )
+        if not created:
+            ledger_entry.transaction_date = self.transaction_date
+            ledger_entry.description = self.description
+            ledger_entry.debit_amount = debit
+            ledger_entry.credit_amount = credit
+            ledger_entry.payment_method = self.payment_method
+            ledger_entry.reference_number = self.reference or self.adjustment_number
+            ledger_entry.save()
+
+    def soft_delete(self, user):
+        """See Payment.soft_delete()'s matching comment - save()'s get_or_create would
+        otherwise resurrect the mirrored SupplierLedger row on any future save()."""
+        super().soft_delete(user)
+        SupplierLedger.objects.filter(
+            company=self.company, supplier=self.supplier, reference_type='adjustment', reference_id=self.id,
+        ).delete()
+
+    def __str__(self):
+        return f'{self.adjustment_number} - {self.entry_type} {self.amount} ({self.supplier.name})'
+
+    class Meta:
+        ordering = ['-transaction_date', '-created_at']
+
+
 # Purchase Return
 class PurchaseReturn(models.Model):
     STATUS_CHOICES = [

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import (Customer, CustomerLedger, Lead, Opportunity, CommunicationLog, Partner,
+from .models import (Customer, CustomerLedger, CustomerLedgerAdjustment, Lead, Opportunity, CommunicationLog, Partner,
                     Campaign, CampaignTarget, SupplierRating, CRMConfiguration)
 
 
@@ -32,6 +32,15 @@ class CustomerLedgerSerializer(serializers.ModelSerializer):
         model = CustomerLedger
         fields = '__all__'
         read_only_fields = ('balance', 'created_at', 'updated_at')
+
+
+class CustomerLedgerAdjustmentSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source='customer.name', read_only=True)
+
+    class Meta:
+        model = CustomerLedgerAdjustment
+        fields = '__all__'
+        read_only_fields = ('company', 'adjustment_number', 'created_by', 'created_at', 'updated_at')
 
 
 class LeadSerializer(serializers.ModelSerializer):

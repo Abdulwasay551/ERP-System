@@ -1,7 +1,7 @@
 from rest_framework.routers import DefaultRouter
 from django.urls import path
 from .api_views import (
-    SupplierViewSet, TaxChargesTemplateViewSet, PurchaseRequisitionViewSet,
+    SupplierViewSet, SupplierLedgerAdjustmentViewSet, TaxChargesTemplateViewSet, PurchaseRequisitionViewSet,
     PurchaseRequisitionItemViewSet, RequestForQuotationViewSet, RFQItemViewSet,
     SupplierQuotationViewSet, SupplierQuotationItemViewSet, PurchaseOrderViewSet,
     PurchaseOrderItemViewSet, PurchaseOrderTaxChargeViewSet, GoodsReceiptNoteViewSet,
@@ -14,6 +14,7 @@ router = DefaultRouter()
 
 # Core Purchase Entities
 router.register(r'suppliers', SupplierViewSet, basename='supplier')
+router.register(r'supplier-ledger-adjustments', SupplierLedgerAdjustmentViewSet, basename='supplierledgeradjustment')
 router.register(r'tax-charges-templates', TaxChargesTemplateViewSet, basename='taxchargestemplate')
 
 # Purchase Requisition

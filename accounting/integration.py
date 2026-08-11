@@ -145,6 +145,12 @@ class AccountingIntegrationService:
 @receiver(post_save, sender='sales.Invoice')
 def create_sales_invoice_journal_entry(sender, instance, created, **kwargs):
     """Create journal entry when sales invoice is created"""
+    # raw=True means this is a fixture/snapshot load (e.g. core.snapshot's desktop-app
+    # import), not a real new invoice - restoring historical data must not re-post
+    # journal entries for it, and the row being loaded may reference a company/account
+    # that hasn't been inserted yet within this same transaction.
+    if kwargs.get('raw'):
+        return
     if created and hasattr(instance, 'company'):
         try:
             AccountingIntegrationService.create_journal_entry(
@@ -166,6 +172,8 @@ def create_sales_invoice_journal_entry(sender, instance, created, **kwargs):
 @receiver(post_save, sender='purchase.Bill')
 def create_purchase_invoice_journal_entry(sender, instance, created, **kwargs):
     """Create journal entry when purchase bill is created"""
+    if kwargs.get('raw'):  # see create_sales_invoice_journal_entry's matching comment
+        return
     if created and hasattr(instance, 'company'):
         try:
             AccountingIntegrationService.create_journal_entry(
@@ -186,6 +194,8 @@ def create_purchase_invoice_journal_entry(sender, instance, created, **kwargs):
 @receiver(post_save, sender='inventory.StockMovement')
 def create_inventory_journal_entry(sender, instance, created, **kwargs):
     """Create journal entry for inventory movements"""
+    if kwargs.get('raw'):  # see create_sales_invoice_journal_entry's matching comment
+        return
     if created and hasattr(instance, 'company'):
         try:
             # Determine transaction type based on movement type
@@ -214,6 +224,8 @@ def create_inventory_journal_entry(sender, instance, created, **kwargs):
 @receiver(post_save, sender='hr.Payroll')
 def create_payroll_journal_entry(sender, instance, created, **kwargs):
     """Create journal entry for payroll processing"""
+    if kwargs.get('raw'):  # see create_sales_invoice_journal_entry's matching comment
+        return
     if created and hasattr(instance, 'company'):
         try:
             AccountingIntegrationService.create_journal_entry(
@@ -234,6 +246,8 @@ def create_payroll_journal_entry(sender, instance, created, **kwargs):
 @receiver(post_save, sender='manufacturing.WorkOrder')
 def create_manufacturing_journal_entry(sender, instance, created, **kwargs):
     """Create journal entry for manufacturing work orders"""
+    if kwargs.get('raw'):  # see create_sales_invoice_journal_entry's matching comment
+        return
     if not created and hasattr(instance, 'company') and hasattr(instance, 'status'):
         # Only create entry when work order is completed
         if instance.status == 'completed':

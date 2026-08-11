@@ -1,3 +1,4 @@
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Sum
 from django.utils import timezone
@@ -240,6 +241,106 @@ class CustomerLedger(models.Model):
             models.Index(fields=['customer', 'transaction_date']),
             models.Index(fields=['reference_type', 'reference_id']),
         ]
+
+
+ADJUSTMENT_ENTRY_TYPE_CHOICES = [
+    ('debit', 'Debit'),
+    ('credit', 'Credit'),
+]
+
+# Same choices as sales.Payment.PAYMENT_METHOD_CHOICES - kept as a separate literal
+# rather than importing from sales (which itself imports from crm - would be circular).
+ADJUSTMENT_PAYMENT_METHOD_CHOICES = [
+    ('cash', 'Cash'),
+    ('bank_transfer', 'Bank Transfer'),
+    ('cheque', 'Cheque'),
+    ('credit_card', 'Credit Card'),
+    ('online', 'Online Payment'),
+    ('other', 'Other'),
+]
+
+
+class CustomerLedgerAdjustment(SoftDeleteMixin, models.Model):
+    """Manual debit or credit against a customer's ledger, not tied to any invoice or
+    payment - a correction, a misc charge, an opening balance, etc. Deliberately a real
+    document (not a raw CustomerLedger row created directly): every other financial
+    record in this ERP (Payment, Bill, Expense) is a SoftDeleteMixin model with its own
+    edit/delete/restore/recycle-bin path, and CustomerLedger itself has none of that -
+    mirrors Payment.save()/soft_delete()'s exact shape (self-posts via get_or_create,
+    soft_delete() explicitly removes the mirrored row) so this gets the same treatment.
+    """
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='customer_ledger_adjustments')
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='ledger_adjustments')
+
+    adjustment_number = models.CharField(max_length=50, unique=True, blank=True)
+    entry_type = models.CharField(max_length=10, choices=ADJUSTMENT_ENTRY_TYPE_CHOICES)
+    amount = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0.01)])
+    # timezone.localdate, not timezone.now - the latter returns a datetime, and DRF's
+    # DateField.to_representation asserts against exactly that (refuses to silently drop
+    # timezone info) - only surfaces when a caller omits this field and the model default
+    # actually runs, which is why sales.Payment's identical `default=timezone.now` on a
+    # DateField never tripped this: every existing caller always passes payment_date.
+    transaction_date = models.DateField(default=timezone.localdate)
+
+    payment_method = models.CharField(max_length=50, choices=ADJUSTMENT_PAYMENT_METHOD_CHOICES, default='cash')
+    reference = models.CharField(max_length=100, blank=True, help_text='Bank transfer ID, cheque number, etc.')
+    description = models.TextField(help_text='Reason for this adjustment')
+
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.adjustment_number:
+            prefix = 'DR' if self.entry_type == 'debit' else 'CR'
+            self.adjustment_number = next_number(
+                self.company, f'customer_ledger_{self.entry_type}', prefix, 6,
+                CustomerLedgerAdjustment, 'adjustment_number', 'all_objects',
+            )
+        super().save(*args, **kwargs)
+        self.update_customer_ledger()
+
+    def update_customer_ledger(self):
+        debit = self.amount if self.entry_type == 'debit' else 0
+        credit = self.amount if self.entry_type == 'credit' else 0
+        ledger_entry, created = CustomerLedger.objects.get_or_create(
+            company=self.company,
+            customer=self.customer,
+            reference_type='adjustment',
+            reference_id=self.id,
+            defaults={
+                'transaction_date': self.transaction_date,
+                'description': self.description,
+                'debit_amount': debit,
+                'credit_amount': credit,
+                'payment_method': self.payment_method,
+                'reference_number': self.reference or self.adjustment_number,
+                'created_by': self.created_by,
+            }
+        )
+        if not created:
+            ledger_entry.transaction_date = self.transaction_date
+            ledger_entry.description = self.description
+            ledger_entry.debit_amount = debit
+            ledger_entry.credit_amount = credit
+            ledger_entry.payment_method = self.payment_method
+            ledger_entry.reference_number = self.reference or self.adjustment_number
+            ledger_entry.save()
+
+    def soft_delete(self, user):
+        """See Payment.soft_delete()'s matching comment - save()'s get_or_create would
+        otherwise resurrect the mirrored CustomerLedger row on any future save()."""
+        super().soft_delete(user)
+        CustomerLedger.objects.filter(
+            company=self.company, customer=self.customer, reference_type='adjustment', reference_id=self.id,
+        ).delete()
+
+    def __str__(self):
+        return f'{self.adjustment_number} - {self.entry_type} {self.amount} ({self.customer.name})'
+
+    class Meta:
+        ordering = ['-transaction_date', '-created_at']
+
 
 class Lead(models.Model):
     """Enhanced Lead model with proper lifecycle management"""

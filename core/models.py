@@ -79,3 +79,18 @@ class RecordDeletionLog(models.Model):
 
     def __str__(self):
         return f'{self.action} {self.content_type.model} #{self.object_id} by {self.performed_by}'
+
+
+# IdempotencyKey and NumberSequence are defined in core/idempotency.py and
+# core/numbering.py respectively (kept alongside the logic that uses them, rather than
+# dumped into this general models.py) - but Django's app registry only registers a model
+# the moment its defining module is actually imported. Importing them here guarantees
+# that happens as soon as the `core` app loads, not only incidentally whenever something
+# else happens to import sales/purchase's api_views (which pull in core.idempotency)
+# first - apps.get_model('core', 'IdempotencyKey') (used by core/snapshot.py) must work
+# reliably regardless of import order. Placed at the *bottom* of this file, not the top:
+# both modules import `from user_auth.models import Company`, and user_auth/models.py
+# itself imports `SoftDeleteQuerySetMixin` from this file - importing them before that
+# class is defined would deadlock the circular import.
+from core.idempotency import IdempotencyKey  # noqa: E402,F401
+from core.numbering import NumberSequence  # noqa: E402,F401

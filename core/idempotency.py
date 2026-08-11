@@ -17,14 +17,18 @@ from functools import wraps
 from django.db import models
 from rest_framework.response import Response
 
-from user_auth.models import Company
-
 
 class IdempotencyKey(models.Model):
     """One row per successfully-completed request that supplied a client_request_id.
     A repeat of the same (company, client_request_id) returns the stored response
     instead of re-running the (side-effecting) view."""
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='idempotency_keys')
+    # String reference ('app_label.ModelName'), not an eager `from user_auth.models
+    # import Company` - this module now gets imported from core/models.py (so
+    # apps.get_model('core', 'IdempotencyKey') always finds it, see that file's
+    # comment), and user_auth/models.py itself imports from core.models before
+    # `Company` is defined there - an eager import here would deadlock that cycle.
+    # Django resolves string FK references lazily, after all apps have loaded.
+    company = models.ForeignKey('user_auth.Company', on_delete=models.CASCADE, related_name='idempotency_keys')
     client_request_id = models.CharField(max_length=100)
     response_status = models.PositiveSmallIntegerField()
     response_body = models.JSONField()

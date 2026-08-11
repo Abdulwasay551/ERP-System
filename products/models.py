@@ -438,6 +438,14 @@ class ProductTracking(SoftDeleteMixin, models.Model):
         
         if self.product.tracking_method == 'none' and filled_fields:
             raise ValidationError("This product does not use individual tracking.")
+
+        # Defense in depth: bill_receive_items() (purchase/api_views.py) already enforces
+        # this at the point codes are scanned in, but ProductTracking rows can also be
+        # created via other paths (Django admin, future API endpoints) - full_clean()
+        # should catch a malformed IMEI there too, not just at receiving time.
+        if self.product.tracking_method == 'imei' and self.imei_number:
+            if not (len(self.imei_number) == 15 and self.imei_number.isdigit()):
+                raise ValidationError('An IMEI must be exactly 15 digits.')
         
         # Validate expiry date for products that require expiry tracking
         if self.product.requires_expiry_tracking and not self.expiry_date:

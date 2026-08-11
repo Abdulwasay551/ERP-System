@@ -23,8 +23,6 @@ never be independently re-issued by a concurrent single next_number() call.
 from django.db import models, transaction
 from django.utils import timezone
 
-from user_auth.models import Company
-
 
 class NumberSequence(models.Model):
     """One atomic counter per (company, sequence_key) - e.g. ('<company>', 'invoice') or
@@ -32,7 +30,11 @@ class NumberSequence(models.Model):
     next integer to hand out. Callers always go through next_number()/lease_range()
     below, never touch this directly - that's what guarantees the select_for_update()
     locking actually serializes every caller."""
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='number_sequences')
+    # String reference, not an eager `from user_auth.models import Company` - see
+    # core/idempotency.py's matching comment for why (this module is imported from
+    # core/models.py, which user_auth/models.py itself imports before `Company` is
+    # defined - an eager import here would deadlock that circular import).
+    company = models.ForeignKey('user_auth.Company', on_delete=models.CASCADE, related_name='number_sequences')
     sequence_key = models.CharField(max_length=64)
     next_value = models.PositiveIntegerField(default=1)
 
@@ -162,6 +164,13 @@ SEQUENCES = {
     'bill': dict(model_label='purchase.Bill', prefix='BILL', digits=4, field_name='bill_number', manager_name='all_objects', year_scoped=True),
     'purchase_payment': dict(model_label='purchase.PurchasePayment', prefix='PAY', digits=6, field_name='payment_number', manager_name='all_objects', year_scoped=False, label_year=True),
     'customer': dict(model_label='crm.Customer', prefix='CUST', digits=6, field_name='customer_code', manager_name='all_objects', year_scoped=False),
+    # Manual ledger debit/credit adjustments - one sequence_key per (entity, direction)
+    # since the model's own save() picks its prefix (DR/CR) at save time from a single
+    # `entry_type` field, and each prefix needs its own independent counter.
+    'customer_ledger_debit': dict(model_label='crm.CustomerLedgerAdjustment', prefix='DR', digits=6, field_name='adjustment_number', manager_name='all_objects', year_scoped=False),
+    'customer_ledger_credit': dict(model_label='crm.CustomerLedgerAdjustment', prefix='CR', digits=6, field_name='adjustment_number', manager_name='all_objects', year_scoped=False),
+    'supplier_ledger_debit': dict(model_label='purchase.SupplierLedgerAdjustment', prefix='DR', digits=6, field_name='adjustment_number', manager_name='all_objects', year_scoped=False),
+    'supplier_ledger_credit': dict(model_label='purchase.SupplierLedgerAdjustment', prefix='CR', digits=6, field_name='adjustment_number', manager_name='all_objects', year_scoped=False),
 }
 
 

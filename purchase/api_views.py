@@ -6,7 +6,7 @@ from django.db import transaction, IntegrityError
 from django.db.models import Q, Sum
 from django.http import HttpResponse
 from django.utils import timezone
-from user_auth.permissions import RoleIn
+from user_auth.permissions import RoleIn, IsOwnerOrManager
 from core.pdf_utils import build_ledger_pdf, build_receiving_pdf
 from core.mixins import SoftDeleteViewSetMixin, log_deletion
 from core.idempotency import idempotent, IdempotentCreateMixin
@@ -20,17 +20,17 @@ from .models import (
     Supplier, TaxChargesTemplate, PurchaseRequisition, PurchaseRequisitionItem,
     RequestForQuotation, RFQItem, SupplierQuotation, SupplierQuotationItem,
     PurchaseOrder, PurchaseOrderItem, PurchaseOrderTaxCharge,
-    GoodsReceiptNote, GRNItem, Bill, BillItem, PurchasePayment,
+    GoodsReceiptNote, GRNItem, Bill, BillItem, PurchasePayment, SupplierLedgerAdjustment,
     PurchaseReturn, PurchaseReturnItem, PurchaseApproval
 )
 from .serializers import (
-    SupplierSerializer, TaxChargesTemplateSerializer, PurchaseRequisitionSerializer, 
+    SupplierSerializer, TaxChargesTemplateSerializer, PurchaseRequisitionSerializer,
     PurchaseRequisitionItemSerializer, RequestForQuotationSerializer, RFQItemSerializer,
     SupplierQuotationSerializer, SupplierQuotationItemSerializer, PurchaseOrderSerializer,
     PurchaseOrderItemSerializer, PurchaseOrderTaxChargeSerializer, GoodsReceiptNoteSerializer,
     GRNItemSerializer, BillSerializer, BillItemSerializer, PurchasePaymentSerializer,
     PurchaseReturnSerializer, PurchaseReturnItemSerializer, PurchaseApprovalSerializer,
-    SupplierLedgerSerializer
+    SupplierLedgerSerializer, SupplierLedgerAdjustmentSerializer
 )
 
 class SupplierViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
@@ -112,6 +112,23 @@ class SupplierViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.Mo
     def outstanding_balance(self, request, pk=None):
         supplier = self.get_object()
         return Response({'supplier_id': supplier.id, 'outstanding_balance': str(supplier.get_outstanding_balance())})
+
+
+class SupplierLedgerAdjustmentViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
+    """Manual debit/credit against a supplier's ledger - not tied to a bill/payment.
+    Mirrors crm.CustomerLedgerAdjustmentViewSet exactly, including the Owner/Manager-only
+    gate (direct balance manipulation with no bill paper trail behind it)."""
+    serializer_class = SupplierLedgerAdjustmentSerializer
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrManager]
+    filterset_fields = ['supplier', 'entry_type']
+    ordering_fields = ['transaction_date', 'amount', 'created_at']
+
+    def get_queryset(self):
+        return SupplierLedgerAdjustment.objects.filter(company=self.request.user.company)
+
+    def perform_create(self, serializer):
+        serializer.save(company=self.request.user.company, created_by=self.request.user)
+
 
 class TaxChargesTemplateViewSet(viewsets.ModelViewSet):
     serializer_class = TaxChargesTemplateSerializer
@@ -665,6 +682,11 @@ def bill_receive_items(request, bill_id):
                         code = str(code).strip()
                         if not code:
                             raise ValueError(f'Empty tracking code for product {product.name}.')
+                        if product.tracking_method == 'imei' and not (len(code) == 15 and code.isdigit()):
+                            raise ValueError(
+                                f'"{code}" is not a valid IMEI for {product.name} - an IMEI must be '
+                                f'exactly 15 digits.'
+                            )
                         if ProductTracking.objects.filter(**{tracking_field: code}).exists():
                             raise ValueError(f'{product.get_tracking_method_display()} "{code}" already exists in the system.')
                         ProductTracking.objects.create(

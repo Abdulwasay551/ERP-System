@@ -4,7 +4,7 @@ from .models import (
     RequestForQuotation, RFQItem, SupplierQuotation, SupplierQuotationItem,
     PurchaseOrder, PurchaseOrderItem, PurchaseOrderTaxCharge,
     GoodsReceiptNote, GRNItem, Bill, BillItem, PurchasePayment, SupplierLedger,
-    PurchaseReturn, PurchaseReturnItem, PurchaseApproval
+    SupplierLedgerAdjustment, PurchaseReturn, PurchaseReturnItem, PurchaseApproval
 )
 
 
@@ -13,6 +13,15 @@ class SupplierLedgerSerializer(serializers.ModelSerializer):
         model = SupplierLedger
         fields = '__all__'
         read_only_fields = ('balance', 'created_at', 'updated_at')
+
+
+class SupplierLedgerAdjustmentSerializer(serializers.ModelSerializer):
+    supplier_name = serializers.CharField(source='supplier.name', read_only=True)
+
+    class Meta:
+        model = SupplierLedgerAdjustment
+        fields = '__all__'
+        read_only_fields = ('company', 'adjustment_number', 'created_by', 'created_at', 'updated_at')
 
 class SupplierSerializer(serializers.ModelSerializer):
     # name/email/phone/city are @property methods on Supplier (reading through to

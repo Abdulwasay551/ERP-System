@@ -3,9 +3,12 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Q
 from django.http import HttpResponse
-from .models import Customer, CustomerLedger, Lead, Opportunity, CommunicationLog
-from .serializers import CustomerSerializer, CustomerLedgerSerializer, LeadSerializer, OpportunitySerializer, CommunicationLogSerializer
-from user_auth.permissions import RoleIn
+from .models import Customer, CustomerLedger, CustomerLedgerAdjustment, Lead, Opportunity, CommunicationLog
+from .serializers import (
+    CustomerSerializer, CustomerLedgerSerializer, CustomerLedgerAdjustmentSerializer,
+    LeadSerializer, OpportunitySerializer, CommunicationLogSerializer,
+)
+from user_auth.permissions import RoleIn, IsOwnerOrManager
 from core.pdf_utils import build_ledger_pdf
 from core.mixins import SoftDeleteViewSetMixin
 from core.idempotency import IdempotentCreateMixin
@@ -90,6 +93,23 @@ class CustomerViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.Mo
     def outstanding_balance(self, request, pk=None):
         customer = self.get_object()
         return Response({'customer_id': customer.id, 'outstanding_balance': str(customer.get_outstanding_balance())})
+
+
+class CustomerLedgerAdjustmentViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
+    """Manual debit/credit against a customer's ledger - not tied to an invoice/payment.
+    Owner/Manager only (not SalesStaff like CustomerViewSet): this directly manipulates a
+    customer's balance with no invoice/bill paper trail behind it."""
+    serializer_class = CustomerLedgerAdjustmentSerializer
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrManager]
+    filterset_fields = ['customer', 'entry_type']
+    ordering_fields = ['transaction_date', 'amount', 'created_at']
+
+    def get_queryset(self):
+        return CustomerLedgerAdjustment.objects.filter(company=self.request.user.company)
+
+    def perform_create(self, serializer):
+        serializer.save(company=self.request.user.company, created_by=self.request.user)
+
 
 class LeadViewSet(viewsets.ModelViewSet):
     serializer_class = LeadSerializer
