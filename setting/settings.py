@@ -136,10 +136,13 @@ WSGI_APPLICATION = 'setting.wsgi.application'
 
 # Use SQLite for Vercel deployment, PostgreSQL for local development
 if env.bool('USE_SQLITE', default=False):
+    # The desktop app (PyInstaller-frozen sidecar) sets DESKTOP_DB_PATH to a proper
+    # OS app-data directory instead of wherever the frozen exe happens to be unpacked -
+    # BASE_DIR isn't writable/stable there the way it is for a normal checkout.
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'NAME': env('DESKTOP_DB_PATH', default=str(BASE_DIR / 'db.sqlite3')),
         }
     }
 else:
