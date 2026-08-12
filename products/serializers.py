@@ -187,7 +187,12 @@ class ProductSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     tracking_method_display = serializers.CharField(source='get_tracking_method_display', read_only=True)
     product_type_display = serializers.CharField(source='get_product_type_display', read_only=True)
-    
+    # Model field has blank=True (Product.save() auto-generates when empty), but DRF's
+    # ModelSerializer forces a field required whenever it's part of Meta.unique_together
+    # (needed so UniqueTogetherValidator always has a value to check) - overridden
+    # explicitly here so a create request can omit sku entirely, not just send "".
+    sku = serializers.CharField(required=False, allow_blank=True)
+
     class Meta:
         model = Product
         fields = '__all__'
