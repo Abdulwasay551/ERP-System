@@ -33,6 +33,20 @@ class IsOwnerOrManager(RoleIn):
     """
     allowed_roles = ['Manager']
 
+class IsSuperuser(BasePermission):
+    """
+    For actions that span every company on the system, not just the caller's own -
+    core.snapshot's disaster-recovery backup export is the first user of this.
+    `IsOwnerOrManager`/`RoleIn` deliberately don't check `user.company` (an Owner/
+    Manager of any one shop can already act on their own shop's data via those), so
+    they're the wrong gate for something that would otherwise let any shop's Owner
+    download every OTHER company's data too on a genuinely multi-tenant deployment.
+    """
+
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and request.user.is_superuser)
+
+
 class DepartmentLevelPermission(BasePermission):
     """
     Allow access only to users in a specific department and with a minimum level.

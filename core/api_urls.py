@@ -2,6 +2,7 @@ from django.urls import path
 from .api_views import (
     health, global_search, lease_numbers, export_company_snapshot,
     pair_desktop_with_production, sync_now, sync_status,
+    export_all_companies_backup, export_all_companies_backup_excel,
 )
 from .recycle_bin import recycle_bin_list, recycle_bin_restore, recycle_bin_purge, recycle_bin_empty
 
@@ -13,6 +14,8 @@ urlpatterns = [
     path('pair-with-production/', pair_desktop_with_production, name='core-pair-with-production'),
     path('sync-now/', sync_now, name='core-sync-now'),
     path('sync-status/', sync_status, name='core-sync-status'),
+    path('export-backup/', export_all_companies_backup, name='core-export-backup'),
+    path('export-backup/excel/', export_all_companies_backup_excel, name='core-export-backup-excel'),
     path('recycle-bin/', recycle_bin_list, name='recycle-bin-list'),
     path('recycle-bin/restore/', recycle_bin_restore, name='recycle-bin-restore'),
     path('recycle-bin/purge/', recycle_bin_purge, name='recycle-bin-purge'),

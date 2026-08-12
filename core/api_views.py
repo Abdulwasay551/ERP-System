@@ -4,8 +4,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from core.numbering import SEQUENCES, format_number, lease_range, resolve_model
-from core.snapshot import export_snapshot, export_snapshot_delta
-from user_auth.permissions import IsOwnerOrManager
+from core.snapshot import export_snapshot, export_snapshot_delta, export_all_companies_snapshot
+from user_auth.permissions import IsOwnerOrManager, IsSuperuser
 
 
 @api_view(['GET'])
@@ -254,3 +254,57 @@ def sync_status(request):
         'auth_required': config.get('auth_required', False),
         'last_result': get_loop().last_result,
     })
+
+
+# --- Disaster-recovery backup export (Phase B) ---
+#
+# Superuser-only, not IsOwnerOrManager: this spans every company on the system, not
+# just the caller's own shop (see IsSuperuser's own docstring in user_auth/permissions.py
+# for why IsOwnerOrManager - which doesn't check user.company - would be the wrong gate
+# here on a genuinely multi-tenant deployment). Restoring a backup back in is
+# deliberately NOT an API endpoint at all - see
+# core.snapshot.import_all_companies_snapshot()'s docstring and
+# core/management/commands/restore_all_companies.py.
+
+@api_view(['GET'])
+@permission_classes([IsSuperuser])
+def export_all_companies_backup(request):
+    """Full disaster-recovery backup - every company's complete data. Restore via
+    `python manage.py restore_all_companies --file <this response saved to disk>`.
+
+    Response: {"exported_at", "company_ids": [...], "objects": [...]}
+    """
+    from user_auth.models import Company
+    objects = export_all_companies_snapshot()
+    return Response({
+        'exported_at': timezone.now().isoformat(),
+        'company_ids': list(Company.objects.values_list('id', flat=True)),
+        'objects': objects,
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsSuperuser])
+def export_all_companies_backup_excel(request):
+    """Same data as export_all_companies_backup, rendered as a multi-sheet workbook
+    for human review only - see core.excel_export's module docstring for why this is
+    never a restore path."""
+    from django.http import HttpResponse
+    from core.excel_export import build_backup_workbook
+    import io
+
+    objects = export_all_companies_snapshot()
+    try:
+        wb = build_backup_workbook(objects)
+    except ImportError:
+        return Response({'error': 'Excel export requires the openpyxl library, which is not installed.'}, status=500)
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = 'attachment; filename="mobile-corner-backup.xlsx"'
+    return response

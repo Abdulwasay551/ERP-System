@@ -209,6 +209,30 @@ def export_snapshot(company):
     return objects
 
 
+def export_all_companies_snapshot():
+    """Disaster-recovery export (Phase B): every company's complete data in one
+    payload, for seeding a brand-new backend if production's database is ever lost -
+    unlike export_snapshot(), which is scoped to the one company the desktop app pairs
+    with, this covers the whole system.
+
+    Loops export_snapshot() per company and dedupes the 'global' scope MANIFEST
+    entries (user_auth.Role, accounting.Currency) - _queryset_for() ignores the company
+    filter entirely for those, so calling export_snapshot() once per company would
+    otherwise serialize the exact same Role/Currency rows N times over.
+    """
+    objects = []
+    seen_global = set()
+    for company in Company.objects.all():
+        for obj in export_snapshot(company):
+            if obj['model'] in ('user_auth.role', 'accounting.currency'):
+                key = (obj['model'], obj['pk'])
+                if key in seen_global:
+                    continue
+                seen_global.add(key)
+            objects.append(obj)
+    return objects
+
+
 def export_snapshot_delta(company, since):
     """Like export_snapshot(), but scoped to what's changed since `since` (an ISO
     timestamp string, or None for a full export identical to export_snapshot()'s
@@ -326,6 +350,45 @@ def import_snapshot_data(objects_data, expected_company_id=None):
             'refusing to import into what should be a single-tenant local database.'
         )
 
+    count = 0
+    with transaction.atomic():
+        with connection.constraint_checks_disabled():
+            for deserialized_obj in serializers.deserialize('python', objects_data):
+                deserialized_obj.save()
+                count += 1
+    return count
+
+
+def import_all_companies_snapshot(objects_data, allow_nonempty=False):
+    """Disaster-recovery restore (Phase B): seeds a brand-new backend from a full
+    multi-company backup (export_all_companies_snapshot()'s output). Deliberately
+    separate from import_snapshot_data() rather than a shared code path with a flag -
+    that function's single-tenant guard is exactly right for the routine desktop-
+    pairing case and must stay untouched; this is a different, far more dangerous
+    operation (seeding/overwriting an entire system's data) that needs its own,
+    stricter default: refuse unless the target database has NO company rows at all.
+
+    Not reachable through the API at all (see core/management/commands/
+    restore_all_companies.py) - a genuine "production's database is gone" scenario
+    means seeding a brand-new database that has no User rows yet to authenticate as,
+    so this can only ever be run with direct server/database access, never as an
+    authenticated web action. Exposing a "restore everything" button reachable by any
+    Owner login would also just be a needless way to let one bad click nuke a live,
+    populated database - the CLI-only path is a deliberate safety choice, not a
+    missing feature.
+
+    `allow_nonempty=True` overrides the empty-target guard for advanced/scripted use
+    (the management command exposes it as an explicit --allow-nonempty flag - never
+    the default).
+
+    Returns the count of objects imported.
+    """
+    if not allow_nonempty and Company.objects.exists():
+        raise ValueError(
+            'This database already has company data - refusing a full disaster-recovery '
+            'restore into a non-empty database. This restore path is meant to seed a '
+            'brand-new, empty backend only. Pass allow_nonempty=True to override.'
+        )
     count = 0
     with transaction.atomic():
         with connection.constraint_checks_disabled():
