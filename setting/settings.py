@@ -335,6 +335,18 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
     'http://localhost:3000',
     'https://erp-system-frontend-eight.vercel.app',
 ])
+# The desktop app's bundled backend only ever listens on 127.0.0.1 (waitress binds
+# there explicitly, see desktop_server.py) - it is never reachable from the network, so
+# a hardcoded origin whitelist protects against approximately nothing here (CORS is a
+# browser-only restriction; it does nothing against a non-browser HTTP client, which
+# already has direct access on a shared machine regardless). It IS a real source of
+# fragile bugs, though: WebView2's actual custom-protocol origin turned out not to
+# match the hardcoded 'http://tauri.localhost' guess this project shipped with
+# initially, which silently broke every unauthenticated desktop-only endpoint
+# (e.g. the first-run pairing screen) with no visible error, since curl/requests-based
+# testing doesn't enforce CORS and never caught it. desktop_server.py sets this flag
+# instead of trying to guess the exact right origin string.
+CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=False)
 
 UNFOLD = {
     "SITE_TITLE": "ERP System",
