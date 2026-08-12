@@ -196,7 +196,11 @@ class ProductSerializer(serializers.ModelSerializer):
     def validate_sku(self, value):
         """Validate SKU uniqueness within company"""
         company = self.context['request'].user.company
-        queryset = Product.objects.filter(company=company, sku=value)
+        # sku is globally unique at the DB level (see Product.save()), so this has to
+        # check all_objects, not the soft-delete-filtered default manager - otherwise a
+        # SKU held by a soft-deleted product passes validation here and then fails at
+        # INSERT with an uncaught IntegrityError.
+        queryset = Product.all_objects.filter(company=company, sku=value)
         
         # Exclude current instance during update
         if self.instance:
