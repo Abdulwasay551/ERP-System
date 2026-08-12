@@ -165,10 +165,13 @@ class DesktopSyncLoop:
             return False
 
     def sync_now(self):
-        """Runs exactly one sync cycle. Returns a dict describing the outcome -
-        {'status': 'synced'|'skipped'|'auth_required'|'error', ...} - never raises for
-        an expected failure mode (offline, stale token); only truly unexpected
-        exceptions propagate, and even those are caught by _run()'s loop above."""
+        """Runs exactly one sync cycle: push (drain the local outbox against production's
+        real API - Phase C) then pull (Phase A's delta import), sharing one refreshed
+        access token between both. Returns a dict describing the outcome -
+        {'status': 'synced'|'skipped'|'auth_required'|'error', 'push': {...}, ...} -
+        never raises for an expected failure mode (offline, stale token); only truly
+        unexpected exceptions propagate, and even those are caught by _run()'s loop
+        above."""
         config = load_sync_config()
         if config is None:
             self.last_result = {'status': 'skipped', 'reason': 'not_paired'}
@@ -196,6 +199,11 @@ class DesktopSyncLoop:
                 return self.last_result
             refresh_resp.raise_for_status()
             access_token = refresh_resp.json()['access']
+
+            push_result = self.drain(production_url, access_token, config)
+            if push_result.get('status') == 'auth_required':
+                self.last_result = push_result
+                return self.last_result
 
             since = config.get('last_synced_at')
             params = {'since': since} if since else {}
@@ -242,8 +250,149 @@ class DesktopSyncLoop:
 
         save_sync_config(config)
 
-        self.last_result = {'status': 'synced', 'objects_imported': count, 'since': since}
+        self.last_result = {'status': 'synced', 'objects_imported': count, 'since': since, 'push': push_result}
         return self.last_result
+
+    def drain(self, production_url=None, access_token=None, config=None):
+        """Push-back sync (Phase C): replays every pending local write in
+        core.desktop_sync_queue.DesktopSyncQueueEntry against production's real API, in
+        creation order, so idempotency/lease_range()-issued numbers and each model's own
+        save()-embedded business logic (ledger postings, stock reduction) all apply on
+        production exactly as if the action had happened there directly - see
+        core/desktop_sync_queue.py's module docstring for why this replays the original
+        endpoint rather than a raw row upsert. Each entry's desktop_pks/desktop_numbers
+        are (re)built fresh from its own already-recorded response at replay time (see
+        _build_replay_extras() below), not stored ahead of time.
+
+        Stops (not fails) at the first entry it can't process due to connectivity - the
+        remaining queue stays untouched for the next cycle, never partially replayed out
+        of order. A genuine business-rejection (a real non-2xx response from production,
+        not a network failure) marks that one entry 'failed' with production's own error
+        message and moves on to the next - one bad row must never block every later,
+        unrelated, perfectly valid write behind it in the queue. 'failed' entries are
+        surfaced on the desktop app's Sync Conflicts screen for a human to review -
+        never silently retried forever, never silently dropped.
+
+        Callable standalone (sync_now() calls it internally, sharing one refreshed
+        access token with the pull that follows) - omit all three args to have it do its
+        own reachability probe and token refresh, e.g. from a future dedicated "Push Now"
+        UI action.
+        """
+        if config is None:
+            config = load_sync_config()
+        if config is None or config.get('auth_required') or not config.get('device_id'):
+            return {'status': 'skipped', 'reason': 'not_paired'}
+        if production_url is None:
+            production_url = config['production_url']
+
+        import requests
+        if access_token is None:
+            if not self.is_reachable(production_url):
+                return {'status': 'skipped', 'reason': 'offline'}
+            try:
+                refresh_resp = requests.post(
+                    f'{production_url}/api/auth/token/refresh/',
+                    json={'refresh': config['refresh_token']}, timeout=SYNC_REQUEST_TIMEOUT_SECONDS,
+                )
+                if refresh_resp.status_code == 401:
+                    config['auth_required'] = True
+                    save_sync_config(config)
+                    return {'status': 'auth_required'}
+                refresh_resp.raise_for_status()
+                access_token = refresh_resp.json()['access']
+            except requests.RequestException as e:
+                return {'status': 'skipped', 'reason': f'request_failed: {e}'}
+
+        import json
+        from core.desktop_sync_queue import DesktopSyncQueueEntry
+
+        headers = {'Authorization': f'Bearer {access_token}'}
+        pushed = 0
+        failed = 0
+        for entry in DesktopSyncQueueEntry.objects.filter(status='pending').order_by('created_at'):
+            try:
+                payload = json.loads(entry.payload_json)
+                response_data = json.loads(entry.response_json or '{}')
+                pks, numbers = _build_replay_extras(entry.path, response_data)
+            except (ValueError, KeyError) as e:
+                # Malformed capture (shouldn't happen for a real entry, but a crash
+                # here must never block every valid entry queued behind this one) -
+                # mark this one entry failed and keep draining the rest.
+                entry.status = 'failed'
+                entry.error_message = f'Could not build replay payload: {e}'
+                entry.save(update_fields=['status', 'error_message'])
+                failed += 1
+                continue
+
+            payload['device_id'] = config['device_id']
+            if pks:
+                payload['desktop_pks'] = pks
+            if numbers:
+                payload['desktop_numbers'] = numbers
+
+            try:
+                resp = requests.request(
+                    entry.method, f'{production_url}{entry.path}', json=payload,
+                    headers=headers, timeout=SYNC_REQUEST_TIMEOUT_SECONDS,
+                )
+            except requests.RequestException:
+                # Connectivity died mid-drain - stop here, this entry (and everything
+                # after it, since order matters) stays pending for the next cycle.
+                break
+
+            if resp.status_code == 401:
+                config['auth_required'] = True
+                save_sync_config(config)
+                return {'status': 'auth_required', 'pushed': pushed, 'failed': failed}
+
+            if 200 <= resp.status_code < 300:
+                entry.status = 'synced'
+                entry.synced_at = timezone.now()
+                entry.save(update_fields=['status', 'synced_at'])
+                pushed += 1
+            else:
+                entry.status = 'failed'
+                try:
+                    entry.error_message = json.dumps(resp.json())[:2000]
+                except ValueError:
+                    entry.error_message = resp.text[:2000]
+                entry.save(update_fields=['status', 'error_message'])
+                failed += 1
+
+        return {'status': 'drained', 'pushed': pushed, 'failed': failed}
+
+
+def _build_replay_extras(path, response_data):
+    """Given the ORIGINAL local response for one of the five push-eligible paths (see
+    core/desktop_sync_middleware.py's PUSH_ELIGIBLE_PATHS), builds the desktop_pks/
+    desktop_numbers dicts a replay against production needs to inject so production's
+    copy lands on the exact same PKs and document numbers already committed to locally.
+    Each branch is specific to that one endpoint's own response shape - there's no way
+    to make this generic without the endpoint itself describing its own PK/number
+    fields, which felt like more machinery than five short, readable branches. Returns
+    ({}, {}) for any path not in this list (defensive - PUSH_ELIGIBLE_PATHS should
+    already guarantee this never happens for a real captured entry)."""
+    if path == '/api/crm/customers/':
+        return {'customer': response_data['id']}, {'customer_code': response_data['customer_code']}
+    if path == '/api/sales/payments/':
+        return {'payment': response_data['id']}, {'payment_number': response_data['payment_number']}
+    if path == '/api/purchase/purchase-payments/':
+        return {'purchase_payment': response_data['id']}, {'payment_number': response_data['payment_number']}
+    if path == '/api/sales/pos/checkout/':
+        pks = {'invoice': response_data['invoice_id'], 'items': response_data['item_ids']}
+        numbers = {'invoice_number': response_data['invoice_number']}
+        if response_data.get('payment_id'):
+            pks['payment'] = response_data['payment_id']
+        if response_data.get('payment_number'):
+            numbers['payment_number'] = response_data['payment_number']
+        return pks, numbers
+    if path == '/api/purchase/vendor-invoice/':
+        pks = {
+            'bill': response_data['bill_id'],
+            'items': [item['bill_item_id'] for item in response_data.get('items', [])],
+        }
+        return pks, {'bill_number': response_data['bill_number']}
+    return {}, {}
 
 
 _loop_instance = None

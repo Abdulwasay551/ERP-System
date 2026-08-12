@@ -465,6 +465,7 @@ def pos_checkout(request):
         # without needing its own endpoint-specific knowledge of pos_checkout's shape.
         'item_ids': [item.id for item in invoice.items.order_by('id')],
         'payment_id': payment.id if payment else None,
+        'payment_number': payment.payment_number if payment else None,
     }, status=status.HTTP_201_CREATED)
 
 
