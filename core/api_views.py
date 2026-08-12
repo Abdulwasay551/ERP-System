@@ -191,17 +191,48 @@ def global_search(request):
 # silently doing something wrong, which is an acceptable failure mode for routes no
 # real caller would ever reach there.
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def desktop_setup_status(request):
+    """Unauthenticated by necessity - the desktop login screen calls this BEFORE any
+    login exists to decide whether to show the normal login form or the first-time
+    "set up this computer" pairing form. `needs_setup` is just "does this local
+    database have zero companies yet", the same empty-database signal
+    pair_desktop_with_production() itself uses to decide whether to allow an
+    unauthenticated pairing attempt - kept as its own tiny endpoint rather than reusing
+    sync_status (which requires an authenticated local user, the very thing this has
+    to work without)."""
+    from user_auth.models import Company
+    return Response({'needs_setup': not Company.objects.exists()})
+
+
 @api_view(['POST'])
-@permission_classes([IsOwnerOrManager])
+@permission_classes([AllowAny])
 def pair_desktop_with_production(request):
     """First-run pairing: the desktop app exchanges the Owner's production login for a
     refresh token, stored encrypted for the background sync loop to use from then on -
     see core.desktop_sync.pair_with_production()'s own docstring.
 
+    Deliberately AllowAny at the decorator level, not IsOwnerOrManager - a genuinely
+    fresh install's local database has zero User rows, so there is no local login to
+    gate this behind yet (pairing IS the first action, not something reachable only
+    after one). Once paired, the first full sync creates the local Company/User rows,
+    so a SECOND pairing attempt against an already-seeded local database does require
+    a real local Owner/Manager login below - same "empty database only" restraint
+    already used by core.snapshot.import_all_companies_snapshot()'s disaster-recovery
+    restore guard. The actual security boundary for the bootstrap case is unchanged
+    either way: whoever can't supply valid production credentials gets rejected by
+    production itself inside pair_with_production() below, exactly as before.
+
     Body: {"production_url", "email", "password"}
     """
     from core.desktop_sync import pair_with_production
+    from user_auth.models import Company
+    from user_auth.permissions import IsOwnerOrManager
     import requests
+
+    if Company.objects.exists() and not IsOwnerOrManager().has_permission(request, None):
+        return Response({'error': 'Owner or Manager login required to re-pair this device.'}, status=403)
 
     production_url = request.data.get('production_url', '').rstrip('/')
     email = request.data.get('email')

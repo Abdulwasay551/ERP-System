@@ -1,7 +1,7 @@
 from django.urls import path
 from .api_views import (
     health, global_search, lease_numbers, export_company_snapshot,
-    pair_desktop_with_production, sync_now, sync_status, register_device,
+    desktop_setup_status, pair_desktop_with_production, sync_now, sync_status, register_device,
     sync_conflicts, discard_sync_conflict,
     export_all_companies_backup, export_all_companies_backup_excel,
 )
@@ -12,6 +12,7 @@ urlpatterns = [
     path('search/', global_search, name='core-search'),
     path('lease-numbers/', lease_numbers, name='core-lease-numbers'),
     path('export-snapshot/', export_company_snapshot, name='core-export-snapshot'),
+    path('desktop-setup-status/', desktop_setup_status, name='core-desktop-setup-status'),
     path('pair-with-production/', pair_desktop_with_production, name='core-pair-with-production'),
     path('sync-now/', sync_now, name='core-sync-now'),
     path('sync-status/', sync_status, name='core-sync-status'),
