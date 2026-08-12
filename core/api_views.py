@@ -4,7 +4,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from core.numbering import SEQUENCES, format_number, lease_range, resolve_model
-from core.snapshot import export_snapshot
+from core.snapshot import export_snapshot, export_snapshot_delta
 from user_auth.permissions import IsOwnerOrManager
 
 
@@ -29,12 +29,23 @@ def export_company_snapshot(request):
     `objects` is in django.core.serializers 'python'-format-then-JSON-safe shape, fed
     directly into core.snapshot.import_snapshot_data() (or the `import_snapshot`
     management command) on the receiving end.
+
+    Optional `?since=<iso8601>` switches to a delta export (Phase A's ongoing pull-sync,
+    as opposed to this endpoint's original one-time full-pairing use) - only models
+    `core.sync_classification` marks delta-eligible, filtered to what's changed since
+    that timestamp; see `core.snapshot.export_snapshot_delta()` for the exact
+    semantics. The caller MUST store this response's own `exported_at` as its next
+    `since` cursor, never its own local clock - using local time risks silently
+    skipping rows written between this request and its response, if the two clocks
+    disagree at all.
     """
     company = request.user.company
-    objects = export_snapshot(company)
+    since = request.query_params.get('since')
+    objects = export_snapshot_delta(company, since) if since else export_snapshot(company)
     return Response({
         'exported_at': timezone.now().isoformat(),
         'company_id': company.id,
+        'since': since,
         'objects': objects,
     })
 
@@ -167,3 +178,79 @@ def global_search(request):
         })
 
     return Response({'results': results})
+
+
+# --- Desktop app pull-sync control endpoints (Phase A) ---
+#
+# These three are local-only in practice: only ever called by the desktop app's own
+# bundled frontend against its own local backend at 127.0.0.1:8010, never meant to be
+# hit on the production deployment. They're not otherwise gated by environment because
+# this is the same Django codebase both places - `core.desktop_sync`'s credential
+# storage lazily imports `pywin32`'s `win32crypt` (Windows-only), so calling these on
+# production (Linux/Vercel) would fail loudly with a clear ImportError rather than
+# silently doing something wrong, which is an acceptable failure mode for routes no
+# real caller would ever reach there.
+
+@api_view(['POST'])
+@permission_classes([IsOwnerOrManager])
+def pair_desktop_with_production(request):
+    """First-run pairing: the desktop app exchanges the Owner's production login for a
+    refresh token, stored encrypted for the background sync loop to use from then on -
+    see core.desktop_sync.pair_with_production()'s own docstring.
+
+    Body: {"production_url", "email", "password"}
+    """
+    from core.desktop_sync import pair_with_production
+    import requests
+
+    production_url = request.data.get('production_url', '').rstrip('/')
+    email = request.data.get('email')
+    password = request.data.get('password')
+    if not (production_url and email and password):
+        return Response({'error': 'production_url, email, and password are required.'}, status=400)
+    try:
+        config = pair_with_production(production_url, email, password)
+    except requests.HTTPError as e:
+        return Response({'error': f'Production rejected those credentials: {e}'}, status=400)
+    except requests.RequestException as e:
+        return Response({'error': f'Could not reach production: {e}'}, status=400)
+    except ImportError:
+        return Response({'error': 'Desktop sync is only available in the Windows desktop app build.'}, status=400)
+
+    return Response({
+        'paired': True,
+        'production_url': config['production_url'],
+        'company_id': config['company_id'],
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsOwnerOrManager])
+def sync_now(request):
+    """Manual "Sync Now" trigger - runs exactly one cycle of the same logic the
+    background loop runs periodically, so there's no separate code path to drift out
+    of sync with it."""
+    from core.desktop_sync import get_loop
+    try:
+        result = get_loop().sync_now()
+    except ImportError:
+        return Response({'error': 'Desktop sync is only available in the Windows desktop app build.'}, status=400)
+    return Response(result)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def sync_status(request):
+    """Current pairing/sync state for the Desktop Sync Settings screen - deliberately
+    never returns the stored refresh_token itself."""
+    from core.desktop_sync import get_loop, load_sync_config
+    config = load_sync_config()
+    if config is None:
+        return Response({'paired': False})
+    return Response({
+        'paired': True,
+        'production_url': config['production_url'],
+        'last_synced_at': config.get('last_synced_at'),
+        'auth_required': config.get('auth_required', False),
+        'last_result': get_loop().last_result,
+    })

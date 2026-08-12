@@ -36,7 +36,8 @@ class UnitOfMeasure(models.Model):
     )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+    updated_at = models.DateTimeField(auto_now=True)
+
     class Meta:
         unique_together = ['company', 'name']
         ordering = ['uom_type', 'name']

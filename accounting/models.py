@@ -22,6 +22,8 @@ class AccountCategory(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ('company', 'code')  # Enforce unique codes per company
@@ -42,6 +44,8 @@ class AccountGroup(models.Model):
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='children')
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ('company', 'code')  # Enforce unique group codes per company
@@ -219,6 +223,8 @@ class TaxConfig(models.Model):
     rate = models.DecimalField(max_digits=5, decimal_places=2)
     type = models.CharField(max_length=50, default='VAT')
     is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.name} ({self.rate}%)"
@@ -351,7 +357,8 @@ class AutoJournalEntry(models.Model):
     source_object_id = models.CharField(max_length=100)
     transaction_type = models.CharField(max_length=50)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+    updated_at = models.DateTimeField(auto_now=True)
+
     class Meta:
         verbose_name = 'Auto Journal Entry'
         verbose_name_plural = 'Auto Journal Entries'

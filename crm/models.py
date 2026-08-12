@@ -820,7 +820,9 @@ class SupplierRating(models.Model):
     # Evaluator
     rated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='supplier_ratings')
     rating_date = models.DateField(auto_now_add=True)
-    
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     def save(self, *args, **kwargs):
         # Calculate overall rating as average
         ratings = [self.quality_rating, self.delivery_rating, self.price_rating, self.service_rating, self.communication_rating]

@@ -33,7 +33,9 @@ import json
 
 from django.core import serializers
 from django.db import connection, transaction
+from django.utils.dateparse import parse_datetime
 
+from core.sync_classification import is_delta_eligible, since_field_for
 from user_auth.models import Company
 
 # (app_label, model_name, scope) - scope is 'direct', ('via', field), ('via2', f1, f2),
@@ -207,6 +209,83 @@ def export_snapshot(company):
     return objects
 
 
+def export_snapshot_delta(company, since):
+    """Like export_snapshot(), but scoped to what's changed since `since` (an ISO
+    timestamp string, or None for a full export identical to export_snapshot()'s
+    behavior). Only exports models `core.sync_classification` marks delta-eligible
+    (STATE/EVENT top-level models) plus their MANIFEST-declared children - DERIVED
+    models (StockItem, StockAlert, FinancialStatement) and anything not classified at
+    all (CRM leads/campaigns, LegacyProduct) are never included, matching
+    sync_classification's own module docstring.
+
+    Top-level ('direct'/'global') models are filtered by their own since_field
+    (`since_field__gt since`), or exported in full every cycle if since_field is None
+    (small reference tables - Role, Currency, NumberSequence). Child ('via'/'via2')
+    models NOT independently classified ride along with whichever of their parent
+    rows fell in this batch (filtered by the parent's already-computed PK set, not
+    their own timestamp) - editing a document typically rewrites its whole item set
+    anyway. The four child models that ARE independently classified (StockLot,
+    StockSerial, StockReservation, InventoryLock - their scoping parent, StockItem, is
+    DERIVED and never in a delta batch for them to ride along with) are filtered by
+    their own since_field instead, same as a top-level model.
+
+    Returns the same {'model', 'pk', 'fields'} shape as export_snapshot() - a caller
+    round-trips it through JSON as usual before importing.
+    """
+    since_dt = parse_datetime(since) if since else None
+    objects = []
+    included_pks = {}  # (app_label, model_name) -> set of pks in this batch, for children to reference
+
+    for app_label, model_name, scope in MANIFEST:
+        classified = is_delta_eligible(app_label, model_name)
+
+        if scope in ('global', 'direct'):
+            if not classified:
+                continue  # DERIVED or out-of-scope top-level model - never delta-synced
+            since_field = since_field_for(app_label, model_name)
+            qs = _queryset_for(app_label, model_name, scope, company)
+            if since_dt is not None and since_field is not None:
+                qs = qs.filter(**{f'{since_field}__gt': since_dt})
+            pks = set(qs.values_list('pk', flat=True))
+            included_pks[(app_label, model_name)] = pks
+            objects.extend(json.loads(serializers.serialize('json', qs)))
+            continue
+
+        # ('via', parent_field) or ('via2', f1, f2) - a child/line-item model.
+        if classified:
+            # Independently classified (StockLot etc.) - filter by its own since_field,
+            # same as a top-level model, ignoring the parent chain entirely.
+            since_field = since_field_for(app_label, model_name)
+            qs = _queryset_for(app_label, model_name, scope, company)
+            if since_dt is not None and since_field is not None:
+                qs = qs.filter(**{f'{since_field}__gt': since_dt})
+            objects.extend(json.loads(serializers.serialize('json', qs)))
+            continue
+
+        if since_dt is None:
+            # First/full sync - export every child in full, matching export_snapshot().
+            qs = _queryset_for(app_label, model_name, scope, company)
+            objects.extend(json.loads(serializers.serialize('json', qs)))
+            continue
+
+        # Delta sync, unclassified child - ride along with whichever parent rows this
+        # batch already included. `scope[1]` is always the immediate parent FK field
+        # name on this model, whether scope is ('via', parent) or ('via2', parent, _).
+        from django.apps import apps
+        model = apps.get_model(app_label, model_name)
+        parent_field = model._meta.get_field(scope[1])
+        parent_model = parent_field.related_model
+        parent_key = (parent_model._meta.app_label, parent_model._meta.object_name)
+        parent_pks = included_pks.get(parent_key)
+        if not parent_pks:
+            continue  # nothing from this child's parent changed in this batch
+        manager = getattr(model, 'all_objects', None) or model.objects
+        qs = manager.filter(**{f'{scope[1]}_id__in': parent_pks})
+        objects.extend(json.loads(serializers.serialize('json', qs)))
+
+    return objects
+
+
 def import_snapshot_data(objects_data, expected_company_id=None):
     """Loads a snapshot (as produced by export_snapshot(), already round-tripped through
     JSON) into the current database, preserving every row's original primary key.
@@ -217,6 +296,15 @@ def import_snapshot_data(objects_data, expected_company_id=None):
     silently merging a second company's data into it (see desktop_server.py's own
     startup guard, which checks the same invariant from the other direction after import
     has already happened).
+
+    A delta payload (from export_snapshot_delta()) normally contains NO
+    'user_auth.company' object at all - unlike a full export, nothing changed about the
+    Company row itself, so it's just not in the batch. That must NOT be read as "no
+    company is expected to exist locally yet": when `expected_company_id` is given, it
+    is trusted directly for the "no other company" check below, rather than deriving
+    the allowed-company set purely from what happens to be present in this specific
+    payload (which a full export happens to always include, but a delta export usually
+    won't).
 
     Returns the count of objects imported.
     """
@@ -229,7 +317,9 @@ def import_snapshot_data(objects_data, expected_company_id=None):
                 f'Snapshot contains company id(s) {company_pks_in_data} other than the '
                 f'expected {expected_company_id} - refusing to import.'
             )
-    existing_other_companies = Company.objects.exclude(pk__in=company_pks_in_data).exists()
+        existing_other_companies = Company.objects.exclude(pk=expected_company_id).exists()
+    else:
+        existing_other_companies = Company.objects.exclude(pk__in=company_pks_in_data).exists()
     if existing_other_companies:
         raise ValueError(
             'Local database already has company data that is not part of this snapshot - '

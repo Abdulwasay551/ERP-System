@@ -791,7 +791,8 @@ class StockLot(models.Model):
     is_expired = models.BooleanField(default=False)
     is_quarantined = models.BooleanField(default=False, null=True, blank=True)
     quarantine_reason = models.TextField(blank=True, null=True)
-    
+    updated_at = models.DateTimeField(auto_now=True)
+
     def save(self, *args, **kwargs):
         # Check if expired
         if self.expiry_date and self.expiry_date <= timezone.now().date():
@@ -845,7 +846,8 @@ class StockSerial(models.Model):
     warranty_start_date = models.DateField(null=True, blank=True)
     warranty_end_date = models.DateField(null=True, blank=True)
     warranty_terms = models.TextField(blank=True)
-    
+    updated_at = models.DateTimeField(auto_now=True)
+
     def __str__(self):
         return f"SN: {self.serial_number} - {self.stock_item.product.name}"
     
@@ -891,7 +893,8 @@ class StockReservation(models.Model):
     is_fulfilled = models.BooleanField(default=False)
     priority = models.IntegerField(default=5, help_text="1=Highest, 10=Lowest")
     notes = models.TextField(blank=True)
-    
+    updated_at = models.DateTimeField(auto_now=True)
+
     def save(self, *args, **kwargs):
         # Calculate remaining quantity
         self.remaining_quantity = max(0, self.quantity - self.fulfilled_quantity)
@@ -1038,6 +1041,7 @@ class InventoryLock(models.Model):
     unlocked_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='unlocked_inventory_locks')
     unlocked_at = models.DateTimeField(null=True, blank=True)
     unlock_reason = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
     
     # Approval for unlock (optional)
     unlock_approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_unlocks')
