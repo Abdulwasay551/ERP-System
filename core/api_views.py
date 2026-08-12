@@ -265,18 +265,59 @@ def sync_now(request):
 @permission_classes([IsAuthenticated])
 def sync_status(request):
     """Current pairing/sync state for the Desktop Sync Settings screen - deliberately
-    never returns the stored refresh_token itself."""
+    never returns the stored refresh_token itself. `pending_push_count`/
+    `failed_push_count` summarize the local outbox (Phase C) so the screen can show a
+    badge without a second round-trip; the full failed list lives at sync-conflicts/."""
     from core.desktop_sync import get_loop, load_sync_config
+    from core.desktop_sync_queue import DesktopSyncQueueEntry
     config = load_sync_config()
     if config is None:
         return Response({'paired': False})
+    company = getattr(request.user, 'company', None)
+    queue = DesktopSyncQueueEntry.objects.filter(company=company) if company else DesktopSyncQueueEntry.objects.none()
     return Response({
         'paired': True,
         'production_url': config['production_url'],
         'last_synced_at': config.get('last_synced_at'),
         'auth_required': config.get('auth_required', False),
         'last_result': get_loop().last_result,
+        'pending_push_count': queue.filter(status='pending').count(),
+        'failed_push_count': queue.filter(status='failed').count(),
     })
+
+
+@api_view(['GET'])
+@permission_classes([IsOwnerOrManager])
+def sync_conflicts(request):
+    """Every push-back entry production rejected (Phase C) - a real business rejection,
+    not a network blip (drain() only ever marks an entry 'failed' after getting an
+    actual non-2xx response back from production) - for a human to review on the
+    desktop app's Sync Conflicts screen. Never auto-retried, never silently dropped;
+    see core.desktop_sync.DesktopSyncLoop.drain()'s own docstring."""
+    from core.desktop_sync_queue import DesktopSyncQueueEntry
+    entries = DesktopSyncQueueEntry.objects.filter(
+        company=request.user.company, status='failed',
+    ).order_by('-created_at')
+    return Response([{
+        'id': e.id, 'summary': e.summary, 'method': e.method, 'path': e.path,
+        'error_message': e.error_message, 'created_at': e.created_at.isoformat(),
+    } for e in entries])
+
+
+@api_view(['POST'])
+@permission_classes([IsOwnerOrManager])
+def discard_sync_conflict(request, entry_id):
+    """Dismisses one failed push-back entry - the local write it describes stays on
+    this device only (never reaches production), same as if push-back sync didn't
+    exist for it at all. Does not retry it; a human decided this one isn't worth
+    resolving (e.g. it referenced a customer since deleted on production)."""
+    from core.desktop_sync_queue import DesktopSyncQueueEntry
+    updated = DesktopSyncQueueEntry.objects.filter(
+        id=entry_id, company=request.user.company, status='failed',
+    ).update(status='discarded')
+    if not updated:
+        return Response({'error': 'No failed sync-conflict entry with that id.'}, status=404)
+    return Response({'discarded': True})
 
 
 # --- Disaster-recovery backup export (Phase B) ---

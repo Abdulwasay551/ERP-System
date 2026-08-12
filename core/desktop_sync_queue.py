@@ -29,6 +29,7 @@ class DesktopSyncQueueEntry(models.Model):
         ('pending', 'Pending'),
         ('synced', 'Synced'),
         ('failed', 'Failed'),
+        ('discarded', 'Discarded'),  # a human reviewed a failed entry and dismissed it
     ]
 
     company = models.ForeignKey('user_auth.Company', on_delete=models.CASCADE, related_name='desktop_sync_queue_entries')
