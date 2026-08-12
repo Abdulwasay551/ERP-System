@@ -226,6 +226,29 @@ def pair_desktop_with_production(request):
 
 @api_view(['POST'])
 @permission_classes([IsOwnerOrManager])
+def register_device(request):
+    """Hands this desktop install its own exclusive block of primary-key/document-number
+    space (Phase C) - called once, right after pair_with_production() succeeds, never
+    again for an already-registered device (see core.device_registry.register_device()'s
+    own docstring for why). Body: {"label": "<optional machine name>"}.
+
+    This view runs on PRODUCTION (the desktop app calls its own local backend for
+    pairing, but the local backend in turn calls this same endpoint on production,
+    exactly like pair_with_production() already does for login) - the range has to be
+    handed out from one single shared counter, which only exists on the one real
+    database every device eventually syncs back to.
+    """
+    from core.device_registry import register_device as _register_device
+    device = _register_device(request.user.company, label=request.data.get('label', ''))
+    return Response({
+        'device_id': device.device_id,
+        'range_start': device.range_start,
+        'range_end': device.range_end,
+    }, status=201)
+
+
+@api_view(['POST'])
+@permission_classes([IsOwnerOrManager])
 def sync_now(request):
     """Manual "Sync Now" trigger - runs exactly one cycle of the same logic the
     background loop runs periodically, so there's no separate code path to drift out

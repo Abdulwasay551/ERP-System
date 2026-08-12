@@ -72,7 +72,18 @@ def pair_with_production(production_url, email, password):
     """First-run pairing: exchanges the Owner's production credentials for a refresh
     token, stores it encrypted, and returns the paired config. Called once from the
     Desktop Sync Settings screen - the sync loop itself never sees a raw password,
-    only ever the stored refresh token from here on."""
+    only ever the stored refresh token from here on.
+
+    Also registers this install as a new Phase C device (POST /api/core/register-device/
+    on production) and stores its reserved PK/number range in the same config - a fresh
+    pairing always claims a brand-new range rather than trying to recall a previous
+    device_id, since a cleared/reinstalled sync_config.json means this machine has no
+    memory of ever having one (see core.device_registry.register_device()'s own
+    docstring on why an abandoned old range is an acceptable, harmless cost - the range
+    space has enormous headroom). The range only actually gets *seeded* into the local
+    database once the first full snapshot import creates the local Company row - see
+    DesktopSyncLoop.sync_now()'s call to seed_device_ranges() below.
+    """
     import requests
     resp = requests.post(
         f'{production_url}/api/auth/token/',
@@ -82,18 +93,29 @@ def pair_with_production(production_url, email, password):
     resp.raise_for_status()
     tokens = resp.json()
 
+    auth_header = {'Authorization': f"Bearer {tokens['access']}"}
+
     me_resp = requests.get(
-        f'{production_url}/api/auth/me/',
-        headers={'Authorization': f"Bearer {tokens['access']}"},
-        timeout=SYNC_REQUEST_TIMEOUT_SECONDS,
+        f'{production_url}/api/auth/me/', headers=auth_header, timeout=SYNC_REQUEST_TIMEOUT_SECONDS,
     )
     me_resp.raise_for_status()
     company_id = me_resp.json().get('company')
+
+    device_resp = requests.post(
+        f'{production_url}/api/core/register-device/', headers=auth_header,
+        json={'label': os.environ.get('COMPUTERNAME', '')}, timeout=SYNC_REQUEST_TIMEOUT_SECONDS,
+    )
+    device_resp.raise_for_status()
+    device = device_resp.json()
 
     config = {
         'production_url': production_url,
         'refresh_token': tokens['refresh'],
         'company_id': company_id,
+        'device_id': device['device_id'],
+        'range_start': device['range_start'],
+        'range_end': device['range_end'],
+        'range_seeded': False,
         'last_synced_at': None,
         'auth_required': False,
     }
@@ -204,6 +226,20 @@ class DesktopSyncLoop:
         # time - see export_company_snapshot's own docstring for why local time here
         # would risk silently skipping rows written between request and response.
         config['last_synced_at'] = payload['exported_at']
+
+        # First time the local Company row genuinely exists (the very first sync_now()
+        # after pairing always does a full import, never a delta - see pair_with_
+        # production()) - seed this device's reserved PK/number range now, exactly
+        # once, guarded by the flag rather than "since was None" so it's safe even if
+        # this cycle is retried.
+        if not config.get('range_seeded') and config.get('device_id'):
+            from core.device_registry import seed_device_ranges
+            from user_auth.models import Company
+            company = Company.objects.filter(pk=config['company_id']).first()
+            if company is not None:
+                seed_device_ranges(company, config['range_start'])
+                config['range_seeded'] = True
+
         save_sync_config(config)
 
         self.last_result = {'status': 'synced', 'objects_imported': count, 'since': since}

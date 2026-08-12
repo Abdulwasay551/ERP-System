@@ -94,3 +94,4 @@ class RecordDeletionLog(models.Model):
 # class is defined would deadlock the circular import.
 from core.idempotency import IdempotencyKey  # noqa: E402,F401
 from core.numbering import NumberSequence  # noqa: E402,F401
+from core.device_registry import DeviceIdRangeCounter, DeviceRegistration  # noqa: E402,F401
