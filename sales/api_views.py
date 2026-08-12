@@ -224,7 +224,14 @@ class PaymentViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.Mod
         return Payment.objects.filter(company=self.request.user.company)
 
     def perform_create(self, serializer):
-        serializer.save(company=self.request.user.company, received_by=self.request.user)
+        from core.device_registry import validated_desktop_pk, validated_desktop_number
+        company = self.request.user.company
+        explicit_id = validated_desktop_pk(self.request.data, 'payment', company)
+        extra = {}
+        explicit_number = validated_desktop_number(self.request.data, 'payment_number', company)
+        if explicit_number:
+            extra['payment_number'] = explicit_number
+        serializer.save(id=explicit_id, company=company, received_by=self.request.user, **extra)
 
 
 class POSStaff(RoleIn):
@@ -323,6 +330,17 @@ def pos_checkout(request):
     if not items_data:
         return Response({'error': 'items are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
+    # Phase C push-back replay: desktop_pks (validated against the calling device's own
+    # reserved range - see core.device_registry.validated_desktop_pk's docstring) lets
+    # this exact same endpoint, called again later against production, force the new
+    # Invoice/InvoiceItem/Payment rows onto the identical PKs already committed to
+    # locally, instead of production silently assigning its own - see
+    # core/desktop_sync_queue.py's module docstring for why this has to be a real
+    # replay of the endpoint (re-running Invoice.save()'s stock reduction and
+    # Payment.save()'s ledger posting) rather than a raw row upsert.
+    from core.device_registry import validated_desktop_pk, validated_desktop_number
+    desktop_item_pks = (data.get('desktop_pks') or {}).get('items') or []
+
     try:
         with transaction.atomic():
             customer_id = data.get('customer_id')
@@ -337,13 +355,18 @@ def pos_checkout(request):
                     defaults={'name': 'Walk-in Customer'}
                 )
 
-            invoice = Invoice.objects.create(
+            invoice_kwargs = dict(
+                id=validated_desktop_pk(data, 'invoice', company),
                 company=company, customer=customer, status='draft', created_by=request.user,
             )
+            explicit_invoice_number = validated_desktop_number(data, 'invoice_number', company)
+            if explicit_invoice_number:
+                invoice_kwargs['invoice_number'] = explicit_invoice_number
+            invoice = Invoice.objects.create(**invoice_kwargs)
 
             subtotal = Decimal('0')
             line_discounts_total = Decimal('0')
-            for line in items_data:
+            for index, line in enumerate(items_data):
                 product_id = line.get('product_id')
                 if not product_id:
                     raise ValueError('Each item requires a product_id.')
@@ -370,7 +393,11 @@ def pos_checkout(request):
                 except InvalidOperation:
                     raise ValueError(f'Invalid unit_price for product {product_id}.')
 
+                item_id = None
+                if index < len(desktop_item_pks):
+                    item_id = validated_desktop_pk({'desktop_pks': {'item': desktop_item_pks[index]}, 'device_id': data.get('device_id')}, 'item', company)
                 invoice_item = InvoiceItem.objects.create(
+                    id=item_id,
                     invoice=invoice, product=product, quantity=quantity, unit_price=unit_price,
                     tracking_unit_id=tracking_id, discounts=line.get('discounts') or [],
                 )
@@ -396,14 +423,20 @@ def pos_checkout(request):
             invoice.status = 'paid' if paid_amount >= invoice.total else 'partially_paid'
             invoice.save()  # triggers stock reduction + tracking sale + customer ledger debit
 
+            payment = None
             if paid_amount > 0:
-                payment = Payment.objects.create(
+                payment_kwargs = dict(
+                    id=validated_desktop_pk(data, 'payment', company),
                     company=company, customer=customer, invoice=invoice,
                     amount=paid_amount, method=payment_data.get('method', 'cash'),
                     reference=payment_data.get('reference', ''),
                     received_by=request.user, processed_by=request.user,
                     notes=payment_data.get('notes', ''),
                 )
+                explicit_payment_number = validated_desktop_number(data, 'payment_number', company)
+                if explicit_payment_number:
+                    payment_kwargs['payment_number'] = explicit_payment_number
+                payment = Payment.objects.create(**payment_kwargs)
                 if 'attachment' in request.FILES:
                     payment.attachment = request.FILES['attachment']
                     payment.save()
@@ -426,6 +459,12 @@ def pos_checkout(request):
         'outstanding_amount': str(invoice.outstanding_amount),
         'pdf_url': invoice.pdf_file.url if invoice.pdf_file else None,
         'pdf_error': pdf_error,
+        # Every row this call actually created, keyed the same way desktop_pks accepts
+        # them back in on replay (Phase C) - core.desktop_sync_middleware records this
+        # response verbatim so DesktopSyncLoop.drain() can build the replay payload
+        # without needing its own endpoint-specific knowledge of pos_checkout's shape.
+        'item_ids': [item.id for item in invoice.items.order_by('id')],
+        'payment_id': payment.id if payment else None,
     }, status=status.HTTP_201_CREATED)
 
 

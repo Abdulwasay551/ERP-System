@@ -96,7 +96,16 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'user_auth.middleware.ActivityLogMiddleware',  # Activity log middleware
+    'core.desktop_sync_middleware.DesktopSyncQueueMiddleware',  # Phase C outbox capture - no-ops unless IS_DESKTOP
 ]
+
+# True only under the desktop app's frozen desktop_server.py entry point - gates the
+# outbox-capture middleware (core/desktop_sync_middleware.py) and Phase A/C's sync loop
+# on/off, alongside the already-existing USE_SQLITE flag it's read from directly (kept
+# as its own named setting rather than re-deriving "am I the desktop app" from
+# connection.vendor == 'sqlite' elsewhere, since a test run could use SQLite too without
+# being the desktop app).
+IS_DESKTOP = env.bool('USE_SQLITE', default=False)
 
 ROOT_URLCONF = 'setting.urls'
 

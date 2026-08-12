@@ -461,7 +461,14 @@ class PurchasePaymentViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, view
         return PurchasePayment.objects.filter(company=self.request.user.company)
 
     def perform_create(self, serializer):
-        serializer.save(company=self.request.user.company, created_by=self.request.user)
+        from core.device_registry import validated_desktop_pk, validated_desktop_number
+        company = self.request.user.company
+        explicit_id = validated_desktop_pk(self.request.data, 'purchase_payment', company)
+        extra = {}
+        explicit_number = validated_desktop_number(self.request.data, 'payment_number', company)
+        if explicit_number:
+            extra['payment_number'] = explicit_number
+        serializer.save(id=explicit_id, company=company, created_by=self.request.user, **extra)
 
 class PurchaseReturnViewSet(viewsets.ModelViewSet):
     serializer_class = PurchaseReturnSerializer
@@ -543,9 +550,16 @@ def vendor_invoice_create(request):
         except Warehouse.DoesNotExist:
             return Response({'error': f"Warehouse {data['warehouse_id']} not found."}, status=status.HTTP_404_NOT_FOUND)
 
+    # Phase C push-back replay - see sales.api_views.pos_checkout's matching comment for
+    # the full reasoning (same mechanism, same reason it has to be a real replay of this
+    # endpoint rather than a raw row upsert: Bill.save() posts to the supplier ledger).
+    from core.device_registry import validated_desktop_pk, validated_desktop_number
+    desktop_item_pks = (data.get('desktop_pks') or {}).get('items') or []
+
     try:
         with transaction.atomic():
-            bill = Bill.objects.create(
+            bill_kwargs = dict(
+                id=validated_desktop_pk(data, 'bill', company),
                 company=company,
                 supplier=supplier,
                 warehouse=warehouse,
@@ -556,9 +570,13 @@ def vendor_invoice_create(request):
                 goods_received=False,
                 created_by=request.user,
             )
+            explicit_bill_number = validated_desktop_number(data, 'bill_number', company)
+            if explicit_bill_number:
+                bill_kwargs['bill_number'] = explicit_bill_number
+            bill = Bill.objects.create(**bill_kwargs)
 
             item_summaries = []
-            for line in items_data:
+            for index, line in enumerate(items_data):
                 product_id = line.get('product_id')
                 if not product_id:
                     raise ValueError('Each item requires a product_id.')
@@ -582,7 +600,11 @@ def vendor_invoice_create(request):
                 if quantity <= 0:
                     raise ValueError(f'expected_quantity must be > 0 for product {product.name}.')
 
+                item_id = None
+                if index < len(desktop_item_pks):
+                    item_id = validated_desktop_pk({'desktop_pks': {'item': desktop_item_pks[index]}, 'device_id': data.get('device_id')}, 'item', company)
                 bill_item = BillItem.objects.create(
+                    id=item_id,
                     bill=bill, product=product, variant=variant,
                     quantity=quantity, unit_price=unit_price, item_source='manual',
                     discounts=line.get('discounts') or [],

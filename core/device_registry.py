@@ -87,6 +87,64 @@ def register_device(company, label=''):
     return device
 
 
+def validated_desktop_pk(request_data, key, company):
+    """The single check every push-back-accepting create view runs before honoring a
+    client-supplied PK: `request_data` (the raw request body) must carry both a
+    `desktop_pks` map with `key` in it and a `device_id`, and that device_id must name a
+    real, non-revoked DeviceRegistration belonging to `company` whose reserved range
+    actually contains the claimed value. Returns the validated integer PK to force, or
+    None if any of that isn't true - which is also the ordinary case for every normal
+    web/mobile/local-desktop create that was never a Phase C replay at all, so callers
+    can pass the result straight through as `id=` without an if/else: `id=None` to
+    Django's ORM is exactly the same as not passing `id` at all - the AutoField assigns
+    normally.
+    """
+    desktop_pks = request_data.get('desktop_pks')
+    device_id = request_data.get('device_id')
+    if not desktop_pks or not device_id or key not in desktop_pks:
+        return None
+    try:
+        pk = int(desktop_pks[key])
+    except (TypeError, ValueError):
+        return None
+    device = DeviceRegistration.objects.filter(device_id=device_id, company=company).first()
+    if device is None or not pk_in_device_range(device, pk):
+        return None
+    return pk
+
+
+def validated_desktop_number(request_data, key, company):
+    """Like validated_desktop_pk, but for an already-formatted document number
+    (INV-000123 etc.) the desktop already generated locally via next_number() against a
+    device-seeded NumberSequence counter (see seed_device_ranges()). Without this, a
+    replayed create would let production's own next_number() call regenerate a brand
+    new, different-looking number for the same row - the shop's already-printed receipt
+    would say "INV-10000000700" while production's authoritative copy became
+    "INV-000047", and the next pull-sync would silently overwrite the printed number
+    with the second one. Returns the full formatted string to use verbatim, or None -
+    the normal case for every non-replay create, in which case the caller should omit
+    the field entirely so the model's own save() generates it as usual.
+
+    Validates the number's own trailing numeric value against the same reserved range a
+    raw PK would need to fall in, reusing pk_in_device_range() - both namespaces were
+    seeded to the same range_start by seed_device_ranges(), so one range check covers
+    both without a second reservation scheme.
+    """
+    desktop_numbers = request_data.get('desktop_numbers')
+    device_id = request_data.get('device_id')
+    if not desktop_numbers or not device_id or key not in desktop_numbers:
+        return None
+    value = desktop_numbers[key]
+    try:
+        numeric_part = int(str(value).split('-')[-1])
+    except (ValueError, IndexError):
+        return None
+    device = DeviceRegistration.objects.filter(device_id=device_id, company=company).first()
+    if device is None or not pk_in_device_range(device, numeric_part):
+        return None
+    return value
+
+
 def pk_in_device_range(device, value):
     """True if `value` falls inside `device`'s reserved block and the device hasn't been
     revoked - the check every push-back-accepting create endpoint runs before honoring a

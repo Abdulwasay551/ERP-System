@@ -41,7 +41,14 @@ class CustomerViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.Mo
         return qs.order_by('name')
 
     def perform_create(self, serializer):
-        serializer.save(company=self.request.user.company, created_by=self.request.user)
+        from core.device_registry import validated_desktop_pk, validated_desktop_number
+        company = self.request.user.company
+        explicit_id = validated_desktop_pk(self.request.data, 'customer', company)
+        extra = {}
+        explicit_code = validated_desktop_number(self.request.data, 'customer_code', company)
+        if explicit_code:
+            extra['customer_code'] = explicit_code
+        serializer.save(id=explicit_id, company=company, created_by=self.request.user, **extra)
 
     @action(detail=True, methods=['get'])
     def ledger(self, request, pk=None):

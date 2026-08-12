@@ -502,9 +502,18 @@ class Invoice(SoftDeleteMixin, models.Model):
     account = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True, related_name='invoices')
 
     def save(self, *args, **kwargs):
-        is_new = self.pk is None
+        # self._state.adding, not "self.pk is None" - Phase C's desktop push-back replay
+        # (sales.api_views.pos_checkout) explicitly assigns a pre-chosen pk to a brand-new
+        # Invoice (see core.device_registry.validated_desktop_pk), so pk being non-None no
+        # longer implies "this row already exists". _state.adding is Django's own real
+        # "has this instance ever been saved" flag - True from construction until the
+        # first successful save(), independent of whether pk was pre-populated or
+        # auto-assigned - so it's correct in both cases where the old pk-is-None check
+        # wasn't (it misread a fresh desktop-replayed Invoice as an update to a row that
+        # doesn't exist yet, raising Invoice.DoesNotExist inside its own create() call).
+        is_new = self._state.adding
         old_status = None
-        
+
         if not is_new:
             # all_objects, not the soft-delete filtered default manager: restore() flips
             # is_deleted=False on this same Python instance then calls save(), which lands
