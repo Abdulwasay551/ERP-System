@@ -518,7 +518,11 @@ class StockMovement(models.Model):
         ('bill', 'Purchase Bill'),
         ('invoice', 'Sales Invoice'),
     ], blank=True)
-    reference_id = models.PositiveIntegerField(null=True, blank=True, help_text="ID of the reference document")
+    # PositiveBigIntegerField, not PositiveIntegerField: can hold a Bill/Invoice id from
+    # inside a reserved device range (core/device_registry.py, floor 10_000_000_000) -
+    # already past Postgres's plain `integer` max (~2.1B). See purchase.SupplierLedger.
+    # reference_id's matching comment for where this bug class was first hit.
+    reference_id = models.PositiveBigIntegerField(null=True, blank=True, help_text="ID of the reference document")
     reference_number = models.CharField(max_length=100, blank=True, help_text="Document number for reference")
     
     # Tracking and quality (optional)
@@ -872,7 +876,9 @@ class StockReservation(models.Model):
         ('manual', 'Manual Reservation'),
         ('customer_specific', 'Customer Specific'),
     ])
-    reference_id = models.PositiveIntegerField(null=True, blank=True)
+    # PositiveBigIntegerField - see StockMovement.reference_id's matching comment above
+    # (same overflow risk against a desktop device's reserved PK range).
+    reference_id = models.PositiveBigIntegerField(null=True, blank=True)
     reference_number = models.CharField(max_length=100, blank=True)
     
     # Customer/Project details (optional)
@@ -1018,7 +1024,9 @@ class InventoryLock(models.Model):
         ('legal', 'Legal Document'),
         ('customs', 'Customs Document'),
     ], blank=True)
-    reference_id = models.PositiveIntegerField(null=True, blank=True)
+    # PositiveBigIntegerField - see StockMovement.reference_id's matching comment above
+    # (same overflow risk against a desktop device's reserved PK range).
+    reference_id = models.PositiveBigIntegerField(null=True, blank=True)
     reference_number = models.CharField(max_length=100, blank=True)
     
     # Timing

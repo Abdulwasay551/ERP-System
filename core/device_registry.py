@@ -27,6 +27,7 @@ would need ten billion real rows in a single model before ever reaching this flo
 import uuid
 
 from django.db import models, transaction
+from django.utils import timezone
 
 
 def _new_device_id():
@@ -66,12 +67,28 @@ class DeviceRegistration(models.Model):
         return f'{self.label or self.device_id} ({self.range_start}-{self.range_end})'
 
 
-def register_device(company, label=''):
+def register_device(company, label='', device_id=None):
     """Atomically hands out the next unclaimed range and records the device that owns
-    it. Called once, from the desktop app's pairing flow (POST /api/core/register-device/,
-    right after pair_with_production() succeeds) - never re-run for an already-paired
-    device, since that would abandon its already-in-use range and hand out a second one
-    it isn't seeding its local tables to."""
+    it - UNLESS `device_id` names a registration this exact device already holds, in
+    which case that existing range is returned as-is. Called from the desktop app's
+    pairing flow (POST /api/core/register-device/, right after pair_with_production()
+    succeeds) on both a genuine first-ever pairing (device_id=None or unknown) and a
+    re-pair of an already-seeded install (device_id known locally, see
+    core/desktop_sync.py::pair_with_production()'s docstring) - re-minting a brand-new
+    range on every re-pair would silently orphan anything still queued under the old
+    one (validated_desktop_pk() can't validate a replay against a range production no
+    longer associates with this device)."""
+    if device_id:
+        existing = DeviceRegistration.objects.filter(device_id=device_id, company=company, revoked=False).first()
+        if existing is not None:
+            update_fields = ['last_synced_at']
+            existing.last_synced_at = timezone.now()
+            if label and label != existing.label:
+                existing.label = label
+                update_fields.append('label')
+            existing.save(update_fields=update_fields)
+            return existing
+
     with transaction.atomic():
         counter, _ = DeviceIdRangeCounter.objects.select_for_update().get_or_create(
             pk=1, defaults={'next_range_start': RANGE_FLOOR},
@@ -81,9 +98,14 @@ def register_device(company, label=''):
         counter.next_range_start = range_end + 1
         counter.save(update_fields=['next_range_start'])
 
-        device = DeviceRegistration.objects.create(
-            company=company, label=label, range_start=range_start, range_end=range_end,
-        )
+        create_kwargs = dict(company=company, label=label, range_start=range_start, range_end=range_end)
+        if device_id:
+            # Reuse the caller's own remembered device_id rather than minting a random
+            # one - so a FUTURE re-pair (device_id known locally, but somehow no longer
+            # resolving above - e.g. this DeviceRegistration was revoked) still has a
+            # stable identifier to look for, rather than a new random one every time.
+            create_kwargs['device_id'] = device_id
+        device = DeviceRegistration.objects.create(**create_kwargs)
     return device
 
 
@@ -106,9 +128,25 @@ def validated_desktop_pk(request_data, key, company):
     try:
         pk = int(desktop_pks[key])
     except (TypeError, ValueError):
+        print(f"[device_registry] Replay for '{key}' had a non-integer desktop_pks value "
+              f"{desktop_pks.get(key)!r} - falling back to auto-assign.")
         return None
     device = DeviceRegistration.objects.filter(device_id=device_id, company=company).first()
-    if device is None or not pk_in_device_range(device, pk):
+    if device is None:
+        # A replay WAS attempted (desktop_pks + device_id both present) but named a
+        # device_id with no registration here - not the ordinary "never a replay at
+        # all" case. Most likely an orphaned range from before a re-pair (see
+        # register_device()'s docstring) - logged, not silent, even though the caller
+        # still gets a safe auto-assigned fallback rather than a hard failure.
+        print(f"[device_registry] Replay for '{key}' named device_id {device_id!r}, which has no "
+              f"registration for this company - falling back to auto-assign (likely a stale range "
+              f"from before a re-pair).")
+        return None
+    if not pk_in_device_range(device, pk):
+        print(f"[device_registry] Replay for '{key}' claimed pk={pk}, outside device {device_id!r}'s "
+              f"registered range [{device.range_start}, {device.range_end}] - falling back to "
+              f"auto-assign (likely a stale range from before a re-pair, or the range was already "
+              f"exhausted).")
         return None
     return pk
 
@@ -155,6 +193,25 @@ def pk_in_device_range(device, value):
         not device.revoked
         and device.range_start <= value <= device.range_end
     )
+
+
+class DesktopDeviceIdentity(models.Model):
+    """Local-only singleton (lives in the desktop app's own SQLite, never production)
+    recording which device_id/range THIS install last registered - read by
+    core.desktop_sync.pair_with_production() before a re-pair so it can send the same
+    device_id back to register_device() instead of always minting a brand-new one (see
+    that function's docstring for why that matters). Deliberately durable local
+    business data, not a credential - unlike sync_config.json's DPAPI-encrypted refresh
+    token, this is safe to survive in a Phase B backup and to persist even if
+    sync_config.json itself is cleared/corrupted."""
+    id = models.PositiveIntegerField(primary_key=True, default=1)
+    device_id = models.CharField(max_length=64)
+    range_start = models.BigIntegerField()
+    range_end = models.BigIntegerField()
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.device_id} ({self.range_start}-{self.range_end})'
 
 
 def seed_device_ranges(company, range_start):

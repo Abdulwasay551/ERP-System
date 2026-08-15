@@ -9,6 +9,7 @@ from decimal import Decimal
 from user_auth.permissions import RoleIn, IsOwnerOrManager
 from core.mixins import SoftDeleteViewSetMixin
 from core.idempotency import IdempotentCreateMixin
+from core.pk_conflict import PkConflictReportingMixin, save_with_pk_fallback
 from .models import (
     Account, AccountCategory, AccountGroup, Journal, JournalEntry, JournalItem,
     AccountPayable, AccountReceivable, BankAccount, BankReconciliation, TaxConfig,
@@ -270,7 +271,7 @@ class RecurringJournalViewSet(viewsets.ModelViewSet):
         return RecurringJournal.objects.filter(journal__company=self.request.user.company)
 
 
-class ExpenseViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
+class ExpenseViewSet(IdempotentCreateMixin, PkConflictReportingMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = ExpenseSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrManager]
     ordering_fields = ['expense_date', 'amount', 'created_at']
@@ -287,7 +288,12 @@ class ExpenseViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.Mod
         return queryset
 
     def perform_create(self, serializer):
-        serializer.save(company=self.request.user.company, recorded_by=self.request.user)
+        from core.device_registry import validated_desktop_pk
+        company = self.request.user.company
+        explicit_id = validated_desktop_pk(self.request.data, 'expense', company)
+        conflict = save_with_pk_fallback(serializer, explicit_id, company=company, recorded_by=self.request.user)
+        if conflict:
+            self._pk_conflicts = [{'model': 'accounting.Expense', **conflict}]
 
     @action(detail=False, methods=['get'])
     def summary(self, request):

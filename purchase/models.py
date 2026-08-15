@@ -2356,7 +2356,12 @@ class SupplierLedger(models.Model):
     # Transaction details
     transaction_date = models.DateField()
     reference_type = models.CharField(max_length=50, choices=REFERENCE_TYPE_CHOICES)
-    reference_id = models.IntegerField(help_text="ID of the referenced document")
+    # BigIntegerField, not IntegerField: this stores a Bill/PurchasePayment/etc id, and
+    # a desktop device's reserved PK range (core/device_registry.py, floor
+    # 10_000_000_000) already exceeds Postgres's plain `integer` max (~2.1B) - a real
+    # DataError was hit here in testing the first time a device-range Bill id flowed
+    # through Bill.save()'s ledger posting.
+    reference_id = models.BigIntegerField(help_text="ID of the referenced document")
     description = models.TextField()
     
     # Financial amounts
@@ -2658,7 +2663,7 @@ class PurchaseApproval(models.Model):
     
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='purchase_approvals')
     document_type = models.CharField(max_length=50, choices=DOCUMENT_TYPE_CHOICES)
-    document_id = models.IntegerField()  # Generic foreign key to any document
+    document_id = models.BigIntegerField()  # Generic foreign key to any document - BigIntegerField for the same reason as SupplierLedger.reference_id above
     requested_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='purchase_approval_requests')
     approver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='purchase_approvals')
     amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)

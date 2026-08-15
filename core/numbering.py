@@ -36,7 +36,14 @@ class NumberSequence(models.Model):
     # defined - an eager import here would deadlock that circular import).
     company = models.ForeignKey('user_auth.Company', on_delete=models.CASCADE, related_name='number_sequences')
     sequence_key = models.CharField(max_length=64)
-    next_value = models.PositiveIntegerField(default=1)
+    # PositiveBigIntegerField, not PositiveIntegerField: seed_device_ranges() (see
+    # core/device_registry.py) deliberately pushes this counter up to a desktop
+    # device's reserved range floor (10_000_000_000+) for every sequence_key, and
+    # _seed_value() below can independently seed a brand-new counter from an existing
+    # row's already-huge trailing number too - both already exceed Postgres's plain
+    # `integer` max (~2.1B). A real production row (a desktop-range PurchasePayment)
+    # hit this exact overflow in testing before this fix.
+    next_value = models.PositiveBigIntegerField(default=1)
 
     class Meta:
         unique_together = ('company', 'sequence_key')

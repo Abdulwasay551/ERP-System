@@ -259,9 +259,13 @@ def pair_desktop_with_production(request):
 @permission_classes([IsOwnerOrManager])
 def register_device(request):
     """Hands this desktop install its own exclusive block of primary-key/document-number
-    space (Phase C) - called once, right after pair_with_production() succeeds, never
-    again for an already-registered device (see core.device_registry.register_device()'s
-    own docstring for why). Body: {"label": "<optional machine name>"}.
+    space (Phase C) - called from the desktop app's pairing flow right after
+    pair_with_production() succeeds, both on a genuine first-ever pairing AND on a
+    re-pair of an already-registered device (see core.device_registry.register_device()'s
+    own docstring - a re-pair that names its own known `device_id` gets its existing
+    range back rather than a new one, so nothing already queued locally under that range
+    is orphaned). Body: {"label": "<optional machine name>", "device_id": "<optional,
+    this install's own previously-registered id>"}.
 
     This view runs on PRODUCTION (the desktop app calls its own local backend for
     pairing, but the local backend in turn calls this same endpoint on production,
@@ -270,12 +274,16 @@ def register_device(request):
     database every device eventually syncs back to.
     """
     from core.device_registry import register_device as _register_device
-    device = _register_device(request.user.company, label=request.data.get('label', ''))
+    device = _register_device(
+        request.user.company,
+        label=request.data.get('label', ''),
+        device_id=request.data.get('device_id') or None,
+    )
     return Response({
         'device_id': device.device_id,
         'range_start': device.range_start,
         'range_end': device.range_end,
-    }, status=201)
+    }, status=200)
 
 
 @api_view(['POST'])

@@ -14,6 +14,8 @@ from .serializers import (
 )
 from .filters import ProductFilter
 from core.mixins import SoftDeleteViewSetMixin
+from core.idempotency import IdempotentCreateMixin
+from core.pk_conflict import PkConflictReportingMixin, save_with_pk_fallback
 
 
 class ProductCategoryViewSet(viewsets.ModelViewSet):
@@ -48,7 +50,7 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class ProductViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
+class ProductViewSet(IdempotentCreateMixin, PkConflictReportingMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     search_fields = ['name', 'sku', 'description']
     ordering_fields = ['name', 'sku', 'created_at', 'selling_price']
@@ -71,10 +73,16 @@ class ProductViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
         return ProductSerializer
 
     def perform_create(self, serializer):
-        serializer.save(
-            company=self.request.user.company,
-            created_by=self.request.user
-        )
+        from core.device_registry import validated_desktop_pk
+        company = self.request.user.company
+        # No validated_desktop_number counterpart for sku - it's an id-based
+        # candidate+uniqueness-loop scheme (Product.save()), not a core.numbering
+        # sequence, and isn't printed on a customer-facing document, so only the id
+        # itself needs preserving (Bill/Invoice items reference products by id).
+        explicit_id = validated_desktop_pk(self.request.data, 'product', company)
+        conflict = save_with_pk_fallback(serializer, explicit_id, company=company, created_by=self.request.user)
+        if conflict:
+            self._pk_conflicts = [{'model': 'products.Product', **conflict}]
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)

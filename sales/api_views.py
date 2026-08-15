@@ -14,6 +14,7 @@ from crm.models import Customer, CustomerLedger
 from core.pdf_utils import build_invoice_pdf, build_invoice_pdf_a4
 from core.mixins import SoftDeleteViewSetMixin, log_deletion
 from core.idempotency import idempotent, IdempotentCreateMixin
+from core.pk_conflict import PkConflictReportingMixin, save_with_pk_fallback
 from .models import Product, Tax, Quotation, SalesOrder, SalesOrderItem, Invoice, InvoiceItem, Payment, CreditNote, CreditNoteItem
 from .serializers import (
     ProductSerializer, TaxSerializer, QuotationSerializer, SalesOrderSerializer, SalesOrderItemSerializer,
@@ -214,7 +215,7 @@ class InvoiceViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
 
         return Response(InvoiceSerializer(invoice).data)
 
-class PaymentViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
+class PaymentViewSet(IdempotentCreateMixin, PkConflictReportingMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = PaymentSerializer
     permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['customer', 'invoice', 'method']
@@ -231,7 +232,9 @@ class PaymentViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.Mod
         explicit_number = validated_desktop_number(self.request.data, 'payment_number', company)
         if explicit_number:
             extra['payment_number'] = explicit_number
-        serializer.save(id=explicit_id, company=company, received_by=self.request.user, **extra)
+        conflict = save_with_pk_fallback(serializer, explicit_id, company=company, received_by=self.request.user, **extra)
+        if conflict:
+            self._pk_conflicts = [{'model': 'sales.Payment', **conflict}]
 
 
 class POSStaff(RoleIn):
@@ -339,7 +342,9 @@ def pos_checkout(request):
     # replay of the endpoint (re-running Invoice.save()'s stock reduction and
     # Payment.save()'s ledger posting) rather than a raw row upsert.
     from core.device_registry import validated_desktop_pk, validated_desktop_number
+    from core.pk_conflict import create_with_pk_fallback
     desktop_item_pks = (data.get('desktop_pks') or {}).get('items') or []
+    pk_conflicts = []
 
     try:
         with transaction.atomic():
@@ -355,14 +360,16 @@ def pos_checkout(request):
                     defaults={'name': 'Walk-in Customer'}
                 )
 
+            explicit_invoice_id = validated_desktop_pk(data, 'invoice', company)
             invoice_kwargs = dict(
-                id=validated_desktop_pk(data, 'invoice', company),
                 company=company, customer=customer, status='draft', created_by=request.user,
             )
             explicit_invoice_number = validated_desktop_number(data, 'invoice_number', company)
             if explicit_invoice_number:
                 invoice_kwargs['invoice_number'] = explicit_invoice_number
-            invoice = Invoice.objects.create(**invoice_kwargs)
+            invoice, invoice_conflict = create_with_pk_fallback(Invoice.objects, explicit_invoice_id, **invoice_kwargs)
+            if invoice_conflict:
+                pk_conflicts.append({'model': 'sales.Invoice', **invoice_conflict})
 
             subtotal = Decimal('0')
             line_discounts_total = Decimal('0')
@@ -396,11 +403,13 @@ def pos_checkout(request):
                 item_id = None
                 if index < len(desktop_item_pks):
                     item_id = validated_desktop_pk({'desktop_pks': {'item': desktop_item_pks[index]}, 'device_id': data.get('device_id')}, 'item', company)
-                invoice_item = InvoiceItem.objects.create(
-                    id=item_id,
+                invoice_item, item_conflict = create_with_pk_fallback(
+                    InvoiceItem.objects, item_id,
                     invoice=invoice, product=product, quantity=quantity, unit_price=unit_price,
                     tracking_unit_id=tracking_id, discounts=line.get('discounts') or [],
                 )
+                if item_conflict:
+                    pk_conflicts.append({'model': 'sales.InvoiceItem', **item_conflict})
                 subtotal += quantity * unit_price
                 line_discounts_total += invoice_item.discount_amount
 
@@ -425,8 +434,8 @@ def pos_checkout(request):
 
             payment = None
             if paid_amount > 0:
+                explicit_payment_id = validated_desktop_pk(data, 'payment', company)
                 payment_kwargs = dict(
-                    id=validated_desktop_pk(data, 'payment', company),
                     company=company, customer=customer, invoice=invoice,
                     amount=paid_amount, method=payment_data.get('method', 'cash'),
                     reference=payment_data.get('reference', ''),
@@ -436,7 +445,9 @@ def pos_checkout(request):
                 explicit_payment_number = validated_desktop_number(data, 'payment_number', company)
                 if explicit_payment_number:
                     payment_kwargs['payment_number'] = explicit_payment_number
-                payment = Payment.objects.create(**payment_kwargs)
+                payment, payment_conflict = create_with_pk_fallback(Payment.objects, explicit_payment_id, **payment_kwargs)
+                if payment_conflict:
+                    pk_conflicts.append({'model': 'sales.Payment', **payment_conflict})
                 if 'attachment' in request.FILES:
                     payment.attachment = request.FILES['attachment']
                     payment.save()
@@ -451,7 +462,7 @@ def pos_checkout(request):
     except ValueError as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    return Response({
+    response_body = {
         'invoice_id': invoice.id,
         'invoice_number': invoice.invoice_number,
         'total': str(invoice.total),
@@ -466,7 +477,13 @@ def pos_checkout(request):
         'item_ids': [item.id for item in invoice.items.order_by('id')],
         'payment_id': payment.id if payment else None,
         'payment_number': payment.payment_number if payment else None,
-    }, status=status.HTTP_201_CREATED)
+    }
+    # Only present when a replay's client-supplied PK genuinely collided with a row
+    # production's own auto-increment already created - see core/pk_conflict.py. Read by
+    # DesktopSyncLoop.drain() to renumber this device's local copy to match.
+    if pk_conflicts:
+        response_body['pk_conflicts'] = pk_conflicts
+    return Response(response_body, status=status.HTTP_201_CREATED)
 
 
 class CreditNoteViewSet(viewsets.ReadOnlyModelViewSet):
@@ -485,6 +502,7 @@ class CreditNoteViewSet(viewsets.ReadOnlyModelViewSet):
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated, POSStaff])
+@idempotent
 def process_sales_return(request):
     """
     One-call customer return: validates each returned line against what's actually still
@@ -494,13 +512,23 @@ def process_sales_return(request):
     movement_type='sales_return' - same mechanism Invoice.reverse_inventory_movements()
     uses for a full-invoice cancellation, just per-line here), and credits the customer
     ledger for the refund.
+
+    Phase C push-back replay, same pattern as pos_checkout/vendor_invoice_create:
+    desktop_pks.credit_note / desktop_pks.items (indexed like vendor_invoice_create's
+    own item list) let a replay force the CreditNote/CreditNoteItem rows onto the exact
+    PKs already committed locally.
     """
+    from core.device_registry import validated_desktop_pk, validated_desktop_number
+    from core.pk_conflict import create_with_pk_fallback
+
     company = request.user.company
     data = request.data
     invoice_id = data.get('invoice_id')
     items_data = data.get('items') or []
     if not invoice_id or not items_data:
         return Response({'error': 'invoice_id and items are required.'}, status=status.HTTP_400_BAD_REQUEST)
+    desktop_item_pks = (data.get('desktop_pks') or {}).get('items') or []
+    pk_conflicts = []
 
     try:
         with transaction.atomic():
@@ -509,14 +537,21 @@ def process_sales_return(request):
             except Invoice.DoesNotExist:
                 raise ValueError(f'Invoice {invoice_id} not found.')
 
-            credit_note = CreditNote.objects.create(
+            explicit_credit_note_id = validated_desktop_pk(data, 'credit_note', company)
+            credit_note_kwargs = dict(
                 company=company, customer=invoice.customer, invoice=invoice,
                 created_by=request.user, reason=data.get('reason', 'return'),
                 notes=data.get('notes', ''),
             )
+            explicit_credit_number = validated_desktop_number(data, 'credit_number', company)
+            if explicit_credit_number:
+                credit_note_kwargs['credit_number'] = explicit_credit_number
+            credit_note, credit_note_conflict = create_with_pk_fallback(CreditNote.objects, explicit_credit_note_id, **credit_note_kwargs)
+            if credit_note_conflict:
+                pk_conflicts.append({'model': 'sales.CreditNote', **credit_note_conflict})
 
             total_refund = Decimal('0')
-            for line in items_data:
+            for index, line in enumerate(items_data):
                 invoice_item_id = line.get('invoice_item_id')
                 if not invoice_item_id:
                     raise ValueError('Each item requires an invoice_item_id.')
@@ -563,10 +598,16 @@ def process_sales_return(request):
                         )
                     unit_price = net_unit_price
 
-                CreditNoteItem.objects.create(
+                item_id = None
+                if index < len(desktop_item_pks):
+                    item_id = validated_desktop_pk({'desktop_pks': {'item': desktop_item_pks[index]}, 'device_id': data.get('device_id')}, 'item', company)
+                credit_note_item, item_conflict = create_with_pk_fallback(
+                    CreditNoteItem.objects, item_id,
                     credit_note=credit_note, invoice_item=invoice_item, product=product,
                     tracking_unit=tracking_unit, quantity=quantity, unit_price=unit_price,
                 )
+                if item_conflict:
+                    pk_conflicts.append({'model': 'sales.CreditNoteItem', **item_conflict})
                 total_refund += quantity * unit_price
 
                 stock_item = StockItem.objects.filter(company=company, product=product).order_by('-created_at').first()
@@ -603,4 +644,10 @@ def process_sales_return(request):
     except ValueError as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    return Response(CreditNoteSerializer(credit_note).data, status=status.HTTP_201_CREATED)
+    response_body = CreditNoteSerializer(credit_note).data
+    # Creation-order item ids a replay's desktop_pks.items must match - read by
+    # core.desktop_sync._build_replay_extras(), same convention as vendor_invoice_create.
+    response_body['item_ids'] = list(credit_note.items.order_by('id').values_list('id', flat=True))
+    if pk_conflicts:
+        response_body['pk_conflicts'] = pk_conflicts
+    return Response(response_body, status=status.HTTP_201_CREATED)

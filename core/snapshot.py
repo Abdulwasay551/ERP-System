@@ -351,8 +351,15 @@ def import_snapshot_data(objects_data, expected_company_id=None):
         )
 
     count = 0
-    with transaction.atomic():
-        with connection.constraint_checks_disabled():
+    # SQLite's PRAGMA foreign_keys is a no-op once a transaction is already open (see
+    # sqlite3/base.py's disable_constraint_checking(): "Foreign key constraints cannot
+    # be turned off while in a multi-statement transaction") - constraint_checks_
+    # disabled() must wrap transaction.atomic(), not be nested inside it, or every
+    # deserialized_obj.save() below still enforces FK order despite this call. Has no
+    # effect on Postgres either way (the base backend's default is a no-op there;
+    # Postgres import instead relies on MANIFEST already being topologically ordered).
+    with connection.constraint_checks_disabled():
+        with transaction.atomic():
             for deserialized_obj in serializers.deserialize('python', objects_data):
                 deserialized_obj.save()
                 count += 1
@@ -390,8 +397,15 @@ def import_all_companies_snapshot(objects_data, allow_nonempty=False):
             'brand-new, empty backend only. Pass allow_nonempty=True to override.'
         )
     count = 0
-    with transaction.atomic():
-        with connection.constraint_checks_disabled():
+    # SQLite's PRAGMA foreign_keys is a no-op once a transaction is already open (see
+    # sqlite3/base.py's disable_constraint_checking(): "Foreign key constraints cannot
+    # be turned off while in a multi-statement transaction") - constraint_checks_
+    # disabled() must wrap transaction.atomic(), not be nested inside it, or every
+    # deserialized_obj.save() below still enforces FK order despite this call. Has no
+    # effect on Postgres either way (the base backend's default is a no-op there;
+    # Postgres import instead relies on MANIFEST already being topologically ordered).
+    with connection.constraint_checks_disabled():
+        with transaction.atomic():
             for deserialized_obj in serializers.deserialize('python', objects_data):
                 deserialized_obj.save()
                 count += 1

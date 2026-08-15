@@ -12,13 +12,14 @@ from user_auth.permissions import RoleIn, IsOwnerOrManager
 from core.pdf_utils import build_ledger_pdf
 from core.mixins import SoftDeleteViewSetMixin
 from core.idempotency import IdempotentCreateMixin
+from core.pk_conflict import PkConflictReportingMixin, save_with_pk_fallback
 
 
 class SalesStaff(RoleIn):
     allowed_roles = ['Manager', 'Cashier', 'Salesman']
 
 
-class CustomerViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
+class CustomerViewSet(IdempotentCreateMixin, PkConflictReportingMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
     # Customers are created/looked up constantly at checkout - any shop-floor role can
     # manage them (the old required_department='Sales', min_level=2 DepartmentLevelPermission
@@ -48,7 +49,9 @@ class CustomerViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.Mo
         explicit_code = validated_desktop_number(self.request.data, 'customer_code', company)
         if explicit_code:
             extra['customer_code'] = explicit_code
-        serializer.save(id=explicit_id, company=company, created_by=self.request.user, **extra)
+        conflict = save_with_pk_fallback(serializer, explicit_id, company=company, created_by=self.request.user, **extra)
+        if conflict:
+            self._pk_conflicts = [{'model': 'crm.Customer', **conflict}]
 
     @action(detail=True, methods=['get'])
     def ledger(self, request, pk=None):

@@ -10,6 +10,7 @@ from user_auth.permissions import RoleIn, IsOwnerOrManager
 from core.pdf_utils import build_ledger_pdf, build_receiving_pdf
 from core.mixins import SoftDeleteViewSetMixin, log_deletion
 from core.idempotency import idempotent, IdempotentCreateMixin
+from core.pk_conflict import PkConflictReportingMixin, save_with_pk_fallback
 
 
 class ManagerOrWarehouse(RoleIn):
@@ -33,7 +34,7 @@ from .serializers import (
     SupplierLedgerSerializer, SupplierLedgerAdjustmentSerializer
 )
 
-class SupplierViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
+class SupplierViewSet(IdempotentCreateMixin, PkConflictReportingMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = SupplierSerializer
     # Vendor management is a purchasing/warehouse concern, not shop-floor sales.
     permission_classes = [permissions.IsAuthenticated, ManagerOrWarehouse]
@@ -53,7 +54,21 @@ class SupplierViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.Mo
         return qs.order_by('partner__name')
 
     def perform_create(self, serializer):
-        serializer.save(company=self.request.user.company, created_by=self.request.user)
+        from core.device_registry import validated_desktop_pk, validated_desktop_number
+        company = self.request.user.company
+        # Supplier.id is the value other push-eligible rows (Bill.supplier_id,
+        # PurchasePayment.supplier_id) actually need preserved - Partner (the linked
+        # contact-info row Supplier.partner points at, created inside
+        # SupplierSerializer.create()) is never referenced by its own PK anywhere else,
+        # so it doesn't need its own desktop_pks entry.
+        explicit_id = validated_desktop_pk(self.request.data, 'supplier', company)
+        extra = {}
+        explicit_code = validated_desktop_number(self.request.data, 'supplier_code', company)
+        if explicit_code:
+            extra['supplier_code'] = explicit_code
+        conflict = save_with_pk_fallback(serializer, explicit_id, company=company, created_by=self.request.user, **extra)
+        if conflict:
+            self._pk_conflicts = [{'model': 'purchase.Supplier', **conflict}]
 
     @action(detail=False, methods=['get'])
     def active_suppliers(self, request):
@@ -451,7 +466,7 @@ class BillItemViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return BillItem.objects.filter(bill__company=self.request.user.company)
 
-class PurchasePaymentViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
+class PurchasePaymentViewSet(IdempotentCreateMixin, PkConflictReportingMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     serializer_class = PurchasePaymentSerializer
     permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['supplier', 'bill', 'payment_method', 'status']
@@ -468,7 +483,9 @@ class PurchasePaymentViewSet(IdempotentCreateMixin, SoftDeleteViewSetMixin, view
         explicit_number = validated_desktop_number(self.request.data, 'payment_number', company)
         if explicit_number:
             extra['payment_number'] = explicit_number
-        serializer.save(id=explicit_id, company=company, created_by=self.request.user, **extra)
+        conflict = save_with_pk_fallback(serializer, explicit_id, company=company, created_by=self.request.user, **extra)
+        if conflict:
+            self._pk_conflicts = [{'model': 'purchase.PurchasePayment', **conflict}]
 
 class PurchaseReturnViewSet(viewsets.ModelViewSet):
     serializer_class = PurchaseReturnSerializer
@@ -554,12 +571,14 @@ def vendor_invoice_create(request):
     # the full reasoning (same mechanism, same reason it has to be a real replay of this
     # endpoint rather than a raw row upsert: Bill.save() posts to the supplier ledger).
     from core.device_registry import validated_desktop_pk, validated_desktop_number
+    from core.pk_conflict import create_with_pk_fallback
     desktop_item_pks = (data.get('desktop_pks') or {}).get('items') or []
+    pk_conflicts = []
 
     try:
         with transaction.atomic():
+            explicit_bill_id = validated_desktop_pk(data, 'bill', company)
             bill_kwargs = dict(
-                id=validated_desktop_pk(data, 'bill', company),
                 company=company,
                 supplier=supplier,
                 warehouse=warehouse,
@@ -573,7 +592,9 @@ def vendor_invoice_create(request):
             explicit_bill_number = validated_desktop_number(data, 'bill_number', company)
             if explicit_bill_number:
                 bill_kwargs['bill_number'] = explicit_bill_number
-            bill = Bill.objects.create(**bill_kwargs)
+            bill, bill_conflict = create_with_pk_fallback(Bill.objects, explicit_bill_id, **bill_kwargs)
+            if bill_conflict:
+                pk_conflicts.append({'model': 'purchase.Bill', **bill_conflict})
 
             item_summaries = []
             for index, line in enumerate(items_data):
@@ -603,12 +624,14 @@ def vendor_invoice_create(request):
                 item_id = None
                 if index < len(desktop_item_pks):
                     item_id = validated_desktop_pk({'desktop_pks': {'item': desktop_item_pks[index]}, 'device_id': data.get('device_id')}, 'item', company)
-                bill_item = BillItem.objects.create(
-                    id=item_id,
+                bill_item, item_conflict = create_with_pk_fallback(
+                    BillItem.objects, item_id,
                     bill=bill, product=product, variant=variant,
                     quantity=quantity, unit_price=unit_price, item_source='manual',
                     discounts=line.get('discounts') or [],
                 )
+                if item_conflict:
+                    pk_conflicts.append({'model': 'purchase.BillItem', **item_conflict})
                 item_summaries.append({
                     'bill_item_id': bill_item.id, 'product_id': product.id,
                     'product_name': product.name, 'expected_quantity': str(quantity),
@@ -626,18 +649,22 @@ def vendor_invoice_create(request):
     except ValueError as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    return Response({
+    response_body = {
         'bill_id': bill.id,
         'bill_number': bill.bill_number,
         'supplier': supplier.name,
         'total_amount': str(bill.total_amount),
         'goods_received': bill.goods_received,
         'items': item_summaries,
-    }, status=status.HTTP_201_CREATED)
+    }
+    if pk_conflicts:
+        response_body['pk_conflicts'] = pk_conflicts
+    return Response(response_body, status=status.HTTP_201_CREATED)
 
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated, ManagerOrWarehouse])
+@idempotent
 def bill_receive_items(request, bill_id):
     """
     Scan the physical shipment against a previously-recorded vendor invoice: for each
@@ -645,11 +672,27 @@ def bill_receive_items(request, bill_id):
     products) or a `quantity` (accessories). Callable multiple times as the user works
     through the shipment product-by-product ("select mobile model, add bulk, scan, done,
     add another product"); call bill_confirm_received() once everything has arrived.
+
+    Phase C push-back replay: `desktop_pks.tracking_units` is a flat list of PKs, one
+    per individually-tracked unit created by this call, in the same order those units
+    get created below (line-by-line, code-by-code within a line) - a replay against
+    production sends the same list back so each ProductTracking row lands on the exact
+    PK already committed locally, matching the indexed-list pattern
+    vendor_invoice_create already uses for its own items. Accessory (non-individually-
+    tracked) lines only ever get/create a StockItem by natural key (company, product,
+    warehouse), never a fresh row with its own id to preserve - see StockItem's
+    get_or_create() calls below, unchanged.
     """
+    from core.device_registry import validated_desktop_pk
+    from core.pk_conflict import create_with_pk_fallback
+
     company = request.user.company
     data = request.data
     items_data = data.get('items') or []
     warehouse_id = data.get('warehouse_id')
+    desktop_tracking_pks = (data.get('desktop_pks') or {}).get('tracking_units') or []
+    tracking_index = 0
+    pk_conflicts = []
 
     try:
         bill = Bill.objects.get(pk=bill_id, company=company)
@@ -671,6 +714,7 @@ def bill_receive_items(request, bill_id):
     try:
         with transaction.atomic():
             tracking_units_created = 0
+            tracking_unit_ids = []
             line_summaries = []
 
             for line in items_data:
@@ -711,7 +755,15 @@ def bill_receive_items(request, bill_id):
                             )
                         if ProductTracking.objects.filter(**{tracking_field: code}).exists():
                             raise ValueError(f'{product.get_tracking_method_display()} "{code}" already exists in the system.')
-                        ProductTracking.objects.create(
+                        explicit_tracking_id = None
+                        if tracking_index < len(desktop_tracking_pks):
+                            explicit_tracking_id = validated_desktop_pk(
+                                {'desktop_pks': {'unit': desktop_tracking_pks[tracking_index]}, 'device_id': data.get('device_id')},
+                                'unit', company,
+                            )
+                        tracking_index += 1
+                        tracking_unit, tracking_conflict = create_with_pk_fallback(
+                            ProductTracking.objects, explicit_tracking_id,
                             product=product,
                             variant=variant,
                             current_warehouse=warehouse,
@@ -723,6 +775,9 @@ def bill_receive_items(request, bill_id):
                             created_by=request.user,
                             **{tracking_field: code}
                         )
+                        if tracking_conflict:
+                            pk_conflicts.append({'model': 'products.ProductTracking', **tracking_conflict})
+                        tracking_unit_ids.append(tracking_unit.id)
                         tracking_units_created += 1
 
                     # Dual-write a StockItem alongside ProductTracking (mirrors the
@@ -772,17 +827,27 @@ def bill_receive_items(request, bill_id):
     except IntegrityError as e:
         return Response({'error': f'Database integrity error: {e}'}, status=status.HTTP_400_BAD_REQUEST)
 
-    return Response({
+    response_body = {
         'bill_id': bill.id,
         'tracking_units_created': tracking_units_created,
+        # Flat, creation-order list a replay's desktop_pks.tracking_units must match -
+        # read by core.desktop_sync._build_replay_extras().
+        'tracking_unit_ids': tracking_unit_ids,
         'items': line_summaries,
-    }, status=status.HTTP_200_OK)
+    }
+    if pk_conflicts:
+        response_body['pk_conflicts'] = pk_conflicts
+    return Response(response_body, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated, ManagerOrWarehouse])
+@idempotent
 def bill_confirm_received(request, bill_id):
-    """Mark a vendor invoice's goods as fully received, with an optional review note."""
+    """Mark a vendor invoice's goods as fully received, with an optional review note.
+    No new PK'd rows created (just flips flags on the existing Bill), so no desktop_pks
+    handling needed - only whitelisted for push-back (core/desktop_sync_middleware.py)
+    and idempotency-guarded like every other push-eligible write."""
     company = request.user.company
     try:
         bill = Bill.objects.get(pk=bill_id, company=company)

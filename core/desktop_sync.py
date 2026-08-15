@@ -17,11 +17,20 @@ also be handing over a production login token).
 """
 import json
 import os
+import re
 import threading
 import time
 from pathlib import Path
 
 from django.utils import timezone
+
+# Guards every drain() call (the periodic loop, a real-time per-write trigger, and a
+# manual Sync Now button all eventually call drain()) so two cycles can never run
+# concurrently and double-process the same 'pending' queue rows - see drain()'s own
+# docstring. Process-wide, not per-loop-instance: get_loop() is already a module-level
+# singleton, but a lock living on the class instance would still theoretically allow two
+# instances to race if one were ever constructed by mistake.
+_DRAIN_LOCK = threading.Lock()
 
 SYNC_CONFIG_PATH = Path(os.environ.get('APPDATA', str(Path.home()))) / 'MobileCornerERP' / 'sync_config.json'
 DEFAULT_SYNC_INTERVAL_SECONDS = int(os.environ.get('DESKTOP_SYNC_INTERVAL_SECONDS', '300'))
@@ -68,21 +77,49 @@ def clear_sync_config():
         SYNC_CONFIG_PATH.unlink()
 
 
+def _known_local_device_id():
+    """This install's own previously-registered device_id, read from local SQLite (see
+    DesktopDeviceIdentity's own docstring) - falls back to sync_config.json's copy for
+    an install that paired before DesktopDeviceIdentity existed. None on a genuine
+    first-ever pairing, or if migrations haven't created the table yet (defensive - this
+    runs from a request handler, should never actually happen post-migrate)."""
+    try:
+        from core.device_registry import DesktopDeviceIdentity
+        identity = DesktopDeviceIdentity.objects.filter(pk=1).first()
+        if identity is not None and identity.device_id:
+            return identity.device_id
+    except Exception:
+        pass
+    config = load_sync_config()
+    return config.get('device_id') if config else None
+
+
+def _save_local_device_identity(device_id, range_start, range_end):
+    from core.device_registry import DesktopDeviceIdentity
+    DesktopDeviceIdentity.objects.update_or_create(
+        pk=1, defaults={'device_id': device_id, 'range_start': range_start, 'range_end': range_end},
+    )
+
+
 def pair_with_production(production_url, email, password):
     """First-run pairing: exchanges the Owner's production credentials for a refresh
     token, stores it encrypted, and returns the paired config. Called once from the
     Desktop Sync Settings screen - the sync loop itself never sees a raw password,
     only ever the stored refresh token from here on.
 
-    Also registers this install as a new Phase C device (POST /api/core/register-device/
-    on production) and stores its reserved PK/number range in the same config - a fresh
-    pairing always claims a brand-new range rather than trying to recall a previous
-    device_id, since a cleared/reinstalled sync_config.json means this machine has no
-    memory of ever having one (see core.device_registry.register_device()'s own
-    docstring on why an abandoned old range is an acceptable, harmless cost - the range
-    space has enormous headroom). The range only actually gets *seeded* into the local
-    database once the first full snapshot import creates the local Company row - see
-    DesktopSyncLoop.sync_now()'s call to seed_device_ranges() below.
+    Also registers this install as a Phase C device (POST /api/core/register-device/ on
+    production) and stores its reserved PK/number range in the same config. If this
+    exact install already knows its own device_id (see _known_local_device_id() - a
+    re-pair, e.g. after a stale refresh token forced the user to log in again), that
+    device_id is sent along so register_device() on production hands back the SAME
+    already-reserved range instead of minting a new one - re-minting on every re-pair
+    would silently orphan anything still queued locally under the old range (nothing
+    still queued would validate against a range production no longer associates with
+    this device - see core.device_registry.validated_desktop_pk()). Only a genuinely
+    first-ever pairing (no known device_id) claims a brand-new range. The range only
+    actually gets *seeded* into the local database once the first full snapshot import
+    creates the local Company row - see DesktopSyncLoop.sync_now()'s call to
+    seed_device_ranges() below.
     """
     import requests
     resp = requests.post(
@@ -101,12 +138,17 @@ def pair_with_production(production_url, email, password):
     me_resp.raise_for_status()
     company_id = me_resp.json().get('company')
 
+    known_device_id = _known_local_device_id()
+    device_body = {'label': os.environ.get('COMPUTERNAME', '')}
+    if known_device_id:
+        device_body['device_id'] = known_device_id
     device_resp = requests.post(
         f'{production_url}/api/core/register-device/', headers=auth_header,
-        json={'label': os.environ.get('COMPUTERNAME', '')}, timeout=SYNC_REQUEST_TIMEOUT_SECONDS,
+        json=device_body, timeout=SYNC_REQUEST_TIMEOUT_SECONDS,
     )
     device_resp.raise_for_status()
     device = device_resp.json()
+    _save_local_device_identity(device['device_id'], device['range_start'], device['range_end'])
 
     config = {
         'production_url': production_url,
@@ -115,7 +157,11 @@ def pair_with_production(production_url, email, password):
         'device_id': device['device_id'],
         'range_start': device['range_start'],
         'range_end': device['range_end'],
-        'range_seeded': False,
+        # A re-pair that got its OLD range back (device['device_id'] matches
+        # known_device_id) already has that range seeded from before - re-seeding is
+        # harmless (seed_device_ranges only ever moves counters forward) but unnecessary;
+        # only force a fresh seed for a genuinely new range.
+        'range_seeded': bool(known_device_id and device['device_id'] == known_device_id),
         'last_synced_at': None,
         'auth_required': False,
     }
@@ -275,9 +321,24 @@ class DesktopSyncLoop:
 
         Callable standalone (sync_now() calls it internally, sharing one refreshed
         access token with the pull that follows) - omit all three args to have it do its
-        own reachability probe and token refresh, e.g. from a future dedicated "Push Now"
-        UI action.
+        own reachability probe and token refresh, e.g. from the real-time per-write
+        trigger in core/desktop_sync_middleware.py.
+
+        Guarded by the module-level _DRAIN_LOCK: if another drain cycle is already
+        running (the periodic loop, a real-time trigger, or a manual Sync Now all
+        eventually call this), returns immediately with status 'skipped' rather than
+        running concurrently - two overlapping drains could both read and push the same
+        'pending' rows at once. Not lossy: the skipped cycle's rows are still 'pending'
+        and picked up fresh by whichever cycle runs next.
         """
+        if not _DRAIN_LOCK.acquire(blocking=False):
+            return {'status': 'skipped', 'reason': 'drain_in_progress'}
+        try:
+            return self._drain_locked(production_url, access_token, config)
+        finally:
+            _DRAIN_LOCK.release()
+
+    def _drain_locked(self, production_url, access_token, config):
         if config is None:
             config = load_sync_config()
         if config is None or config.get('auth_required') or not config.get('device_id'):
@@ -350,6 +411,11 @@ class DesktopSyncLoop:
                 entry.synced_at = timezone.now()
                 entry.save(update_fields=['status', 'synced_at'])
                 pushed += 1
+                try:
+                    resp_data = resp.json()
+                except ValueError:
+                    resp_data = {}
+                _apply_pk_conflicts(resp_data.get('pk_conflicts') or [])
             else:
                 entry.status = 'failed'
                 try:
@@ -392,7 +458,43 @@ def _build_replay_extras(path, response_data):
             'items': [item['bill_item_id'] for item in response_data.get('items', [])],
         }
         return pks, {'bill_number': response_data['bill_number']}
+    if path == '/api/purchase/suppliers/':
+        return {'supplier': response_data['id']}, {'supplier_code': response_data['supplier_code']}
+    if path == '/api/products/products/':
+        return {'product': response_data['id']}, {}
+    if path == '/api/accounting/expenses/':
+        return {'expense': response_data['id']}, {}
+    if path == '/api/sales/returns/process/':
+        pks = {'credit_note': response_data['id'], 'items': response_data.get('item_ids', [])}
+        return pks, {'credit_number': response_data['credit_number']}
+    if re.match(r'^/api/purchase/bills/\d+/receive-items/$', path):
+        return {'tracking_units': response_data.get('tracking_unit_ids', [])}, {}
+    # Customer PATCH (/api/crm/customers/<id>/) and bill_confirm_received need no
+    # extras at all - an update carries no new PK to preserve, and the target row's id
+    # is already baked into the request path itself.
     return {}, {}
+
+
+def _apply_pk_conflicts(pk_conflicts):
+    """A successful push's response can carry a `pk_conflicts` list (see
+    core/pk_conflict.py::create_with_pk_fallback()) when production had to assign a
+    DIFFERENT id than the one this row was created with locally - a genuine PK
+    collision that production already resolved on its own side. Renumbers this
+    device's local copy to match, so both sides agree going forward - see
+    core/desktop_pk_renumber.py. Given the device-range-stability fix in
+    core.device_registry.register_device(), this should rarely have anything to do in
+    practice; a renumber failure here is logged, not fatal to the rest of the drain
+    cycle (the entry itself already synced successfully - only the local bookkeeping
+    would stay stale)."""
+    if not pk_conflicts:
+        return
+    from core.desktop_pk_renumber import renumber_local_pk
+    for conflict in pk_conflicts:
+        try:
+            renumber_local_pk(conflict['model'], conflict['requested_id'], conflict['assigned_id'])
+        except Exception as e:
+            print(f"[desktop_sync] Failed to renumber local {conflict.get('model')} "
+                  f"{conflict.get('requested_id')} -> {conflict.get('assigned_id')}: {e}")
 
 
 _loop_instance = None

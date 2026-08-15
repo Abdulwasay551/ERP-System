@@ -201,7 +201,11 @@ class CustomerLedger(models.Model):
 
     transaction_date = models.DateField()
     reference_type = models.CharField(max_length=50, choices=REFERENCE_TYPE_CHOICES)
-    reference_id = models.IntegerField(help_text="ID of the referenced document")
+    # BigIntegerField, not IntegerField: stores an Invoice/Payment/etc id, and a desktop
+    # device's reserved PK range (core/device_registry.py, floor 10_000_000_000) already
+    # exceeds Postgres's plain `integer` max (~2.1B) - see purchase.SupplierLedger.
+    # reference_id's matching comment (the same bug, hit in testing on that field first).
+    reference_id = models.BigIntegerField(help_text="ID of the referenced document")
     description = models.TextField()
 
     debit_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0, help_text="Amount owed BY customer (invoice)")

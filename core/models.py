@@ -65,7 +65,12 @@ class RecordDeletionLog(models.Model):
 
     company = models.ForeignKey('user_auth.Company', on_delete=models.CASCADE, related_name='deletion_logs')
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    object_id = models.PositiveIntegerField()
+    # PositiveBigIntegerField, not PositiveIntegerField: this audit log covers every
+    # soft-deletable model, including desktop-created rows whose PK falls inside a
+    # reserved device range (core/device_registry.py, floor 10_000_000_000) - already
+    # past Postgres's plain `integer` max (~2.1B). See purchase.SupplierLedger.
+    # reference_id's matching comment for where this bug class was first hit.
+    object_id = models.PositiveBigIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
     object_repr = models.CharField(max_length=255)
     action = models.CharField(max_length=10, choices=ACTION_CHOICES)
@@ -94,5 +99,5 @@ class RecordDeletionLog(models.Model):
 # class is defined would deadlock the circular import.
 from core.idempotency import IdempotencyKey  # noqa: E402,F401
 from core.numbering import NumberSequence  # noqa: E402,F401
-from core.device_registry import DeviceIdRangeCounter, DeviceRegistration  # noqa: E402,F401
+from core.device_registry import DeviceIdRangeCounter, DeviceRegistration, DesktopDeviceIdentity  # noqa: E402,F401
 from core.desktop_sync_queue import DesktopSyncQueueEntry  # noqa: E402,F401
