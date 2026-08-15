@@ -16,7 +16,7 @@ from core.pk_conflict import PkConflictReportingMixin, save_with_pk_fallback
 class ManagerOrWarehouse(RoleIn):
     allowed_roles = ['Manager', 'Warehouse']
 from products.models import Product, ProductVariant, ProductTracking
-from inventory.models import Warehouse, StockItem
+from inventory.models import Warehouse, StockItem, get_default_warehouse
 from .models import (
     Supplier, TaxChargesTemplate, PurchaseRequisition, PurchaseRequisitionItem,
     RequestForQuotation, RFQItem, SupplierQuotation, SupplierQuotationItem,
@@ -566,6 +566,11 @@ def vendor_invoice_create(request):
             warehouse = Warehouse.objects.get(pk=data['warehouse_id'], company=company)
         except Warehouse.DoesNotExist:
             return Response({'error': f"Warehouse {data['warehouse_id']} not found."}, status=status.HTTP_404_NOT_FOUND)
+    if warehouse is None:
+        # Single-warehouse shops (the common case) shouldn't have to pick one on every
+        # vendor invoice - sets the bill's default warehouse correctly up front, so
+        # bill_receive_items() doesn't need its own separate fallback later either.
+        warehouse = get_default_warehouse(company)
 
     # Phase C push-back replay - see sales.api_views.pos_checkout's matching comment for
     # the full reasoning (same mechanism, same reason it has to be a real replay of this
@@ -706,7 +711,12 @@ def bill_receive_items(request, bill_id):
         except Warehouse.DoesNotExist:
             return Response({'error': f'Warehouse {warehouse_id} not found.'}, status=status.HTTP_404_NOT_FOUND)
     if not warehouse:
-        return Response({'error': 'warehouse_id is required (bill has no default warehouse set).'}, status=status.HTTP_400_BAD_REQUEST)
+        # Single-warehouse shops (the common case) shouldn't have to pick a warehouse
+        # explicitly on every receiving action - only a genuinely ambiguous case (0 or
+        # 2+ warehouses) still requires it.
+        warehouse = get_default_warehouse(company)
+    if not warehouse:
+        return Response({'error': 'warehouse_id is required (this company has more than one warehouse, so none can be assumed).'}, status=status.HTTP_400_BAD_REQUEST)
 
     if not items_data:
         return Response({'error': 'items are required.'}, status=status.HTTP_400_BAD_REQUEST)

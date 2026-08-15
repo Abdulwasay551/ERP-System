@@ -32,11 +32,11 @@ not re-trigger any of that.
 import json
 
 from django.core import serializers
-from django.db import connection, transaction
+from django.db import IntegrityError, connection, transaction
 from django.utils.dateparse import parse_datetime
 
 from core.sync_classification import is_delta_eligible, since_field_for
-from user_auth.models import Company
+from user_auth.models import Company, User
 
 # (app_label, model_name, scope) - scope is 'direct', ('via', field), ('via2', f1, f2),
 # or 'global' (no company filter, exported unconditionally - shared reference data).
@@ -351,6 +351,7 @@ def import_snapshot_data(objects_data, expected_company_id=None):
         )
 
     count = 0
+    skipped = []
     # SQLite's PRAGMA foreign_keys is a no-op once a transaction is already open (see
     # sqlite3/base.py's disable_constraint_checking(): "Foreign key constraints cannot
     # be turned off while in a multi-statement transaction") - constraint_checks_
@@ -361,8 +362,52 @@ def import_snapshot_data(objects_data, expected_company_id=None):
     with connection.constraint_checks_disabled():
         with transaction.atomic():
             for deserialized_obj in serializers.deserialize('python', objects_data):
-                deserialized_obj.save()
-                count += 1
+                instance = deserialized_obj.object
+                # Each row gets its own SAVEPOINT (nested atomic(), not the whole
+                # import's outer one) - a single bad row must never silently block every
+                # OTHER row in the same payload from ever syncing down again (this
+                # function reruns identically every cycle - one permanently-bad row
+                # would otherwise wedge the desktop's pull-sync forever), the same "one
+                # bad entry doesn't block the rest of the queue" principle
+                # core.desktop_sync.DesktopSyncLoop.drain() already applies to push-back.
+                try:
+                    with transaction.atomic():
+                        deserialized_obj.save()
+                    count += 1
+                    continue
+                except IntegrityError as exc:
+                    # `except ... as exc` deletes the `exc` binding when this block
+                    # ends (ordinary Python exception-scoping behavior) - captured into
+                    # a plain variable so it's still usable below.
+                    error_text = str(exc)
+
+                # A production-side hard delete followed by a NEW row reusing the same
+                # natural key (a fired-then-rehired staff email, most concretely - User
+                # has no SoftDeleteMixin, so its deletions are exactly the "can never be
+                # represented as gone by an upsert-only mechanism" gap this module's own
+                # docstring already calls out) is the one case reliably reconcilable
+                # without guessing: production's own export can never contain an
+                # internal email collision (its own unique constraint already prevents
+                # that), so a local collision here can only be against a row production
+                # no longer has - safe to remove and retry.
+                reconciled = False
+                if isinstance(instance, User) and 'email' in error_text.lower():
+                    stale = User.objects.filter(email=instance.email).exclude(pk=instance.pk).first()
+                    if stale is not None:
+                        stale.delete()
+                        try:
+                            with transaction.atomic():
+                                deserialized_obj.save()
+                            count += 1
+                            reconciled = True
+                        except IntegrityError as exc2:
+                            error_text = str(exc2)
+                if not reconciled:
+                    skipped.append(f'{instance._meta.label}#{instance.pk}: {error_text}')
+
+    if skipped:
+        print(f'[snapshot] {len(skipped)} row(s) could not be imported this cycle (the rest of '
+              f'the sync still applied): ' + '; '.join(skipped[:10]))
     return count
 
 

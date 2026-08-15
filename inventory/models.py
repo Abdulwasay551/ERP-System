@@ -74,6 +74,16 @@ class Warehouse(models.Model):
         ordering = ['name']
 
 
+def get_default_warehouse(company):
+    """Best-effort single-warehouse convenience default: most shops running this ERP
+    have exactly one warehouse and shouldn't have to pick it explicitly on every
+    vendor-invoice/receiving action. Returns the company's sole active Warehouse if
+    there's exactly one; a genuinely ambiguous case (0 or 2+ warehouses) returns None
+    so the caller still requires an explicit warehouse_id, same as before this existed."""
+    warehouses = list(Warehouse.objects.filter(company=company, is_active=True)[:2])
+    return warehouses[0] if len(warehouses) == 1 else None
+
+
 class WarehouseZone(models.Model):
     """Optional warehouse zones for advanced location tracking"""
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE, related_name='zones')
