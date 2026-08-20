@@ -30,7 +30,34 @@ def _styles():
     styles.add(ParagraphStyle('Small', parent=styles['Normal'], fontSize=8, leading=11))
     styles.add(ParagraphStyle('Right', parent=styles['Normal'], fontSize=9, alignment=TA_RIGHT, leading=13))
     styles.add(ParagraphStyle('Center', parent=styles['Normal'], fontSize=8, alignment=TA_CENTER))
+    # Smaller/greyer than the item name it sits under - a tracking code is supporting
+    # detail (proof-of-item for warranty/returns), not the primary thing being read.
+    styles.add(ParagraphStyle('Tracking', parent=styles['Normal'], fontSize=6.5, leading=8.5, textColor=colors.HexColor('#525252')))
     return styles
+
+
+_TRACKING_LABELS = {'imei': 'IMEI', 'serial': 'S/N', 'barcode': 'Barcode', 'batch': 'Batch'}
+
+
+def _tracking_line(tracking_unit):
+    """One tracking unit's printable "IMEI: 123..." line, or '' if the product isn't
+    individually tracked / the unit has no value set yet."""
+    if tracking_unit is None:
+        return ''
+    value = tracking_unit.get_tracking_value()
+    if not value:
+        return ''
+    label = _TRACKING_LABELS.get(tracking_unit.product.tracking_method, 'Code')
+    return f'{label}: {value}'
+
+
+def _tracking_lines_for_bill_item(bill_item):
+    """All tracking units received against one vendor-bill line, one per printed row
+    (a single line item routinely covers many units - e.g. 14 IMEIs on one product/
+    price line - so these render as their own wrapped lines under the item, not
+    comma-joined, to stay readable when a line has a lot of them)."""
+    lines = [_tracking_line(unit) for unit in bill_item.product_tracking_units.all()]
+    return [line for line in lines if line]
 
 
 def _wrapped_line_count(text, font_name, font_size, max_width):
@@ -95,8 +122,12 @@ def build_invoice_pdf(invoice, items, receipt_width_mm=80):
 
     data = [['Item', 'Qty', 'Price', 'Total']]
     for item in items:
+        tracking_line = _tracking_line(item.tracking_unit)
+        item_cell = item.product.name
+        if tracking_line:
+            item_cell += f'<br/><font size="6.5" color="#525252">{tracking_line}</font>'
         data.append([
-            Paragraph(item.product.name, styles['Small']),
+            Paragraph(item_cell, styles['Small']),
             str(item.quantity),
             f"{item.unit_price:,.0f}",
             f"{item.line_total:,.0f}",
@@ -133,6 +164,11 @@ def build_invoice_pdf(invoice, items, receipt_width_mm=80):
     item_max_text_width = item_w - 6  # minus the table's 3pt left+right cell padding
     items_height = sum(
         _wrapped_line_count(item.product.name, 'Helvetica', 7, item_max_text_width) * (7 * 1.6) + 8
+        # +1 line's worth when a tracking code is printed under the item name - it's
+        # always a single short line here (see build_invoice_pdf's own docstring: a
+        # tracked InvoiceItem is always quantity=1, one unit per line), so no need to
+        # wrap-measure it the way the product name above needs to.
+        + (10 if _tracking_line(item.tracking_unit) else 0)
         for item in items
     )
     totals_lines = 5 + (1 if invoice.discount_amount else 0)
@@ -169,9 +205,13 @@ def build_invoice_pdf_a4(invoice, items):
 
     data = [['#', 'Item', 'Qty', 'Unit Price', 'Total']]
     for i, item in enumerate(items, start=1):
+        tracking_line = _tracking_line(item.tracking_unit)
+        item_cell = item.product.name
+        if tracking_line:
+            item_cell += f'<br/><font size="7" color="#525252">{tracking_line}</font>'
         data.append([
             str(i),
-            Paragraph(item.product.name, styles['Small']),
+            Paragraph(item_cell, styles['Small']),
             str(item.quantity),
             f"{item.unit_price:,.0f}",
             f"{item.line_total:,.0f}",
@@ -275,8 +315,13 @@ def build_receiving_pdf(bill, items):
 
     data = [['Item', 'Qty', 'Unit Cost', 'Total']]
     for item in items:
+        tracking_lines = _tracking_lines_for_bill_item(item)
+        item_cell = item.product.name
+        if tracking_lines:
+            codes_html = '<br/>'.join(tracking_lines)
+            item_cell += f'<br/><font size="6.5" color="#525252">{codes_html}</font>'
         data.append([
-            Paragraph(item.product.name, styles['Small']),
+            Paragraph(item_cell, styles['Small']),
             str(item.quantity),
             f"{item.unit_price:,.0f}",
             f"{item.line_total:,.0f}",
