@@ -235,6 +235,28 @@ class ProductTrackingViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     ordering_fields = ['created_at']
     ordering = ['-created_at']
 
+    # A unit's own code (IMEI/serial/barcode/batch) can only be corrected while it's
+    # still available - once it's sold (or returned/damaged/expired/quarantined),
+    # changing the code would silently rewrite what's already on a printed invoice/
+    # receipt and in the customer's/ledger's history. Other fields (location_notes,
+    # quality_status, etc.) stay freely editable regardless of status.
+    _CODE_FIELDS = ('imei_number', 'serial_number', 'barcode', 'batch_number')
+
+    def perform_update(self, serializer):
+        instance = serializer.instance
+        if instance.status != 'available':
+            changing_code = any(
+                field in serializer.validated_data and serializer.validated_data[field] != getattr(instance, field)
+                for field in self._CODE_FIELDS
+            )
+            if changing_code:
+                from rest_framework.exceptions import ValidationError
+                raise ValidationError(
+                    f"Can't change the tracking code once a unit is {instance.get_status_display().lower()} "
+                    f"- only an available unit's code can still be corrected."
+                )
+        serializer.save()
+
     def get_queryset(self):
         queryset = ProductTracking.objects.filter(
             product__company=self.request.user.company

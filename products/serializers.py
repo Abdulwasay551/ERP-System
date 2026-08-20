@@ -61,23 +61,36 @@ class ProductTrackingSerializer(serializers.ModelSerializer):
         return None
 
     def validate(self, data):
-        """Validate tracking data based on product's tracking method"""
-        product = data.get('product')
+        """Validate tracking data based on product's tracking method.
+
+        `data` only contains the fields actually present in THIS request - on a
+        partial update (PATCH), a client editing just `imei_number` never re-sends
+        `product`, so falling back to the existing instance's own field values (not
+        just what this one request happened to include) is required, or every partial
+        PATCH would incorrectly fail with "Product is required" regardless of what was
+        actually being changed.
+        """
+        def field_value(name):
+            if name in data:
+                return data[name]
+            return getattr(self.instance, name, None) if self.instance else None
+
+        product = field_value('product')
         if not product:
             raise serializers.ValidationError("Product is required")
-        
+
         tracking_method = product.tracking_method
-        
+
         # Check if tracking method matches provided data
-        if tracking_method == 'serial' and not data.get('serial_number'):
+        if tracking_method == 'serial' and not field_value('serial_number'):
             raise serializers.ValidationError("Serial number is required for this product")
-        elif tracking_method == 'imei' and not data.get('imei_number'):
+        elif tracking_method == 'imei' and not field_value('imei_number'):
             raise serializers.ValidationError("IMEI number is required for this product")
-        elif tracking_method == 'barcode' and not data.get('barcode'):
+        elif tracking_method == 'barcode' and not field_value('barcode'):
             raise serializers.ValidationError("Barcode is required for this product")
         elif tracking_method == 'none':
             raise serializers.ValidationError("This product does not support individual tracking")
-        
+
         return data
 
 

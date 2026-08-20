@@ -182,10 +182,21 @@ class GoodsReceiptNoteSerializer(serializers.ModelSerializer):
 
 class BillItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
-    
+    # A bill line routinely covers many units received together (unlike an invoice
+    # line, which is always exactly one tracked unit) - see products.models.
+    # ProductTracking.bill_item's own docstring for why this is the real link,
+    # not the older purchase.BillItemTracking model.
+    tracking_units = serializers.SerializerMethodField()
+
     class Meta:
         model = BillItem
         fields = '__all__'
+
+    def get_tracking_units(self, obj):
+        return [
+            {'id': unit.id, 'code': unit.get_tracking_value(), 'status': unit.status}
+            for unit in obj.product_tracking_units.all()
+        ]
 
 class BillSerializer(serializers.ModelSerializer):
     items = BillItemSerializer(many=True, read_only=True)
