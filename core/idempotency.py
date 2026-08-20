@@ -12,10 +12,12 @@ Two entry points sharing one underlying model:
 - `IdempotentCreateMixin`, for ModelViewSets whose `create()` should get the same
   guarantee (Payment, PurchasePayment, Expense, Customer, Supplier).
 """
+import json
 from functools import wraps
 
 from django.db import models
 from rest_framework.response import Response
+from rest_framework.utils.encoders import JSONEncoder
 
 
 class IdempotencyKey(models.Model):
@@ -50,11 +52,21 @@ def _find_existing(company, client_request_id):
 def _store(company, client_request_id, response):
     if not (company and client_request_id) or not (200 <= response.status_code < 300):
         return
+    # response.data can hold raw Python objects a view built by hand (a datetime,
+    # Decimal, etc.) rather than already-stringified Serializer output - DRF's own
+    # renderer handles those fine at response time, but Django's plain JSONField here
+    # uses the stdlib json encoder underneath, which doesn't know what a datetime is.
+    # Round-tripping through DRF's JSONEncoder first (the same one the real HTTP
+    # response gets rendered with) normalizes everything into JSON-safe primitives
+    # before it ever reaches the database - a real bug this exact way already hit
+    # bill_confirm_received's raw `received_at` datetime once push-back sync started
+    # actually replaying it with a client_request_id attached.
+    safe_body = json.loads(json.dumps(response.data, cls=JSONEncoder))
     # get_or_create, not create: a genuine race (two near-simultaneous retries) should
     # silently keep whichever row won, not raise an IntegrityError up into the response.
     IdempotencyKey.objects.get_or_create(
         company=company, client_request_id=client_request_id,
-        defaults={'response_status': response.status_code, 'response_body': response.data},
+        defaults={'response_status': response.status_code, 'response_body': safe_body},
     )
 
 
