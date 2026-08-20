@@ -164,6 +164,7 @@ SEQUENCES = {
     'invoice': dict(model_label='sales.Invoice', prefix='INV', digits=6, field_name='invoice_number', manager_name='all_objects', year_scoped=False),
     'payment': dict(model_label='sales.Payment', prefix='PAY', digits=6, field_name='payment_number', manager_name='all_objects', year_scoped=False),
     'credit_note': dict(model_label='sales.CreditNote', prefix='CN', digits=6, field_name='credit_number', manager_name='objects', year_scoped=False),
+    'debit_note': dict(model_label='purchase.DebitNote', prefix='DBN', digits=6, field_name='debit_number', manager_name='objects', year_scoped=False),
     'supplier': dict(model_label='purchase.Supplier', prefix='SUP', digits=6, field_name='supplier_code', manager_name='all_objects', year_scoped=False),
     'purchase_order': dict(model_label='purchase.PurchaseOrder', prefix='PO', digits=4, field_name='po_number', manager_name='objects', year_scoped=True),
     'grn': dict(model_label='purchase.GoodsReceiptNote', prefix='GRN', digits=4, field_name='grn_number', manager_name='objects', year_scoped=True),

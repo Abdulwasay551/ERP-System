@@ -467,6 +467,9 @@ def _build_replay_extras(path, response_data):
     if path == '/api/sales/returns/process/':
         pks = {'credit_note': response_data['id'], 'items': response_data.get('item_ids', [])}
         return pks, {'credit_number': response_data['credit_number']}
+    if path == '/api/purchase/returns/process/':
+        pks = {'debit_note': response_data['id'], 'items': response_data.get('item_ids', [])}
+        return pks, {'debit_number': response_data['debit_number']}
     if re.match(r'^/api/purchase/bills/\d+/receive-items/$', path):
         return {'tracking_units': response_data.get('tracking_unit_ids', [])}, {}
     # Customer PATCH (/api/crm/customers/<id>/) and bill_confirm_received need no

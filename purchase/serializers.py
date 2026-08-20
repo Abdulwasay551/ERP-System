@@ -4,7 +4,8 @@ from .models import (
     RequestForQuotation, RFQItem, SupplierQuotation, SupplierQuotationItem,
     PurchaseOrder, PurchaseOrderItem, PurchaseOrderTaxCharge,
     GoodsReceiptNote, GRNItem, Bill, BillItem, PurchasePayment, SupplierLedger,
-    SupplierLedgerAdjustment, PurchaseReturn, PurchaseReturnItem, PurchaseApproval
+    SupplierLedgerAdjustment, PurchaseReturn, PurchaseReturnItem, PurchaseApproval,
+    DebitNote, DebitNoteItem
 )
 
 
@@ -182,6 +183,7 @@ class GoodsReceiptNoteSerializer(serializers.ModelSerializer):
 
 class BillItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
+    product_tracking_method = serializers.CharField(source='product.tracking_method', read_only=True)
     # A bill line routinely covers many units received together (unlike an invoice
     # line, which is always exactly one tracked unit) - see products.models.
     # ProductTracking.bill_item's own docstring for why this is the real link,
@@ -206,6 +208,32 @@ class BillSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bill
         fields = '__all__'
+
+class DebitNoteItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    tracking_identifier = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DebitNoteItem
+        fields = '__all__'
+        read_only_fields = ('debit_note', 'line_total')
+
+    def get_tracking_identifier(self, obj):
+        if not obj.tracking_unit:
+            return None
+        return obj.tracking_unit.get_tracking_value()
+
+
+class DebitNoteSerializer(serializers.ModelSerializer):
+    supplier_name = serializers.CharField(source='supplier.name', read_only=True)
+    bill_number = serializers.CharField(source='bill.bill_number', read_only=True, default=None)
+    items = DebitNoteItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = DebitNote
+        fields = '__all__'
+        read_only_fields = ('company', 'debit_number', 'created_by', 'total')
+
 
 class PurchasePaymentSerializer(serializers.ModelSerializer):
     bill_number = serializers.CharField(source='bill.bill_number', read_only=True)

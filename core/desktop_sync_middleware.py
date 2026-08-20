@@ -41,6 +41,7 @@ PUSH_ELIGIBLE_PATTERNS = [
     (re.compile(r'^/api/purchase/suppliers/$'), 'New supplier'),
     (re.compile(r'^/api/purchase/bills/\d+/receive-items/$'), 'Receive items'),
     (re.compile(r'^/api/purchase/bills/\d+/confirm-received/$'), 'Confirm received'),
+    (re.compile(r'^/api/purchase/returns/process/$'), 'Vendor return'),
     (re.compile(r'^/api/products/products/$'), 'New product'),
     (re.compile(r'^/api/accounting/expenses/$'), 'New expense'),
 ]

@@ -7,7 +7,8 @@ from .api_views import (
     PurchaseOrderItemViewSet, PurchaseOrderTaxChargeViewSet, GoodsReceiptNoteViewSet,
     GRNItemViewSet, BillViewSet, BillItemViewSet, PurchasePaymentViewSet,
     PurchaseReturnViewSet, PurchaseReturnItemViewSet, PurchaseApprovalViewSet,
-    vendor_invoice_create, bill_receive_items, bill_confirm_received
+    DebitNoteViewSet,
+    vendor_invoice_create, bill_receive_items, bill_confirm_received, process_vendor_return
 )
 
 router = DefaultRouter()
@@ -46,6 +47,7 @@ router.register(r'purchase-payments', PurchasePaymentViewSet, basename='purchase
 # Purchase Returns
 router.register(r'purchase-returns', PurchaseReturnViewSet, basename='purchasereturn')
 router.register(r'purchase-return-items', PurchaseReturnItemViewSet, basename='purchasereturnitem')
+router.register(r'debit-notes', DebitNoteViewSet, basename='debitnote')
 
 # Approvals
 router.register(r'purchase-approvals', PurchaseApprovalViewSet, basename='purchaseapproval')
@@ -54,4 +56,5 @@ urlpatterns = router.urls + [
     path('vendor-invoice/', vendor_invoice_create, name='vendor-invoice-create'),
     path('bills/<int:bill_id>/receive-items/', bill_receive_items, name='bill-receive-items'),
     path('bills/<int:bill_id>/confirm-received/', bill_confirm_received, name='bill-confirm-received'),
-] 
+    path('returns/process/', process_vendor_return, name='process-vendor-return'),
+]

@@ -2160,6 +2160,70 @@ class BillItemTracking(models.Model):
     def __str__(self):
         return f"{self.bill_item.product.name} - {self.tracking_type}: {self.tracking_number}"
 
+
+class DebitNote(models.Model):
+    """A record of stock sent back to a supplier (vendor-side mirror of sales.CreditNote)
+    - the original Bill stays untouched as the historical record of what was actually
+    received; this is the separate, permanent record of what was later returned,
+    reducing what the shop owes that supplier without editing/deleting the bill itself."""
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='debit_notes')
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='debit_notes')
+    bill = models.ForeignKey(Bill, on_delete=models.SET_NULL, null=True, blank=True, related_name='debit_notes')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_debit_notes')
+
+    debit_number = models.CharField(max_length=50, unique=True, blank=True)
+    debit_date = models.DateField(default=timezone.localdate)
+
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    reason = models.CharField(max_length=20, choices=[
+        ('return', 'Stock Return'),
+        ('damage', 'Damaged Goods'),
+        ('wrong_item', 'Wrong Item Received'),
+        ('error', 'Billing Error'),
+        ('other', 'Other'),
+    ], default='return')
+    notes = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.debit_number:
+            self.debit_number = next_number(
+                self.company, 'debit_note', 'DBN', 6, DebitNote, 'debit_number', 'objects',
+            )
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.debit_number} - {self.supplier.name}"
+
+
+class DebitNoteItem(models.Model):
+    """One returned line - either a specific received tracking unit (IMEI/serial,
+    always qty 1) or a quantity of an untracked product. Links back to the original
+    BillItem so a return can't outlive/exceed what was actually received on that line."""
+    debit_note = models.ForeignKey(DebitNote, on_delete=models.CASCADE, related_name='items')
+    bill_item = models.ForeignKey(BillItem, on_delete=models.CASCADE, related_name='debit_note_items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='debit_note_items')
+    tracking_unit = models.ForeignKey(
+        'products.ProductTracking', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='debit_note_items',
+        help_text="Specific IMEI/serial unit being returned - null for untracked/quantity-based items"
+    )
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2)
+    line_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    def save(self, *args, **kwargs):
+        self.line_total = self.quantity * self.unit_price
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.debit_note.debit_number} - {self.product.name} x{self.quantity}"
+
+
 # Enhanced Purchase Payment
 class PurchasePayment(SoftDeleteMixin, models.Model):
     """Enhanced Purchase Payment with supplier ledger management"""

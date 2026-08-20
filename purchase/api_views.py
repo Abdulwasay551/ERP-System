@@ -16,13 +16,13 @@ from core.pk_conflict import PkConflictReportingMixin, save_with_pk_fallback
 class ManagerOrWarehouse(RoleIn):
     allowed_roles = ['Manager', 'Warehouse']
 from products.models import Product, ProductVariant, ProductTracking
-from inventory.models import Warehouse, StockItem, get_default_warehouse
+from inventory.models import Warehouse, StockItem, StockMovement, get_default_warehouse
 from .models import (
     Supplier, TaxChargesTemplate, PurchaseRequisition, PurchaseRequisitionItem,
     RequestForQuotation, RFQItem, SupplierQuotation, SupplierQuotationItem,
     PurchaseOrder, PurchaseOrderItem, PurchaseOrderTaxCharge,
     GoodsReceiptNote, GRNItem, Bill, BillItem, PurchasePayment, SupplierLedgerAdjustment,
-    PurchaseReturn, PurchaseReturnItem, PurchaseApproval
+    PurchaseReturn, PurchaseReturnItem, PurchaseApproval, DebitNote, DebitNoteItem, SupplierLedger,
 )
 from .serializers import (
     SupplierSerializer, TaxChargesTemplateSerializer, PurchaseRequisitionSerializer,
@@ -31,7 +31,8 @@ from .serializers import (
     PurchaseOrderItemSerializer, PurchaseOrderTaxChargeSerializer, GoodsReceiptNoteSerializer,
     GRNItemSerializer, BillSerializer, BillItemSerializer, PurchasePaymentSerializer,
     PurchaseReturnSerializer, PurchaseReturnItemSerializer, PurchaseApprovalSerializer,
-    SupplierLedgerSerializer, SupplierLedgerAdjustmentSerializer
+    SupplierLedgerSerializer, SupplierLedgerAdjustmentSerializer,
+    DebitNoteSerializer, DebitNoteItemSerializer,
 )
 
 class SupplierViewSet(IdempotentCreateMixin, PkConflictReportingMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
@@ -312,6 +313,43 @@ class BillViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
         bills = self.get_queryset().filter(goods_received=False).order_by('-bill_date')
         serializer = self.get_serializer(bills, many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['get'], url_path='returnable-items')
+    def returnable_items(self, request, pk=None):
+        """
+        Per-line breakdown of what's still eligible to send back to the supplier on this
+        bill - mirrors sales.api_views.InvoiceViewSet.returnable_items exactly. For
+        tracked items, one row per unit still 'available' and linked to this bill's
+        line (a line can have many units - e.g. 14 IMEIs on one line - so this returns
+        many rows for the same bill_item, not one); for untracked items, remaining
+        received-but-not-yet-returned quantity.
+        """
+        bill = self.get_object()
+        rows = []
+        for item in bill.items.select_related('product').prefetch_related('product_tracking_units'):
+            if item.product.tracking_method in ('serial', 'imei'):
+                for unit in item.product_tracking_units.filter(status='available'):
+                    rows.append({
+                        'bill_item_id': item.id,
+                        'product_name': item.product.name,
+                        'tracking_id': unit.id,
+                        'tracking_identifier': unit.get_tracking_value(),
+                        'unit_price': str(item.unit_price),
+                        'returnable_quantity': '1',
+                    })
+            else:
+                already_returned = item.debit_note_items.aggregate(total=Sum('quantity'))['total'] or 0
+                remaining = item.received_quantity - already_returned
+                if remaining > 0:
+                    rows.append({
+                        'bill_item_id': item.id,
+                        'product_name': item.product.name,
+                        'tracking_id': None,
+                        'tracking_identifier': None,
+                        'unit_price': str(item.unit_price),
+                        'returnable_quantity': str(remaining),
+                    })
+        return Response(rows)
 
     @action(detail=True, methods=['get'])
     def pdf(self, request, pk=None):
@@ -876,4 +914,180 @@ def bill_confirm_received(request, bill_id):
         'goods_received': bill.goods_received,
         'received_at': bill.received_at,
         'receipt_notes': bill.receipt_notes,
-    }, status=status.HTTP_200_OK) 
+    }, status=status.HTTP_200_OK)
+
+
+class DebitNoteViewSet(viewsets.ReadOnlyModelViewSet):
+    """Read-only - debit notes are only ever created via process_vendor_return, which
+    also has to remove stock and credit the supplier ledger in the same transaction."""
+    serializer_class = DebitNoteSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        qs = DebitNote.objects.filter(company=self.request.user.company).select_related('supplier', 'bill')
+        bill_id = self.request.query_params.get('bill')
+        if bill_id:
+            qs = qs.filter(bill_id=bill_id)
+        return qs.order_by('-debit_date', '-id')
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated, ManagerOrWarehouse])
+@idempotent
+def process_vendor_return(request):
+    """
+    One-call vendor return: send specific received stock back to a supplier. Mirrors
+    sales.api_views.process_sales_return exactly (same validation shape, same
+    keep-the-original-document-untouched philosophy) - validates each returned line
+    against what's actually still on hand from this bill (tracked units must still be
+    'available' and belong to this bill's line; untracked quantities can't exceed what
+    was actually received and not already returned), then in one transaction creates
+    the DebitNote + line items, removes the stock (StockMovement with
+    movement_type='purchase_return' - the audit trail bill_receive_items' own docstring
+    on Bill.edit's locked-quantity logic notes doesn't otherwise exist for receiving),
+    and credits the supplier ledger for what's no longer owed.
+
+    A caller can return one specific tracking unit, several, or every remaining
+    available unit/quantity on the bill in one call - "reverse a specific unit" and
+    "reverse the whole bill" are the same endpoint, just a different items list.
+
+    Phase C push-back replay, same pattern as process_sales_return: desktop_pks.
+    debit_note / desktop_pks.items let a replay force the DebitNote/DebitNoteItem rows
+    onto the exact PKs already committed locally.
+    """
+    from core.device_registry import validated_desktop_pk, validated_desktop_number
+    from core.pk_conflict import create_with_pk_fallback
+
+    company = request.user.company
+    data = request.data
+    bill_id = data.get('bill_id')
+    items_data = data.get('items') or []
+    if not bill_id or not items_data:
+        return Response({'error': 'bill_id and items are required.'}, status=status.HTTP_400_BAD_REQUEST)
+    desktop_item_pks = (data.get('desktop_pks') or {}).get('items') or []
+    pk_conflicts = []
+
+    try:
+        with transaction.atomic():
+            try:
+                bill = Bill.objects.select_related('supplier').get(pk=bill_id, company=company)
+            except Bill.DoesNotExist:
+                raise ValueError(f'Bill {bill_id} not found.')
+
+            explicit_debit_note_id = validated_desktop_pk(data, 'debit_note', company)
+            debit_note_kwargs = dict(
+                company=company, supplier=bill.supplier, bill=bill,
+                created_by=request.user, reason=data.get('reason', 'return'),
+                notes=data.get('notes', ''),
+            )
+            explicit_debit_number = validated_desktop_number(data, 'debit_number', company)
+            if explicit_debit_number:
+                debit_note_kwargs['debit_number'] = explicit_debit_number
+            debit_note, debit_note_conflict = create_with_pk_fallback(DebitNote.objects, explicit_debit_note_id, **debit_note_kwargs)
+            if debit_note_conflict:
+                pk_conflicts.append({'model': 'purchase.DebitNote', **debit_note_conflict})
+
+            total_value = Decimal('0')
+            for index, line in enumerate(items_data):
+                bill_item_id = line.get('bill_item_id')
+                if not bill_item_id:
+                    raise ValueError('Each item requires a bill_item_id.')
+                try:
+                    bill_item = BillItem.objects.select_related('product').get(pk=bill_item_id, bill=bill)
+                except BillItem.DoesNotExist:
+                    raise ValueError(f'Bill item {bill_item_id} not found on this bill.')
+
+                product = bill_item.product
+                tracking_id = line.get('tracking_id')
+                # Value at the post-discount per-unit cost, not the raw list unit_price,
+                # so a discounted purchase doesn't credit back more than was actually billed.
+                net_unit_price = (
+                    (bill_item.unit_price * bill_item.quantity - bill_item.discount_amount) / bill_item.quantity
+                    if bill_item.quantity else bill_item.unit_price
+                )
+
+                if product.tracking_method in ('serial', 'imei'):
+                    if not tracking_id:
+                        raise ValueError(f'{product.name} is tracked - a tracking_id is required to return it.')
+                    try:
+                        tracking_unit = ProductTracking.objects.get(pk=tracking_id, product=product)
+                    except ProductTracking.DoesNotExist:
+                        raise ValueError(f'Tracking unit {tracking_id} not found.')
+                    if tracking_unit.status != 'available' or tracking_unit.bill_item_id != bill_item.id:
+                        raise ValueError(
+                            f'{product.name} ({tracking_id}) is not currently available from this bill - '
+                            f'it may already be sold or returned.'
+                        )
+                    quantity = Decimal('1')
+                    unit_price = net_unit_price
+                else:
+                    tracking_unit = None
+                    try:
+                        quantity = Decimal(str(line.get('quantity', '1')))
+                    except InvalidOperation:
+                        raise ValueError(f'Invalid quantity for {product.name}.')
+                    if quantity <= 0:
+                        raise ValueError(f'quantity must be > 0 for {product.name}.')
+                    already_returned = bill_item.debit_note_items.aggregate(total=Sum('quantity'))['total'] or 0
+                    still_on_hand = bill_item.received_quantity - already_returned
+                    if quantity > still_on_hand:
+                        raise ValueError(
+                            f'Cannot return {quantity} of {product.name} - only {still_on_hand} '
+                            f'left on hand from this bill.'
+                        )
+                    unit_price = net_unit_price
+
+                item_id = None
+                if index < len(desktop_item_pks):
+                    item_id = validated_desktop_pk({'desktop_pks': {'item': desktop_item_pks[index]}, 'device_id': data.get('device_id')}, 'item', company)
+                debit_note_item, item_conflict = create_with_pk_fallback(
+                    DebitNoteItem.objects, item_id,
+                    debit_note=debit_note, bill_item=bill_item, product=product,
+                    tracking_unit=tracking_unit, quantity=quantity, unit_price=unit_price,
+                )
+                if item_conflict:
+                    pk_conflicts.append({'model': 'purchase.DebitNoteItem', **item_conflict})
+                total_value += quantity * unit_price
+
+                bill_item.received_quantity = bill_item.received_quantity - quantity
+                bill_item.save(update_fields=['received_quantity'])
+
+                stock_item = StockItem.objects.filter(company=company, product=product).order_by('-created_at').first()
+                if stock_item is None:
+                    raise ValueError(f'No stock record found for {product.name} - cannot remove stock for this return.')
+
+                StockMovement.objects.create(
+                    company=company, stock_item=stock_item, movement_type='purchase_return',
+                    quantity=quantity, unit_cost=stock_item.average_cost, total_cost=quantity * stock_item.average_cost,
+                    from_warehouse=stock_item.warehouse, bill_item=bill_item,
+                    reference_number=f'{debit_note.debit_number}',
+                    reference_type='bill', reference_id=bill.id,
+                    notes=f'Return to supplier - {debit_note.debit_number} against {bill.bill_number}',
+                    performed_by=request.user,
+                )
+
+                if tracking_unit:
+                    tracking_unit.status = 'returned'
+                    tracking_unit.save(update_fields=['status'])
+
+            debit_note.subtotal = total_value
+            debit_note.total = total_value
+            debit_note.save()
+
+            SupplierLedger.objects.create(
+                company=company, supplier=bill.supplier, transaction_date=timezone.now().date(),
+                reference_type='debit_note', reference_id=debit_note.id,
+                description=f'Return {debit_note.debit_number} against {bill.bill_number}',
+                debit_amount=0, credit_amount=total_value, created_by=request.user,
+            )
+
+    except ValueError as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    response_body = DebitNoteSerializer(debit_note).data
+    # Creation-order item ids a replay's desktop_pks.items must match - read by
+    # core.desktop_sync._build_replay_extras(), same convention as process_sales_return.
+    response_body['item_ids'] = list(debit_note.items.order_by('id').values_list('id', flat=True))
+    if pk_conflicts:
+        response_body['pk_conflicts'] = pk_conflicts
+    return Response(response_body, status=status.HTTP_201_CREATED)

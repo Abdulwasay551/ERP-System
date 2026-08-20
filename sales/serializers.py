@@ -28,12 +28,15 @@ class SalesOrderItemSerializer(serializers.ModelSerializer):
 
 class InvoiceItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
+    product_tracking_method = serializers.CharField(source='product.tracking_method', read_only=True)
     tracking_identifier = serializers.SerializerMethodField()
+    tracking_status = serializers.CharField(source='tracking_unit.status', read_only=True, default=None)
 
     class Meta:
         model = InvoiceItem
         fields = [
-            'id', 'product', 'product_name', 'tracking_unit', 'tracking_identifier',
+            'id', 'product', 'product_name', 'product_tracking_method', 'tracking_unit',
+            'tracking_identifier', 'tracking_status',
             'quantity', 'unit_price', 'discounts', 'discount_amount', 'line_total',
         ]
 
