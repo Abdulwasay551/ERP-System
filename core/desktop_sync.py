@@ -457,6 +457,12 @@ def _build_replay_extras(path, response_data):
             'bill': response_data['bill_id'],
             'items': [item['bill_item_id'] for item in response_data.get('items', [])],
         }
+        # Only present if the invoice was created with one or more lines already marked
+        # "received now" (see purchase.services.receive_bill_line) - same tracking_units
+        # key/shape as the receive-items branch below, so a replay's ProductTracking rows
+        # land on the exact PKs already committed locally either way.
+        if response_data.get('tracking_unit_ids'):
+            pks['tracking_units'] = response_data['tracking_unit_ids']
         return pks, {'bill_number': response_data['bill_number']}
     if path == '/api/purchase/suppliers/':
         return {'supplier': response_data['id']}, {'supplier_code': response_data['supplier_code']}

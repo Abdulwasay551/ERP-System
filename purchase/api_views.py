@@ -618,7 +618,10 @@ def vendor_invoice_create(request):
     # endpoint rather than a raw row upsert: Bill.save() posts to the supplier ledger).
     from core.device_registry import validated_desktop_pk, validated_desktop_number
     from core.pk_conflict import create_with_pk_fallback
+    from purchase.services import receive_bill_line
     desktop_item_pks = (data.get('desktop_pks') or {}).get('items') or []
+    desktop_tracking_pks = (data.get('desktop_pks') or {}).get('tracking_units') or []
+    tracking_index = 0
     pk_conflicts = []
 
     try:
@@ -643,6 +646,8 @@ def vendor_invoice_create(request):
                 pk_conflicts.append({'model': 'purchase.Bill', **bill_conflict})
 
             item_summaries = []
+            received_items = []
+            received_tracking_unit_ids = []
             for index, line in enumerate(items_data):
                 product_id = line.get('product_id')
                 if not product_id:
@@ -684,6 +689,32 @@ def vendor_invoice_create(request):
                     'tracking_method': product.tracking_method,
                 })
 
+                # Shop already has the phones in hand when recording the invoice - let
+                # this line be received in the same request instead of a second
+                # data-entry pass through the pending-receiving flow later. Does NOT
+                # confirm the bill (goods_received stays False) - that's still an
+                # explicit separate step.
+                if line.get('received'):
+                    def _next_tracking_pk():
+                        nonlocal tracking_index
+                        explicit_id = None
+                        if tracking_index < len(desktop_tracking_pks):
+                            explicit_id = validated_desktop_pk(
+                                {'desktop_pks': {'unit': desktop_tracking_pks[tracking_index]}, 'device_id': data.get('device_id')},
+                                'unit', company,
+                            )
+                        tracking_index += 1
+                        return explicit_id
+
+                    received_summary, received_ids, received_conflicts = receive_bill_line(
+                        bill_item, warehouse, company, request.user,
+                        codes=line.get('codes'), quantity=line.get('received_quantity'),
+                        tracking_pk_provider=_next_tracking_pk,
+                    )
+                    received_tracking_unit_ids.extend(received_ids)
+                    pk_conflicts.extend(received_conflicts)
+                    received_items.append(received_summary)
+
             try:
                 bill.discount_amount = Decimal(str(data.get('discount_amount', '0')))
             except InvalidOperation:
@@ -697,6 +728,8 @@ def vendor_invoice_create(request):
 
     except ValueError as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except IntegrityError as e:
+        return Response({'error': f'Database integrity error: {e}'}, status=status.HTTP_400_BAD_REQUEST)
 
     response_body = {
         'bill_id': bill.id,
@@ -705,6 +738,8 @@ def vendor_invoice_create(request):
         'total_amount': str(bill.total_amount),
         'goods_received': bill.goods_received,
         'items': item_summaries,
+        'received_items': received_items,
+        'tracking_unit_ids': received_tracking_unit_ids,
     }
     if pk_conflicts:
         response_body['pk_conflicts'] = pk_conflicts
@@ -733,7 +768,6 @@ def bill_receive_items(request, bill_id):
     get_or_create() calls below, unchanged.
     """
     from core.device_registry import validated_desktop_pk
-    from core.pk_conflict import create_with_pk_fallback
 
     company = request.user.company
     data = request.data
@@ -765,6 +799,8 @@ def bill_receive_items(request, bill_id):
     if not items_data:
         return Response({'error': 'items are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
+    from purchase.services import receive_bill_line
+
     try:
         with transaction.atomic():
             tracking_units_created = 0
@@ -780,101 +816,26 @@ def bill_receive_items(request, bill_id):
                 except BillItem.DoesNotExist:
                     raise ValueError(f'Bill item {bill_item_id} not found on bill {bill_id}.')
 
-                product = bill_item.product
-                variant = bill_item.variant
-
-                if product.tracking_method in ('imei', 'serial', 'barcode'):
-                    codes = line.get('codes') or []
-                    if not codes:
-                        raise ValueError(
-                            f'Product {product.name} requires individual codes '
-                            f'({product.get_tracking_method_display()}) - none provided.'
+                def _next_tracking_pk():
+                    nonlocal tracking_index
+                    explicit_id = None
+                    if tracking_index < len(desktop_tracking_pks):
+                        explicit_id = validated_desktop_pk(
+                            {'desktop_pks': {'unit': desktop_tracking_pks[tracking_index]}, 'device_id': data.get('device_id')},
+                            'unit', company,
                         )
-                    if bill_item.received_quantity + len(codes) > bill_item.quantity:
-                        raise ValueError(
-                            f'{product.name}: receiving {len(codes)} more would total '
-                            f'{bill_item.received_quantity + len(codes)}, more than the '
-                            f'{bill_item.quantity} ordered on this line.'
-                        )
-                    tracking_field = product.get_tracking_field_name()
+                    tracking_index += 1
+                    return explicit_id
 
-                    for code in codes:
-                        code = str(code).strip()
-                        if not code:
-                            raise ValueError(f'Empty tracking code for product {product.name}.')
-                        if product.tracking_method == 'imei' and not (len(code) == 15 and code.isdigit()):
-                            raise ValueError(
-                                f'"{code}" is not a valid IMEI for {product.name} - an IMEI must be '
-                                f'exactly 15 digits.'
-                            )
-                        if ProductTracking.objects.filter(**{tracking_field: code}).exists():
-                            raise ValueError(f'{product.get_tracking_method_display()} "{code}" already exists in the system.')
-                        explicit_tracking_id = None
-                        if tracking_index < len(desktop_tracking_pks):
-                            explicit_tracking_id = validated_desktop_pk(
-                                {'desktop_pks': {'unit': desktop_tracking_pks[tracking_index]}, 'device_id': data.get('device_id')},
-                                'unit', company,
-                            )
-                        tracking_index += 1
-                        tracking_unit, tracking_conflict = create_with_pk_fallback(
-                            ProductTracking.objects, explicit_tracking_id,
-                            product=product,
-                            variant=variant,
-                            current_warehouse=warehouse,
-                            supplier=bill.supplier,
-                            bill_item=bill_item,
-                            purchase_price=bill_item.unit_price,
-                            purchase_date=bill.bill_date,
-                            status='available',
-                            created_by=request.user,
-                            **{tracking_field: code}
-                        )
-                        if tracking_conflict:
-                            pk_conflicts.append({'model': 'products.ProductTracking', **tracking_conflict})
-                        tracking_unit_ids.append(tracking_unit.id)
-                        tracking_units_created += 1
-
-                    # Dual-write a StockItem alongside ProductTracking (mirrors the
-                    # existing GRN receiving pattern) - process_inventory_reduction() is
-                    # StockItem-driven, so without this a tracked product sold via POS
-                    # would silently never get its ProductTracking unit marked sold.
-                    stock_item, _ = StockItem.objects.get_or_create(
-                        company=company, product=product, warehouse=warehouse,
-                        defaults={'stock_status': 'available', 'purchase_status': 'ready_for_use'}
-                    )
-                    stock_item.update_average_cost(Decimal(len(codes)), bill_item.unit_price)
-                    stock_item.quantity += len(codes)
-                    stock_item.save()
-
-                    bill_item.received_quantity += len(codes)
-                    bill_item.save(update_fields=['received_quantity'])
-
-                    line_summaries.append({'bill_item_id': bill_item.id, 'product_name': product.name, 'units_received': len(codes)})
-                else:
-                    quantity = Decimal(str(line.get('quantity', '0')))
-                    if quantity <= 0:
-                        raise ValueError(f'quantity must be > 0 for product {product.name}.')
-                    if bill_item.received_quantity + quantity > bill_item.quantity:
-                        raise ValueError(
-                            f'{product.name}: receiving {quantity} more would total '
-                            f'{bill_item.received_quantity + quantity}, more than the '
-                            f'{bill_item.quantity} ordered on this line.'
-                        )
-                    stock_item, _ = StockItem.objects.get_or_create(
-                        company=company, product=product, warehouse=warehouse,
-                        defaults={'stock_status': 'available', 'purchase_status': 'ready_for_use'}
-                    )
-                    # update_average_cost() computes the new weighted average from the
-                    # CURRENT (pre-addition) quantity + the incoming quantity, then saves -
-                    # so quantity must only be incremented after that call, not before.
-                    stock_item.update_average_cost(quantity, bill_item.unit_price)
-                    stock_item.quantity += quantity
-                    stock_item.save()
-
-                    bill_item.received_quantity += quantity
-                    bill_item.save(update_fields=['received_quantity'])
-
-                    line_summaries.append({'bill_item_id': bill_item.id, 'product_name': product.name, 'quantity_received': str(quantity)})
+                summary, ids, conflicts = receive_bill_line(
+                    bill_item, warehouse, company, request.user,
+                    codes=line.get('codes'), quantity=line.get('quantity'),
+                    tracking_pk_provider=_next_tracking_pk,
+                )
+                tracking_unit_ids.extend(ids)
+                tracking_units_created += len(ids)
+                pk_conflicts.extend(conflicts)
+                line_summaries.append(summary)
 
     except ValueError as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
