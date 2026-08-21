@@ -39,6 +39,16 @@ def _styles():
 _TRACKING_LABELS = {'imei': 'IMEI', 'serial': 'S/N', 'barcode': 'Barcode', 'batch': 'Batch'}
 
 
+def _discount_line(invoice):
+    """Printable 'Discount: -Rs. X' line for an Invoice's header discount, showing the
+    resolved currency amount (not the raw percent number) and the type when it's a
+    percentage."""
+    from core.pricing import resolve_header_discount
+    amount = resolve_header_discount(invoice.subtotal, invoice.discount_amount, invoice.discount_type)
+    label = f"Discount ({invoice.discount_amount:,.0f}%)" if invoice.discount_type == 'percent' else "Discount"
+    return f"{label}: -Rs. {amount:,.0f}"
+
+
 def _tracking_line(tracking_unit):
     """One tracking unit's printable "IMEI: 123..." line, or '' if the product isn't
     individually tracked / the unit has no value set yet."""
@@ -147,7 +157,7 @@ def build_invoice_pdf(invoice, items, receipt_width_mm=80):
     elements.append(Spacer(1, 2 * mm))
     elements.append(Paragraph(f"Subtotal: Rs. {invoice.subtotal:,.0f}", styles['Right']))
     if invoice.discount_amount:
-        elements.append(Paragraph(f"Discount: -Rs. {invoice.discount_amount:,.0f}", styles['Right']))
+        elements.append(Paragraph(_discount_line(invoice), styles['Right']))
     elements.append(Paragraph(f"<b>Total: Rs. {invoice.total:,.0f}</b>", styles['Right']))
     elements.append(Paragraph(f"Paid: Rs. {invoice.paid_amount:,.0f}", styles['Right']))
     elements.append(Paragraph(f"Outstanding: Rs. {invoice.outstanding_amount:,.0f}", styles['Right']))
@@ -229,7 +239,7 @@ def build_invoice_pdf_a4(invoice, items):
     elements.append(Spacer(1, 4 * mm))
     elements.append(Paragraph(f"Subtotal: Rs. {invoice.subtotal:,.0f}", styles['Right']))
     if invoice.discount_amount:
-        elements.append(Paragraph(f"Discount: -Rs. {invoice.discount_amount:,.0f}", styles['Right']))
+        elements.append(Paragraph(_discount_line(invoice), styles['Right']))
     elements.append(Paragraph(f"<b>Total: Rs. {invoice.total:,.0f}</b>", styles['Right']))
     elements.append(Paragraph(f"Paid: Rs. {invoice.paid_amount:,.0f}", styles['Right']))
     elements.append(Paragraph(f"Outstanding: Rs. {invoice.outstanding_amount:,.0f}", styles['Right']))

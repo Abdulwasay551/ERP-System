@@ -477,10 +477,11 @@ class Invoice(SoftDeleteMixin, models.Model):
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     discount_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    discount_type = models.CharField(max_length=10, choices=[('fixed', 'Fixed'), ('percent', 'Percent')], default='fixed', help_text='How discount_amount is interpreted - a flat currency figure, or a percentage of the subtotal')
     shipping_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    
+
     status = models.CharField(max_length=20, choices=INVOICE_STATUS_CHOICES, default='draft')
     
     # Payment terms

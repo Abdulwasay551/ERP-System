@@ -46,3 +46,18 @@ def compute_line_discount(base_amount, quantity, discounts):
 
     total_discount = flat_off + percent_off_total
     return min(total_discount, base_amount)
+
+
+def resolve_header_discount(base_amount, amount, discount_type):
+    """
+    Whole-invoice/whole-bill discount amount to subtract from base_amount (Decimal) -
+    unlike line discounts, this is a single value with a single type, not a stack.
+    'percent': amount is 0-100, applied to base_amount. 'fixed' (default/unknown):
+    amount is a flat currency figure. Both capped at base_amount so a header discount
+    can never drive the total negative.
+    """
+    base_amount = Decimal(str(base_amount or 0))
+    amount = Decimal(str(amount or 0))
+    if discount_type == 'percent':
+        amount = base_amount * (amount / Decimal('100'))
+    return min(amount, base_amount)

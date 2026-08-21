@@ -481,8 +481,11 @@ class BillViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
                     bill.discount_amount = Decimal(str(data.get('discount_amount', bill.discount_amount)))
                 except InvalidOperation:
                     raise ValueError('Invalid discount_amount.')
+                bill.discount_type = data.get('discount_type', bill.discount_type)
                 bill.subtotal = sum(item.line_total for item in bill.items.all())
-                bill.total_amount = bill.subtotal + bill.tax_amount - bill.discount_amount
+                from core.pricing import resolve_header_discount
+                header_discount = resolve_header_discount(bill.subtotal, bill.discount_amount, bill.discount_type)
+                bill.total_amount = bill.subtotal + bill.tax_amount - header_discount
                 bill.save()
 
                 if bill.paid_amount >= bill.total_amount and bill.total_amount > 0:
@@ -685,8 +688,11 @@ def vendor_invoice_create(request):
                 bill.discount_amount = Decimal(str(data.get('discount_amount', '0')))
             except InvalidOperation:
                 raise ValueError('Invalid discount_amount.')
+            bill.discount_type = data.get('discount_type', 'fixed')
             bill.subtotal = sum(item.line_total for item in bill.items.all())
-            bill.total_amount = bill.subtotal + bill.tax_amount - bill.discount_amount
+            from core.pricing import resolve_header_discount
+            header_discount = resolve_header_discount(bill.subtotal, bill.discount_amount, bill.discount_type)
+            bill.total_amount = bill.subtotal + bill.tax_amount - header_discount
             bill.save()
 
     except ValueError as e:

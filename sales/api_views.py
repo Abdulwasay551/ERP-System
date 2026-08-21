@@ -194,10 +194,14 @@ class InvoiceViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
                     discount_amount = Decimal(str(data.get('discount_amount', invoice.discount_amount)))
                 except InvalidOperation:
                     raise ValueError('Invalid discount_amount.')
+                discount_type = data.get('discount_type', invoice.discount_type)
 
                 invoice.subtotal = subtotal
                 invoice.discount_amount = discount_amount
-                invoice.total = subtotal - line_discounts_total - discount_amount
+                invoice.discount_type = discount_type
+                from core.pricing import resolve_header_discount
+                header_discount = resolve_header_discount(subtotal - line_discounts_total, discount_amount, discount_type)
+                invoice.total = subtotal - line_discounts_total - header_discount
                 invoice.save()
 
                 if was_confirmed:
@@ -417,10 +421,14 @@ def pos_checkout(request):
                 discount_amount = Decimal(str(data.get('discount_amount', '0')))
             except InvalidOperation:
                 raise ValueError('Invalid discount_amount.')
+            discount_type = data.get('discount_type', 'fixed')
 
             invoice.subtotal = subtotal
             invoice.discount_amount = discount_amount
-            invoice.total = subtotal - line_discounts_total - discount_amount
+            invoice.discount_type = discount_type
+            from core.pricing import resolve_header_discount
+            header_discount = resolve_header_discount(subtotal - line_discounts_total, discount_amount, discount_type)
+            invoice.total = subtotal - line_discounts_total - header_discount
 
             payment_data = data.get('payment') or {}
             try:

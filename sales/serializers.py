@@ -65,7 +65,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
         # through the returns/credit-note flow instead, which already updates both.
         read_only_fields = (
             'company', 'customer', 'created_by', 'invoice_number', 'invoice_date',
-            'subtotal', 'tax_amount', 'discount_amount', 'shipping_amount', 'total',
+            'subtotal', 'tax_amount', 'discount_amount', 'discount_type', 'shipping_amount', 'total',
             'paid_amount', 'status', 'pdf_file',
         )
 

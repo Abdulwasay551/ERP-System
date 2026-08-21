@@ -1745,6 +1745,7 @@ class Bill(SoftDeleteMixin, models.Model):
     subtotal = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     tax_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     discount_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0, help_text='Whole-bill quick discount, applied on top of any per-line discounts')
+    discount_type = models.CharField(max_length=10, choices=[('fixed', 'Fixed'), ('percent', 'Percent')], default='fixed', help_text='How discount_amount is interpreted - a flat currency figure, or a percentage of the subtotal')
     total_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     paid_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     outstanding_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
