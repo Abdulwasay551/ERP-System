@@ -1,7 +1,9 @@
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db.models import Q
+from django.db.models import Q, Sum, Count
+from django.utils import timezone
+from datetime import timedelta
 from django.http import HttpResponse
 from .models import Customer, CustomerLedger, CustomerLedgerAdjustment, Lead, Opportunity, CommunicationLog
 from .serializers import (
@@ -31,7 +33,11 @@ class CustomerViewSet(IdempotentCreateMixin, PkConflictReportingMixin, SoftDelet
 
     def get_queryset(self):
         qs = Customer.objects.filter(company=self.request.user.company)
-        search = self.request.query_params.get('search')
+        # Only apply on the list action - this queryset also backs self.get_object() for
+        # every detail action (ledger, invoices, analytics, ...), each of which may have
+        # its own unrelated `?search=` param (e.g. invoices' invoice-number search) that
+        # must not ALSO filter out the parent Customer itself before the action runs.
+        search = self.request.query_params.get('search') if self.action == 'list' else None
         if search:
             qs = qs.filter(
                 Q(name__icontains=search) |
@@ -54,6 +60,74 @@ class CustomerViewSet(IdempotentCreateMixin, PkConflictReportingMixin, SoftDelet
             self._pk_conflicts = [{'model': 'crm.Customer', **conflict}]
 
     @action(detail=True, methods=['get'])
+    def invoices(self, request, pk=None):
+        """
+        Actual Invoice rows for the Table/List tab of the customer detail page - the
+        ledger action can't be filtered by invoice number (it's a mixed feed of invoice/
+        payment/credit-note/etc rows keyed by reference_type+reference_id, not a real FK
+        to Invoice), so this is a separate query rather than a ledger filter.
+        """
+        from sales.models import Invoice
+        from sales.serializers import InvoiceSerializer
+        customer = self.get_object()
+        qs = Invoice.objects.filter(customer=customer).order_by('-invoice_date', '-id')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        if date_from:
+            qs = qs.filter(invoice_date__gte=date_from)
+        if date_to:
+            qs = qs.filter(invoice_date__lte=date_to)
+        search = request.query_params.get('search')
+        if search:
+            qs = qs.filter(invoice_number__icontains=search)
+
+        try:
+            page = max(int(request.query_params.get('page', 1)), 1)
+            page_size = min(max(int(request.query_params.get('page_size', 25)), 1), 200)
+        except ValueError:
+            page = 1
+            page_size = 25
+
+        count = qs.count()
+        start = (page - 1) * page_size
+        page_qs = qs[start:start + page_size]
+        return Response({
+            'count': count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': (count + page_size - 1) // page_size if count else 1,
+            'results': InvoiceSerializer(page_qs, many=True).data,
+        })
+
+    @action(detail=True, methods=['get'])
+    def analytics(self, request, pk=None):
+        """Day-bucketed spend + invoice-count over time, for the customer detail page's
+        Analytics tab - same dict-by-day merge pattern as analytics.api_views.profit_report."""
+        from sales.models import Invoice
+        customer = self.get_object()
+        days = min(max(int(request.query_params.get('days', 90)), 1), 365)
+        today = timezone.now().date()
+        start = today - timedelta(days=days - 1)
+
+        rows = Invoice.objects.filter(
+            customer=customer, invoice_date__gte=start, invoice_date__lte=today
+        ).values('invoice_date').annotate(total=Sum('total'), invoice_count=Count('id'))
+        by_day = {r['invoice_date']: r for r in rows}
+
+        series = []
+        d = start
+        while d <= today:
+            row = by_day.get(d)
+            series.append({
+                'date': d.isoformat(),
+                'spend': str(row['total']) if row else '0',
+                'invoice_count': row['invoice_count'] if row else 0,
+            })
+            d += timedelta(days=1)
+
+        return Response({'days': series})
+
+    @action(detail=True, methods=['get'])
     def ledger(self, request, pk=None):
         customer = self.get_object()
         entries = customer.ledger_entries.all().order_by('-transaction_date', '-created_at')
@@ -63,6 +137,9 @@ class CustomerViewSet(IdempotentCreateMixin, PkConflictReportingMixin, SoftDelet
             entries = entries.filter(transaction_date__gte=date_from)
         if date_to:
             entries = entries.filter(transaction_date__lte=date_to)
+        reference_type = request.query_params.get('reference_type')
+        if reference_type:
+            entries = entries.filter(reference_type=reference_type)
 
         try:
             page = max(int(request.query_params.get('page', 1)), 1)

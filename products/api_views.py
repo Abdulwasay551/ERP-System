@@ -60,8 +60,14 @@ class ProductViewSet(IdempotentCreateMixin, PkConflictReportingMixin, SoftDelete
         queryset = Product.objects.filter(company=self.request.user.company).select_related(
             'category', 'created_by', 'updated_by'
         ).prefetch_related('variants', 'tracking_units')
-        
-        # Apply custom filtering
+
+        # This queryset also backs self.get_object() for every detail action (history,
+        # tracking_info, ...) - only apply ProductFilter's query-param filtering
+        # (search/category/etc, meant for the list action) on an actual list request, so
+        # a detail action's own unrelated query params can never filter out the parent
+        # Product itself before the action body runs.
+        if self.action != 'list':
+            return queryset
         filter_instance = ProductFilter(queryset, self.request.query_params)
         return filter_instance.filter_queryset()
 

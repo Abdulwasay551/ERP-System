@@ -3,7 +3,8 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from django.db import transaction, IntegrityError
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, Count
+from datetime import timedelta
 from django.http import HttpResponse
 from django.utils import timezone
 from user_auth.permissions import RoleIn, IsOwnerOrManager
@@ -44,7 +45,11 @@ class SupplierViewSet(IdempotentCreateMixin, PkConflictReportingMixin, SoftDelet
 
     def get_queryset(self):
         qs = Supplier.objects.filter(company=self.request.user.company).select_related('partner')
-        search = self.request.query_params.get('search')
+        # Only apply on the list action - this queryset also backs self.get_object() for
+        # every detail action (ledger, bills, analytics, ...), each of which may have its
+        # own unrelated `?search=` param (e.g. bills' bill-number search) that must not
+        # ALSO filter out the parent Supplier itself before the action body ever runs.
+        search = self.request.query_params.get('search') if self.action == 'list' else None
         if search:
             qs = qs.filter(
                 Q(partner__name__icontains=search) |
@@ -78,6 +83,67 @@ class SupplierViewSet(IdempotentCreateMixin, PkConflictReportingMixin, SoftDelet
         return Response(serializer.data)
 
     @action(detail=True, methods=['get'])
+    def bills(self, request, pk=None):
+        """Actual Bill rows for the Table/List tab of the supplier detail page - mirrors
+        crm.CustomerViewSet.invoices exactly (the ledger action can't be filtered by bill
+        number, it's a mixed reference_type+reference_id feed, not a real FK to Bill)."""
+        supplier = self.get_object()
+        qs = Bill.objects.filter(supplier=supplier).order_by('-bill_date', '-id')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        if date_from:
+            qs = qs.filter(bill_date__gte=date_from)
+        if date_to:
+            qs = qs.filter(bill_date__lte=date_to)
+        search = request.query_params.get('search')
+        if search:
+            qs = qs.filter(bill_number__icontains=search)
+
+        try:
+            page = max(int(request.query_params.get('page', 1)), 1)
+            page_size = min(max(int(request.query_params.get('page_size', 25)), 1), 200)
+        except ValueError:
+            page = 1
+            page_size = 25
+
+        count = qs.count()
+        start = (page - 1) * page_size
+        page_qs = qs[start:start + page_size]
+        return Response({
+            'count': count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': (count + page_size - 1) // page_size if count else 1,
+            'results': BillSerializer(page_qs, many=True).data,
+        })
+
+    @action(detail=True, methods=['get'])
+    def analytics(self, request, pk=None):
+        """Day-bucketed spend + bill-count over time - mirrors crm.CustomerViewSet.analytics."""
+        supplier = self.get_object()
+        days = min(max(int(request.query_params.get('days', 90)), 1), 365)
+        today = timezone.now().date()
+        start = today - timedelta(days=days - 1)
+
+        rows = Bill.objects.filter(
+            supplier=supplier, bill_date__gte=start, bill_date__lte=today
+        ).values('bill_date').annotate(total=Sum('total_amount'), bill_count=Count('id'))
+        by_day = {r['bill_date']: r for r in rows}
+
+        series = []
+        d = start
+        while d <= today:
+            row = by_day.get(d)
+            series.append({
+                'date': d.isoformat(),
+                'spend': str(row['total']) if row else '0',
+                'bill_count': row['bill_count'] if row else 0,
+            })
+            d += timedelta(days=1)
+
+        return Response({'days': series})
+
+    @action(detail=True, methods=['get'])
     def ledger(self, request, pk=None):
         supplier = self.get_object()
         entries = supplier.ledger_entries.all().order_by('-transaction_date', '-created_at')
@@ -87,6 +153,9 @@ class SupplierViewSet(IdempotentCreateMixin, PkConflictReportingMixin, SoftDelet
             entries = entries.filter(transaction_date__gte=date_from)
         if date_to:
             entries = entries.filter(transaction_date__lte=date_to)
+        reference_type = request.query_params.get('reference_type')
+        if reference_type:
+            entries = entries.filter(reference_type=reference_type)
 
         try:
             page = max(int(request.query_params.get('page', 1)), 1)
