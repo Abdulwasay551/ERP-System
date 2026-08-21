@@ -727,6 +727,10 @@ class Invoice(SoftDeleteMixin, models.Model):
                 unit.sold_to_customer = customer_partner
                 unit.sold_date = timezone.now()
                 unit.sold_invoice = self
+                # Was declared on the model for exactly this ("per-unit price override")
+                # but never actually written at the point of sale until now - needed for
+                # a real per-unit profit trace (products.api_views.ProductViewSet.history).
+                unit.selling_price = invoice_item.unit_price
                 unit.save()
 
         elif invoice_item.product.tracking_method in ['batch', 'expiry']:
@@ -798,7 +802,8 @@ class Invoice(SoftDeleteMixin, models.Model):
                         status='available',
                         sold_to_customer=None,
                         sold_date=None,
-                        sold_invoice=None
+                        sold_invoice=None,
+                        selling_price=None,
                     )
                 
                 elif stock_item.product.tracking_method in ['batch', 'expiry']:

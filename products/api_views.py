@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum, Avg, Max, F
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -176,6 +176,111 @@ class ProductViewSet(IdempotentCreateMixin, PkConflictReportingMixin, SoftDelete
             'message': 'Product duplicated successfully',
             'product': serializer.data
         }, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['get'])
+    def history(self, request, pk=None):
+        """
+        Purchase-price history per vendor, sold-price history, profit-to-date, and
+        vendor-sourcing breakdown for one product. Individually-tracked products
+        (imei/serial/barcode) have real per-unit history via ProductTracking's own
+        purchase_price/supplier/selling_price/sold_* fields - computed directly off
+        those rather than via InvoiceItem.tracking_unit, which isn't reliably
+        backfilled for FIFO-auto-picked sales (see Invoice.create_tracking_movements()).
+        Batch/none-tracked products have no per-unit trail (stock is pooled across
+        vendors on a single StockItem.average_cost) - degrades to a current-cost-only
+        summary plus a StockMovement-based profit total instead.
+        """
+        product = self.get_object()
+        individually_tracked = product.tracking_method in ('imei', 'serial', 'barcode')
+
+        if individually_tracked:
+            units = ProductTracking.objects.filter(product=product).select_related(
+                'supplier__partner', 'sold_to_customer', 'sold_invoice'
+            )
+
+            purchase_price_history = [
+                {
+                    'vendor_id': u.supplier_id,
+                    'vendor_name': u.supplier.name if u.supplier else None,
+                    'date': u.purchase_date.isoformat() if u.purchase_date else None,
+                    'price': str(u.purchase_price) if u.purchase_price is not None else None,
+                }
+                for u in units.exclude(purchase_price__isnull=True).order_by('purchase_date')
+            ]
+
+            sold_units = list(units.filter(status='sold').exclude(sold_date__isnull=True))
+            sold_price_history = [
+                {
+                    'date': u.sold_date.isoformat() if u.sold_date else None,
+                    'price': str(u.selling_price) if u.selling_price is not None else None,
+                    'customer_id': u.sold_to_customer_id,
+                    'invoice_id': u.sold_invoice_id,
+                }
+                for u in sorted(sold_units, key=lambda u: u.sold_date)
+            ]
+
+            total_cost = sum((u.purchase_price or 0) for u in sold_units)
+            total_revenue = sum((u.selling_price or 0) for u in sold_units)
+            profit_to_date = {
+                'units_sold': len(sold_units),
+                'total_cost': str(total_cost),
+                'total_revenue': str(total_revenue),
+                'gross_profit': str(total_revenue - total_cost),
+            }
+
+            vendor_groups = units.exclude(supplier__isnull=True).values(
+                'supplier_id', 'supplier__partner__name'
+            ).annotate(
+                units_supplied=Count('id'), avg_price=Avg('purchase_price'), last_purchase_date=Max('purchase_date')
+            ).order_by('-units_supplied')
+            vendors = [
+                {
+                    'vendor_id': g['supplier_id'],
+                    'vendor_name': g['supplier__partner__name'],
+                    'units_supplied': g['units_supplied'],
+                    'last_purchase_date': g['last_purchase_date'].isoformat() if g['last_purchase_date'] else None,
+                    'avg_price': str(g['avg_price']) if g['avg_price'] is not None else None,
+                }
+                for g in vendor_groups
+            ]
+
+            return Response({
+                'product_id': product.id,
+                'individually_tracked': True,
+                'purchase_price_history': purchase_price_history,
+                'sold_price_history': sold_price_history,
+                'profit_to_date': profit_to_date,
+                'vendors': vendors,
+            })
+
+        from inventory.models import StockItem, StockMovement
+        stock_items = StockItem.objects.filter(company=product.company, product=product)
+        sale_movements = StockMovement.objects.filter(stock_item__in=stock_items, movement_type='sale')
+        cost_agg = sale_movements.aggregate(total_cost=Sum('total_cost'), units_sold=Sum('quantity'))
+        total_cost = cost_agg['total_cost'] or 0
+        units_sold = cost_agg['units_sold'] or 0
+
+        from sales.models import InvoiceItem
+        revenue_agg = InvoiceItem.objects.filter(
+            product=product, invoice__company=product.company
+        ).aggregate(total=Sum(F('quantity') * F('unit_price') - F('discount_amount')))
+        total_revenue = revenue_agg['total'] or 0
+
+        current_stock_item = stock_items.first()
+        return Response({
+            'product_id': product.id,
+            'individually_tracked': False,
+            'average_cost_history': [],
+            'current_average_cost': str(current_stock_item.average_cost) if current_stock_item else None,
+            'current_selling_price': str(product.selling_price),
+            'profit_to_date': {
+                'units_sold': str(units_sold),
+                'total_cost': str(total_cost),
+                'total_revenue': str(total_revenue),
+                'gross_profit': str(total_revenue - total_cost),
+            },
+            'vendors': [],
+        })
 
     @action(detail=True, methods=['get'])
     def tracking_info(self, request, pk=None):
