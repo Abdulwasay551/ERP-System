@@ -132,12 +132,11 @@ def build_invoice_pdf(invoice, items, receipt_width_mm=80):
 
     data = [['Item', 'Qty', 'Price', 'Total']]
     for item in items:
-        tracking_line = _tracking_line(item.tracking_unit)
-        item_cell = item.product.name
-        if tracking_line:
-            item_cell += f'<br/><font size="6.5" color="#525252">{tracking_line}</font>'
+        # Tracking codes (IMEI/serial) are deliberately NOT printed on the mini receipt -
+        # there's no room on an 80mm/58mm roll to show them legibly; the full A4 invoice
+        # (build_invoice_pdf_a4 below) is where tracking is shown.
         data.append([
-            Paragraph(item_cell, styles['Small']),
+            Paragraph(item.product.name, styles['Small']),
             str(item.quantity),
             f"{item.unit_price:,.0f}",
             f"{item.line_total:,.0f}",
@@ -174,11 +173,6 @@ def build_invoice_pdf(invoice, items, receipt_width_mm=80):
     item_max_text_width = item_w - 6  # minus the table's 3pt left+right cell padding
     items_height = sum(
         _wrapped_line_count(item.product.name, 'Helvetica', 7, item_max_text_width) * (7 * 1.6) + 8
-        # +1 line's worth when a tracking code is printed under the item name - it's
-        # always a single short line here (see build_invoice_pdf's own docstring: a
-        # tracked InvoiceItem is always quantity=1, one unit per line), so no need to
-        # wrap-measure it the way the product name above needs to.
-        + (10 if _tracking_line(item.tracking_unit) else 0)
         for item in items
     )
     totals_lines = 5 + (1 if invoice.discount_amount else 0)

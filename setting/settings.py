@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     'analytics', 
     'products',
     'django.contrib.humanize',
+    'data_migration',
 ]
 
 MIDDLEWARE = [
@@ -156,7 +157,7 @@ if env.bool('USE_SQLITE', default=False):
     }
 else:
     DATABASES = {
-        'default': {        
+        'default': {
             'ENGINE': env('DB_ENGINE', default='django.db.backends.postgresql'),
             'NAME': env('DB_NAME', default='erp'),
             'USER': env('DB_USER', default='postgres'),
@@ -164,6 +165,21 @@ else:
             'HOST': env('DB_HOST', default='localhost'),
             'PORT': env('DB_PORT', default='5432'),
         }
+    }
+
+# Read-only local Postgres copy of the legacy BizNet POS/accounting database, used only
+# by the data_migration app's one-off historical import scripts (raw SQL SELECTs against
+# django.db.connections['biznet']) - never migrated into, and not part of normal app
+# request handling. Not present in production; defaults match the local dev machine's
+# already-loaded copy (see E:\BizNetPG\04-load-postgres.ps1).
+if env.bool('BIZNET_DB_ENABLED', default=False):
+    DATABASES['biznet'] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('BIZNET_DB_NAME', default='biznet'),
+        'USER': env('BIZNET_DB_USER', default='postgres'),
+        'PASSWORD': env('BIZNET_DB_PASSWORD', default='password'),
+        'HOST': env('BIZNET_DB_HOST', default='localhost'),
+        'PORT': env('BIZNET_DB_PORT', default='5432'),
     }
 
 

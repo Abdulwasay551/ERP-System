@@ -166,6 +166,11 @@ class InvoiceViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
                         raise ValueError(f'Product {product_id} not found.')
 
                     tracking_id = line.get('tracking_id')
+                    if not tracking_id and product.tracking_method in ('imei', 'serial'):
+                        raise ValueError(
+                            f'{product.name} is tracked by {product.get_tracking_method_display()} - '
+                            f'select a specific unit to sell (scan or search it in POS).'
+                        )
                     if tracking_id:
                         if not ProductTracking.objects.filter(pk=tracking_id, product=product, status='available').exists():
                             raise ValueError(f'Tracking unit {tracking_id} is not available for sale.')
@@ -387,6 +392,11 @@ def pos_checkout(request):
                     raise ValueError(f'Product {product_id} not found.')
 
                 tracking_id = line.get('tracking_id')
+                if not tracking_id and product.tracking_method in ('imei', 'serial'):
+                    raise ValueError(
+                        f'{product.name} is tracked by {product.get_tracking_method_display()} - '
+                        f'select a specific unit to sell (scan or search it in POS).'
+                    )
                 if tracking_id:
                     if not ProductTracking.objects.filter(pk=tracking_id, product=product, status='available').exists():
                         raise ValueError(f'Tracking unit {tracking_id} is no longer available for sale.')
