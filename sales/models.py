@@ -756,19 +756,23 @@ class Invoice(SoftDeleteMixin, models.Model):
         from inventory.models import StockAlert
         
     def reverse_inventory_movements(self):
-        """Reverse inventory movements when invoice is cancelled or returned"""
+        """Reverse inventory movements when invoice is cancelled, returned, or deleted.
+        Idempotent: only reverses 'sale' movements not already marked is_reversed=True,
+        and marks each one as it goes - so calling this again (e.g. a second delete
+        after a restore) can't double-reverse the same movement twice."""
         from inventory.models import StockItem, StockMovement
         from products.models import ProductTracking
-        
+
         with transaction.atomic():
-            # Find all stock movements related to this invoice
+            # Find all not-yet-reversed stock movements related to this invoice
             movements = StockMovement.objects.filter(
                 company=self.company,
                 reference_type='invoice',
                 reference_id=self.id,
-                movement_type='sale'
+                movement_type='sale',
+                is_reversed=False,
             )
-            
+
             for movement in movements:
                 # NOTE: don't mutate/save stock_item's quantity here - StockMovement.save()
                 # (movement_type='sales_return') already restores it via
@@ -791,7 +795,14 @@ class Invoice(SoftDeleteMixin, models.Model):
                     notes=f'Reversal of sale - Invoice {self.invoice_number} cancelled/returned',
                     performed_by=self.created_by
                 )
-                
+
+                # Mark the original movement reversed so a later repeat call (e.g. a
+                # second delete after a restore) skips it instead of double-reversing.
+                movement.is_reversed = True
+                movement.reversed_at = timezone.now()
+                movement.reversal_reason = f'Invoice {self.invoice_number} cancelled/deleted'
+                movement.save(update_fields=['is_reversed', 'reversed_at', 'reversal_reason'])
+
                 # Restore serial/IMEI tracking units sold from this invoice
                 if stock_item.product.tracking_method in ['serial', 'imei']:
                     ProductTracking.objects.filter(
@@ -805,7 +816,7 @@ class Invoice(SoftDeleteMixin, models.Model):
                         sold_invoice=None,
                         selling_price=None,
                     )
-                
+
                 elif stock_item.product.tracking_method in ['batch', 'expiry']:
                     # For lots, we can't easily restore the exact quantities without additional tracking
                     # This would need more sophisticated lot tracking implementation
@@ -815,22 +826,72 @@ class Invoice(SoftDeleteMixin, models.Model):
         """Same ledger-mirror-cleanup pattern as Payment.soft_delete: the CustomerLedger
         debit entry isn't touched by save() on a plain field-update save (it's only
         (re)written on the draft->confirmed status transition), so remove it explicitly.
-        Deliberately NOT reversing stock/tracking movements here - reverse_inventory_
-        movements() isn't written to be safely re-appliable on a later restore (no
-        idempotency guard against double-counting), so an invoice's stock effect is left
-        as-is by delete/restore; only its ledger/financial visibility changes. Revisit if
-        stock accuracy after a delete turns out to matter in practice.
+        Also reverses stock/tracking (reverse_inventory_movements) - deleting an invoice
+        must free up the units/quantity it sold so they can be sold again. Safe to call
+        on a re-delete after a restore: reverse_inventory_movements() only touches
+        movements not already marked is_reversed.
         """
         super().soft_delete(user)
         from crm.models import CustomerLedger
         CustomerLedger.objects.filter(
             company=self.company, customer=self.customer, reference_type='invoice', reference_id=self.id,
         ).delete()
+        if self.status != 'draft':
+            self.reverse_inventory_movements()
 
     def restore(self):
+        """Mirrors soft_delete: re-debit the customer ledger, and re-apply the stock/
+        tracking effect that reverse_inventory_movements() undid on delete."""
         super().restore()
         if self.status != 'draft':
             self.update_customer_ledger_debit()
+            self.reapply_inventory_movements()
+
+    def reapply_inventory_movements(self):
+        """Undoes reverse_inventory_movements() when a deleted invoice is restored -
+        re-sells the same stock and re-marks the same tracked units sold, so a
+        delete->restore round-trip leaves stock/tracking exactly as it was before the
+        delete. Idempotent the same way: only touches sales_return movements still
+        marked is_reversed=True (set by reverse_inventory_movements)."""
+        from inventory.models import StockMovement
+        from products.models import ProductTracking
+
+        with transaction.atomic():
+            original_sales = StockMovement.objects.filter(
+                company=self.company, reference_type='invoice', reference_id=self.id,
+                movement_type='sale', is_reversed=True,
+            )
+            for movement in original_sales:
+                stock_item = movement.stock_item
+                StockMovement.objects.create(
+                    company=self.company,
+                    stock_item=stock_item,
+                    movement_type='sale',
+                    quantity=movement.quantity,
+                    unit_cost=movement.unit_cost,
+                    total_cost=movement.total_cost,
+                    from_warehouse=stock_item.warehouse,
+                    reference_number=self.invoice_number,
+                    reference_type='invoice',
+                    reference_id=self.id,
+                    notes=f'Re-sale on restore - Invoice {self.invoice_number}',
+                    performed_by=self.created_by,
+                )
+                movement.is_reversed = False
+                movement.reversed_at = None
+                movement.reversal_reason = ''
+                movement.save(update_fields=['is_reversed', 'reversed_at', 'reversal_reason'])
+
+                if stock_item.product.tracking_method in ['serial', 'imei']:
+                    customer_partner = self.customer.partner if hasattr(self.customer, 'partner') else None
+                    ProductTracking.objects.filter(
+                        product=stock_item.product, status='available',
+                        id__in=self.items.filter(product=stock_item.product, tracking_unit__isnull=False)
+                        .values_list('tracking_unit_id', flat=True),
+                    ).update(
+                        status='sold', sold_to_customer=customer_partner,
+                        sold_date=self.invoice_date, sold_invoice=self,
+                    )
 
     @property
     def outstanding_amount(self):

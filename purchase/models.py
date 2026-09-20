@@ -1818,13 +1818,94 @@ class Bill(SoftDeleteMixin, models.Model):
     def soft_delete(self, user):
         """Same pattern as PurchasePayment.soft_delete: save() re-syncs the mirrored
         SupplierLedger debit row unconditionally (get_or_create, not status-gated), so
-        remove it explicitly after. restore() needs no matching override - its own
-        save() call recreates the row naturally via that same get_or_create."""
+        remove it explicitly after. Also removes this bill's received stock from
+        inventory (reverse_inventory_movements) - deleting a bill must free up the fact
+        that stock as if it was never received, same reasoning as Invoice.soft_delete
+        reversing a sale. Safe to call again after a restore: only touches units/
+        quantity not already reversed.
+        """
         super().soft_delete(user)
         from .models import SupplierLedger
         SupplierLedger.objects.filter(
             company=self.company, supplier=self.supplier, reference_type='bill', reference_id=self.id,
         ).delete()
+        self.reverse_inventory_movements(user)
+
+    def restore(self):
+        """Mirrors soft_delete: super().restore()'s own save(update_fields=[...]) call
+        already hits Bill.save()'s override, which unconditionally re-syncs the
+        SupplierLedger debit row - no extra save() needed here, just re-apply the stock/
+        tracking that reverse_inventory_movements removed on delete."""
+        super().restore()
+        self.reapply_inventory_movements()
+
+    def reverse_inventory_movements(self, user=None):
+        """Removes this bill's received stock from inventory. Unlike Invoice's method of
+        the same name, bill receiving (purchase.services.receive_bill_line, the actual
+        live receiving flow) writes directly to StockItem.quantity rather than through a
+        StockMovement audit row - there is none to find/reverse here, so this works off
+        BillItem/ProductTracking directly instead.
+
+        Only reverses what's still on hand: an individually-tracked unit already sold
+        can't be un-sold by deleting the bill it arrived on, so only still-'available'
+        units are soft-deleted (removed from inventory, recoverable via restore()) and
+        their quantity backed out. Untracked/bulk products have no per-unit link to this
+        specific bill once pooled into a shared StockItem, so the best we can do is clamp
+        the reduction to whatever quantity is still actually on hand company-wide for
+        that product - a real limitation, not exact, for bulk products specifically.
+        """
+        from decimal import Decimal
+        from django.db import transaction
+        from django.utils import timezone
+        from inventory.models import StockItem
+        from products.models import ProductTracking
+
+        with transaction.atomic():
+            for bill_item in self.items.select_related('product').all():
+                product = bill_item.product
+                stock_item = StockItem.objects.filter(company=self.company, product=product).first()
+
+                if product.tracking_method in ('imei', 'serial', 'barcode'):
+                    still_available = ProductTracking.objects.filter(bill_item=bill_item, status='available')
+                    count = still_available.count()
+                    if count:
+                        if stock_item:
+                            stock_item.quantity = max(Decimal('0'), stock_item.quantity - count)
+                            stock_item.save()
+                        still_available.update(is_deleted=True, deleted_at=timezone.now(), deleted_by=user)
+                else:
+                    if stock_item and bill_item.received_quantity:
+                        reduce_by = min(bill_item.received_quantity, stock_item.quantity)
+                        stock_item.quantity -= reduce_by
+                        stock_item.save()
+
+    def reapply_inventory_movements(self):
+        """Undoes reverse_inventory_movements() when a deleted bill is restored - restores
+        the soft-deleted tracked units and re-adds the bulk quantity that was backed out.
+        Bulk products only get their bill_item.received_quantity added back (the same
+        best-effort clamp as the reversal - there's no exact per-bill quantity to recover
+        for a pooled/untracked stock item)."""
+        from django.db import transaction
+        from products.models import ProductTracking
+        from inventory.models import StockItem
+
+        with transaction.atomic():
+            for bill_item in self.items.select_related('product').all():
+                product = bill_item.product
+                stock_item = StockItem.objects.filter(company=self.company, product=product).first()
+
+                if product.tracking_method in ('imei', 'serial', 'barcode'):
+                    removed = ProductTracking.all_objects.filter(bill_item=bill_item, is_deleted=True)
+                    count = removed.count()
+                    if count:
+                        removed.update(is_deleted=False, deleted_at=None, deleted_by=None)
+                        if stock_item:
+                            stock_item.quantity += count
+                            stock_item.save()
+                else:
+                    if stock_item and bill_item.received_quantity:
+                        stock_item.quantity += bill_item.received_quantity
+                        stock_item.save()
 
     def __str__(self):
         return f"Bill-{self.bill_number} - {self.supplier.name}"
