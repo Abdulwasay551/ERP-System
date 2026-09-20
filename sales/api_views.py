@@ -59,7 +59,7 @@ class InvoiceViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     # independently queryable (Invoice.paid_amount aggregates over invoice.payments).
     cascade_to = ['payments']
     filterset_fields = ['status', 'customer', 'invoice_date']
-    ordering_fields = ['invoice_date', 'total', 'created_at', 'invoice_number']
+    ordering_fields = ['invoice_date', 'total', 'created_at', 'invoice_number', 'customer__name', 'paid_amount']
     def get_queryset(self):
         return Invoice.objects.filter(company=self.request.user.company)
 
