@@ -7,6 +7,7 @@ from django.db.models import Q, Sum, Avg
 from django.core.files.base import ContentFile
 from django.http import HttpResponse
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from user_auth.permissions import RoleIn
 from products.models import ProductTracking
 from inventory.models import StockItem, StockMovement
@@ -386,6 +387,17 @@ def pos_checkout(request):
             invoice_kwargs = dict(
                 company=company, customer=customer, status='draft', created_by=request.user,
             )
+            # Optional - the sale date defaults to today (Invoice.invoice_date's own
+            # model default) unless the cashier deliberately backdates it, and notes is
+            # a free-text field distinct from the payment's own reference number below.
+            invoice_date_raw = data.get('invoice_date')
+            if invoice_date_raw:
+                parsed_invoice_date = parse_date(str(invoice_date_raw))
+                if not parsed_invoice_date:
+                    raise ValueError('Invalid invoice_date - use YYYY-MM-DD.')
+                invoice_kwargs['invoice_date'] = parsed_invoice_date
+            if data.get('notes'):
+                invoice_kwargs['notes'] = data['notes']
             explicit_invoice_number = validated_desktop_number(data, 'invoice_number', company)
             if explicit_invoice_number:
                 invoice_kwargs['invoice_number'] = explicit_invoice_number
@@ -470,6 +482,7 @@ def pos_checkout(request):
                     company=company, customer=customer, invoice=invoice,
                     amount=paid_amount, method=payment_data.get('method', 'cash'),
                     reference=payment_data.get('reference', ''),
+                    payment_date=invoice.invoice_date,
                     received_by=request.user, processed_by=request.user,
                     notes=payment_data.get('notes', ''),
                 )
