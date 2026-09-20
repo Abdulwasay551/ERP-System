@@ -2,9 +2,16 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Q, Sum
+from django.db.models.functions import TruncMonth
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from datetime import datetime, timedelta
 from decimal import Decimal
+
+# income/equity/liability carry a normal credit balance; asset/expense/contra carry a
+# normal debit balance - used to sign aggregate totals consistently across the analytics
+# actions below (mirrors AccountViewSet.balance's per-account debit/credit convention).
+CREDIT_NORMAL_TYPES = {'liability', 'equity', 'income'}
 
 from user_auth.permissions import RoleIn, IsOwnerOrManager
 from core.mixins import SoftDeleteViewSetMixin
@@ -113,6 +120,81 @@ class AccountViewSet(viewsets.ModelViewSet):
             'total_credit': total_credit,
             'balance': balance
         })
+
+    @action(detail=False, methods=['get'])
+    def balances_summary(self, request):
+        """Aggregate balance per account type (Asset/Liability/Equity/Income/Expense/
+        Contra) from journal activity within ?date_from=&date_to= (defaults to this
+        calendar year), for the Chart of Accounts analytics page's breakdown chart."""
+        company = request.user.company
+        today = timezone.now().date()
+        date_from = parse_date(request.query_params.get('date_from') or '') or today.replace(month=1, day=1)
+        date_to = parse_date(request.query_params.get('date_to') or '') or today
+
+        rows = (
+            JournalItem.objects.filter(
+                account__company=company, entry__date__gte=date_from, entry__date__lte=date_to,
+            )
+            .values('account__type')
+            .annotate(total_debit=Sum('debit'), total_credit=Sum('credit'))
+        )
+        by_type = {row['account__type']: row for row in rows}
+
+        results = []
+        for type_code, type_label in Account.ACCOUNT_TYPES:
+            row = by_type.get(type_code)
+            total_debit = row['total_debit'] or Decimal('0.00') if row else Decimal('0.00')
+            total_credit = row['total_credit'] or Decimal('0.00') if row else Decimal('0.00')
+            balance = (total_credit - total_debit) if type_code in CREDIT_NORMAL_TYPES else (total_debit - total_credit)
+            results.append({
+                'type': type_code,
+                'type_display': type_label,
+                'total_debit': str(total_debit),
+                'total_credit': str(total_credit),
+                'balance': str(balance),
+            })
+
+        return Response({'date_from': date_from.isoformat(), 'date_to': date_to.isoformat(), 'types': results})
+
+    @action(detail=False, methods=['get'])
+    def balance_trend(self, request):
+        """Monthly balance-per-account-type trend within ?date_from=&date_to= (defaults
+        to the last 12 months), optionally narrowed with ?type=. Powers the Chart of
+        Accounts analytics page's over-time chart."""
+        company = request.user.company
+        today = timezone.now().date()
+        date_from = parse_date(request.query_params.get('date_from') or '') or (today - timedelta(days=364))
+        date_to = parse_date(request.query_params.get('date_to') or '') or today
+        type_filter = request.query_params.get('type')
+
+        qs = JournalItem.objects.filter(
+            account__company=company, entry__date__gte=date_from, entry__date__lte=date_to,
+        )
+        if type_filter:
+            qs = qs.filter(account__type=type_filter)
+
+        rows = (
+            qs.annotate(month=TruncMonth('entry__date'))
+            .values('month', 'account__type')
+            .annotate(total_debit=Sum('debit'), total_credit=Sum('credit'))
+            .order_by('month')
+        )
+
+        months: dict[str, dict[str, Decimal]] = {}
+        for row in rows:
+            month_key = row['month'].strftime('%Y-%m')
+            acct_type = row['account__type']
+            total_debit = row['total_debit'] or Decimal('0.00')
+            total_credit = row['total_credit'] or Decimal('0.00')
+            balance = (total_credit - total_debit) if acct_type in CREDIT_NORMAL_TYPES else (total_debit - total_credit)
+            months.setdefault(month_key, {})[acct_type] = balance
+
+        series = [
+            {'month': month, 'balances': {t: str(v) for t, v in type_balances.items()}}
+            for month, type_balances in sorted(months.items())
+        ]
+
+        return Response({'date_from': date_from.isoformat(), 'date_to': date_to.isoformat(), 'months': series})
 
 
 class JournalViewSet(viewsets.ModelViewSet):
