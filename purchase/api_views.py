@@ -2,6 +2,8 @@ from decimal import Decimal, InvalidOperation
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.filters import SearchFilter, OrderingFilter
+from django_filters.rest_framework import DjangoFilterBackend
 from django.db import transaction, IntegrityError
 from django.db.models import Q, Sum, Count
 from datetime import timedelta
@@ -381,7 +383,13 @@ class BillViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     cascade_to = ['payments']
     filterset_fields = ['status', 'supplier', 'goods_received']
-    ordering_fields = ['bill_date', 'total_amount', 'created_at']
+    ordering_fields = ['bill_date', 'total_amount', 'created_at', 'supplier__partner__name', 'bill_number']
+    # SearchFilter isn't in DEFAULT_FILTER_BACKENDS project-wide, so overriding
+    # filter_backends here also has to re-list the two global ones (DjangoFilterBackend
+    # for filterset_fields, OrderingFilter for ordering_fields) or this ViewSet would
+    # silently lose them.
+    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
+    search_fields = ['bill_number', 'supplier__partner__name']
 
     def get_queryset(self):
         return Bill.objects.filter(company=self.request.user.company)
