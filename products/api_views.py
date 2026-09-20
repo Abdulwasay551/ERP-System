@@ -372,15 +372,30 @@ class ProductTrackingViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
         queryset = ProductTracking.objects.filter(
             product__company=self.request.user.company
         ).select_related('product', 'variant', 'created_by')
-        
+
         # Simple filtering
         product = self.request.query_params.get('product')
         if product:
             queryset = queryset.filter(product_id=product)
-        
+
         variant = self.request.query_params.get('variant')
         if variant:
             queryset = queryset.filter(variant_id=variant)
+
+        # `search_fields` above declares intent, but SearchFilter is never actually
+        # wired in (not in DEFAULT_FILTER_BACKENDS, and this ViewSet doesn't add its own
+        # filter_backends), so `?search=` was being silently ignored - the tracking
+        # picker's "search for a unit to sell" box looked broken because it always
+        # returned every available unit for the product regardless of what was typed.
+        # Handled manually here instead of just adding SearchFilter, so a query like the
+        # last 6 digits of an IMEI (a normal real-world way to identify a phone) matches
+        # via substring, not just an exact/prefix match.
+        search = self.request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(imei_number__icontains=search) | Q(serial_number__icontains=search) |
+                Q(barcode__icontains=search)
+            )
         
         is_available = self.request.query_params.get('is_available')
         if is_available is not None:
