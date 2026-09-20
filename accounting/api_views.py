@@ -363,10 +363,19 @@ class ExpenseViewSet(IdempotentCreateMixin, PkConflictReportingMixin, SoftDelete
         category = self.request.query_params.get('category')
         if category:
             queryset = queryset.filter(category=category)
+        payment_method = self.request.query_params.get('payment_method')
+        if payment_method:
+            queryset = queryset.filter(payment_method=payment_method)
         month = self.request.query_params.get('month')  # YYYY-MM
         if month:
             year, mon = month.split('-')
             queryset = queryset.filter(expense_date__year=year, expense_date__month=mon)
+        date_from = self.request.query_params.get('date_from')
+        if date_from:
+            queryset = queryset.filter(expense_date__gte=date_from)
+        date_to = self.request.query_params.get('date_to')
+        if date_to:
+            queryset = queryset.filter(expense_date__lte=date_to)
         return queryset
 
     def perform_create(self, serializer):
