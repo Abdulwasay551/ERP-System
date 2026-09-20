@@ -43,7 +43,7 @@ class SupplierViewSet(IdempotentCreateMixin, PkConflictReportingMixin, SoftDelet
     # Vendor management is a purchasing/warehouse concern, not shop-floor sales.
     permission_classes = [permissions.IsAuthenticated, ManagerOrWarehouse]
     filterset_fields = ['status', 'supplier_type', 'is_active']
-    ordering_fields = ['partner__name', 'created_at', 'overall_rating']
+    ordering_fields = ['partner__name', 'created_at', 'overall_rating', 'supplier_type']
 
     def get_queryset(self):
         qs = Supplier.objects.filter(company=self.request.user.company).select_related('partner')

@@ -53,7 +53,7 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
 class ProductViewSet(IdempotentCreateMixin, PkConflictReportingMixin, SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     search_fields = ['name', 'sku', 'description']
-    ordering_fields = ['name', 'sku', 'created_at', 'selling_price']
+    ordering_fields = ['name', 'sku', 'created_at', 'selling_price', 'cost_price', 'category__name']
     ordering = ['name']
 
     def get_queryset(self):
