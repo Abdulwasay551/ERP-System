@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.db.models import Sum, Count, F
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 
 from sales.models import Invoice, InvoiceItem
 from inventory.models import StockItem, StockMovement
@@ -16,15 +17,28 @@ from accounting.models import Expense
 REVENUE_STATUSES = ['sent', 'paid', 'partially_paid']
 
 
+def _parse_date_range(request, default_days=0):
+    """Shared ?date_from=&date_to= parsing for the analytics endpoints below. With
+    neither param supplied, falls back to today (or the last `default_days` days)."""
+    today = timezone.now().date()
+    date_from = parse_date(request.query_params.get('date_from') or '') or (today - timedelta(days=default_days))
+    date_to = parse_date(request.query_params.get('date_to') or '') or today
+    if date_from > date_to:
+        date_from, date_to = date_to, date_from
+    return date_from, date_to
+
+
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def dashboard_stats(request):
-    """Shop-relevant dashboard numbers: today's sales, outstanding balances, low stock,
-    pending vendor receipts. Company-scoped."""
+    """Shop-relevant dashboard numbers: sales for the selected range (today by default),
+    outstanding balances, low stock, pending vendor receipts. Company-scoped."""
     company = request.user.company
-    today = timezone.now().date()
+    date_from, date_to = _parse_date_range(request)
 
-    todays_invoices = Invoice.objects.filter(company=company, invoice_date=today, status__in=REVENUE_STATUSES)
+    todays_invoices = Invoice.objects.filter(
+        company=company, invoice_date__gte=date_from, invoice_date__lte=date_to, status__in=REVENUE_STATUSES,
+    )
     todays_sales_total = todays_invoices.aggregate(total=Sum('total'))['total'] or 0
     todays_sales_count = todays_invoices.count()
 
@@ -57,21 +71,25 @@ def dashboard_stats(request):
 @permission_classes([permissions.IsAuthenticated])
 def profit_report(request):
     """
-    Daily revenue/COGS/expenses/profit for the last `days` days (default 30, max 365).
-    Revenue is accrual (invoice total on its invoice_date, regardless of payment status
-    beyond draft/cancelled) since a shop wants to know what it sold today, not just what
-    was collected. COGS comes from StockMovement rows the sale flow already writes
+    Daily revenue/COGS/expenses/profit for an explicit ?date_from=&date_to= range, or the
+    last `days` days (default 30, max 365) when no explicit range is given. Revenue is
+    accrual (invoice total on its invoice_date, regardless of payment status beyond
+    draft/cancelled) since a shop wants to know what it sold today, not just what was
+    collected. COGS comes from StockMovement rows the sale flow already writes
     (movement_type='sale') rather than re-deriving it, so it can never drift from what
     inventory valuation actually used.
     """
     company = request.user.company
-    try:
-        days = min(max(int(request.query_params.get('days', 30)), 1), 365)
-    except ValueError:
-        days = 30
-
-    today = timezone.now().date()
-    start = today - timedelta(days=days - 1)
+    if request.query_params.get('date_from') or request.query_params.get('date_to'):
+        start, today = _parse_date_range(request)
+    else:
+        try:
+            days = min(max(int(request.query_params.get('days', 30)), 1), 365)
+        except ValueError:
+            days = 30
+        today = timezone.now().date()
+        start = today - timedelta(days=days - 1)
+    days = (today - start).days + 1
 
     revenue_by_day = {
         row['invoice_date']: row['total'] or 0
@@ -131,19 +149,23 @@ def profit_report(request):
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def top_products(request):
-    """Best-selling products by revenue over the last `days` days (default 30)."""
+    """Best-selling products by revenue, over an explicit ?date_from=&date_to= range or
+    the last `days` days (default 30) when no explicit range is given."""
     company = request.user.company
-    try:
-        days = min(max(int(request.query_params.get('days', 30)), 1), 365)
-    except ValueError:
-        days = 30
     try:
         limit = min(max(int(request.query_params.get('limit', 5)), 1), 20)
     except ValueError:
         limit = 5
 
-    today = timezone.now().date()
-    start = today - timedelta(days=days - 1)
+    if request.query_params.get('date_from') or request.query_params.get('date_to'):
+        start, today = _parse_date_range(request)
+    else:
+        try:
+            days = min(max(int(request.query_params.get('days', 30)), 1), 365)
+        except ValueError:
+            days = 30
+        today = timezone.now().date()
+        start = today - timedelta(days=days - 1)
 
     rows = (
         InvoiceItem.objects.filter(
@@ -183,3 +205,34 @@ def low_stock_items(request):
         }
         for row in rows
     ])
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def sales_funnel(request):
+    """Invoice drop-off funnel for the dashboard: how many invoices (and how much value)
+    make it from draft -> confirmed -> fully collected within ?date_from=&date_to=
+    (defaults to the last 30 days). Cancelled invoices are excluded from every stage -
+    they never represent a real sale in progress."""
+    company = request.user.company
+    date_from, date_to = _parse_date_range(request, default_days=29)
+
+    base = Invoice.objects.filter(
+        company=company, invoice_date__gte=date_from, invoice_date__lte=date_to,
+    ).exclude(status='cancelled')
+
+    def stage(label, qs):
+        agg = qs.aggregate(count=Count('id'), total=Sum('total'))
+        return {'stage': label, 'count': agg['count'] or 0, 'total': str(agg['total'] or 0)}
+
+    stages = [
+        stage('Created', base),
+        stage('Confirmed', base.filter(status__in=REVENUE_STATUSES)),
+        stage('Paid in Full', base.filter(status='paid')),
+    ]
+
+    return Response({
+        'date_from': date_from.isoformat(),
+        'date_to': date_to.isoformat(),
+        'stages': stages,
+    })
