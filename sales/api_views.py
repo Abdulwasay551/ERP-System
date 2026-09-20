@@ -60,8 +60,21 @@ class InvoiceViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     cascade_to = ['payments']
     filterset_fields = ['status', 'customer', 'invoice_date']
     ordering_fields = ['invoice_date', 'total', 'created_at', 'invoice_number', 'customer__name', 'paid_amount']
+
     def get_queryset(self):
-        return Invoice.objects.filter(company=self.request.user.company)
+        queryset = Invoice.objects.filter(company=self.request.user.company)
+        # This queryset also backs get_object() for every detail action - only apply
+        # ?date_from=/?date_to= (meant for the list) on an actual list request, same
+        # reasoning as ProductViewSet.get_queryset()'s equivalent guard.
+        if self.action != 'list':
+            return queryset
+        date_from = self.request.query_params.get('date_from')
+        if date_from:
+            queryset = queryset.filter(invoice_date__gte=date_from)
+        date_to = self.request.query_params.get('date_to')
+        if date_to:
+            queryset = queryset.filter(invoice_date__lte=date_to)
+        return queryset
 
     @action(detail=True, methods=['get'], url_path='returnable-items')
     def returnable_items(self, request, pk=None):

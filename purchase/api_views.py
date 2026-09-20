@@ -392,8 +392,17 @@ class BillViewSet(SoftDeleteViewSetMixin, viewsets.ModelViewSet):
     search_fields = ['bill_number', 'supplier__partner__name']
 
     def get_queryset(self):
-        return Bill.objects.filter(company=self.request.user.company)
-    
+        queryset = Bill.objects.filter(company=self.request.user.company)
+        if self.action != 'list':
+            return queryset
+        date_from = self.request.query_params.get('date_from')
+        if date_from:
+            queryset = queryset.filter(bill_date__gte=date_from)
+        date_to = self.request.query_params.get('date_to')
+        if date_to:
+            queryset = queryset.filter(bill_date__lte=date_to)
+        return queryset
+
     @action(detail=True, methods=['post'])
     def three_way_match(self, request, pk=None):
         bill = self.get_object()
