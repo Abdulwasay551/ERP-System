@@ -300,6 +300,93 @@ def build_ledger_pdf(entity_name, entity_label, entries, date_from, date_to, clo
     return buf
 
 
+def _extended_ledger_row_detail(detail):
+    """Small grey sub-lines printed under a ledger row's description - the actual
+    invoice/bill line items (with IMEI/serial where tracked) or payment method/
+    reference, mirroring how build_receiving_pdf/build_invoice_pdf_a4 print tracking
+    codes under a product name. `detail` is whatever core.ledger_detail.
+    resolve_ledger_entry_detail() returned for this row (or None)."""
+    if not detail:
+        return ''
+    lines = []
+    if detail['kind'] in ('invoice', 'bill'):
+        for item in detail['items']:
+            unit = f"Rs. {float(item['unit_price']):,.0f}"
+            piece = f"{item['quantity']}&times; {item['product_name']} @ {unit}"
+            if detail['kind'] == 'invoice':
+                identifier = item.get('tracking_identifier')
+                if identifier:
+                    piece += f" [{identifier}]"
+            else:
+                codes = [u['code'] for u in item.get('tracking_units', []) if u.get('code')]
+                if codes:
+                    piece += f" [{', '.join(codes)}]"
+            lines.append(piece)
+    elif detail['kind'] == 'payment':
+        bits = [f"Method: {detail['method']}"]
+        if detail.get('reference'):
+            bits.append(f"Ref: {detail['reference']}")
+        lines.append(' | '.join(bits))
+    if not lines:
+        return ''
+    codes_html = '<br/>'.join(lines)
+    return f'<br/><font size="6.5" color="#525252">{codes_html}</font>'
+
+
+def build_extended_ledger_pdf(entity_name, entity_label, entries, details, date_from, date_to, closing_balance):
+    """Same report as build_ledger_pdf, but each row also prints the real document
+    behind it - invoice/bill line items (with IMEI/serial where tracked), or a
+    payment's method/reference - instead of just the bare debit/credit/balance figures.
+    `entries` and `details` are parallel lists (details[i] = resolve_ledger_entry_detail
+    (entries[i]), already resolved by the caller so this function stays pure rendering)."""
+    styles = _styles()
+    elements = []
+    _header(elements, styles)
+    elements.append(Paragraph(f"{entity_label} Extended Ledger &mdash; {entity_name}", styles['DocTitle']))
+    period = f"{date_from or 'Start'} to {date_to or 'Today'}"
+    elements.append(Paragraph(f"Period: {period}", styles['Small']))
+    elements.append(Spacer(1, 3 * mm))
+
+    data = [['Date', 'Description', 'Reference', 'Debit', 'Credit', 'Balance']]
+    row_styles = []
+    for i, entry in enumerate(entries, start=1):
+        description_cell = (entry.description or '') + _extended_ledger_row_detail(details[i - 1])
+        data.append([
+            str(entry.transaction_date),
+            Paragraph(description_cell, styles['Small']),
+            entry.reference_number or '',
+            f"{entry.debit_amount:,.0f}" if entry.debit_amount else '',
+            f"{entry.credit_amount:,.0f}" if entry.credit_amount else '',
+            f"{entry.balance:,.0f}",
+        ])
+        if entry.debit_amount:
+            row_styles.append(('BACKGROUND', (0, i), (-1, i), DEBIT_ROW))
+        elif entry.credit_amount:
+            row_styles.append(('BACKGROUND', (0, i), (-1, i), CREDIT_ROW))
+
+    table = Table(data, colWidths=[20 * mm, 62 * mm, 26 * mm, 20 * mm, 20 * mm, 22 * mm], repeatRows=1)
+    table.setStyle(TableStyle([
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 0.3, colors.grey),
+        ('BACKGROUND', (0, 0), (-1, 0), INK),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (3, 0), (-1, -1), 'RIGHT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ] + row_styles))
+    elements.append(table)
+    elements.append(Spacer(1, 4 * mm))
+    elements.append(Paragraph(f"<b>Closing Balance: Rs. {closing_balance:,.0f}</b>", styles['Right']))
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4,
+        topMargin=15 * mm, bottomMargin=15 * mm, leftMargin=15 * mm, rightMargin=15 * mm,
+    )
+    doc.build(elements)
+    buf.seek(0)
+    return buf
+
+
 def build_receiving_pdf(bill, items):
     """Goods-received note for a vendor Bill - what was ordered from/billed by the
     supplier and received into which warehouse."""

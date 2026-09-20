@@ -171,10 +171,34 @@ class CustomerViewSet(IdempotentCreateMixin, PkConflictReportingMixin, SoftDelet
             entries = entries.filter(transaction_date__lte=date_to)
         entries = list(entries)
         closing_balance = entries[-1].balance if entries else customer.get_outstanding_balance()
-        buf = build_ledger_pdf(customer.name, 'Customer', entries, date_from, date_to, closing_balance)
+        if request.query_params.get('extended') == 'true':
+            from core.ledger_detail import resolve_ledger_entry_detail
+            from core.pdf_utils import build_extended_ledger_pdf
+            details = [resolve_ledger_entry_detail(e) for e in entries]
+            buf = build_extended_ledger_pdf(customer.name, 'Customer', entries, details, date_from, date_to, closing_balance)
+            filename = f'{customer.name}-ledger-extended.pdf'
+        else:
+            buf = build_ledger_pdf(customer.name, 'Customer', entries, date_from, date_to, closing_balance)
+            filename = f'{customer.name}-ledger.pdf'
         response = HttpResponse(buf.read(), content_type='application/pdf')
-        response['Content-Disposition'] = f'inline; filename="{customer.name}-ledger.pdf"'
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
         return response
+
+    @action(detail=True, methods=['get'], url_path='ledger/(?P<entry_id>[^/.]+)/detail')
+    def ledger_entry_detail(self, request, pk=None, entry_id=None):
+        """The real document behind one ledger row (invoice line items w/ tracking, or
+        payment method detail) - fetched on demand when a row is expanded, not inlined
+        into every list response (avoids an N+1 cost on the paginated ledger list)."""
+        from core.ledger_detail import resolve_ledger_entry_detail
+        customer = self.get_object()
+        try:
+            entry = customer.ledger_entries.get(pk=entry_id)
+        except CustomerLedger.DoesNotExist:
+            return Response({'error': 'Ledger entry not found.'}, status=404)
+        detail = resolve_ledger_entry_detail(entry)
+        if detail is None:
+            return Response({'detail': None})
+        return Response({'detail': detail})
 
     @action(detail=True, methods=['get'], url_path='outstanding-balance')
     def outstanding_balance(self, request, pk=None):
